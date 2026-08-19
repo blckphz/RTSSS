@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,203 +8,111 @@ using UnityEngine.InputSystem;
 public class CanvasInfoManager : MonoBehaviour
 {
     [Header("UI")]
-    [SerializeField]
-    private TMP_Text infoText;
+    [SerializeField] private TMP_Text infoText;
+    [SerializeField] private Image characterIcon;
 
-    [SerializeField]
-    private Image characterIcon;
+    [Header("Ability Range")]
+    [SerializeField] private GridManager gridManager;
 
-
-    // ==================================================
-    // HOVER STATE
-    // ==================================================
-
+    // Hover State
     private int lastHoveredAbilityIndex = -1;
-
     private int lastLinkIndex = -1;
 
+    // Cached StringBuilder to prevent GC allocations on UI rebuilds
+    private readonly StringBuilder textBuilder = new StringBuilder();
 
     // ==================================================
     // SHOW CHARACTER VIA INTERFACE
     // ==================================================
 
-    public void ShowCharacter(
-        ICharacterHolder characterHolder
-    )
+    public void ShowCharacter(ICharacterHolder characterHolder)
     {
         if (characterHolder == null)
         {
-            Debug.Log(
-                "[CanvasInfoManager] CharacterHolder is NULL."
-            );
-
             ClearInfo();
-
             return;
         }
 
-        Debug.Log(
-            "[CanvasInfoManager] " +
-            "Showing character from CharacterHolder."
-        );
-
-        ShowCharacter(
-            characterHolder.GetCharacterData()
-        );
+        ShowCharacter(characterHolder.GetCharacterData());
     }
-
 
     // ==================================================
     // SHOW CHARACTER
     // ==================================================
 
-    public void ShowCharacter(
-        CharacterSO character
-    )
+    public void ShowCharacter(CharacterSO character)
     {
         if (character == null)
         {
-            Debug.Log(
-                "[CanvasInfoManager] Character is NULL."
-            );
-
             ClearInfo();
-
             return;
         }
-
 
         // Reset hover state
         lastHoveredAbilityIndex = -1;
         lastLinkIndex = -1;
 
+        // Clear any previous ability range
+        if (gridManager != null)
+        {
+            gridManager.ClearAbilityRange();
+        }
 
-        string text = "";
-
+        textBuilder.Clear();
 
         // ==================================================
         // CHARACTER INFO
         // ==================================================
 
-        text +=
-            $"<b>{character.characterName}</b>\n\n";
-
-        text +=
-            $"Team: {character.team}\n";
-
-        text +=
-            $"Health: {character.maxHealth}\n\n";
-
+        textBuilder.AppendLine($"<b>{character.characterName}</b>\n");
+        textBuilder.AppendLine($"Team: {character.team}");
+        textBuilder.AppendLine($"Health: {character.maxHealth}\n");
 
         // ==================================================
         // ABILITIES
         // ==================================================
 
-        List<AbilitySO> abilities =
-            character.GetAbilities();
+        List<AbilitySO> abilities = character.GetAbilities();
 
-
-        if (
-            abilities != null &&
-            abilities.Count > 0
-        )
+        if (abilities != null && abilities.Count > 0)
         {
-            text +=
-                "<b>Abilities</b>\n\n";
+            textBuilder.AppendLine("<b>Abilities</b>\n");
 
-
-            for (
-                int i = 0;
-                i < abilities.Count;
-                i++
-            )
+            for (int i = 0; i < abilities.Count; i++)
             {
-                AbilitySO ability =
-                    abilities[i];
-
-
-                // ==================================================
-                // NULL ABILITY
-                // ==================================================
+                AbilitySO ability = abilities[i];
 
                 if (ability == null)
-                {
-                    Debug.LogWarning(
-                        $"[CanvasInfoManager] " +
-                        $"Ability {i} is NULL."
-                    );
-
                     continue;
-                }
 
+                string abilityName = ability.GetAbilityName();
 
-                // ==================================================
-                // ABILITY NAME
-                // ==================================================
+                // Ability clickable link
+                textBuilder.AppendLine(
+                    $"<link=\"ability_{i}\"><color=yellow><u><b>{abilityName}</b></u></color></link>"
+                );
 
-                string abilityName =
-                    ability.GetAbilityName();
+                textBuilder.AppendLine(
+                    $"{ability.GetDescription()}"
+                );
 
+                textBuilder.AppendLine(
+                    $"Damage: {ability.GetDamage()}"
+                );
 
-                // ==================================================
-                // CREATE TMP LINK
-                // ==================================================
+                textBuilder.AppendLine(
+                    $"Range: {ability.GetRange()}"
+                );
 
-                text +=
-                    $"<link=\"ability_{i}\">" +
-                    $"<color=yellow>" +
-                    $"<u>" +
-                    $"<b>{abilityName}</b>" +
-                    $"</u>" +
-                    $"</color>" +
-                    $"</link>\n";
-
-
-                // ==================================================
-                // DESCRIPTION
-                // ==================================================
-
-                text +=
-                    $"{ability.GetDescription()}\n";
-
-
-                // ==================================================
-                // DAMAGE
-                // ==================================================
-
-                text +=
-                    $"Damage: {ability.GetDamage()}\n";
-
-
-                // ==================================================
-                // RANGE
-                // ==================================================
-
-                text +=
-                    $"Range: {ability.GetRange()}\n";
-
-
-                // ==================================================
-                // COOLDOWN
-                // ==================================================
-
-                text +=
-                    $"Cooldown: {ability.GetCooldown()}\n\n";
-
-
-                Debug.Log(
-                    "[CanvasInfoManager] " +
-                    $"Created link: ability_{i} " +
-                    $"= {abilityName}"
+                textBuilder.AppendLine(
+                    $"Cooldown: {ability.GetCooldown()}\n"
                 );
             }
         }
         else
         {
-            text +=
-                "<b>No Abilities</b>";
+            textBuilder.Append("<b>No Abilities</b>");
         }
-
 
         // ==================================================
         // APPLY TEXT
@@ -211,50 +120,9 @@ public class CanvasInfoManager : MonoBehaviour
 
         if (infoText != null)
         {
-            infoText.text = text;
-
-
-            // Force TMP to rebuild
+            infoText.text = textBuilder.ToString();
             infoText.ForceMeshUpdate();
-
-
-            Debug.Log(
-                "[CanvasInfoManager] " +
-                $"TMP Link Count: " +
-                $"{infoText.textInfo.linkCount}"
-            );
-
-
-            // ==================================================
-            // DEBUG LINKS
-            // ==================================================
-
-            for (
-                int i = 0;
-                i < infoText.textInfo.linkCount;
-                i++
-            )
-            {
-                TMP_LinkInfo link =
-                    infoText.textInfo.linkInfo[i];
-
-
-                Debug.Log(
-                    "[CanvasInfoManager] " +
-                    $"TMP Link {i}: " +
-                    $"ID='{link.GetLinkID()}' " +
-                    $"Text='{link.GetLinkText()}'"
-                );
-            }
         }
-        else
-        {
-            Debug.LogWarning(
-                "[CanvasInfoManager] " +
-                "infoText is NULL."
-            );
-        }
-
 
         // ==================================================
         // CHARACTER ICON
@@ -262,14 +130,10 @@ public class CanvasInfoManager : MonoBehaviour
 
         if (characterIcon != null)
         {
-            characterIcon.sprite =
-                character.icon;
-
-            characterIcon.enabled =
-                character.icon != null;
+            characterIcon.sprite = character.icon;
+            characterIcon.enabled = character.icon != null;
         }
     }
-
 
     // ==================================================
     // UPDATE
@@ -280,84 +144,34 @@ public class CanvasInfoManager : MonoBehaviour
         CheckAbilityHover();
     }
 
-
     // ==================================================
     // CHECK ABILITY HOVER
     // ==================================================
 
     private void CheckAbilityHover()
     {
-        // --------------------------------------------------
-        // Make sure text exists
-        // --------------------------------------------------
-
-        if (infoText == null)
+        if (infoText == null ||
+            !infoText.gameObject.activeInHierarchy ||
+            Mouse.current == null)
         {
             return;
         }
-
-
-        // --------------------------------------------------
-        // Make sure text is visible
-        // --------------------------------------------------
-
-        if (!infoText.gameObject.activeInHierarchy)
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------
-        // Make sure mouse exists
-        // --------------------------------------------------
-
-        if (Mouse.current == null)
-        {
-            return;
-        }
-
-
-        // ==================================================
-        // GET MOUSE POSITION
-        // ==================================================
 
         Vector2 mousePosition =
             Mouse.current.position.ReadValue();
 
-
-        // ==================================================
-        // GET EVENT CAMERA
-        // ==================================================
-
+        // Determine camera based on Canvas Render Mode
         Camera eventCamera = null;
 
+        Canvas canvas = infoText.canvas;
 
-        if (infoText.canvas != null)
+        if (canvas != null &&
+            canvas.renderMode != RenderMode.ScreenSpaceOverlay)
         {
-            Canvas canvas =
-                infoText.canvas;
-
-
-            // Screen Space Overlay does NOT use a camera
-            if (
-                canvas.renderMode ==
-                RenderMode.ScreenSpaceOverlay
-            )
-            {
-                eventCamera = null;
-            }
-            else
-            {
-                eventCamera =
-                    canvas.worldCamera;
-            }
+            eventCamera = canvas.worldCamera;
         }
 
-
-        // ==================================================
-        // FIND LINK
-        // ==================================================
-
+        // Find intersecting link
         int linkIndex =
             TMP_TextUtilities.FindIntersectingLink(
                 infoText,
@@ -365,165 +179,179 @@ public class CanvasInfoManager : MonoBehaviour
                 eventCamera
             );
 
-
-        // ==================================================
-        // LINK CHANGED
-        // ==================================================
-
-        if (linkIndex != lastLinkIndex)
+        // Nothing changed
+        if (linkIndex == lastLinkIndex)
         {
-            lastLinkIndex =
-                linkIndex;
+            return;
+        }
 
+        lastLinkIndex = linkIndex;
 
-            // --------------------------------------------------
-            // LEFT ALL LINKS
-            // --------------------------------------------------
+        // ==================================================
+        // LEFT ALL LINKS
+        // ==================================================
 
-            if (linkIndex == -1)
+        if (linkIndex == -1)
+        {
+            lastHoveredAbilityIndex = -1;
+
+            ClearAbilityRange();
+
+            return;
+        }
+
+        // ==================================================
+        // VALIDATE LINK INDEX
+        // ==================================================
+
+        TMP_TextInfo textInfo = infoText.textInfo;
+
+        if (linkIndex >= textInfo.linkCount)
+        {
+            ClearAbilityRange();
+            return;
+        }
+
+        // ==================================================
+        // GET LINK
+        // ==================================================
+
+        TMP_LinkInfo link =
+            textInfo.linkInfo[linkIndex];
+
+        string linkId =
+            link.GetLinkID();
+
+        // ==================================================
+        // ONLY HANDLE ABILITY LINKS
+        // ==================================================
+
+        if (!linkId.StartsWith("ability_"))
+        {
+            lastHoveredAbilityIndex = -1;
+
+            ClearAbilityRange();
+
+            return;
+        }
+
+        // ==================================================
+        // PARSE ABILITY INDEX
+        // ==================================================
+
+        if (int.TryParse(
+            linkId.Substring(8),
+            out int abilityIndex))
+        {
+            if (abilityIndex != lastHoveredAbilityIndex)
             {
-                if (
-                    lastHoveredAbilityIndex != -1
-                )
-                {
-                    Debug.Log(
-                        "[CanvasInfoManager] " +
-                        "MOUSE LEFT ABILITY."
-                    );
+                lastHoveredAbilityIndex = abilityIndex;
 
-                    lastHoveredAbilityIndex =
-                        -1;
-                }
-
-                return;
-            }
-
-
-            // --------------------------------------------------
-            // LINK FOUND
-            // --------------------------------------------------
-
-            if (
-                linkIndex >=
-                infoText.textInfo.linkCount
-            )
-            {
-                return;
-            }
-
-
-            TMP_LinkInfo link =
-                infoText.textInfo.linkInfo[
-                    linkIndex
-                ];
-
-
-            string linkId =
-                link.GetLinkID();
-
-
-            string linkText =
-                link.GetLinkText();
-
-
-            Debug.Log(
-                "[CanvasInfoManager] " +
-                $"TMP LINK DETECTED: {linkIndex}"
-            );
-
-
-            Debug.Log(
-                "[CanvasInfoManager] " +
-                $"Link ID: {linkId}"
-            );
-
-
-            Debug.Log(
-                "[CanvasInfoManager] " +
-                $"Link Text: {linkText}"
-            );
-
-
-            // ==================================================
-            // CHECK ABILITY LINK
-            // ==================================================
-
-            if (
-                !linkId.StartsWith(
-                    "ability_"
-                )
-            )
-            {
-                return;
-            }
-
-
-            // ==================================================
-            // GET ABILITY INDEX
-            // ==================================================
-
-            string indexString =
-                linkId.Substring(
-                    "ability_".Length
-                );
-
-
-            if (
-                !int.TryParse(
-                    indexString,
-                    out int abilityIndex
-                )
-            )
-            {
-                return;
-            }
-
-
-            // ==================================================
-            // NEW ABILITY
-            // ==================================================
-
-            if (
-                abilityIndex !=
-                lastHoveredAbilityIndex
-            )
-            {
-                lastHoveredAbilityIndex =
-                    abilityIndex;
-
-
-                Debug.Log(
-                    "========================================"
-                );
-
-
-                Debug.Log(
-                    "[CanvasInfoManager] " +
-                    "HOVERING ABILITY!"
-                );
-
-
-                Debug.Log(
-                    "[CanvasInfoManager] " +
-                    $"Ability Index: " +
-                    $"{abilityIndex}"
-                );
-
-
-                Debug.Log(
-                    "[CanvasInfoManager] " +
-                    $"Ability Name: " +
-                    $"{linkText}"
-                );
-
-
-                Debug.Log(
-                    "========================================"
-                );
+                ShowAbilityRange(abilityIndex);
             }
         }
     }
 
+    // ==================================================
+    // SHOW ABILITY RANGE
+    // ==================================================
+
+    private void ShowAbilityRange(int abilityIndex)
+    {
+        if (gridManager == null)
+        {
+            Debug.LogWarning(
+                "[CanvasInfoManager] GridManager is not assigned!",
+                this
+            );
+
+            return;
+        }
+
+        // Need a selected object
+        if (UIManager.CurrentSelection == null)
+        {
+            gridManager.ClearAbilityRange();
+            return;
+        }
+
+        // Get selected character data
+        CharacterSO character =
+            UIManager.CurrentSelection.GetCharacterData();
+
+        if (character == null)
+        {
+            gridManager.ClearAbilityRange();
+            return;
+        }
+
+        // Get abilities
+        List<AbilitySO> abilities =
+            character.GetAbilities();
+
+        if (abilities == null)
+        {
+            gridManager.ClearAbilityRange();
+            return;
+        }
+
+        // Validate index
+        if (abilityIndex < 0 ||
+            abilityIndex >= abilities.Count)
+        {
+            gridManager.ClearAbilityRange();
+            return;
+        }
+
+        AbilitySO ability =
+            abilities[abilityIndex];
+
+        if (ability == null)
+        {
+            gridManager.ClearAbilityRange();
+            return;
+        }
+
+        // ==================================================
+        // GET UNIT GRID POSITION
+        // ==================================================
+
+        GameObject selectedObject =
+            UIManager.CurrentSelection.gameObject;
+
+        Vector2Int unitPosition =
+            gridManager.WorldToGridPosition(
+                selectedObject.transform.position
+            );
+
+        // ==================================================
+        // GET ABILITY RANGE
+        // ==================================================
+
+        int range =
+            ability.GetRange();
+
+        // ==================================================
+        // SHOW RANGE ON GRID
+        // ==================================================
+
+        gridManager.ShowAbilityRange(
+            unitPosition,
+            range
+        );
+    }
+
+    // ==================================================
+    // CLEAR ABILITY RANGE
+    // ==================================================
+
+    private void ClearAbilityRange()
+    {
+        if (gridManager != null)
+        {
+            gridManager.ClearAbilityRange();
+        }
+    }
 
     // ==================================================
     // CLEAR INFO
@@ -532,35 +360,25 @@ public class CanvasInfoManager : MonoBehaviour
     public void ClearInfo()
     {
         lastHoveredAbilityIndex = -1;
-
         lastLinkIndex = -1;
 
-
-        // ==================================================
-        // CLEAR TEXT
-        // ==================================================
-
-        if (infoText != null)
+        // Clear range
+        if (gridManager != null)
         {
-            infoText.text = "";
+            gridManager.ClearAbilityRange();
         }
 
+        // Clear text
+        if (infoText != null)
+        {
+            infoText.text = string.Empty;
+        }
 
-        // ==================================================
-        // CLEAR ICON
-        // ==================================================
-
+        // Clear icon
         if (characterIcon != null)
         {
             characterIcon.sprite = null;
-
             characterIcon.enabled = false;
         }
-
-
-        Debug.Log(
-            "[CanvasInfoManager] " +
-            "Info cleared."
-        );
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -13,6 +14,12 @@ public class GridManager : MonoBehaviour
 
     [Header("Hovered Tile")]
     [SerializeField, Range(0f, 1f)] private float hoveredTileAlpha = 0.5f;
+
+    [Header("Ability Range")]
+    [SerializeField] private Color abilityRangeColor = Color.yellow;
+
+    [SerializeField, Range(0f, 1f)]
+    private float abilityRangeAlpha = 0.35f;
 
     [Header("Gizmos")]
     [SerializeField] private bool showGridGizmos = true;
@@ -33,6 +40,19 @@ public class GridManager : MonoBehaviour
     private Color[] hoveredTileOriginalColors;
 
     // ==================================================
+    // ABILITY RANGE STATE
+    // ==================================================
+
+    private readonly List<GameObject> abilityRangeTiles =
+        new List<GameObject>();
+
+    private readonly List<SpriteRenderer[]> abilityRangeRenderers =
+        new List<SpriteRenderer[]>();
+
+    private readonly List<Color[]> abilityRangeOriginalColors =
+        new List<Color[]>();
+
+    // ==================================================
     // UNITY LIFECYCLE
     // ==================================================
 
@@ -44,11 +64,22 @@ public class GridManager : MonoBehaviour
             grid = GetComponent<Grid>();
         }
 
-        if (grid == null) return;
+        if (grid == null)
+        {
+            Debug.LogError(
+                "[GridManager] No Grid component found!",
+                this
+            );
+
+            return;
+        }
 
         // Array Initialization
-        occupiedCells = new GameObject[width, height];
-        floorTiles = new GameObject[width, height];
+        occupiedCells =
+            new GameObject[width, height];
+
+        floorTiles =
+            new GameObject[width, height];
 
         // Floor Setup
         if (floorParent == null)
@@ -65,7 +96,15 @@ public class GridManager : MonoBehaviour
 
     private void CreateFloor()
     {
-        if (floorTilePrefab == null) return;
+        if (floorTilePrefab == null)
+        {
+            Debug.LogWarning(
+                "[GridManager] Floor Tile Prefab is not assigned!",
+                this
+            );
+
+            return;
+        }
 
         if (floorParent == null)
         {
@@ -76,18 +115,25 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2Int gridPosition = new Vector2Int(x, y);
-                Vector3 worldPosition = GridToWorldPosition(gridPosition);
+                Vector2Int gridPosition =
+                    new Vector2Int(x, y);
 
-                GameObject floorTile = Instantiate(
-                    floorTilePrefab,
-                    worldPosition,
-                    Quaternion.identity,
-                    floorParent
-                );
+                Vector3 worldPosition =
+                    GridToWorldPosition(gridPosition);
 
-                floorTile.name = $"Floor_{x}_{y}";
-                floorTiles[x, y] = floorTile;
+                GameObject floorTile =
+                    Instantiate(
+                        floorTilePrefab,
+                        worldPosition,
+                        Quaternion.identity,
+                        floorParent
+                    );
+
+                floorTile.name =
+                    $"Floor_{x}_{y}";
+
+                floorTiles[x, y] =
+                    floorTile;
             }
         }
     }
@@ -96,84 +142,160 @@ public class GridManager : MonoBehaviour
     // POSITION CONVERSION
     // ==================================================
 
-    public Vector2Int WorldToGridPosition(Vector3 worldPosition)
+    public Vector2Int WorldToGridPosition(
+        Vector3 worldPosition)
     {
-        if (grid == null) return Vector2Int.zero;
+        if (grid == null)
+        {
+            return Vector2Int.zero;
+        }
 
-        Vector3Int cellPosition = grid.WorldToCell(worldPosition);
-        return new Vector2Int(cellPosition.x, cellPosition.y);
+        Vector3Int cellPosition =
+            grid.WorldToCell(worldPosition);
+
+        return new Vector2Int(
+            cellPosition.x,
+            cellPosition.y
+        );
     }
 
-    public Vector3 GridToWorldPosition(Vector2Int gridPosition)
+    public Vector3 GridToWorldPosition(
+        Vector2Int gridPosition)
     {
-        if (grid == null) return Vector3.zero;
+        if (grid == null)
+        {
+            return Vector3.zero;
+        }
 
-        Vector3Int cellPosition = new Vector3Int(gridPosition.x, gridPosition.y, 0);
-        return grid.GetCellCenterWorld(cellPosition);
+        Vector3Int cellPosition =
+            new Vector3Int(
+                gridPosition.x,
+                gridPosition.y,
+                0
+            );
+
+        return grid.GetCellCenterWorld(
+            cellPosition
+        );
     }
 
     // ==================================================
-    // GRID CHECKS & HELPER CLEANUP
+    // GRID CHECKS
     // ==================================================
 
-    public bool IsInsideGrid(Vector2Int position)
+    public bool IsInsideGrid(
+        Vector2Int position)
     {
-        return position.x >= 0 && position.x < width &&
-               position.y >= 0 && position.y < height;
+        return position.x >= 0 &&
+               position.x < width &&
+               position.y >= 0 &&
+               position.y < height;
     }
 
-    /// <summary>
-    /// Checks if a cell occupant is active and alive. Clears cell reference if dead/inactive.
-    /// </summary>
-    private bool IsOccupantValid(GameObject occupant, Vector2Int position)
+    // ==================================================
+    // OCCUPANT VALIDATION
+    // ==================================================
+
+    private bool IsOccupantValid(
+        GameObject occupant,
+        Vector2Int position)
     {
-        if (occupant == null) return false;
+        if (occupant == null)
+        {
+            return false;
+        }
 
         // Inactive check
         if (!occupant.activeInHierarchy)
         {
-            occupiedCells[position.x, position.y] = null;
+            occupiedCells[
+                position.x,
+                position.y
+            ] = null;
+
             return false;
         }
 
         // Dead health check
-        HealthManager health = occupant.GetComponent<HealthManager>();
-        if (health != null && health.IsDead())
+        HealthManager health =
+            occupant.GetComponent<HealthManager>();
+
+        if (health != null &&
+            health.IsDead())
         {
-            occupiedCells[position.x, position.y] = null;
+            occupiedCells[
+                position.x,
+                position.y
+            ] = null;
+
             return false;
         }
 
         return true;
     }
 
-    public bool IsCellOccupied(Vector2Int position)
+    public bool IsCellOccupied(
+        Vector2Int position)
     {
-        if (!IsInsideGrid(position)) return false;
+        if (!IsInsideGrid(position))
+        {
+            return false;
+        }
 
-        GameObject occupant = occupiedCells[position.x, position.y];
-        return IsOccupantValid(occupant, position);
+        GameObject occupant =
+            occupiedCells[
+                position.x,
+                position.y
+            ];
+
+        return IsOccupantValid(
+            occupant,
+            position
+        );
     }
 
-    public GameObject GetUnitAt(Vector2Int position)
+    public GameObject GetUnitAt(
+        Vector2Int position)
     {
-        if (!IsInsideGrid(position)) return null;
+        if (!IsInsideGrid(position))
+        {
+            return null;
+        }
 
-        GameObject occupant = occupiedCells[position.x, position.y];
-        return IsOccupantValid(occupant, position) ? occupant : null;
+        GameObject occupant =
+            occupiedCells[
+                position.x,
+                position.y
+            ];
+
+        return IsOccupantValid(
+            occupant,
+            position
+        )
+            ? occupant
+            : null;
     }
 
-    public GameObject GetFloorTile(Vector2Int position)
+    public GameObject GetFloorTile(
+        Vector2Int position)
     {
-        if (!IsInsideGrid(position)) return null;
-        return floorTiles[position.x, position.y];
+        if (!IsInsideGrid(position))
+        {
+            return null;
+        }
+
+        return floorTiles[
+            position.x,
+            position.y
+        ];
     }
 
     // ==================================================
     // HOVERED TILE MANAGEMENT
     // ==================================================
 
-    public void SetHoveredTile(Vector2Int position)
+    public void SetHoveredTile(
+        Vector2Int position)
     {
         if (!IsInsideGrid(position))
         {
@@ -181,7 +303,11 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        GameObject tile = floorTiles[position.x, position.y];
+        GameObject tile =
+            floorTiles[
+                position.x,
+                position.y
+            ];
 
         if (tile == null)
         {
@@ -189,45 +315,77 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        if (tile == hoveredTile) return;
+        if (tile == hoveredTile)
+        {
+            return;
+        }
 
         ClearHoveredTile();
 
         hoveredTile = tile;
-        hoveredTileRenderers = tile.GetComponentsInChildren<SpriteRenderer>(true);
 
-        if (hoveredTileRenderers == null || hoveredTileRenderers.Length == 0)
+        hoveredTileRenderers =
+            tile.GetComponentsInChildren<SpriteRenderer>(
+                true
+            );
+
+        if (hoveredTileRenderers == null ||
+            hoveredTileRenderers.Length == 0)
         {
             hoveredTile = null;
             return;
         }
 
-        hoveredTileOriginalColors = new Color[hoveredTileRenderers.Length];
+        hoveredTileOriginalColors =
+            new Color[
+                hoveredTileRenderers.Length
+            ];
 
-        for (int i = 0; i < hoveredTileRenderers.Length; i++)
+        for (
+            int i = 0;
+            i < hoveredTileRenderers.Length;
+            i++
+        )
         {
-            SpriteRenderer sr = hoveredTileRenderers[i];
-            if (sr == null) continue;
+            SpriteRenderer sr =
+                hoveredTileRenderers[i];
 
-            hoveredTileOriginalColors[i] = sr.color;
+            if (sr == null)
+            {
+                continue;
+            }
 
-            Color modifiedColor = sr.color;
-            modifiedColor.a *= hoveredTileAlpha;
-            sr.color = modifiedColor;
+            hoveredTileOriginalColors[i] =
+                sr.color;
+
+            Color modifiedColor =
+                sr.color;
+
+            modifiedColor.a *=
+                hoveredTileAlpha;
+
+            sr.color =
+                modifiedColor;
         }
     }
 
     public void ClearHoveredTile()
     {
-        if (hoveredTileRenderers != null && hoveredTileOriginalColors != null)
+        if (hoveredTileRenderers != null &&
+            hoveredTileOriginalColors != null)
         {
-            int count = Mathf.Min(hoveredTileRenderers.Length, hoveredTileOriginalColors.Length);
+            int count =
+                Mathf.Min(
+                    hoveredTileRenderers.Length,
+                    hoveredTileOriginalColors.Length
+                );
 
             for (int i = 0; i < count; i++)
             {
                 if (hoveredTileRenderers[i] != null)
                 {
-                    hoveredTileRenderers[i].color = hoveredTileOriginalColors[i];
+                    hoveredTileRenderers[i].color =
+                        hoveredTileOriginalColors[i];
                 }
             }
         }
@@ -238,40 +396,212 @@ public class GridManager : MonoBehaviour
     }
 
     // ==================================================
+    // ABILITY RANGE
+    // ==================================================
+
+    public void ShowAbilityRange(
+        Vector2Int centerPosition,
+        int range)
+    {
+        // Remove previous range first
+        ClearAbilityRange();
+
+        if (!IsInsideGrid(centerPosition))
+        {
+            return;
+        }
+
+        range =
+            Mathf.Max(0, range);
+
+        // Loop through every tile
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Vector2Int tilePosition =
+                    new Vector2Int(x, y);
+
+                // Manhattan distance
+                int distance =
+                    GetDistance(
+                        centerPosition,
+                        tilePosition
+                    );
+
+                if (distance > range)
+                {
+                    continue;
+                }
+
+                GameObject tile =
+                    floorTiles[x, y];
+
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                SpriteRenderer[] renderers =
+                    tile.GetComponentsInChildren<SpriteRenderer>(
+                        true
+                    );
+
+                if (renderers == null ||
+                    renderers.Length == 0)
+                {
+                    continue;
+                }
+
+                Color[] originalColors =
+                    new Color[
+                        renderers.Length
+                    ];
+
+                for (
+                    int i = 0;
+                    i < renderers.Length;
+                    i++
+                )
+                {
+                    SpriteRenderer sr =
+                        renderers[i];
+
+                    if (sr == null)
+                    {
+                        continue;
+                    }
+
+                    // Save original color
+                    originalColors[i] =
+                        sr.color;
+
+                    // Apply range color
+                    Color modifiedColor =
+                        Color.Lerp(
+                            sr.color,
+                            abilityRangeColor,
+                            abilityRangeAlpha
+                        );
+
+                    sr.color =
+                        modifiedColor;
+                }
+
+                abilityRangeTiles.Add(tile);
+
+                abilityRangeRenderers.Add(
+                    renderers
+                );
+
+                abilityRangeOriginalColors.Add(
+                    originalColors
+                );
+            }
+        }
+    }
+
+    public void ClearAbilityRange()
+    {
+        for (
+            int i = 0;
+            i < abilityRangeRenderers.Count;
+            i++
+        )
+        {
+            SpriteRenderer[] renderers =
+                abilityRangeRenderers[i];
+
+            Color[] originalColors =
+                abilityRangeOriginalColors[i];
+
+            if (renderers == null ||
+                originalColors == null)
+            {
+                continue;
+            }
+
+            int count =
+                Mathf.Min(
+                    renderers.Length,
+                    originalColors.Length
+                );
+
+            for (int j = 0; j < count; j++)
+            {
+                if (renderers[j] != null)
+                {
+                    renderers[j].color =
+                        originalColors[j];
+                }
+            }
+        }
+
+        abilityRangeTiles.Clear();
+        abilityRangeRenderers.Clear();
+        abilityRangeOriginalColors.Clear();
+    }
+
+    // ==================================================
     // UNIT MANAGEMENT
     // ==================================================
 
-    public bool PlaceUnit(GameObject unit, Vector2Int position)
+    public bool PlaceUnit(
+        GameObject unit,
+        Vector2Int position)
     {
-        if (unit == null || !IsInsideGrid(position) || IsCellOccupied(position))
+        if (unit == null ||
+            !IsInsideGrid(position) ||
+            IsCellOccupied(position))
         {
             return false;
         }
 
-        occupiedCells[position.x, position.y] = unit;
-        unit.transform.position = GridToWorldPosition(position);
+        occupiedCells[
+            position.x,
+            position.y
+        ] = unit;
+
+        unit.transform.position =
+            GridToWorldPosition(position);
 
         return true;
     }
 
-    public void RemoveUnit(Vector2Int position)
+    public void RemoveUnit(
+        Vector2Int position)
     {
-        if (!IsInsideGrid(position)) return;
+        if (!IsInsideGrid(position))
+        {
+            return;
+        }
 
-        occupiedCells[position.x, position.y] = null;
+        occupiedCells[
+            position.x,
+            position.y
+        ] = null;
     }
 
-    public void RemoveUnit(GameObject unit)
+    public void RemoveUnit(
+        GameObject unit)
     {
-        if (unit == null) return;
+        if (unit == null)
+        {
+            return;
+        }
 
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                if (occupiedCells[x, y] == unit)
+                if (
+                    occupiedCells[x, y] ==
+                    unit
+                )
                 {
-                    occupiedCells[x, y] = null;
+                    occupiedCells[x, y] =
+                        null;
+
                     return;
                 }
             }
@@ -284,23 +614,38 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                GameObject unit = occupiedCells[x, y];
+                GameObject unit =
+                    occupiedCells[x, y];
+
                 if (unit != null)
                 {
-                    IsOccupantValid(unit, new Vector2Int(x, y));
+                    IsOccupantValid(
+                        unit,
+                        new Vector2Int(x, y)
+                    );
                 }
             }
         }
     }
 
-    public bool MoveUnit(GameObject unit, Vector2Int oldPosition, Vector2Int newPosition)
+    public bool MoveUnit(
+        GameObject unit,
+        Vector2Int oldPosition,
+        Vector2Int newPosition)
     {
-        if (unit == null || !IsInsideGrid(oldPosition) || !IsInsideGrid(newPosition))
+        if (unit == null ||
+            !IsInsideGrid(oldPosition) ||
+            !IsInsideGrid(newPosition))
         {
             return false;
         }
 
-        if (occupiedCells[oldPosition.x, oldPosition.y] != unit)
+        if (
+            occupiedCells[
+                oldPosition.x,
+                oldPosition.y
+            ] != unit
+        )
         {
             return false;
         }
@@ -310,24 +655,49 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        occupiedCells[oldPosition.x, oldPosition.y] = null;
-        occupiedCells[newPosition.x, newPosition.y] = unit;
-        unit.transform.position = GridToWorldPosition(newPosition);
+        occupiedCells[
+            oldPosition.x,
+            oldPosition.y
+        ] = null;
+
+        occupiedCells[
+            newPosition.x,
+            newPosition.y
+        ] = unit;
+
+        unit.transform.position =
+            GridToWorldPosition(
+                newPosition
+            );
 
         return true;
     }
 
     // ==================================================
-    // DISTANCE & GETTERS
+    // DISTANCE
     // ==================================================
 
-    public int GetDistance(Vector2Int a, Vector2Int b)
+    public int GetDistance(
+        Vector2Int a,
+        Vector2Int b)
     {
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+        return Mathf.Abs(a.x - b.x) +
+               Mathf.Abs(a.y - b.y);
     }
 
-    public int GetWidth() => width;
-    public int GetHeight() => height;
+    // ==================================================
+    // GETTERS
+    // ==================================================
+
+    public int GetWidth()
+    {
+        return width;
+    }
+
+    public int GetHeight()
+    {
+        return height;
+    }
 
     // ==================================================
     // GIZMOS
@@ -335,12 +705,19 @@ public class GridManager : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (!showGridGizmos) return;
+        if (!showGridGizmos)
+        {
+            return;
+        }
 
         if (grid == null)
         {
             grid = GetComponent<Grid>();
-            if (grid == null) return;
+
+            if (grid == null)
+            {
+                return;
+            }
         }
 
         DrawGridLines();
@@ -349,38 +726,80 @@ public class GridManager : MonoBehaviour
 
     private void DrawGridLines()
     {
-        Gizmos.color = Color.gray;
+        Gizmos.color =
+            Color.gray;
 
-        for (int x = 0; x <= width; x++)
+        for (
+            int x = 0;
+            x <= width;
+            x++
+        )
         {
-            Gizmos.DrawLine(GetGridCorner(x, 0), GetGridCorner(x, height));
+            Gizmos.DrawLine(
+                GetGridCorner(x, 0),
+                GetGridCorner(x, height)
+            );
         }
 
-        for (int y = 0; y <= height; y++)
+        for (
+            int y = 0;
+            y <= height;
+            y++
+        )
         {
-            Gizmos.DrawLine(GetGridCorner(0, y), GetGridCorner(width, y));
+            Gizmos.DrawLine(
+                GetGridCorner(0, y),
+                GetGridCorner(width, y)
+            );
         }
     }
 
     private void DrawGridBorder()
     {
-        Gizmos.color = Color.white;
+        Gizmos.color =
+            Color.white;
 
-        Vector3 bottomLeft = GetGridCorner(0, 0);
-        Vector3 bottomRight = GetGridCorner(width, 0);
-        Vector3 topLeft = GetGridCorner(0, height);
-        Vector3 topRight = GetGridCorner(width, height);
+        Vector3 bottomLeft =
+            GetGridCorner(0, 0);
 
-        Gizmos.DrawLine(bottomLeft, bottomRight);
-        Gizmos.DrawLine(bottomRight, topRight);
-        Gizmos.DrawLine(topRight, topLeft);
-        Gizmos.DrawLine(topLeft, bottomLeft);
+        Vector3 bottomRight =
+            GetGridCorner(width, 0);
+
+        Vector3 topLeft =
+            GetGridCorner(0, height);
+
+        Vector3 topRight =
+            GetGridCorner(width, height);
+
+        Gizmos.DrawLine(
+            bottomLeft,
+            bottomRight
+        );
+
+        Gizmos.DrawLine(
+            bottomRight,
+            topRight
+        );
+
+        Gizmos.DrawLine(
+            topRight,
+            topLeft
+        );
+
+        Gizmos.DrawLine(
+            topLeft,
+            bottomLeft
+        );
     }
 
-    private Vector3 GetGridCorner(int x, int y)
+    private Vector3 GetGridCorner(
+        int x,
+        int y)
     {
         return grid != null
-            ? grid.CellToWorld(new Vector3Int(x, y, 0))
+            ? grid.CellToWorld(
+                new Vector3Int(x, y, 0)
+            )
             : Vector3.zero;
     }
 }

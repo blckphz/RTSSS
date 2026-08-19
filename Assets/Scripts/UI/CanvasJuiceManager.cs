@@ -14,6 +14,10 @@ public class CanvasJuiceManager : MonoBehaviour
     [SerializeField] private bool followMouse = true;
     [SerializeField] private Vector3 mouseOffset = new Vector3(15f, -15f, 0f);
 
+    [Header("Transparency")]
+    [SerializeField, Range(0f, 1f)]
+    private float hoverTransparency = 1f;
+
     [Header("Camera Target")]
     [Tooltip("The GameObject that your Cinemachine Camera follows.")]
     [SerializeField] private Transform cameraTarget;
@@ -52,9 +56,9 @@ public class CanvasJuiceManager : MonoBehaviour
         }
 
         canvasRectTransform = hoverInfoCanvas.GetComponent<RectTransform>();
+
+        // Start completely transparent
         hoverInfoCanvas.alpha = 0f;
-        hoverInfoCanvas.interactable = false;
-        hoverInfoCanvas.blocksRaycasts = false;
 
         ValidateReferences();
     }
@@ -76,7 +80,13 @@ public class CanvasJuiceManager : MonoBehaviour
         if (hoverInfoCanvas == null) return;
 
         UpdateCanvasPosition();
-        StartFade(1f);
+
+        // Only transparency is changed here.
+        // 1 = fully visible
+        // 0.5 = 50% visible
+        // 0 = invisible
+        StartFade(hoverTransparency);
+
         MoveCameraTargetTo(hoverPosition);
     }
 
@@ -84,7 +94,9 @@ public class CanvasJuiceManager : MonoBehaviour
     {
         if (hoverInfoCanvas == null) return;
 
+        // Fade completely transparent.
         StartFade(0f);
+
         MoveCameraTargetTo(normalPosition);
     }
 
@@ -97,7 +109,8 @@ public class CanvasJuiceManager : MonoBehaviour
         if (Mouse.current == null) return;
 
         Vector2 mousePos = Mouse.current.position.ReadValue();
-        canvasRectTransform.position = mousePos + (Vector2)mouseOffset;
+
+        //canvasRectTransform.position = mousePos + (Vector2)mouseOffset;
     }
 
     private void StartFade(float targetAlpha)
@@ -134,8 +147,15 @@ public class CanvasJuiceManager : MonoBehaviour
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
+
             float progress = Mathf.Clamp01(elapsed / fadeDuration);
-            hoverInfoCanvas.alpha = Mathf.Lerp(startAlpha, targetAlpha, progress);
+
+            hoverInfoCanvas.alpha = Mathf.Lerp(
+                startAlpha,
+                targetAlpha,
+                progress
+            );
+
             yield return null;
         }
 
@@ -146,15 +166,30 @@ public class CanvasJuiceManager : MonoBehaviour
     {
         Vector3 startPosition = cameraTarget.position;
         Quaternion startRotation = cameraTarget.rotation;
+
         float elapsed = 0f;
 
         while (elapsed < cameraMoveDuration)
         {
             elapsed += Time.deltaTime;
-            float progress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / cameraMoveDuration));
 
-            cameraTarget.position = Vector3.Lerp(startPosition, target.position, progress);
-            cameraTarget.rotation = Quaternion.Slerp(startRotation, target.rotation, progress);
+            float progress = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(elapsed / cameraMoveDuration)
+            );
+
+            cameraTarget.position = Vector3.Lerp(
+                startPosition,
+                target.position,
+                progress
+            );
+
+            cameraTarget.rotation = Quaternion.Slerp(
+                startRotation,
+                target.rotation,
+                progress
+            );
 
             yield return null;
         }
@@ -163,21 +198,34 @@ public class CanvasJuiceManager : MonoBehaviour
         cameraTarget.rotation = target.rotation;
     }
 
+    // =============================================================
+    // VALIDATION
+    // =============================================================
+
     private void ValidateReferences()
     {
         if (cameraTarget == null)
         {
-            Debug.LogError("[CanvasJuiceManager] Camera Target is NOT assigned!", this);
+            Debug.LogError(
+                "[CanvasJuiceManager] Camera Target is NOT assigned!",
+                this
+            );
         }
 
         if (normalPosition == null)
         {
-            Debug.LogError("[CanvasJuiceManager] Normal Position is NOT assigned!", this);
+            Debug.LogError(
+                "[CanvasJuiceManager] Normal Position is NOT assigned!",
+                this
+            );
         }
 
         if (hoverPosition == null)
         {
-            Debug.LogError("[CanvasJuiceManager] Hover Position is NOT assigned!", this);
+            Debug.LogError(
+                "[CanvasJuiceManager] Hover Position is NOT assigned!",
+                this
+            );
         }
     }
 }
