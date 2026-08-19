@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(
@@ -7,43 +8,116 @@ using UnityEngine;
 public class MeleeSwoosh : AbilitySO
 {
     // ==================================================
+    // GET HITBOX TILES
+    // ==================================================
+
+    public override List<Vector2Int> GetHitboxTiles(
+        GridManager gridManager,
+        GameObject user,
+        GameObject target = null)
+    {
+        List<Vector2Int> tiles =
+            new List<Vector2Int>();
+
+        if (gridManager == null ||
+            user == null)
+        {
+            return tiles;
+        }
+
+        Vector2Int userPosition =
+            gridManager.WorldToGridPosition(
+                user.transform.position
+            );
+
+        Vector2Int direction;
+
+        // --------------------------------------------------
+        // Determine attack direction
+        // --------------------------------------------------
+
+        if (target != null)
+        {
+            Vector2Int targetPosition =
+                gridManager.WorldToGridPosition(
+                    target.transform.position
+                );
+
+            direction =
+                GetAttackDirection(
+                    userPosition,
+                    targetPosition
+                );
+        }
+        else
+        {
+            direction = Vector2Int.up;
+        }
+
+        if (direction == Vector2Int.zero)
+        {
+            return tiles;
+        }
+
+        // --------------------------------------------------
+        // Center tile
+        // --------------------------------------------------
+
+        Vector2Int centerTile =
+            userPosition + direction;
+
+        // --------------------------------------------------
+        // Side direction
+        // --------------------------------------------------
+
+        Vector2Int sideDirection =
+            GetSideDirection(direction);
+
+        // --------------------------------------------------
+        // Three attack tiles
+        // --------------------------------------------------
+
+        Vector2Int firstTile =
+            centerTile + sideDirection;
+
+        Vector2Int secondTile =
+            centerTile;
+
+        Vector2Int thirdTile =
+            centerTile - sideDirection;
+
+        tiles.Add(firstTile);
+        tiles.Add(secondTile);
+        tiles.Add(thirdTile);
+
+        return tiles;
+    }
+
+    // ==================================================
     // USE ABILITY
     // ==================================================
 
     public override bool Use(
         GameObject user,
-        GameObject target
-    )
+        GameObject target)
     {
-        // ----------------------------------------------
-        // USER
-        // ----------------------------------------------
-
         if (user == null)
         {
             Debug.LogWarning(
-                "[MeleeSwoosh] User is null."
+                "[MeleeSwoosh] Cannot attack. User is null."
             );
 
             return false;
         }
-
-        // ----------------------------------------------
-        // TARGET
-        // ----------------------------------------------
 
         if (target == null)
         {
             Debug.LogWarning(
-                "[MeleeSwoosh] Target is null."
+                "[MeleeSwoosh] Cannot attack. Target is null."
             );
 
             return false;
         }
-
-        // ----------------------------------------------
-        // GRID MANAGER
-        // ----------------------------------------------
 
         GridManager gridManager =
             Object.FindFirstObjectByType<GridManager>();
@@ -57,120 +131,49 @@ public class MeleeSwoosh : AbilitySO
             return false;
         }
 
-        // ----------------------------------------------
-        // GRID POSITIONS
-        // ----------------------------------------------
-
-        Vector2Int userPosition =
-            gridManager.WorldToGridPosition(
-                user.transform.position
-            );
-
-        Vector2Int targetPosition =
-            gridManager.WorldToGridPosition(
-                target.transform.position
-            );
-
-        // ----------------------------------------------
-        // RANGE
-        // ----------------------------------------------
-
-        int distance =
-            gridManager.GetDistance(
-                userPosition,
-                targetPosition
-            );
-
-        if (distance > GetRange())
+        if (!CanHit(
+            gridManager,
+            user,
+            target))
         {
             Debug.LogWarning(
-                $"[MeleeSwoosh] Target {target.name} is " +
-                $"out of range. Distance: {distance}, " +
-                $"Range: {GetRange()}."
+                $"[MeleeSwoosh] {target.name} is not inside the hitbox."
             );
 
             return false;
         }
 
-        // ----------------------------------------------
-        // ATTACK DIRECTION
-        // ----------------------------------------------
-
-        Vector2Int direction =
-            GetAttackDirection(
-                userPosition,
-                targetPosition
+        List<Vector2Int> hitboxTiles =
+            GetHitboxTiles(
+                gridManager,
+                user,
+                target
             );
 
-        // ----------------------------------------------
-        // CENTER TILE
-        // ----------------------------------------------
-
-        Vector2Int centerTile =
-            userPosition + direction;
-
-        // ----------------------------------------------
-        // TARGET MUST BE CENTER
-        // ----------------------------------------------
-
-        if (centerTile != targetPosition)
+        if (hitboxTiles == null ||
+            hitboxTiles.Count == 0)
         {
-            Debug.LogWarning(
-                $"[MeleeSwoosh] {target.name} is not on " +
-                "the center tile of the attack."
-            );
-
             return false;
         }
 
-        // ----------------------------------------------
-        // SIDE DIRECTION
-        // ----------------------------------------------
+        bool hitSomething = false;
 
-        Vector2Int sideDirection =
-            GetSideDirection(direction);
-
-        Vector2Int firstTile =
-            centerTile + sideDirection;
-
-        Vector2Int secondTile =
-            centerTile;
-
-        Vector2Int thirdTile =
-            centerTile - sideDirection;
-
-        // ----------------------------------------------
-        // ATTACK TILES
-        // ----------------------------------------------
-
-        AttackTile(
-            gridManager,
-            firstTile,
-            user
-        );
-
-        AttackTile(
-            gridManager,
-            secondTile,
-            user
-        );
-
-        AttackTile(
-            gridManager,
-            thirdTile,
-            user
-        );
-
-        // ----------------------------------------------
-        // SUCCESS
-        // ----------------------------------------------
+        foreach (Vector2Int position in hitboxTiles)
+        {
+            if (AttackTile(
+                gridManager,
+                position,
+                user))
+            {
+                hitSomething = true;
+            }
+        }
 
         Debug.Log(
-            $"[MeleeSwoosh] {user.name} used " +
-            $"Melee Swoosh facing {direction}."
+            $"[MeleeSwoosh] {user.name} attacked {target.name}."
         );
 
-        return true;
+        return hitSomething;
     }
 
     // ==================================================
@@ -179,8 +182,7 @@ public class MeleeSwoosh : AbilitySO
 
     private Vector2Int GetAttackDirection(
         Vector2Int userPosition,
-        Vector2Int targetPosition
-    )
+        Vector2Int targetPosition)
     {
         Vector2Int difference =
             targetPosition - userPosition;
@@ -208,13 +210,10 @@ public class MeleeSwoosh : AbilitySO
     // ==================================================
 
     private Vector2Int GetSideDirection(
-        Vector2Int direction
-    )
+        Vector2Int direction)
     {
-        if (
-            direction == Vector2Int.up ||
-            direction == Vector2Int.down
-        )
+        if (direction == Vector2Int.up ||
+            direction == Vector2Int.down)
         {
             return Vector2Int.right;
         }
@@ -226,86 +225,57 @@ public class MeleeSwoosh : AbilitySO
     // ATTACK TILE
     // ==================================================
 
-    private void AttackTile(
+    private bool AttackTile(
         GridManager gridManager,
         Vector2Int position,
-        GameObject user
-    )
+        GameObject user)
     {
-        // ----------------------------------------------
-        // GRID CHECK
-        // ----------------------------------------------
-
         if (!gridManager.IsInsideGrid(position))
         {
-            return;
+            return false;
         }
-
-        // ----------------------------------------------
-        // GET UNIT
-        // ----------------------------------------------
 
         GameObject target =
             gridManager.GetUnitAt(position);
 
-        if (target == null)
+        if (target == null ||
+            target == user)
         {
-            return;
+            return false;
         }
-
-        // ----------------------------------------------
-        // DON'T HIT USER
-        // ----------------------------------------------
-
-        if (target == user)
-        {
-            return;
-        }
-
-        // ----------------------------------------------
-        // HEALTH
-        // ----------------------------------------------
 
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
         if (targetHealth == null)
         {
-            Debug.LogWarning(
-                $"[MeleeSwoosh] {target.name} does not " +
-                "have a HealthManager."
-            );
-
-            return;
+            return false;
         }
-
-        // ----------------------------------------------
-        // DON'T HIT DEAD TARGET
-        // ----------------------------------------------
 
         if (targetHealth.IsDead())
         {
-            Debug.Log(
-                $"[MeleeSwoosh] {target.name} is already dead. " +
-                "Skipping."
-            );
-
-            return;
+            return false;
         }
 
-        // ----------------------------------------------
-        // DAMAGE
-        // ----------------------------------------------
+        HealthManager userHealth =
+            user.GetComponent<HealthManager>();
+
+        if (userHealth != null &&
+            targetHealth.GetTeam() ==
+            userHealth.GetTeam())
+        {
+            return false;
+        }
 
         int damage =
             GetDamage();
 
+        targetHealth.TakeDamage(damage);
+
         Debug.Log(
-            $"[MeleeSwoosh] {user.name} hits " +
-            $"{target.name} at {position} " +
-            $"for {damage} damage."
+            $"[MeleeSwoosh] {user.name} hit {target.name} for {damage} damage."
         );
 
-        targetHealth.TakeDamage(damage);
+        return true;
     }
 }

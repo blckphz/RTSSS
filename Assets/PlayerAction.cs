@@ -1,149 +1,140 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerAction : MonoBehaviour
 {
+    [Header("References")]
     [SerializeField] private GridManager gridManager;
 
     private void Awake()
     {
         if (gridManager == null)
-            gridManager = FindFirstObjectByType<GridManager>();
+        {
+            gridManager = FindObjectOfType<GridManager>();
+        }
     }
 
-    public bool TryExecuteUnitTurn(AttackUnit attacker, GameObject target)
+    // ==================================================
+    // TURN EXECUTION
+    // ==================================================
+
+    /// <summary>
+    /// Executes a unit's turn purely based on its active ability range.
+    /// </summary>
+    public void TryExecuteUnitTurn(AttackUnit unit, GameObject target)
     {
-        if (attacker == null || target == null || !attacker.CanAttack())
-            return false;
+        if (unit == null || unit.IsDead()) return;
 
-        int distance = GetDistanceToTarget(attacker, target);
-        int attackRange = attacker.GetAttackRange();
-        bool isRanged = IsRangedAttacker(attacker);
-
-        // Move if out of range and melee
-        if (!isRanged && distance > attackRange)
+        if (target == null)
         {
-            ProcessMovement(attacker, target);
-            distance = GetDistanceToTarget(attacker, target); // Recalculate after move
+            Debug.Log($"[PlayerAction] {unit.name}: No valid target found. Skipping turn.");
+            return;
         }
 
-        // Perform Attack if in range
-        if (distance <= attackRange)
-        {
-            attacker.Attack(target);
-            return true;
-        }
-
-        return false;
+        ProcessMovementAndAttack(unit, target);
     }
 
-    public void ProcessMovement(AttackUnit unit, GameObject target)
+    // ==================================================
+    // MOVEMENT & ATTACK LOGIC (ABILITY RANGE ONLY)
+    // ==================================================
+
+    public void ProcessMovementAndAttack(AttackUnit unit, GameObject target)
     {
-        if (unit == null || target == null || gridManager == null) return;
+        if (unit == null || target == null) return;
 
-        gridManager.CleanupDeadUnits();
-
-        Vector2Int startPos = gridManager.WorldToGridPosition(unit.transform.position);
+        Vector2Int currentPos = gridManager.WorldToGridPosition(unit.transform.position);
         Vector2Int targetPos = gridManager.WorldToGridPosition(target.transform.position);
-        int attackRange = unit.GetAttackRange();
 
-        List<Vector2Int> path = FindPath(startPos, targetPos, attackRange);
+        int distance = gridManager.GetDistance(currentPos, targetPos);
+        int abilityRange = unit.GetPrimaryAbilityRange();
 
-        if (path == null || path.Count < 2) return;
+        Debug.Log($"[PlayerAction] {unit.name}: distance={distance}, abilityRange={abilityRange}.");
 
-        Vector2Int nextPos = path[1];
-
-        if (CanMoveIntoCell(nextPos, targetPos))
+        // 1. ALREADY IN ABILITY RANGE -> ATTACK IMMEDIATELY
+        if (distance <= abilityRange)
         {
-            gridManager.MoveUnit(unit.gameObject, startPos, nextPos);
+            Debug.Log($"[PlayerAction] {unit.name}: Inside ability range. No movement needed.");
+            ExecuteAttack(unit, target);
+            return;
+        }
+
+        // 2. OUT OF ABILITY RANGE -> MOVE TOWARDS TARGET
+        Vector2Int nextPos = GetNextStepTowards(currentPos, targetPos);
+
+        // Attempt movement on the grid
+        if (nextPos != currentPos && gridManager.MoveUnit(unit.gameObject, currentPos, nextPos))
+        {
+            int newDistance = gridManager.GetDistance(nextPos, targetPos);
+            Debug.Log($"[PlayerAction] {unit.name}: Moved {currentPos} -> {nextPos}. Distance {distance} -> {newDistance}. AbilityRange={abilityRange}.");
+
+            // 3. CHECK IF NOW IN ABILITY RANGE AFTER MOVING
+            if (newDistance <= abilityRange)
+            {
+                Debug.Log($"[PlayerAction] {unit.name}: Target is now inside ability range after step. Executing attack!");
+                ExecuteAttack(unit, target);
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerAction] {unit.name}: Path blocked or movement failed.");
         }
     }
 
-    private List<Vector2Int> FindPath(Vector2Int start, Vector2Int target, int attackRange)
+    // ==================================================
+    // PATHFINDING / STEPPING
+    // ==================================================
+
+    /// <summary>
+    /// Calculates the next adjacent tile towards the target (Manhattan step).
+    /// </summary>
+    private Vector2Int GetNextStepTowards(Vector2Int start, Vector2Int target)
     {
-        if (gridManager == null || !gridManager.IsInsideGrid(start) || !gridManager.IsInsideGrid(target))
-            return null;
+        Vector2Int bestStep = start;
+        int currentDistance = gridManager.GetDistance(start, target);
+        int bestDistance = currentDistance;
 
-        if (gridManager.GetDistance(start, target) <= attackRange)
-            return new List<Vector2Int> { start };
-
-        Queue<Vector2Int> queue = new Queue<Vector2Int>();
-        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
-        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
-
-        queue.Enqueue(start);
-        visited.Add(start);
-
-        Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-
-        while (queue.Count > 0)
+        // Check 4 adjacent directions (Up, Down, Left, Right)
+        Vector2Int[] directions = new Vector2Int[]
         {
-            Vector2Int current = queue.Dequeue();
+            Vector2Int.up,
+            Vector2Int.down,
+            Vector2Int.left,
+            Vector2Int.right
+        };
 
-            if (gridManager.GetDistance(current, target) <= attackRange)
-                return ReconstructPath(cameFrom, start, current);
+        foreach (Vector2Int dir in directions)
+        {
+            Vector2Int neighbor = start + dir;
 
-            foreach (Vector2Int dir in directions)
+            // Tile must be on grid and unblocked
+            if (gridManager.IsInsideGrid(neighbor) && !gridManager.IsCellOccupied(neighbor))
             {
-                Vector2Int neighbour = current + dir;
-
-                if (visited.Contains(neighbour) || !gridManager.IsInsideGrid(neighbour))
-                    continue;
-
-                if (neighbour != target && !CanMoveIntoCell(neighbour, target))
-                    continue;
-
-                visited.Add(neighbour);
-                cameFrom[neighbour] = current;
-                queue.Enqueue(neighbour);
+                int dist = gridManager.GetDistance(neighbor, target);
+                if (dist < bestDistance)
+                {
+                    bestDistance = dist;
+                    bestStep = neighbor;
+                }
             }
         }
 
-        return null;
+        return bestStep;
     }
 
-    private List<Vector2Int> ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int start, Vector2Int destination)
-    {
-        List<Vector2Int> path = new List<Vector2Int>();
-        Vector2Int current = destination;
-        path.Add(current);
+    // ==================================================
+    // ATTACK EXECUTION
+    // ==================================================
 
-        while (current != start)
+    private void ExecuteAttack(AttackUnit attacker, GameObject target)
+    {
+        if (attacker == null || target == null) return;
+
+        HealthManager targetHealth = target.GetComponent<HealthManager>();
+        if (targetHealth != null && !targetHealth.IsDead())
         {
-            if (!cameFrom.TryGetValue(current, out current))
-                return null;
-
-            path.Add(current);
+            attacker.UsePrimaryAbility(target);
+            Debug.Log($"[PlayerAction] {attacker.name} attacked {target.name} using primary ability.");
         }
-
-        path.Reverse();
-        return path;
-    }
-
-    private bool CanMoveIntoCell(Vector2Int position, Vector2Int targetPosition)
-    {
-        if (gridManager == null || !gridManager.IsInsideGrid(position)) return false;
-        if (position == targetPosition) return true;
-
-        GameObject occupant = gridManager.GetUnitAt(position);
-        if (occupant == null || !occupant.activeInHierarchy) return true;
-
-        HealthManager health = occupant.GetComponent<HealthManager>();
-        return health == null || health.IsDead();
-    }
-
-    private int GetDistanceToTarget(AttackUnit a, GameObject b)
-    {
-        if (a == null || b == null || gridManager == null) return int.MaxValue;
-        return gridManager.GetDistance(
-            gridManager.WorldToGridPosition(a.transform.position),
-            gridManager.WorldToGridPosition(b.transform.position)
-        );
-    }
-
-    private bool IsRangedAttacker(AttackUnit unit)
-    {
-        CharacterSO character = unit?.GetCharacterData();
-        return character != null && character.RangedAttacker;
     }
 }

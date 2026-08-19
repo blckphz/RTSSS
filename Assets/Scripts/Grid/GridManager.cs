@@ -13,16 +13,19 @@ public class GridManager : MonoBehaviour
     [SerializeField, Min(1)] private int height = 8;
 
     [Header("Hovered Tile")]
-    [SerializeField, Range(0f, 1f)] private float hoveredTileAlpha = 0.5f;
+    [SerializeField, Range(0f, 1f)]
+    private float hoveredTileAlpha = 0.5f;
 
     [Header("Ability Range")]
-    [SerializeField] private Color abilityRangeColor = Color.yellow;
+    [SerializeField]
+    private Color abilityRangeColor = Color.yellow;
 
     [SerializeField, Range(0f, 1f)]
     private float abilityRangeAlpha = 0.35f;
 
     [Header("Gizmos")]
-    [SerializeField] private bool showGridGizmos = true;
+    [SerializeField]
+    private bool showGridGizmos = true;
 
     // ==================================================
     // CORE DATA
@@ -53,12 +56,11 @@ public class GridManager : MonoBehaviour
         new List<Color[]>();
 
     // ==================================================
-    // UNITY LIFECYCLE
+    // UNITY
     // ==================================================
 
     private void Awake()
     {
-        // Grid Verification
         if (grid == null)
         {
             grid = GetComponent<Grid>();
@@ -74,20 +76,23 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // Array Initialization
         occupiedCells =
             new GameObject[width, height];
 
         floorTiles =
             new GameObject[width, height];
 
-        // Floor Setup
         if (floorParent == null)
         {
             floorParent = transform;
         }
 
         CreateFloor();
+
+        Debug.Log(
+            $"[GridManager] Initialized {width}x{height} grid.",
+            this
+        );
     }
 
     // ==================================================
@@ -106,20 +111,15 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        if (floorParent == null)
-        {
-            floorParent = transform;
-        }
-
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2Int gridPosition =
+                Vector2Int position =
                     new Vector2Int(x, y);
 
                 Vector3 worldPosition =
-                    GridToWorldPosition(gridPosition);
+                    GridToWorldPosition(position);
 
                 GameObject floorTile =
                     Instantiate(
@@ -205,7 +205,6 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        // Inactive check
         if (!occupant.activeInHierarchy)
         {
             occupiedCells[
@@ -216,7 +215,6 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        // Dead health check
         HealthManager health =
             occupant.GetComponent<HealthManager>();
 
@@ -291,7 +289,7 @@ public class GridManager : MonoBehaviour
     }
 
     // ==================================================
-    // HOVERED TILE MANAGEMENT
+    // HOVERED TILE
     // ==================================================
 
     public void SetHoveredTile(
@@ -322,7 +320,8 @@ public class GridManager : MonoBehaviour
 
         ClearHoveredTile();
 
-        hoveredTile = tile;
+        hoveredTile =
+            tile;
 
         hoveredTileRenderers =
             tile.GetComponentsInChildren<SpriteRenderer>(
@@ -396,14 +395,13 @@ public class GridManager : MonoBehaviour
     }
 
     // ==================================================
-    // ABILITY RANGE
+    // NORMAL ABILITY RANGE
     // ==================================================
 
     public void ShowAbilityRange(
         Vector2Int centerPosition,
         int range)
     {
-        // Remove previous range first
         ClearAbilityRange();
 
         if (!IsInsideGrid(centerPosition))
@@ -414,19 +412,22 @@ public class GridManager : MonoBehaviour
         range =
             Mathf.Max(0, range);
 
-        // Loop through every tile
+        Debug.Log(
+            $"[GridManager] Showing normal ability range. " +
+            $"Center={centerPosition}, Range={range}"
+        );
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2Int tilePosition =
+                Vector2Int position =
                     new Vector2Int(x, y);
 
-                // Manhattan distance
                 int distance =
                     GetDistance(
                         centerPosition,
-                        tilePosition
+                        position
                     );
 
                 if (distance > range)
@@ -434,72 +435,154 @@ public class GridManager : MonoBehaviour
                     continue;
                 }
 
-                GameObject tile =
-                    floorTiles[x, y];
-
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                SpriteRenderer[] renderers =
-                    tile.GetComponentsInChildren<SpriteRenderer>(
-                        true
-                    );
-
-                if (renderers == null ||
-                    renderers.Length == 0)
-                {
-                    continue;
-                }
-
-                Color[] originalColors =
-                    new Color[
-                        renderers.Length
-                    ];
-
-                for (
-                    int i = 0;
-                    i < renderers.Length;
-                    i++
-                )
-                {
-                    SpriteRenderer sr =
-                        renderers[i];
-
-                    if (sr == null)
-                    {
-                        continue;
-                    }
-
-                    // Save original color
-                    originalColors[i] =
-                        sr.color;
-
-                    // Apply range color
-                    Color modifiedColor =
-                        Color.Lerp(
-                            sr.color,
-                            abilityRangeColor,
-                            abilityRangeAlpha
-                        );
-
-                    sr.color =
-                        modifiedColor;
-                }
-
-                abilityRangeTiles.Add(tile);
-
-                abilityRangeRenderers.Add(
-                    renderers
-                );
-
-                abilityRangeOriginalColors.Add(
-                    originalColors
-                );
+                HighlightAbilityCell(position);
             }
         }
     }
+
+    // ==================================================
+    // CUSTOM HITBOX
+    // ==================================================
+
+    public void ShowAbilityCells(
+        Vector2Int origin,
+        List<Vector2Int> offsets)
+    {
+        ClearAbilityRange();
+
+        if (offsets == null ||
+            offsets.Count == 0)
+        {
+            Debug.LogWarning(
+                "[GridManager] ShowAbilityCells received " +
+                "an empty hitbox."
+            );
+
+            return;
+        }
+
+        Debug.Log(
+            $"[GridManager] Showing custom hitbox. " +
+            $"Origin={origin}, Cells={offsets.Count}"
+        );
+
+        foreach (Vector2Int offset in offsets)
+        {
+            Vector2Int position =
+                origin + offset;
+
+            if (!IsInsideGrid(position))
+            {
+                Debug.Log(
+                    $"[GridManager] Hitbox cell {position} " +
+                    $"is outside the grid."
+                );
+
+                continue;
+            }
+
+            Debug.Log(
+                $"[GridManager] Highlighting hitbox cell " +
+                $"{position} from offset {offset}"
+            );
+
+            HighlightAbilityCell(position);
+        }
+    }
+
+    // ==================================================
+    // SHOW SINGLE ABILITY CELL
+    // ==================================================
+
+    public void ShowAbilityCell(
+        Vector2Int position)
+    {
+        if (!IsInsideGrid(position))
+        {
+            Debug.LogWarning(
+                $"[GridManager] Cannot highlight " +
+                $"outside-grid cell {position}."
+            );
+
+            return;
+        }
+
+        HighlightAbilityCell(position);
+    }
+
+    // ==================================================
+    // INTERNAL CELL HIGHLIGHT
+    // ==================================================
+
+    private void HighlightAbilityCell(
+        Vector2Int position)
+    {
+        GameObject tile =
+            floorTiles[
+                position.x,
+                position.y
+            ];
+
+        if (tile == null)
+        {
+            return;
+        }
+
+        SpriteRenderer[] renderers =
+            tile.GetComponentsInChildren<SpriteRenderer>(
+                true
+            );
+
+        if (renderers == null ||
+            renderers.Length == 0)
+        {
+            return;
+        }
+
+        Color[] originalColors =
+            new Color[
+                renderers.Length
+            ];
+
+        for (
+            int i = 0;
+            i < renderers.Length;
+            i++
+        )
+        {
+            SpriteRenderer sr =
+                renderers[i];
+
+            if (sr == null)
+            {
+                continue;
+            }
+
+            originalColors[i] =
+                sr.color;
+
+            sr.color =
+                Color.Lerp(
+                    sr.color,
+                    abilityRangeColor,
+                    abilityRangeAlpha
+                );
+        }
+
+        abilityRangeTiles.Add(tile);
+
+        abilityRangeRenderers.Add(
+            renderers
+        );
+
+        abilityRangeOriginalColors.Add(
+            originalColors
+        );
+    }
+
+    // ==================================================
+    // CLEAR ABILITY RANGE
+    // ==================================================
 
     public void ClearAbilityRange()
     {
@@ -564,6 +647,10 @@ public class GridManager : MonoBehaviour
 
         unit.transform.position =
             GridToWorldPosition(position);
+
+        Debug.Log(
+            $"[GridManager] Placed {unit.name} at {position}"
+        );
 
         return true;
     }
@@ -670,6 +757,11 @@ public class GridManager : MonoBehaviour
                 newPosition
             );
 
+        Debug.Log(
+            $"[GridManager] Moved {unit.name}: " +
+            $"{oldPosition} -> {newPosition}"
+        );
+
         return true;
     }
 
@@ -712,7 +804,8 @@ public class GridManager : MonoBehaviour
 
         if (grid == null)
         {
-            grid = GetComponent<Grid>();
+            grid =
+                GetComponent<Grid>();
 
             if (grid == null)
             {
@@ -798,7 +891,11 @@ public class GridManager : MonoBehaviour
     {
         return grid != null
             ? grid.CellToWorld(
-                new Vector3Int(x, y, 0)
+                new Vector3Int(
+                    x,
+                    y,
+                    0
+                )
             )
             : Vector3.zero;
     }

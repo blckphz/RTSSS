@@ -329,6 +329,8 @@ GameObject:
   - component: {fileID: 341319202}
   - component: {fileID: 341319204}
   - component: {fileID: 341319203}
+  - component: {fileID: 341319206}
+  - component: {fileID: 341319205}
   m_Layer: 0
   m_Name: CombatManager
   m_TagString: Untagged
@@ -404,8 +406,8 @@ MonoBehaviour:
   autoBattle: 0
   combatManager: {fileID: 341319204}
   gridManager: {fileID: 341319198}
-  targetingSystem: {fileID: 0}
-  playerAction: {fileID: 0}
+  targetingSystem: {fileID: 341319206}
+  playerAction: {fileID: 341319205}
   autoBattleToggle: {fileID: 2057494571}
   delayBetweenAttacks: 0.5
   enableDebugLogs: 1
@@ -431,6 +433,32 @@ MonoBehaviour:
   enemiesAttackAfterMoving: 1
   allowAlternativeMovement: 1
   spawnEnemiesAutomatically: 1
+--- !u!114 &341319205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 341319197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 132e84b6fd78aa44eb4b18f915493d93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAction
+  gridManager: {fileID: 0}
+--- !u!114 &341319206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 341319197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dbb133b8059cc347b157bc00bb80243, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TargetingSystem
+  gridManager: {fileID: 0}
 --- !u!1 &345656225
 GameObject:
   m_ObjectHideFlags: 0
@@ -498,7 +526,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   infoText: {fileID: 1905845024}
   characterIcon: {fileID: 691376311}
-  gridManager: {fileID: 0}
+  gridManager: {fileID: 341319198}
 --- !u!114 &345656229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2335,9 +2363,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8cbef7b7e29ac847b204e12bb965567, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  text: {fileID: 1905845024}
-  targetWord: Enemy
-  wasHovering: 0
 --- !u!1 &2026131695
 GameObject:
   m_ObjectHideFlags: 0

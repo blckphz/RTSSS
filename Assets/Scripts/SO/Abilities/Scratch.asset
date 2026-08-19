@@ -15,5 +15,5 @@ MonoBehaviour:
   abilityName: Scratch
   description: does damage
   damage: 10
-  cooldown: 2
-  range: 1
+  cooldown: 0
+  range: 3

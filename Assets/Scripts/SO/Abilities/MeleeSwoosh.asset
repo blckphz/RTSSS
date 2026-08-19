@@ -15,4 +15,5 @@ MonoBehaviour:
   abilityName: MeleeSwoosh
   description: 
   damage: 10
-  range: 1
+  cooldown: 0
+  range: 3

@@ -24,11 +24,16 @@ public class combatManager : MonoBehaviour
     [Header("Testing")]
     [SerializeField] private bool spawnEnemiesAutomatically = true;
 
+    // ==================================================
+    // UNITY
+    // ==================================================
+
     private void Awake()
     {
         if (gridManager == null)
         {
-            gridManager = FindFirstObjectByType<GridManager>();
+            gridManager =
+                FindFirstObjectByType<GridManager>();
         }
     }
 
@@ -46,51 +51,108 @@ public class combatManager : MonoBehaviour
 
     public IEnumerator RunEnemyRound()
     {
-        List<GameObject> enemies = GetAllEnemies();
-        if (enemies.Count == 0) yield break;
+        List<GameObject> enemies =
+            GetAllEnemies();
 
-        // ==================================================
-        // MOVEMENT PHASE
-        // ==================================================
-        if (enemiesMoveAfterRound)
+        if (enemies.Count == 0)
+            yield break;
+
+        foreach (GameObject enemy in enemies)
         {
-            for (int i = 0; i < enemies.Count; i++)
+            if (!IsValidActiveUnit(enemy))
+                continue;
+
+            AttackUnit attackUnit =
+                enemy.GetComponent<AttackUnit>();
+
+            if (attackUnit == null)
+                continue;
+
+            // ==================================================
+            // 1. ATTACK FROM CURRENT POSITION
+            // ==================================================
+
+            if (enemiesAttackAfterMoving &&
+                attackUnit.HasAnyTargetInAbilityRange())
             {
-                GameObject enemy = enemies[i];
-                if (!IsValidActiveUnit(enemy)) continue;
+                Debug.Log(
+                    $"[Combat] {enemy.name} can attack. Staying in place."
+                );
 
-                if (GetAllAllies().Count == 0) continue;
+                attackUnit.AttackAnyTargetInAbilityRange();
 
-                GameObject closestAlly = FindClosestAlly(enemy);
-                if (closestAlly == null) continue;
-
-                Vector2Int enemyPosition = gridManager.WorldToGridPosition(enemy.transform.position);
-                Vector2Int allyPosition = gridManager.WorldToGridPosition(closestAlly.transform.position);
-
-                if (gridManager.GetDistance(enemyPosition, allyPosition) <= 1) continue;
-
-                if (!FindBestMovementTile(enemyPosition, allyPosition, out Vector2Int targetPosition)) continue;
-
-                bool moved = false;
-                yield return StartCoroutine(MoveEnemyUsingRigidbody(enemy, enemyPosition, targetPosition, result => moved = result));
-
-                yield return new WaitForSeconds(0.05f);
-            }
-        }
-
-        // ==================================================
-        // ATTACK PHASE
-        // ==================================================
-        if (enemiesAttackAfterMoving)
-        {
-            List<GameObject> attackEnemies = GetAllEnemies();
-            foreach (GameObject enemy in attackEnemies)
-            {
-                if (!IsValidActiveUnit(enemy)) continue;
-
-                AttackClosestAlly(enemy);
                 yield return null;
+                continue;
             }
+
+            // ==================================================
+            // 2. FIND TARGET TO MOVE TOWARD
+            // ==================================================
+
+            GameObject closestAlly =
+                FindClosestAlly(enemy);
+
+            if (closestAlly == null)
+                continue;
+
+            Vector2Int enemyPosition =
+                gridManager.WorldToGridPosition(
+                    enemy.transform.position
+                );
+
+            Vector2Int allyPosition =
+                gridManager.WorldToGridPosition(
+                    closestAlly.transform.position
+                );
+
+            // ==================================================
+            // 3. MOVE CLOSER
+            // ==================================================
+
+            if (enemiesMoveAfterRound)
+            {
+                if (FindBestMovementTile(
+                    enemyPosition,
+                    allyPosition,
+                    out Vector2Int targetPosition))
+                {
+                    Debug.Log(
+                        $"[Combat] {enemy.name} moving {enemyPosition} -> {targetPosition}."
+                    );
+
+                    bool moved = false;
+
+                    yield return StartCoroutine(
+                        MoveEnemyUsingRigidbody(
+                            enemy,
+                            enemyPosition,
+                            targetPosition,
+                            result => moved = result
+                        )
+                    );
+
+                    yield return new WaitForSeconds(
+                        0.05f
+                    );
+                }
+            }
+
+            // ==================================================
+            // 4. CHECK ATTACK AGAIN AFTER MOVING
+            // ==================================================
+
+            if (enemiesAttackAfterMoving &&
+                IsValidActiveUnit(enemy) &&
+                attackUnit.HasAnyTargetInAbilityRange())
+            {
+                Debug.Log(
+                    $"[Combat] {enemy.name} is now in ability range after moving."
+                );
+
+                attackUnit.AttackAnyTargetInAbilityRange();
+            }
+
+            yield return null;
         }
     }
 
@@ -98,179 +160,370 @@ public class combatManager : MonoBehaviour
     // FIND BEST MOVEMENT TILE
     // ==================================================
 
-    private bool FindBestMovementTile(Vector2Int enemyPosition, Vector2Int allyPosition, out Vector2Int bestPosition)
+    private bool FindBestMovementTile(
+        Vector2Int enemyPosition,
+        Vector2Int allyPosition,
+        out Vector2Int bestPosition)
     {
-        bestPosition = enemyPosition;
-        if (gridManager == null) return false;
+        bestPosition =
+            enemyPosition;
 
-        int currentDistance = gridManager.GetDistance(enemyPosition, allyPosition);
-        Vector2Int preferredPosition = enemyPosition + GetOneTileDirection(enemyPosition, allyPosition);
+        if (gridManager == null)
+            return false;
 
-        if (IsValidMovementTile(preferredPosition, allyPosition, currentDistance))
+        int currentDistance =
+            gridManager.GetDistance(
+                enemyPosition,
+                allyPosition
+            );
+
+        Vector2Int preferredPosition =
+            enemyPosition +
+            GetOneTileDirection(
+                enemyPosition,
+                allyPosition
+            );
+
+        if (IsValidMovementTile(
+            preferredPosition,
+            allyPosition,
+            currentDistance))
         {
-            bestPosition = preferredPosition;
+            bestPosition =
+                preferredPosition;
+
             return true;
         }
 
-        if (!allowAlternativeMovement) return false;
+        if (!allowAlternativeMovement)
+            return false;
 
-        Vector2Int[] alternatives = {
+        Vector2Int[] alternatives =
+        {
             enemyPosition + new Vector2Int(1, 0),
             enemyPosition + new Vector2Int(-1, 0),
             enemyPosition + new Vector2Int(0, 1),
             enemyPosition + new Vector2Int(0, -1)
         };
 
-        int bestDistance = int.MaxValue;
+        int bestDistance =
+            int.MaxValue;
+
         bool found = false;
 
         foreach (Vector2Int position in alternatives)
         {
-            if (position == preferredPosition) continue;
-            if (!gridManager.IsInsideGrid(position) || gridManager.IsCellOccupied(position)) continue;
+            if (position == preferredPosition)
+                continue;
 
-            int distance = gridManager.GetDistance(position, allyPosition);
-            if (distance >= currentDistance || distance >= bestDistance) continue;
+            if (!gridManager.IsInsideGrid(position))
+                continue;
 
-            bestDistance = distance;
-            bestPosition = position;
+            if (gridManager.IsCellOccupied(position))
+                continue;
+
+            int distance =
+                gridManager.GetDistance(
+                    position,
+                    allyPosition
+                );
+
+            if (distance >= currentDistance ||
+                distance >= bestDistance)
+            {
+                continue;
+            }
+
+            bestDistance =
+                distance;
+
+            bestPosition =
+                position;
+
             found = true;
         }
 
         return found;
     }
 
-    private bool IsValidMovementTile(Vector2Int position, Vector2Int allyPosition, int currentDistance)
+    // ==================================================
+    // VALID MOVEMENT TILE
+    // ==================================================
+
+    private bool IsValidMovementTile(
+        Vector2Int position,
+        Vector2Int allyPosition,
+        int currentDistance)
     {
-        if (gridManager == null || !gridManager.IsInsideGrid(position) || gridManager.IsCellOccupied(position))
+        if (gridManager == null)
             return false;
 
-        return gridManager.GetDistance(position, allyPosition) < currentDistance;
+        if (!gridManager.IsInsideGrid(position))
+            return false;
+
+        if (gridManager.IsCellOccupied(position))
+            return false;
+
+        return gridManager.GetDistance(
+            position,
+            allyPosition
+        ) < currentDistance;
     }
 
     // ==================================================
-    // GET ONE TILE DIRECTION
+    // ONE TILE DIRECTION
     // ==================================================
 
-    private Vector2Int GetOneTileDirection(Vector2Int from, Vector2Int to)
+    private Vector2Int GetOneTileDirection(
+        Vector2Int from,
+        Vector2Int to)
     {
-        int xDiff = to.x - from.x;
-        int yDiff = to.y - from.y;
+        int xDiff =
+            to.x - from.x;
 
-        if (Mathf.Abs(xDiff) > Mathf.Abs(yDiff))
-            return new Vector2Int(xDiff > 0 ? 1 : -1, 0);
+        int yDiff =
+            to.y - from.y;
 
-        if (Mathf.Abs(yDiff) > Mathf.Abs(xDiff))
-            return new Vector2Int(0, yDiff > 0 ? 1 : -1);
+        if (Mathf.Abs(xDiff) >
+            Mathf.Abs(yDiff))
+        {
+            return new Vector2Int(
+                xDiff > 0 ? 1 : -1,
+                0
+            );
+        }
+
+        if (Mathf.Abs(yDiff) >
+            Mathf.Abs(xDiff))
+        {
+            return new Vector2Int(
+                0,
+                yDiff > 0 ? 1 : -1
+            );
+        }
 
         if (xDiff != 0)
-            return new Vector2Int(xDiff > 0 ? 1 : -1, 0);
+        {
+            return new Vector2Int(
+                xDiff > 0 ? 1 : -1,
+                0
+            );
+        }
 
         if (yDiff != 0)
-            return new Vector2Int(0, yDiff > 0 ? 1 : -1);
+        {
+            return new Vector2Int(
+                0,
+                yDiff > 0 ? 1 : -1
+            );
+        }
 
         return Vector2Int.zero;
     }
 
     // ==================================================
-    // MOVE ENEMY USING RIGIDBODY
+    // MOVE ENEMY
     // ==================================================
 
-    private IEnumerator MoveEnemyUsingRigidbody(GameObject enemy, Vector2Int oldPosition, Vector2Int newPosition, System.Action<bool> result)
+    private IEnumerator MoveEnemyUsingRigidbody(
+        GameObject enemy,
+        Vector2Int oldPosition,
+        Vector2Int newPosition,
+        System.Action<bool> result)
     {
         result?.Invoke(false);
 
-        if (enemy == null || gridManager == null || !gridManager.IsInsideGrid(newPosition) || gridManager.IsCellOccupied(newPosition))
-            yield break;
-
-        Rigidbody2D rb = enemy.GetComponent<Rigidbody2D>() ?? enemy.GetComponentInChildren<Rigidbody2D>();
-        if (rb == null) yield break;
-
-        Vector3 oldWorldPos = gridManager.GridToWorldPosition(oldPosition);
-        Vector3 targetWorldPos = gridManager.GridToWorldPosition(newPosition);
-
-        oldWorldPos.z = enemy.transform.position.z;
-        targetWorldPos.z = enemy.transform.position.z;
-
-        bool wasKinematic = rb.isKinematic;
-        rb.isKinematic = true;
-
-        if (!gridManager.MoveUnit(enemy, oldPosition, newPosition))
+        if (enemy == null ||
+            gridManager == null)
         {
-            rb.isKinematic = wasKinematic;
             yield break;
         }
 
-        rb.position = oldWorldPos;
-        enemy.transform.position = oldWorldPos;
+        if (!gridManager.IsInsideGrid(
+            newPosition))
+        {
+            yield break;
+        }
+
+        if (gridManager.IsCellOccupied(
+            newPosition))
+        {
+            yield break;
+        }
+
+        Rigidbody2D rb =
+            enemy.GetComponent<Rigidbody2D>() ??
+            enemy.GetComponentInChildren<Rigidbody2D>();
+
+        if (rb == null)
+            yield break;
+
+        Vector3 oldWorldPosition =
+            gridManager.GridToWorldPosition(
+                oldPosition
+            );
+
+        Vector3 targetWorldPosition =
+            gridManager.GridToWorldPosition(
+                newPosition
+            );
+
+        oldWorldPosition.z =
+            enemy.transform.position.z;
+
+        targetWorldPosition.z =
+            enemy.transform.position.z;
+
+        bool wasKinematic =
+            rb.isKinematic;
+
+        rb.isKinematic = true;
+
+        if (!gridManager.MoveUnit(
+            enemy,
+            oldPosition,
+            newPosition))
+        {
+            rb.isKinematic =
+                wasKinematic;
+
+            yield break;
+        }
+
+        rb.position =
+            oldWorldPosition;
+
+        enemy.transform.position =
+            oldWorldPosition;
+
         Physics2D.SyncTransforms();
 
-        float duration = Mathf.Max(0.01f, moveDuration);
+        float duration =
+            Mathf.Max(
+                0.01f,
+                moveDuration
+            );
+
         float timer = 0f;
-        Vector2 startPos = oldWorldPos;
-        Vector2 endPos = targetWorldPos;
+
+        Vector2 startPosition =
+            oldWorldPosition;
+
+        Vector2 endPosition =
+            targetWorldPosition;
 
         while (timer < duration)
         {
-            if (enemy == null || rb == null) yield break;
+            if (enemy == null ||
+                rb == null)
+            {
+                yield break;
+            }
 
-            timer += Time.fixedDeltaTime;
-            float t = Mathf.Clamp01(timer / duration);
-            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            timer +=
+                Time.fixedDeltaTime;
 
-            rb.MovePosition(Vector2.Lerp(startPos, endPos, smoothT));
+            float t =
+                Mathf.Clamp01(
+                    timer / duration
+                );
+
+            float smoothT =
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    t
+                );
+
+            rb.MovePosition(
+                Vector2.Lerp(
+                    startPosition,
+                    endPosition,
+                    smoothT
+                )
+            );
+
             yield return new WaitForFixedUpdate();
         }
 
         if (rb != null)
         {
-            rb.position = endPos;
-            rb.isKinematic = wasKinematic;
+            rb.position =
+                endPosition;
+
+            rb.isKinematic =
+                wasKinematic;
         }
 
-        enemy.transform.position = targetWorldPos;
+        enemy.transform.position =
+            targetWorldPosition;
+
         Physics2D.SyncTransforms();
+
         result?.Invoke(true);
     }
 
     // ==================================================
-    // ATTACK & TARGETING HELPERS
+    // FIND CLOSEST ALLY
     // ==================================================
 
-    private void AttackClosestAlly(GameObject enemy)
+    private GameObject FindClosestAlly(
+        GameObject enemy)
     {
-        GameObject closestAlly = FindClosestAlly(enemy);
-        if (closestAlly == null) return;
+        if (enemy == null ||
+            gridManager == null)
+        {
+            return null;
+        }
 
-        AttackUnit attackUnit = enemy.GetComponent<AttackUnit>();
-        attackUnit?.Attack(closestAlly);
-    }
+        List<GameObject> allies =
+            GetAllAllies();
 
-    private GameObject FindClosestAlly(GameObject enemy)
-    {
-        if (enemy == null || gridManager == null) return null;
+        if (allies.Count == 0)
+            return null;
 
-        List<GameObject> allies = GetAllAllies();
-        if (allies.Count == 0) return null;
+        Vector2Int enemyPosition =
+            gridManager.WorldToGridPosition(
+                enemy.transform.position
+            );
 
-        Vector2Int enemyPos = gridManager.WorldToGridPosition(enemy.transform.position);
         GameObject closestAlly = null;
-        int closestDistance = int.MaxValue;
+
+        int closestDistance =
+            int.MaxValue;
 
         foreach (GameObject ally in allies)
         {
-            if (ally == null) continue;
+            if (ally == null)
+                continue;
 
-            HealthManager allyHealth = ally.GetComponent<HealthManager>();
-            if (allyHealth == null || !allyHealth.IsAlive()) continue;
+            HealthManager health =
+                ally.GetComponent<HealthManager>();
 
-            Vector2Int allyPos = gridManager.WorldToGridPosition(ally.transform.position);
-            int distance = gridManager.GetDistance(enemyPos, allyPos);
+            if (health == null ||
+                !health.IsAlive())
+            {
+                continue;
+            }
+
+            Vector2Int allyPosition =
+                gridManager.WorldToGridPosition(
+                    ally.transform.position
+                );
+
+            int distance =
+                gridManager.GetDistance(
+                    enemyPosition,
+                    allyPosition
+                );
 
             if (distance < closestDistance)
             {
-                closestDistance = distance;
-                closestAlly = ally;
+                closestDistance =
+                    distance;
+
+                closestAlly =
+                    ally;
             }
         }
 
@@ -278,40 +531,77 @@ public class combatManager : MonoBehaviour
     }
 
     // ==================================================
-    // UNIT QUERY UTILITIES
+    // UNIT QUERIES
     // ==================================================
 
-    private bool IsValidActiveUnit(GameObject unitObj)
+    private bool IsValidActiveUnit(
+        GameObject unit)
     {
-        if (unitObj == null) return false;
-        HealthManager health = unitObj.GetComponent<HealthManager>();
-        return health != null && health.IsAlive();
+        if (unit == null)
+            return false;
+
+        if (!unit.activeInHierarchy)
+            return false;
+
+        HealthManager health =
+            unit.GetComponent<HealthManager>();
+
+        return health != null &&
+               health.IsAlive();
     }
 
-    private List<GameObject> GetAllEnemies() => GetUnitsByTeam(Team.Enemy);
-    private List<GameObject> GetAllAllies() => GetUnitsByTeam(Team.Ally);
-
-    private List<GameObject> GetUnitsByTeam(Team targetTeam)
+    private List<GameObject> GetAllEnemies()
     {
-        List<GameObject> filteredUnits = new List<GameObject>();
-        AttackUnit[] allUnits = FindObjectsByType<AttackUnit>(FindObjectsSortMode.None);
+        return GetUnitsByTeam(
+            Team.Enemy
+        );
+    }
+
+    private List<GameObject> GetAllAllies()
+    {
+        return GetUnitsByTeam(
+            Team.Ally
+        );
+    }
+
+    private List<GameObject> GetUnitsByTeam(
+        Team targetTeam)
+    {
+        List<GameObject> units =
+            new List<GameObject>();
+
+        AttackUnit[] allUnits =
+            FindObjectsByType<AttackUnit>(
+                FindObjectsSortMode.None
+            );
 
         foreach (AttackUnit unit in allUnits)
         {
-            if (unit == null) continue;
+            if (unit == null)
+                continue;
 
-            HealthManager health = unit.GetHealthManager();
-            if (health != null && health.GetTeam() == targetTeam && health.IsAlive())
-            {
-                filteredUnits.Add(unit.gameObject);
-            }
+            HealthManager health =
+                unit.GetHealthManager();
+
+            if (health == null)
+                continue;
+
+            if (!health.IsAlive())
+                continue;
+
+            if (health.GetTeam() != targetTeam)
+                continue;
+
+            units.Add(
+                unit.gameObject
+            );
         }
 
-        return filteredUnits;
+        return units;
     }
 
     // ==================================================
-    // SPAWNING SYSTEM
+    // SPAWNING
     // ==================================================
 
     public void CheckForEnemies()
@@ -324,18 +614,31 @@ public class combatManager : MonoBehaviour
 
     private int GetEnemyCount()
     {
-        AttackUnit[] allUnits = FindObjectsByType<AttackUnit>(FindObjectsSortMode.None);
+        AttackUnit[] allUnits =
+            FindObjectsByType<AttackUnit>(
+                FindObjectsSortMode.None
+            );
+
         int count = 0;
 
         foreach (AttackUnit unit in allUnits)
         {
-            if (unit == null) continue;
+            if (unit == null)
+                continue;
 
-            HealthManager health = unit.GetHealthManager();
-            if (health != null && health.GetTeam() == Team.Enemy && health.IsAlive())
-            {
-                count++;
-            }
+            HealthManager health =
+                unit.GetHealthManager();
+
+            if (health == null)
+                continue;
+
+            if (health.GetTeam() != Team.Enemy)
+                continue;
+
+            if (!health.IsAlive())
+                continue;
+
+            count++;
         }
 
         return count;
@@ -343,65 +646,142 @@ public class combatManager : MonoBehaviour
 
     private void SpawnTestEnemies()
     {
-        if (gridManager == null || enemyPrefab == null || enemyCharacter == null) return;
+        if (gridManager == null ||
+            enemyPrefab == null ||
+            enemyCharacter == null)
+        {
+            return;
+        }
 
-        int amount = Random.Range(minEnemiesToSpawn, maxEnemiesToSpawn + 1);
-        List<Vector2Int> availableCells = GetAvailableCells();
+        int amount =
+            Random.Range(
+                minEnemiesToSpawn,
+                maxEnemiesToSpawn + 1
+            );
 
-        if (availableCells.Count == 0) return;
+        List<Vector2Int> availableCells =
+            GetAvailableCells();
 
-        amount = Mathf.Min(amount, availableCells.Count);
+        if (availableCells.Count == 0)
+            return;
+
+        amount =
+            Mathf.Min(
+                amount,
+                availableCells.Count
+            );
 
         for (int i = 0; i < amount; i++)
         {
-            int randomIndex = Random.Range(0, availableCells.Count);
-            Vector2Int spawnPosition = availableCells[randomIndex];
-            availableCells.RemoveAt(randomIndex);
+            int randomIndex =
+                Random.Range(
+                    0,
+                    availableCells.Count
+                );
 
-            SpawnEnemy(spawnPosition);
+            Vector2Int spawnPosition =
+                availableCells[
+                    randomIndex
+                ];
+
+            availableCells.RemoveAt(
+                randomIndex
+            );
+
+            SpawnEnemy(
+                spawnPosition
+            );
         }
     }
 
-    private bool SpawnEnemy(Vector2Int gridPosition)
+    private bool SpawnEnemy(
+        Vector2Int gridPosition)
     {
-        if (!gridManager.IsInsideGrid(gridPosition) || gridManager.IsCellOccupied(gridPosition))
+        if (!gridManager.IsInsideGrid(
+            gridPosition))
+        {
+            return false;
+        }
+
+        if (gridManager.IsCellOccupied(
+            gridPosition))
+        {
+            return false;
+        }
+
+        GameObject enemy =
+            Instantiate(
+                enemyPrefab
+            );
+
+        if (enemy == null)
             return false;
 
-        GameObject enemy = Instantiate(enemyPrefab);
-        if (enemy == null) return false;
+        enemy.name =
+            $"{enemyCharacter.name}_Enemy_{Random.Range(1000, 9999)}";
 
-        enemy.name = $"{enemyCharacter.name}_Enemy_{Random.Range(1000, 9999)}";
+        HealthManager health =
+            enemy.GetComponent<HealthManager>();
 
-        HealthManager healthManager = enemy.GetComponent<HealthManager>();
-        AttackUnit attackUnit = enemy.GetComponent<AttackUnit>();
+        AttackUnit attackUnit =
+            enemy.GetComponent<AttackUnit>();
 
-        if (healthManager == null || attackUnit == null || !gridManager.PlaceUnit(enemy, gridPosition))
+        if (health == null ||
+            attackUnit == null)
         {
             Destroy(enemy);
             return false;
         }
 
-        healthManager.Initialize(enemyCharacter);
-        attackUnit.Initialize(enemyCharacter);
+        if (!gridManager.PlaceUnit(
+            enemy,
+            gridPosition))
+        {
+            Destroy(enemy);
+            return false;
+        }
+
+        health.Initialize(
+            enemyCharacter
+        );
+
+        attackUnit.Initialize(
+            enemyCharacter
+        );
+
         return true;
     }
 
     private List<Vector2Int> GetAvailableCells()
     {
-        List<Vector2Int> cells = new List<Vector2Int>();
-        if (gridManager == null) return cells;
+        List<Vector2Int> cells =
+            new List<Vector2Int>();
 
-        int width = gridManager.GetWidth();
-        int height = gridManager.GetHeight();
+        if (gridManager == null)
+            return cells;
+
+        int width =
+            gridManager.GetWidth();
+
+        int height =
+            gridManager.GetHeight();
 
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2Int pos = new Vector2Int(x, y);
-                if (!gridManager.IsCellOccupied(pos))
+                Vector2Int position =
+                    new Vector2Int(
+                        x,
+                        y
+                    );
+
+                if (!gridManager.IsCellOccupied(
+                    position))
                 {
-                    cells.Add(pos);
+                    cells.Add(
+                        position
+                    );
                 }
             }
         }
@@ -413,7 +793,15 @@ public class combatManager : MonoBehaviour
     // PUBLIC INTERFACE
     // ==================================================
 
-    public void StartEnemyRound() => StartCoroutine(RunEnemyRound());
+    public void StartEnemyRound()
+    {
+        StartCoroutine(
+            RunEnemyRound()
+        );
+    }
 
-    public GridManager GetGridManager() => gridManager;
+    public GridManager GetGridManager()
+    {
+        return gridManager;
+    }
 }
