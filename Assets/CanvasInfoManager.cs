@@ -21,6 +21,7 @@ public class CanvasInfoManager : MonoBehaviour
     private readonly StringBuilder textBuilder =
         new StringBuilder();
 
+
     // ==================================================
     // UNITY
     // ==================================================
@@ -30,10 +31,12 @@ public class CanvasInfoManager : MonoBehaviour
         SetupReferences();
     }
 
+
     private void Update()
     {
         CheckAbilityHover();
     }
+
 
     // ==================================================
     // SETUP
@@ -61,6 +64,7 @@ public class CanvasInfoManager : MonoBehaviour
         }
     }
 
+
     // ==================================================
     // SHOW CHARACTER
     // ==================================================
@@ -78,6 +82,7 @@ public class CanvasInfoManager : MonoBehaviour
             characterHolder.GetCharacterData()
         );
     }
+
 
     // ==================================================
 
@@ -97,6 +102,7 @@ public class CanvasInfoManager : MonoBehaviour
 
         textBuilder.Clear();
 
+
         // ==================================================
         // CHARACTER
         // ==================================================
@@ -112,6 +118,7 @@ public class CanvasInfoManager : MonoBehaviour
         textBuilder.AppendLine(
             $"Health: {character.maxHealth}\n"
         );
+
 
         // ==================================================
         // ABILITIES
@@ -177,6 +184,7 @@ public class CanvasInfoManager : MonoBehaviour
             );
         }
 
+
         // ==================================================
         // TEXT
         // ==================================================
@@ -188,6 +196,7 @@ public class CanvasInfoManager : MonoBehaviour
 
             infoText.ForceMeshUpdate();
         }
+
 
         // ==================================================
         // ICON
@@ -202,6 +211,7 @@ public class CanvasInfoManager : MonoBehaviour
                 character.icon != null;
         }
     }
+
 
     // ==================================================
     // ABILITY HOVER
@@ -229,6 +239,10 @@ public class CanvasInfoManager : MonoBehaviour
                 eventCamera
             );
 
+        // ==================================================
+        // NOTHING CHANGED
+        // ==================================================
+
         if (linkIndex == lastLinkIndex)
         {
             return;
@@ -237,12 +251,21 @@ public class CanvasInfoManager : MonoBehaviour
         lastLinkIndex =
             linkIndex;
 
-        // Mouse is no longer over a link.
+
+        // ==================================================
+        // MOUSE IS NO LONGER OVER A LINK
+        // ==================================================
+
         if (linkIndex == -1)
         {
             ClearAbilityHover();
             return;
         }
+
+
+        // ==================================================
+        // VALIDATE LINK
+        // ==================================================
 
         TMP_TextInfo textInfo =
             infoText.textInfo;
@@ -260,12 +283,22 @@ public class CanvasInfoManager : MonoBehaviour
         string linkId =
             link.GetLinkID();
 
+
+        // ==================================================
+        // ONLY ABILITY LINKS
+        // ==================================================
+
         if (!linkId.StartsWith(
                 "ability_"))
         {
             ClearAbilityHover();
             return;
         }
+
+
+        // ==================================================
+        // GET ABILITY INDEX
+        // ==================================================
 
         string indexString =
             linkId.Substring(
@@ -280,6 +313,11 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
+
+        // ==================================================
+        // SAME ABILITY
+        // ==================================================
+
         if (abilityIndex == lastHoveredAbilityIndex)
         {
             return;
@@ -288,10 +326,16 @@ public class CanvasInfoManager : MonoBehaviour
         lastHoveredAbilityIndex =
             abilityIndex;
 
+
+        // ==================================================
+        // SHOW RANGE
+        // ==================================================
+
         ShowAbilityRange(
             abilityIndex
         );
     }
+
 
     // ==================================================
     // EVENT CAMERA
@@ -321,6 +365,7 @@ public class CanvasInfoManager : MonoBehaviour
         return canvas.worldCamera;
     }
 
+
     // ==================================================
     // CLEAR HOVER
     // ==================================================
@@ -332,8 +377,56 @@ public class CanvasInfoManager : MonoBehaviour
         ClearAbilityHighlights();
     }
 
+
     // ==================================================
     // SHOW ABILITY RANGE
+    // ==================================================
+    //
+    // IMPORTANT:
+    //
+    // This is the TARGETING RANGE preview.
+    //
+    // It intentionally uses:
+    //
+    //     GetRangeTiles()
+    //
+    // NOT:
+    //
+    //     GetHitboxTiles()
+    //
+    // Therefore FrontAttack displays its FULL BOX.
+    //
+    // Range 1:
+    //
+    // XXX
+    // XOX
+    // XXX
+    //
+    // Range 2:
+    //
+    // XXXXX
+    // XXXXX
+    // XXOXX
+    // XXXXX
+    // XXXXX
+    //
+    // Range 4:
+    //
+    // XXXXXXXXX
+    // XXXXXXXXX
+    // XXXXXXXXX
+    // XXXXXXXXX
+    // XXXXOXXXX
+    // XXXXXXXXX
+    // XXXXXXXXX
+    // XXXXXXXXX
+    // XXXXXXXXX
+    //
+    // The character's facing direction does NOT affect
+    // this preview.
+    //
+    // The actual FrontAttack hitbox is handled separately
+    // by FrontAttack.GetHitboxTiles().
     // ==================================================
 
     private void ShowAbilityRange(
@@ -344,6 +437,11 @@ public class CanvasInfoManager : MonoBehaviour
         {
             return;
         }
+
+
+        // ==================================================
+        // GET CURRENTLY SELECTED CHARACTER
+        // ==================================================
 
         if (UIManager.CurrentSelection == null)
         {
@@ -361,6 +459,11 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
+
+        // ==================================================
+        // GET ABILITIES
+        // ==================================================
+
         List<AbilitySO> abilities =
             character.GetAbilities();
 
@@ -371,6 +474,11 @@ public class CanvasInfoManager : MonoBehaviour
             ClearAbilityHighlights();
             return;
         }
+
+
+        // ==================================================
+        // GET ABILITY
+        // ==================================================
 
         AbilitySO ability =
             abilities[abilityIndex];
@@ -385,125 +493,49 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
-        Vector2Int unitPosition =
-            gridManager.WorldToGridPosition(
-                selectedObject.transform.position
-            );
 
         // ==================================================
-        // YELLOW = ACTUAL ABILITY TARGET RANGE
+        // GET TARGETING RANGE
+        // ==================================================
+        //
+        // THIS IS THE IMPORTANT FIX.
+        //
+        // GetRangeTiles() returns the actual targeting
+        // range defined by the AbilitySO.
+        //
+        // FrontAttack overrides this and returns a FULL BOX.
+        //
+        // We do NOT call GetHitboxTiles() here.
         // ==================================================
 
-        List<Vector2Int> hitbox =
-            ability.GetHitboxTiles(
+        List<Vector2Int> rangeTiles =
+            ability.GetRangeTiles(
                 gridManager,
                 selectedObject
             );
 
-        if (hitbox == null ||
-            hitbox.Count == 0)
+        if (rangeTiles == null ||
+            rangeTiles.Count == 0)
         {
             ClearAbilityHighlights();
             return;
         }
 
-        Vector2Int facingDirection =
-            GetFacingDirection(
-                selectedObject
-            );
 
-        List<Vector2Int> orientedOffsets =
-            new List<Vector2Int>(
-                hitbox.Count
-            );
+        // ==================================================
+        // SHOW ABSOLUTE GRID POSITIONS
+        // ==================================================
+        //
+        // GetRangeTiles() already returns absolute grid
+        // positions, so there is no need to rotate or
+        // offset anything.
+        // ==================================================
 
-        foreach (Vector2Int position in hitbox)
-        {
-            Vector2Int defaultOffset =
-                position - unitPosition;
-
-            Vector2Int rotatedOffset =
-                RotateOffset(
-                    defaultOffset,
-                    facingDirection
-                );
-
-            orientedOffsets.Add(
-                rotatedOffset
-            );
-        }
-
-        highlightManager.ShowAbilityCells(
-            unitPosition,
-            orientedOffsets
+        highlightManager.ShowAbilityTiles(
+            rangeTiles
         );
     }
 
-    // ==================================================
-    // FACING
-    // ==================================================
-
-    private Vector2Int GetFacingDirection(
-        GameObject unit)
-    {
-        if (unit == null)
-        {
-            return Vector2Int.up;
-        }
-
-        Vector3 forward =
-            unit.transform.up;
-
-        if (Mathf.Abs(forward.x) >
-            Mathf.Abs(forward.y))
-        {
-            return forward.x > 0
-                ? Vector2Int.right
-                : Vector2Int.left;
-        }
-
-        return forward.y > 0
-            ? Vector2Int.up
-            : Vector2Int.down;
-    }
-
-    // ==================================================
-    // ROTATE
-    // ==================================================
-
-    private Vector2Int RotateOffset(
-        Vector2Int offset,
-        Vector2Int direction)
-    {
-        if (direction ==
-            Vector2Int.right)
-        {
-            return new Vector2Int(
-                offset.y,
-                -offset.x
-            );
-        }
-
-        if (direction ==
-            Vector2Int.left)
-        {
-            return new Vector2Int(
-                -offset.y,
-                offset.x
-            );
-        }
-
-        if (direction ==
-            Vector2Int.down)
-        {
-            return new Vector2Int(
-                -offset.x,
-                -offset.y
-            );
-        }
-
-        return offset;
-    }
 
     // ==================================================
     // CLEAR HIGHLIGHTS
@@ -518,6 +550,7 @@ public class CanvasInfoManager : MonoBehaviour
 
         highlightManager.ClearAbilityRange();
     }
+
 
     // ==================================================
     // CLEAR INFO

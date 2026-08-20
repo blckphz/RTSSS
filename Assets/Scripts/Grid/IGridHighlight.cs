@@ -3,9 +3,9 @@ using UnityEngine;
 
 public interface IGridHighlight
 {
-    // ==================================================
+    // =========================================================
     // PLACEMENT
-    // ==================================================
+    // =========================================================
 
     void SetPlacementTile(
         Vector2Int position
@@ -14,9 +14,24 @@ public interface IGridHighlight
     void ClearPlacementTile();
 
 
-    // ==================================================
-    // ABILITY
-    // ==================================================
+    // =========================================================
+    // ABILITY RANGE
+    //
+    // This is the TARGETING / PREVIEW area.
+    //
+    // Example Range 4:
+    //
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X O X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    //
+    // =========================================================
 
     void ShowAbilityRange(
         Vector2Int centerPosition,
@@ -25,7 +40,7 @@ public interface IGridHighlight
 
     void ShowAbilityCells(
         Vector2Int origin,
-        List<Vector2Int> offsets
+        List<Vector2Int> positions
     );
 
     void ShowAbilityCell(
@@ -35,9 +50,19 @@ public interface IGridHighlight
     void ClearAbilityRange();
 
 
-    // ==================================================
+    // =========================================================
     // ATTACK
-    // ==================================================
+    //
+    // This is the ACTUAL ATTACK AREA.
+    //
+    // FrontAttack might produce:
+    //
+    //     XXX
+    //     XXX
+    //     XXX
+    //      O
+    //
+    // =========================================================
 
     void ShowAttackCell(
         Vector2Int position

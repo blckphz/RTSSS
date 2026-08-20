@@ -190,20 +190,20 @@ public class CombatManager : MonoBehaviour
 
         if (enemiesMoveAfterRound)
         {
-            bool moved =
-                moveBrain.TryMoveTowardsEnemy();
-
             CombatDebug(
-                $"{enemy.name}: " +
-                $"Move result={moved}"
+                $"{enemy.name}: Starting movement."
             );
 
-            if (moved)
-            {
-                yield return new WaitForSeconds(
-                    0.05f
-                );
-            }
+            // IMPORTANT:
+            // Wait until the movement coroutine has
+            // completely finished.
+            yield return StartCoroutine(
+                moveBrain.MoveTowardsEnemy()
+            );
+
+            CombatDebug(
+                $"{enemy.name}: Movement complete."
+            );
         }
 
 
@@ -227,6 +227,13 @@ public class CombatManager : MonoBehaviour
                 CombatDebug(
                     $"{enemy.name} performed " +
                     $"{attacks} attack(s) after moving."
+                );
+            }
+            else
+            {
+                CombatDebug(
+                    $"{enemy.name} is not in " +
+                    "ability range after moving."
                 );
             }
         }

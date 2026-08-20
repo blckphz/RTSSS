@@ -11,82 +11,131 @@ public abstract class AbilitySO : ScriptableObject
         Diagonal
     }
 
+
+    // =========================================================
+    // ABILITY
+    // =========================================================
+
     [Header("Ability")]
-    [SerializeField] private string abilityName;
+    [SerializeField]
+    private string abilityName;
 
     [TextArea]
-    [SerializeField] private string description;
+    [SerializeField]
+    private string description;
+
+
+    // =========================================================
+    // COMBAT
+    // =========================================================
 
     [Header("Combat")]
-    [SerializeField] private int damage = 10;
+
+    [SerializeField]
+    private int damage = 10;
 
     [SerializeField, Min(0)]
     private int cooldown = 0;
 
-    [Header("Range")]
+
+    // =========================================================
+    // RANGE
+    // =========================================================
+
+    [Header("Targeting Range")]
+
+    [Tooltip(
+        "Maximum targeting distance. " +
+        "For Box range 4, the preview is 9x9."
+    )]
     [SerializeField, Min(1)]
     private int range = 1;
 
+    [Tooltip(
+        "Minimum targeting distance."
+    )]
     [SerializeField, Min(0)]
     private int minDistance = 0;
 
     [SerializeField]
     private RangeShape rangeShape = RangeShape.Diamond;
 
-    // ==================================================
+
+    // =========================================================
     // GETTERS
-    // ==================================================
+    // =========================================================
 
     public string GetAbilityName()
     {
         return abilityName;
     }
 
+
     public string GetDescription()
     {
         return description;
     }
+
 
     public int GetDamage()
     {
         return damage;
     }
 
+
     public int GetCooldown()
     {
         return cooldown;
     }
+
 
     public int GetRange()
     {
         return range;
     }
 
+
     public int GetMinDistance()
     {
         return minDistance;
     }
+
 
     public RangeShape GetRangeShape()
     {
         return rangeShape;
     }
 
-    // ==================================================
-    // GET RANGE TILES
-    // ==================================================
 
-    /// <summary>
-    /// Returns the tiles affected by this ability's range.
-    ///
-    /// The returned positions are ABSOLUTE grid positions.
-    /// Minimum distance is excluded.
-    /// Maximum distance is defined by range.
-    /// </summary>
-    public virtual List<Vector2Int> GetHitboxTiles(
+    // =========================================================
+    // GET RANGE TILES
+    //
+    // IMPORTANT:
+    //
+    // THIS IS THE TARGETING / PREVIEW AREA.
+    //
+    // It is NOT the actual attack hitbox.
+    //
+    // Box Range 4:
+    //
+    // 9 x 9 area
+    //
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X O X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    //
+    // =========================================================
+
+    public virtual List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
-        GameObject user,
-        GameObject target = null)
+        GameObject user
+    )
     {
         List<Vector2Int> tiles =
             new List<Vector2Int>();
@@ -103,7 +152,10 @@ public abstract class AbilitySO : ScriptableObject
             );
 
         int abilityRange =
-            Mathf.Max(1, range);
+            Mathf.Max(
+                1,
+                range
+            );
 
         int minimumDistance =
             Mathf.Clamp(
@@ -112,67 +164,97 @@ public abstract class AbilitySO : ScriptableObject
                 abilityRange
             );
 
+
+        // =====================================================
+        // RANGE SHAPE
+        // =====================================================
+
         switch (rangeShape)
         {
-            // ==========================================
+            // =================================================
             // DIAMOND
-            // ==========================================
+            // =================================================
 
             case RangeShape.Diamond:
 
-                for (int x = -abilityRange;
-                     x <= abilityRange;
-                     x++)
+                for (
+                    int x = -abilityRange;
+                    x <= abilityRange;
+                    x++
+                )
                 {
-                    for (int y = -abilityRange;
-                         y <= abilityRange;
-                         y++)
+                    for (
+                        int y = -abilityRange;
+                        y <= abilityRange;
+                        y++
+                    )
                     {
-                        Vector2Int offset =
-                            new Vector2Int(x, y);
+                        if (x == 0 && y == 0)
+                        {
+                            continue;
+                        }
 
                         int distance =
                             Mathf.Abs(x) +
                             Mathf.Abs(y);
 
-                        // Outside maximum range
-                        if (distance > abilityRange)
+                        if (distance >
+                            abilityRange)
                         {
                             continue;
                         }
 
-                        // Inside minimum range
-                        if (distance < minimumDistance)
+                        if (distance <
+                            minimumDistance)
                         {
                             continue;
                         }
+
+                        Vector2Int position =
+                            origin +
+                            new Vector2Int(
+                                x,
+                                y
+                            );
 
                         AddValidTile(
                             gridManager,
                             tiles,
-                            origin + offset
+                            position
                         );
                     }
                 }
 
                 break;
 
-            // ==========================================
+
+            // =================================================
             // BOX
-            // ==========================================
+            //
+            // Range 1 = 3x3
+            // Range 2 = 5x5
+            // Range 3 = 7x7
+            // Range 4 = 9x9
+            // =================================================
 
             case RangeShape.Box:
 
-                for (int x = -abilityRange;
-                     x <= abilityRange;
-                     x++)
+                for (
+                    int x = -abilityRange;
+                    x <= abilityRange;
+                    x++
+                )
                 {
-                    for (int y = -abilityRange;
-                         y <= abilityRange;
-                         y++)
+                    for (
+                        int y = -abilityRange;
+                        y <= abilityRange;
+                        y++
+                    )
                     {
-                        Vector2Int offset =
-                            new Vector2Int(x, y);
+                        if (x == 0 && y == 0)
+                        {
+                            continue;
+                        }
 
                         int distance =
                             Mathf.Max(
@@ -180,37 +262,47 @@ public abstract class AbilitySO : ScriptableObject
                                 Mathf.Abs(y)
                             );
 
-                        // Outside maximum range
-                        if (distance > abilityRange)
+                        if (distance >
+                            abilityRange)
                         {
                             continue;
                         }
 
-                        // Inside minimum range
-                        if (distance < minimumDistance)
+                        if (distance <
+                            minimumDistance)
                         {
                             continue;
                         }
+
+                        Vector2Int position =
+                            origin +
+                            new Vector2Int(
+                                x,
+                                y
+                            );
 
                         AddValidTile(
                             gridManager,
                             tiles,
-                            origin + offset
+                            position
                         );
                     }
                 }
 
                 break;
 
-            // ==========================================
+
+            // =================================================
             // FOUR DIRECTIONS
-            // ==========================================
+            // =================================================
 
             case RangeShape.FourDirections:
 
-                for (int i = 1;
-                     i <= abilityRange;
-                     i++)
+                for (
+                    int i = 1;
+                    i <= abilityRange;
+                    i++
+                )
                 {
                     if (i < minimumDistance)
                     {
@@ -248,15 +340,18 @@ public abstract class AbilitySO : ScriptableObject
 
                 break;
 
-            // ==========================================
+
+            // =================================================
             // DIAGONAL
-            // ==========================================
+            // =================================================
 
             case RangeShape.Diagonal:
 
-                for (int i = 1;
-                     i <= abilityRange;
-                     i++)
+                for (
+                    int i = 1;
+                    i <= abilityRange;
+                    i++
+                )
                 {
                     if (i < minimumDistance)
                     {
@@ -267,28 +362,40 @@ public abstract class AbilitySO : ScriptableObject
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(i, i)
+                        new Vector2Int(
+                            i,
+                            i
+                        )
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(-i, i)
+                        new Vector2Int(
+                            -i,
+                            i
+                        )
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(i, -i)
+                        new Vector2Int(
+                            i,
+                            -i
+                        )
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(-i, -i)
+                        new Vector2Int(
+                            -i,
+                            -i
+                        )
                     );
                 }
 
@@ -298,15 +405,45 @@ public abstract class AbilitySO : ScriptableObject
         return tiles;
     }
 
-    // ==================================================
-    // ADD VALID TILE
-    // ==================================================
 
-    private void AddValidTile(
+    // =========================================================
+    // GET HITBOX TILES
+    //
+    // THIS IS THE ACTUAL ATTACK AREA.
+    //
+    // Normal abilities use their targeting range.
+    //
+    // Special abilities such as FrontAttack override this.
+    // =========================================================
+
+    public virtual List<Vector2Int> GetHitboxTiles(
+        GridManager gridManager,
+        GameObject user,
+        GameObject target = null
+    )
+    {
+        return GetRangeTiles(
+            gridManager,
+            user
+        );
+    }
+
+
+    // =========================================================
+    // ADD VALID TILE
+    // =========================================================
+
+    protected void AddValidTile(
         GridManager gridManager,
         List<Vector2Int> tiles,
-        Vector2Int position)
+        Vector2Int position
+    )
     {
+        if (gridManager == null)
+        {
+            return;
+        }
+
         if (!gridManager.IsInsideGrid(position))
         {
             return;
@@ -318,14 +455,23 @@ public abstract class AbilitySO : ScriptableObject
         }
     }
 
-    // ==================================================
+
+    // =========================================================
     // CAN HIT
-    // ==================================================
+    //
+    // IMPORTANT:
+    //
+    // This checks the targeting range.
+    //
+    // FrontAttack overrides this because its targeting
+    // range is different from its actual hitbox.
+    // =========================================================
 
     public virtual bool CanHit(
         GridManager gridManager,
         GameObject user,
-        GameObject target)
+        GameObject target
+    )
     {
         if (gridManager == null ||
             user == null ||
@@ -343,10 +489,6 @@ public abstract class AbilitySO : ScriptableObject
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
-
-        // ==============================================
-        // DISTANCE
-        // ==============================================
 
         int distance =
             gridManager.GetDistance(
@@ -367,53 +509,47 @@ public abstract class AbilitySO : ScriptableObject
                 range
             );
 
-        // ==============================================
-        // MINIMUM DISTANCE CHECK
-        // ==============================================
-
         if (distance < minimumDistance)
         {
             return false;
         }
-
-        // ==============================================
-        // MAXIMUM DISTANCE CHECK
-        // ==============================================
 
         if (distance > maximumDistance)
         {
             return false;
         }
 
-        // ==============================================
-        // HITBOX CHECK
-        // ==============================================
-
-        List<Vector2Int> hitbox =
-            GetHitboxTiles(
+        List<Vector2Int> rangeTiles =
+            GetRangeTiles(
                 gridManager,
-                user,
-                target
+                user
             );
 
-        bool canHit =
-            hitbox.Contains(targetPosition);
+        if (rangeTiles == null)
+        {
+            return false;
+        }
 
-        return canHit;
+        return rangeTiles.Contains(
+            targetPosition
+        );
     }
 
-    // ==================================================
-    // USE ABILITY
-    // ==================================================
+
+    // =========================================================
+    // USE
+    // =========================================================
 
     public virtual bool Use(
         GameObject user,
-        GameObject target)
+        GameObject target
+    )
     {
         if (user == null)
         {
             Debug.LogWarning(
-                $"[Ability] {abilityName}: user is null."
+                $"[Ability] {abilityName}: " +
+                "user is null."
             );
 
             return false;
@@ -422,7 +558,8 @@ public abstract class AbilitySO : ScriptableObject
         if (target == null)
         {
             Debug.LogWarning(
-                $"[Ability] {abilityName}: target is null."
+                $"[Ability] {abilityName}: " +
+                "target is null."
             );
 
             return false;

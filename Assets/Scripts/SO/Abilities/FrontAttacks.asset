@@ -16,6 +16,6 @@ MonoBehaviour:
   description: 
   damage: 10
   cooldown: 0
-  range: 2
+  range: 3
   minDistance: 0
-  rangeShape: 0
+  rangeShape: 1

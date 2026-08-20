@@ -2,23 +2,44 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(
-    fileName = "MeleeSwoosh",
+    fileName = "FrontAttack",
     menuName = "Combat/Abilities/FrontAttack"
 )]
 public class FrontAttack : AbilitySO
 {
-    // ==================================================
-    // GET HITBOX TILES
-    // ==================================================
+    // =========================================================
+    // TARGETING RANGE
+    //
+    // FrontAttack ALWAYS uses a BOX targeting range.
+    //
+    // If Range = 4:
+    //
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X O X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    // X X X X X X X X X
+    //
+    // The user tile is NOT highlighted.
+    //
+    // IMPORTANT:
+    // This method is used for TARGET PREVIEW.
+    // =========================================================
 
-    public override List<Vector2Int> GetHitboxTiles(
+    public override List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
-        GameObject user,
-        GameObject target = null)
+        GameObject user
+    )
     {
-        List<Vector2Int> tiles = new List<Vector2Int>();
+        List<Vector2Int> tiles =
+            new List<Vector2Int>();
 
-        if (gridManager == null || user == null)
+        if (gridManager == null ||
+            user == null)
         {
             return tiles;
         }
@@ -28,13 +49,236 @@ public class FrontAttack : AbilitySO
                 user.transform.position
             );
 
-        int abilityRange = Mathf.Max(1, GetRange());
+        int abilityRange =
+            Mathf.Max(
+                1,
+                GetRange()
+            );
 
-        Vector2Int direction = Vector2Int.zero;
+        int minimumDistance =
+            Mathf.Clamp(
+                GetMinDistance(),
+                0,
+                abilityRange
+            );
 
-        // ==================================================
-        // 1. CHECK SPECIFIED TARGET
-        // ==================================================
+
+        // =====================================================
+        // FORCE BOX RANGE
+        //
+        // Range 4 = 9x9
+        // =====================================================
+
+        for (
+            int x = -abilityRange;
+            x <= abilityRange;
+            x++
+        )
+        {
+            for (
+                int y = -abilityRange;
+                y <= abilityRange;
+                y++
+            )
+            {
+                // Never include user's tile.
+                if (x == 0 && y == 0)
+                {
+                    continue;
+                }
+
+                int distance =
+                    Mathf.Max(
+                        Mathf.Abs(x),
+                        Mathf.Abs(y)
+                    );
+
+                if (distance >
+                    abilityRange)
+                {
+                    continue;
+                }
+
+                if (distance <
+                    minimumDistance)
+                {
+                    continue;
+                }
+
+                Vector2Int position =
+                    userPosition +
+                    new Vector2Int(
+                        x,
+                        y
+                    );
+
+                AddValidTile(
+                    gridManager,
+                    tiles,
+                    position
+                );
+            }
+        }
+
+        return tiles;
+    }
+
+
+    // =========================================================
+    // CAN HIT
+    //
+    // IMPORTANT:
+    //
+    // Targeting uses the FULL BOX range.
+    //
+    // It does NOT use the 3-wide attack hitbox here.
+    // =========================================================
+
+    public override bool CanHit(
+        GridManager gridManager,
+        GameObject user,
+        GameObject target
+    )
+    {
+        if (gridManager == null ||
+            user == null ||
+            target == null)
+        {
+            return false;
+        }
+
+        Vector2Int userPosition =
+            gridManager.WorldToGridPosition(
+                user.transform.position
+            );
+
+        Vector2Int targetPosition =
+            gridManager.WorldToGridPosition(
+                target.transform.position
+            );
+
+        int differenceX =
+            Mathf.Abs(
+                targetPosition.x -
+                userPosition.x
+            );
+
+        int differenceY =
+            Mathf.Abs(
+                targetPosition.y -
+                userPosition.y
+            );
+
+        // =====================================================
+        // CHEBYSHEV DISTANCE
+        //
+        // This matches the BOX range.
+        // =====================================================
+
+        int distance =
+            Mathf.Max(
+                differenceX,
+                differenceY
+            );
+
+        int minimumDistance =
+            Mathf.Clamp(
+                GetMinDistance(),
+                0,
+                GetRange()
+            );
+
+        int maximumDistance =
+            GetRange();
+
+        if (distance < minimumDistance)
+        {
+            return false;
+        }
+
+        if (distance > maximumDistance)
+        {
+            return false;
+        }
+
+        // =====================================================
+        // CHECK ACTUAL TARGETING AREA
+        // =====================================================
+
+        List<Vector2Int> rangeTiles =
+            GetRangeTiles(
+                gridManager,
+                user
+            );
+
+        return rangeTiles.Contains(
+            targetPosition
+        );
+    }
+
+
+    // =========================================================
+    // GET HITBOX
+    //
+    // THIS IS THE ACTUAL FRONT ATTACK.
+    //
+    // It is intentionally NOT a 9x9 area.
+    //
+    // Range 1:
+    //
+    //   XXX
+    //    O
+    //
+    // Range 2:
+    //
+    //   XXX
+    //   XXX
+    //    O
+    //
+    // Range 4:
+    //
+    //   XXX
+    //   XXX
+    //   XXX
+    //   XXX
+    //    O
+    //
+    // The target determines the direction.
+    // =========================================================
+
+    public override List<Vector2Int> GetHitboxTiles(
+        GridManager gridManager,
+        GameObject user,
+        GameObject target = null
+    )
+    {
+        List<Vector2Int> tiles =
+            new List<Vector2Int>();
+
+        if (gridManager == null ||
+            user == null)
+        {
+            return tiles;
+        }
+
+        Vector2Int userPosition =
+            gridManager.WorldToGridPosition(
+                user.transform.position
+            );
+
+        int abilityRange =
+            Mathf.Max(
+                1,
+                GetRange()
+            );
+
+        Vector2Int direction =
+            Vector2Int.zero;
+
+
+        // =====================================================
+        // 1. TARGET DIRECTION
+        // =====================================================
 
         if (target != null)
         {
@@ -43,110 +287,194 @@ public class FrontAttack : AbilitySO
                     target.transform.position
                 );
 
-            direction = GetAttackDirection(
-                userPosition,
-                targetPosition
-            );
+            direction =
+                GetAttackDirection(
+                    userPosition,
+                    targetPosition
+                );
         }
 
-        // ==================================================
-        // 2. CHECK FOR ENEMIES IN 3x3 RADIUS
-        // ==================================================
 
-        if (direction == Vector2Int.zero)
+        // =====================================================
+        // 2. NEARBY ENEMY FALLBACK
+        // =====================================================
+
+        if (direction ==
+            Vector2Int.zero)
         {
-            direction = DetectNearbyEnemyDirection(
-                gridManager,
-                user,
-                userPosition
-            );
+            direction =
+                DetectNearbyEnemyDirection(
+                    gridManager,
+                    user,
+                    userPosition
+                );
         }
 
-        // ==================================================
-        // 3. FALLBACK TO USER FACING DIRECTION
-        // ==================================================
 
-        if (direction == Vector2Int.zero)
+        // =====================================================
+        // 3. USER FACING FALLBACK
+        // =====================================================
+
+        if (direction ==
+            Vector2Int.zero)
         {
-            direction = GetUserFacingDirection(user);
+            direction =
+                GetUserFacingDirection(
+                    user
+                );
         }
 
-        // ==================================================
-        // GET SIDE DIRECTION
-        // ==================================================
+
+        // =====================================================
+        // SIDE DIRECTION
+        // =====================================================
 
         Vector2Int sideDirection =
-            GetSideDirection(direction);
+            GetSideDirection(
+                direction
+            );
 
-        // ==================================================
-        // CREATE ROTATED 3-WIDE SWOOSH
-        // ==================================================
 
-        for (int distance = 1;
-             distance <= abilityRange;
-             distance++)
+        // =====================================================
+        // BUILD ATTACK
+        //
+        // Each distance creates 3 tiles.
+        //
+        // Range 4 = up to 12 attack tiles.
+        //
+        // But because of grid boundaries / duplicates,
+        // the actual count may be lower.
+        // =====================================================
+
+        for (
+            int distance = 1;
+            distance <= abilityRange;
+            distance++
+        )
         {
-            Vector2Int centerTile =
-                userPosition + direction * distance;
+            Vector2Int center =
+                userPosition +
+                direction * distance;
 
-            Vector2Int firstTile =
-                centerTile + sideDirection;
+            Vector2Int left =
+                center -
+                sideDirection;
 
-            Vector2Int secondTile =
-                centerTile;
+            Vector2Int middle =
+                center;
 
-            Vector2Int thirdTile =
-                centerTile - sideDirection;
+            Vector2Int right =
+                center +
+                sideDirection;
 
-            // First tile
-            if (gridManager.IsInsideGrid(firstTile) &&
-                !tiles.Contains(firstTile))
-            {
-                tiles.Add(firstTile);
-            }
 
-            // Center tile
-            if (gridManager.IsInsideGrid(secondTile) &&
-                !tiles.Contains(secondTile))
-            {
-                tiles.Add(secondTile);
-            }
+            AddValidTile(
+                gridManager,
+                tiles,
+                left
+            );
 
-            // Third tile
-            if (gridManager.IsInsideGrid(thirdTile) &&
-                !tiles.Contains(thirdTile))
-            {
-                tiles.Add(thirdTile);
-            }
+            AddValidTile(
+                gridManager,
+                tiles,
+                middle
+            );
+
+            AddValidTile(
+                gridManager,
+                tiles,
+                right
+            );
         }
 
         return tiles;
     }
 
-    // ==================================================
+
+    // =========================================================
+    // GET ATTACK DIRECTION
+    // =========================================================
+
+    private Vector2Int GetAttackDirection(
+        Vector2Int userPosition,
+        Vector2Int targetPosition
+    )
+    {
+        Vector2Int difference =
+            targetPosition -
+            userPosition;
+
+        if (difference ==
+            Vector2Int.zero)
+        {
+            return Vector2Int.zero;
+        }
+
+
+        // =====================================================
+        // HORIZONTAL
+        // =====================================================
+
+        if (
+            Mathf.Abs(difference.x) >
+            Mathf.Abs(difference.y)
+        )
+        {
+            return difference.x > 0
+                ? Vector2Int.right
+                : Vector2Int.left;
+        }
+
+
+        // =====================================================
+        // VERTICAL
+        // =====================================================
+
+        if (
+            Mathf.Abs(difference.y) >
+            Mathf.Abs(difference.x)
+        )
+        {
+            return difference.y > 0
+                ? Vector2Int.up
+                : Vector2Int.down;
+        }
+
+
+        // =====================================================
+        // PERFECT DIAGONAL
+        //
+        // Prioritize horizontal.
+        // =====================================================
+
+        if (difference.x != 0)
+        {
+            return difference.x > 0
+                ? Vector2Int.right
+                : Vector2Int.left;
+        }
+
+        return difference.y > 0
+            ? Vector2Int.up
+            : Vector2Int.down;
+    }
+
+
+    // =========================================================
     // DETECT NEARBY ENEMY
-    //
-    // Checks the entire 3x3 area around the user.
-    //
-    // This includes:
-    //
-    // X X X
-    // X O X
-    // X X X
-    //
-    // O = user
-    // X = possible enemy
-    // ==================================================
+    // =========================================================
 
     private Vector2Int DetectNearbyEnemyDirection(
         GridManager gridManager,
         GameObject user,
-        Vector2Int userPosition)
+        Vector2Int userPosition
+    )
     {
         HealthManager userHealth =
             user.GetComponent<HealthManager>();
 
-        GameObject closestEnemy = null;
+        GameObject closestEnemy =
+            null;
 
         Vector2Int closestEnemyPosition =
             Vector2Int.zero;
@@ -154,295 +482,119 @@ public class FrontAttack : AbilitySO
         int closestDistance =
             int.MaxValue;
 
-        // ==================================================
-        // CHECK ENTIRE 3x3 AREA
-        // ==================================================
 
-        for (int x = -1; x <= 1; x++)
+        for (
+            int x = -1;
+            x <= 1;
+            x++
+        )
         {
-            for (int y = -1; y <= 1; y++)
+            for (
+                int y = -1;
+                y <= 1;
+                y++
+            )
             {
-                // Don't check the user's own tile.
                 if (x == 0 && y == 0)
                 {
                     continue;
                 }
 
-                Vector2Int checkPosition =
+                Vector2Int position =
                     userPosition +
-                    new Vector2Int(x, y);
+                    new Vector2Int(
+                        x,
+                        y
+                    );
 
-                if (!gridManager.IsInsideGrid(checkPosition))
+                if (!gridManager.IsInsideGrid(
+                        position))
                 {
                     continue;
                 }
 
-                GameObject unitOnTile =
-                    gridManager.GetUnitAt(checkPosition);
+                GameObject unit =
+                    gridManager.GetUnitAt(
+                        position
+                    );
 
-                if (unitOnTile == null ||
-                    unitOnTile == user)
+                if (unit == null ||
+                    unit == user)
                 {
                     continue;
                 }
 
-                HealthManager targetHealth =
-                    unitOnTile.GetComponent<HealthManager>();
+                HealthManager health =
+                    unit.GetComponent<HealthManager>();
 
-                if (targetHealth == null ||
-                    targetHealth.IsDead())
+                if (health == null ||
+                    health.IsDead())
                 {
                     continue;
                 }
 
-                // ==================================================
+
+                // =============================================
                 // IGNORE ALLIES
-                // ==================================================
+                // =============================================
 
-                if (userHealth != null &&
-                    targetHealth.GetTeam() ==
-                    userHealth.GetTeam())
+                if (
+                    userHealth != null &&
+                    health.GetTeam() ==
+                    userHealth.GetTeam()
+                )
                 {
                     continue;
                 }
 
-                // ==================================================
-                // FIND CLOSEST ENEMY
-                // ==================================================
 
                 int distance =
                     Mathf.Abs(x) +
                     Mathf.Abs(y);
 
-                if (distance < closestDistance)
+                if (distance <
+                    closestDistance)
                 {
-                    closestDistance = distance;
+                    closestDistance =
+                        distance;
 
-                    closestEnemy = unitOnTile;
+                    closestEnemy =
+                        unit;
 
                     closestEnemyPosition =
-                        checkPosition;
+                        position;
                 }
             }
         }
 
-        // ==================================================
-        // NO ENEMY FOUND
-        // ==================================================
 
         if (closestEnemy == null)
         {
             return Vector2Int.zero;
         }
 
-        // ==================================================
-        // GET ENEMY DIRECTION
-        // ==================================================
-
-        Vector2Int difference =
-            closestEnemyPosition -
-            userPosition;
-
-        // ==================================================
-        // CONVERT DIAGONAL INTO CARDINAL DIRECTION
-        //
-        // Example:
-        //
-        // Enemy:
-        //
-        // X .
-        // . O
-        //
-        // becomes LEFT
-        //
-        // Example:
-        //
-        // . X
-        // O .
-        //
-        // becomes RIGHT
-        // ==================================================
-
-        if (Mathf.Abs(difference.x) >
-            Mathf.Abs(difference.y))
-        {
-            return difference.x > 0
-                ? Vector2Int.right
-                : Vector2Int.left;
-        }
-
-        if (Mathf.Abs(difference.y) > 0)
-        {
-            return difference.y > 0
-                ? Vector2Int.up
-                : Vector2Int.down;
-        }
-
-        return Vector2Int.zero;
+        return GetAttackDirection(
+            userPosition,
+            closestEnemyPosition
+        );
     }
 
-    // ==================================================
-    // USE ABILITY
-    // ==================================================
 
-    public override bool Use(
-        GameObject user,
-        GameObject target)
-    {
-        if (user == null)
-        {
-            Debug.LogWarning(
-                "[MeleeSwoosh] Cannot attack. User is null."
-            );
-
-            return false;
-        }
-
-        if (target == null)
-        {
-            Debug.LogWarning(
-                "[MeleeSwoosh] Cannot attack. Target is null."
-            );
-
-            return false;
-        }
-
-        GridManager gridManager =
-            Object.FindFirstObjectByType<GridManager>();
-
-        if (gridManager == null)
-        {
-            Debug.LogError(
-                "[MeleeSwoosh] GridManager not found."
-            );
-
-            return false;
-        }
-
-        // ==================================================
-        // CHECK IF TARGET CAN BE HIT
-        // ==================================================
-
-        if (!CanHit(
-                gridManager,
-                user,
-                target))
-        {
-            Debug.LogWarning(
-                $"[MeleeSwoosh] {target.name} is outside the ability range."
-            );
-
-            return false;
-        }
-
-        // ==================================================
-        // GET HITBOX
-        // ==================================================
-
-        List<Vector2Int> hitboxTiles =
-            GetHitboxTiles(
-                gridManager,
-                user,
-                target
-            );
-
-        if (hitboxTiles == null ||
-            hitboxTiles.Count == 0)
-        {
-            Debug.LogWarning(
-                "[MeleeSwoosh] Hitbox contains no valid tiles."
-            );
-
-            return false;
-        }
-
-        // ==================================================
-        // ATTACK ALL TILES
-        // ==================================================
-
-        bool hitSomething = false;
-
-        foreach (Vector2Int position in hitboxTiles)
-        {
-            if (AttackTile(
-                    gridManager,
-                    position,
-                    user))
-            {
-                hitSomething = true;
-            }
-        }
-
-        // ==================================================
-        // RESULT
-        // ==================================================
-
-        if (hitSomething)
-        {
-            Debug.Log(
-                $"[MeleeSwoosh] {user.name} attacked {target.name}."
-            );
-        }
-        else
-        {
-            Debug.Log(
-                $"[MeleeSwoosh] {user.name} used the ability, " +
-                "but no enemy was found in the hitbox."
-            );
-        }
-
-        return hitSomething;
-    }
-
-    // ==================================================
-    // DIRECTION CALCULATIONS
-    // ==================================================
-
-    private Vector2Int GetAttackDirection(
-        Vector2Int userPosition,
-        Vector2Int targetPosition)
-    {
-        Vector2Int difference =
-            targetPosition - userPosition;
-
-        // ==================================================
-        // HORIZONTAL TARGET
-        // ==================================================
-
-        if (Mathf.Abs(difference.x) >
-            Mathf.Abs(difference.y))
-        {
-            return difference.x > 0
-                ? Vector2Int.right
-                : Vector2Int.left;
-        }
-
-        // ==================================================
-        // VERTICAL TARGET
-        // ==================================================
-
-        if (difference.y != 0)
-        {
-            return difference.y > 0
-                ? Vector2Int.up
-                : Vector2Int.down;
-        }
-
-        return Vector2Int.zero;
-    }
-
-    // ==================================================
-    // GET USER FACING DIRECTION
-    // ==================================================
+    // =========================================================
+    // USER FACING DIRECTION
+    // =========================================================
 
     private Vector2Int GetUserFacingDirection(
-        GameObject user)
+        GameObject user
+    )
     {
         Vector3 forward =
             user.transform.up;
 
-        if (Mathf.Abs(forward.x) >
-            Mathf.Abs(forward.y))
+        if (
+            Mathf.Abs(forward.x) >
+            Mathf.Abs(forward.y)
+        )
         {
             return forward.x > 0
                 ? Vector2Int.right
@@ -459,19 +611,19 @@ public class FrontAttack : AbilitySO
         return Vector2Int.up;
     }
 
-    // ==================================================
-    // GET SIDE DIRECTION
-    //
-    // UP/DOWN -> side is LEFT/RIGHT
-    //
-    // LEFT/RIGHT -> side is UP/DOWN
-    // ==================================================
+
+    // =========================================================
+    // SIDE DIRECTION
+    // =========================================================
 
     private Vector2Int GetSideDirection(
-        Vector2Int direction)
+        Vector2Int direction
+    )
     {
-        if (direction == Vector2Int.up ||
-            direction == Vector2Int.down)
+        if (
+            direction == Vector2Int.up ||
+            direction == Vector2Int.down
+        )
         {
             return Vector2Int.right;
         }
@@ -479,25 +631,167 @@ public class FrontAttack : AbilitySO
         return Vector2Int.up;
     }
 
-    // ==================================================
+
+    // =========================================================
+    // USE ABILITY
+    // =========================================================
+
+    public override bool Use(
+        GameObject user,
+        GameObject target
+    )
+    {
+        if (user == null)
+        {
+            Debug.LogWarning(
+                "[FrontAttack] Cannot attack. " +
+                "User is null."
+            );
+
+            return false;
+        }
+
+        if (target == null)
+        {
+            Debug.LogWarning(
+                "[FrontAttack] Cannot attack. " +
+                "Target is null."
+            );
+
+            return false;
+        }
+
+        GridManager gridManager =
+            Object.FindFirstObjectByType<
+                GridManager
+            >();
+
+        if (gridManager == null)
+        {
+            Debug.LogError(
+                "[FrontAttack] GridManager not found."
+            );
+
+            return false;
+        }
+
+
+        // =====================================================
+        // CHECK TARGETING RANGE
+        // =====================================================
+
+        if (!CanHit(
+                gridManager,
+                user,
+                target
+            ))
+        {
+            Debug.LogWarning(
+                $"[FrontAttack] {target.name} " +
+                "is outside the attack range."
+            );
+
+            return false;
+        }
+
+
+        // =====================================================
+        // GET ACTUAL ATTACK HITBOX
+        // =====================================================
+
+        List<Vector2Int> hitbox =
+            GetHitboxTiles(
+                gridManager,
+                user,
+                target
+            );
+
+        if (
+            hitbox == null ||
+            hitbox.Count == 0
+        )
+        {
+            Debug.LogWarning(
+                "[FrontAttack] Hitbox contains " +
+                "no valid tiles."
+            );
+
+            return false;
+        }
+
+
+        // =====================================================
+        // ATTACK ALL ENEMIES IN HITBOX
+        // =====================================================
+
+        bool hitSomething =
+            false;
+
+        foreach (
+            Vector2Int position in hitbox
+        )
+        {
+            if (
+                AttackTile(
+                    gridManager,
+                    position,
+                    user
+                )
+            )
+            {
+                hitSomething = true;
+            }
+        }
+
+
+        // =====================================================
+        // RESULT
+        // =====================================================
+
+        if (hitSomething)
+        {
+            Debug.Log(
+                $"[FrontAttack] {user.name} " +
+                $"attacked {target.name}."
+            );
+        }
+        else
+        {
+            Debug.Log(
+                $"[FrontAttack] {user.name} used " +
+                "FrontAttack, but hit no enemy."
+            );
+        }
+
+        return hitSomething;
+    }
+
+
+    // =========================================================
     // ATTACK TILE
-    // ==================================================
+    // =========================================================
 
     private bool AttackTile(
         GridManager gridManager,
         Vector2Int position,
-        GameObject user)
+        GameObject user
+    )
     {
-        if (!gridManager.IsInsideGrid(position))
+        if (!gridManager.IsInsideGrid(
+                position))
         {
             return false;
         }
 
         GameObject target =
-            gridManager.GetUnitAt(position);
+            gridManager.GetUnitAt(
+                position
+            );
 
-        if (target == null ||
-            target == user)
+        if (
+            target == null ||
+            target == user
+        )
         {
             return false;
         }
@@ -505,36 +799,45 @@ public class FrontAttack : AbilitySO
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
-        if (targetHealth == null ||
-            targetHealth.IsDead())
+        if (
+            targetHealth == null ||
+            targetHealth.IsDead()
+        )
         {
             return false;
         }
 
-        // ==================================================
+
+        // =====================================================
         // DON'T HIT ALLIES
-        // ==================================================
+        // =====================================================
 
         HealthManager userHealth =
             user.GetComponent<HealthManager>();
 
-        if (userHealth != null &&
+        if (
+            userHealth != null &&
             targetHealth.GetTeam() ==
-            userHealth.GetTeam())
+            userHealth.GetTeam()
+        )
         {
             return false;
         }
 
-        // ==================================================
-        // DEAL DAMAGE
-        // ==================================================
 
-        int damage = GetDamage();
+        // =====================================================
+        // DAMAGE
+        // =====================================================
 
-        targetHealth.TakeDamage(damage);
+        int damage =
+            GetDamage();
+
+        targetHealth.TakeDamage(
+            damage
+        );
 
         Debug.Log(
-            $"[MeleeSwoosh] {user.name} hit " +
+            $"[FrontAttack] {user.name} hit " +
             $"{target.name} for {damage} damage."
         );
 

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,8 +8,49 @@ public class UnitMoveBrain : MonoBehaviour
     [SerializeField] private AttackUnit attackUnit;
     [SerializeField] private GridManager gridManager;
 
+    [Header("Movement")]
+    [SerializeField, Min(0.01f)]
+    private float moveDuration = 0.25f;
+
+    [Header("AI")]
+    [SerializeField, Min(1)]
+    private int attackRange = 1;
+
+    [SerializeField]
+    private bool preferLowHealthEnemies = true;
+
+    [SerializeField]
+    private bool preferCloserEnemies = true;
+
+    [SerializeField]
+    private bool avoidMovingThroughEnemies = true;
+
+    [SerializeField]
+    private bool avoidMovingThroughAllies = true;
+
+    [Header("Tactical")]
+    [SerializeField]
+    private bool preferCloserAttackPosition = true;
+
+    [SerializeField]
+    private bool preferMoreOpenPositions = true;
+
+    [SerializeField]
+    private bool preferSidePositions = true;
+
+    [SerializeField]
+    private bool allowMovingAwayToGoAroundObstacles = true;
+
     [Header("Debug")]
-    [SerializeField] private bool debugMovement = true;
+    [SerializeField]
+    private bool debugMovement = true;
+
+
+    // ==================================================
+    // DATA
+    // ==================================================
+
+    private bool isMoving;
 
     private static readonly Vector2Int[] Directions =
     {
@@ -61,14 +103,23 @@ public class UnitMoveBrain : MonoBehaviour
 
 
     // ==================================================
-    // MOVE TOWARDS ENEMY
+    // MAIN MOVEMENT
     // ==================================================
 
-    public bool TryMoveTowardsEnemy()
+    public IEnumerator MoveTowardsEnemy()
     {
+        if (isMoving)
+        {
+            MoveDebug(
+                "FAILED: Unit is already moving."
+            );
+
+            yield break;
+        }
+
         if (!CanMove())
         {
-            return false;
+            yield break;
         }
 
         EnsureGridManager();
@@ -79,100 +130,284 @@ public class UnitMoveBrain : MonoBehaviour
                 "FAILED: GridManager is NULL."
             );
 
-            return false;
+            yield break;
         }
 
-        AttackUnit enemy =
-            FindNearestEnemy();
 
-        if (enemy == null)
+        // ==================================================
+        // FIND BEST TARGET
+        // ==================================================
+
+        AttackUnit target =
+            FindBestTarget();
+
+        if (target == null)
         {
             MoveDebug(
-                "FAILED: No enemy found."
+                "FAILED: No valid enemy found."
             );
 
-            return false;
+            yield break;
         }
+
 
         Vector2Int currentPosition =
             gridManager.WorldToGridPosition(
                 transform.position
             );
 
-        Vector2Int enemyPosition =
+        Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
-                enemy.transform.position
+                target.transform.position
             );
 
         MoveDebug(
+            $"Target selected: {target.name}. " +
             $"Current={currentPosition}, " +
-            $"Enemy={enemy.name}, " +
-            $"EnemyPosition={enemyPosition}"
+            $"Target={targetPosition}"
         );
 
 
         // ==================================================
-        // FIND BEST MOVE
+        // CHECK CURRENT RANGE
+        // ==================================================
+
+        int currentDistance =
+            gridManager.GetDistance(
+                currentPosition,
+                targetPosition
+            );
+
+        if (currentDistance <= attackRange)
+        {
+            MoveDebug(
+                $"Already in attack range. " +
+                $"Distance={currentDistance}, " +
+                $"Range={attackRange}"
+            );
+
+            yield break;
+        }
+
+
+        // ==================================================
+        // FIND BEST ATTACK POSITION
+        // ==================================================
+
+        Vector2Int attackPosition =
+            FindBestAttackPosition(
+                currentPosition,
+                targetPosition
+            );
+
+        if (attackPosition == currentPosition)
+        {
+            MoveDebug(
+                "No better attack position found."
+            );
+
+            yield break;
+        }
+
+        MoveDebug(
+            $"Best attack position: " +
+            $"{attackPosition}"
+        );
+
+
+        // ==================================================
+        // FIND PATH
+        // ==================================================
+
+        List<Vector2Int> path =
+            FindPath(
+                currentPosition,
+                attackPosition
+            );
+
+        if (path == null ||
+            path.Count < 2)
+        {
+            MoveDebug(
+                "FAILED: No valid path to attack position."
+            );
+
+            yield break;
+        }
+
+
+        // ==================================================
+        // FIRST STEP
         // ==================================================
 
         Vector2Int nextPosition =
-            FindBestMove(
+            path[1];
+
+        MoveDebug(
+            $"Path found. " +
+            $"PathLength={path.Count - 1}, " +
+            $"NextStep={nextPosition}"
+        );
+
+
+        // ==================================================
+        // SAFETY
+        // ==================================================
+
+        if (!gridManager.IsInsideGrid(
+                nextPosition))
+        {
+            MoveDebug(
+                $"FAILED: {nextPosition} outside grid."
+            );
+
+            yield break;
+        }
+
+        if (gridManager.IsCellOccupied(
+                nextPosition))
+        {
+            MoveDebug(
+                $"FAILED: {nextPosition} became occupied."
+            );
+
+            yield break;
+        }
+
+
+        // ==================================================
+        // RESERVE CELL
+        // ==================================================
+
+        bool movementStarted =
+            gridManager.StartMoveUnit(
+                gameObject,
                 currentPosition,
-                enemyPosition
+                nextPosition
             );
 
-        if (nextPosition == currentPosition)
+        if (!movementStarted)
         {
             MoveDebug(
-                "No valid movement found."
+                $"FAILED: Could not reserve " +
+                $"{nextPosition}."
             );
 
-            return false;
+            yield break;
         }
+
+        isMoving = true;
 
 
         // ==================================================
-        // SAFETY CHECK
+        // WORLD POSITIONS
         // ==================================================
 
-        if (!gridManager.IsInsideGrid(nextPosition))
-        {
-            MoveDebug(
-                $"FAILED: Next position " +
-                $"{nextPosition} is outside grid."
+        Vector3 startWorldPosition =
+            transform.position;
+
+        Vector3 targetWorldPosition =
+            gridManager.GridToWorldPosition(
+                nextPosition
             );
-
-            return false;
-        }
-
-        if (gridManager.IsCellOccupied(nextPosition))
-        {
-            MoveDebug(
-                $"FAILED: Next position " +
-                $"{nextPosition} is occupied."
-            );
-
-            return false;
-        }
 
 
         // ==================================================
         // MOVE
         // ==================================================
 
-        bool moved =
-            gridManager.MoveUnit(
-                gameObject,
-                currentPosition,
-                nextPosition
-            );
-
         MoveDebug(
-            $"MOVE: {currentPosition} -> " +
-            $"{nextPosition}. Success={moved}"
+            $"MOVING: {currentPosition} -> " +
+            $"{nextPosition}. " +
+            $"Duration={moveDuration}s"
         );
 
-        return moved;
+        float elapsed =
+            0f;
+
+        while (elapsed < moveDuration)
+        {
+            if (!CanMove())
+            {
+                transform.position =
+                    targetWorldPosition;
+
+                break;
+            }
+
+            elapsed +=
+                Time.deltaTime;
+
+            float progress =
+                Mathf.Clamp01(
+                    elapsed / moveDuration
+                );
+
+            progress =
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    progress
+                );
+
+            transform.position =
+                Vector3.Lerp(
+                    startWorldPosition,
+                    targetWorldPosition,
+                    progress
+                );
+
+            yield return null;
+        }
+
+
+        // ==================================================
+        // FINAL POSITION
+        // ==================================================
+
+        transform.position =
+            targetWorldPosition;
+
+
+        // ==================================================
+        // FINISH
+        // ==================================================
+
+        gridManager.FinishMoveUnit(
+            gameObject,
+            nextPosition
+        );
+
+        isMoving = false;
+
+        MoveDebug(
+            $"MOVE COMPLETE: " +
+            $"{currentPosition} -> " +
+            $"{nextPosition}"
+        );
+    }
+
+
+    // ==================================================
+    // LEGACY MOVEMENT
+    // ==================================================
+
+    public bool TryMoveTowardsEnemy()
+    {
+        if (isMoving)
+        {
+            MoveDebug(
+                "FAILED: Unit is already moving."
+            );
+
+            return false;
+        }
+
+        StartCoroutine(
+            MoveTowardsEnemy()
+        );
+
+        return true;
     }
 
 
@@ -205,264 +440,10 @@ public class UnitMoveBrain : MonoBehaviour
 
 
     // ==================================================
-    // FIND BEST MOVE
+    // TARGET SELECTION
     // ==================================================
 
-    private Vector2Int FindBestMove(
-        Vector2Int start,
-        Vector2Int target)
-    {
-        if (start == target)
-        {
-            return start;
-        }
-
-        Queue<Vector2Int> queue =
-            new Queue<Vector2Int>();
-
-        Dictionary<Vector2Int, Vector2Int> cameFrom =
-            new Dictionary<Vector2Int, Vector2Int>();
-
-        HashSet<Vector2Int> visited =
-            new HashSet<Vector2Int>();
-
-        queue.Enqueue(start);
-        visited.Add(start);
-
-
-        // ==================================================
-        // BFS
-        // ==================================================
-
-        while (queue.Count > 0)
-        {
-            Vector2Int current =
-                queue.Dequeue();
-
-            for (
-                int i = 0;
-                i < Directions.Length;
-                i++
-            )
-            {
-                Vector2Int next =
-                    current + Directions[i];
-
-                if (visited.Contains(next))
-                {
-                    continue;
-                }
-
-                if (!gridManager.IsInsideGrid(next))
-                {
-                    continue;
-                }
-
-
-                // ==================================================
-                // TARGET CELL
-                // ==================================================
-
-                if (next == target)
-                {
-                    /*
-                     * The target occupies this cell.
-                     *
-                     * Record the target in the path,
-                     * but return the first step so that
-                     * we never move onto the enemy.
-                     */
-
-                    cameFrom[next] = current;
-
-                    Vector2Int firstStep =
-                        ReconstructFirstStep(
-                            start,
-                            next,
-                            cameFrom
-                        );
-
-                    MoveDebug(
-                        $"Path found to enemy. " +
-                        $"First step={firstStep}"
-                    );
-
-                    return firstStep;
-                }
-
-
-                // ==================================================
-                // OCCUPIED CELL
-                // ==================================================
-
-                if (gridManager.IsCellOccupied(next))
-                {
-                    continue;
-                }
-
-                visited.Add(next);
-                cameFrom[next] = current;
-                queue.Enqueue(next);
-            }
-        }
-
-
-        // ==================================================
-        // NO DIRECT PATH
-        // ==================================================
-
-        MoveDebug(
-            "No complete path to enemy. " +
-            "Searching for closest reachable cell."
-        );
-
-        return FindClosestReachableStep(
-            start,
-            target
-        );
-    }
-
-
-    // ==================================================
-    // RECONSTRUCT FIRST STEP
-    // ==================================================
-
-    private Vector2Int ReconstructFirstStep(
-        Vector2Int start,
-        Vector2Int destination,
-        Dictionary<Vector2Int, Vector2Int> cameFrom)
-    {
-        Vector2Int current =
-            destination;
-
-        Vector2Int previous;
-
-        while (
-            cameFrom.TryGetValue(
-                current,
-                out previous
-            )
-        )
-        {
-            if (previous == start)
-            {
-                return current;
-            }
-
-            current = previous;
-        }
-
-        return start;
-    }
-
-
-    // ==================================================
-    // CLOSEST REACHABLE CELL
-    // ==================================================
-
-    private Vector2Int FindClosestReachableStep(
-        Vector2Int start,
-        Vector2Int target)
-    {
-        Queue<Vector2Int> queue =
-            new Queue<Vector2Int>();
-
-        HashSet<Vector2Int> visited =
-            new HashSet<Vector2Int>();
-
-        Dictionary<Vector2Int, Vector2Int> cameFrom =
-            new Dictionary<Vector2Int, Vector2Int>();
-
-        queue.Enqueue(start);
-        visited.Add(start);
-
-        Vector2Int bestCell =
-            start;
-
-        int bestDistance =
-            gridManager.GetDistance(
-                start,
-                target
-            );
-
-
-        while (queue.Count > 0)
-        {
-            Vector2Int current =
-                queue.Dequeue();
-
-            int currentDistance =
-                gridManager.GetDistance(
-                    current,
-                    target
-                );
-
-            if (currentDistance < bestDistance)
-            {
-                bestDistance =
-                    currentDistance;
-
-                bestCell =
-                    current;
-            }
-
-            for (
-                int i = 0;
-                i < Directions.Length;
-                i++
-            )
-            {
-                Vector2Int next =
-                    current + Directions[i];
-
-                if (visited.Contains(next))
-                {
-                    continue;
-                }
-
-                if (!gridManager.IsInsideGrid(next))
-                {
-                    continue;
-                }
-
-                if (gridManager.IsCellOccupied(next))
-                {
-                    continue;
-                }
-
-                visited.Add(next);
-                cameFrom[next] = current;
-                queue.Enqueue(next);
-            }
-        }
-
-
-        if (bestCell == start)
-        {
-            return start;
-        }
-
-        Vector2Int firstStep =
-            ReconstructFirstStep(
-                start,
-                bestCell,
-                cameFrom
-            );
-
-        MoveDebug(
-            $"Closest reachable cell={bestCell}. " +
-            $"FirstStep={firstStep}"
-        );
-
-        return firstStep;
-    }
-
-
-    // ==================================================
-    // FIND NEAREST ENEMY
-    // ==================================================
-
-    private AttackUnit FindNearestEnemy()
+    private AttackUnit FindBestTarget()
     {
         if (attackUnit == null)
         {
@@ -481,11 +462,11 @@ public class UnitMoveBrain : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-        AttackUnit nearestEnemy =
+        AttackUnit bestTarget =
             null;
 
-        int nearestDistance =
-            int.MaxValue;
+        float bestScore =
+            float.MaxValue;
 
         Vector2Int myPosition =
             gridManager.WorldToGridPosition(
@@ -493,11 +474,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
 
-        for (
-            int i = 0;
-            i < allUnits.Length;
-            i++
-        )
+        for (int i = 0;
+             i < allUnits.Length;
+             i++)
         {
             AttackUnit other =
                 allUnits[i];
@@ -519,6 +498,7 @@ public class UnitMoveBrain : MonoBehaviour
                 continue;
             }
 
+
             Vector2Int enemyPosition =
                 gridManager.WorldToGridPosition(
                     other.transform.position
@@ -530,26 +510,747 @@ public class UnitMoveBrain : MonoBehaviour
                     enemyPosition
                 );
 
-            if (distance < nearestDistance)
-            {
-                nearestDistance =
-                    distance;
 
-                nearestEnemy =
+            HealthManager enemyHealth =
+                other.GetHealthManager();
+
+            float score =
+                0f;
+
+
+            // ==================================================
+            // DISTANCE
+            // ==================================================
+
+            if (preferCloserEnemies)
+            {
+                score +=
+                    distance * 10f;
+            }
+
+
+            // ==================================================
+            // LOW HEALTH
+            // ==================================================
+
+            if (preferLowHealthEnemies &&
+                enemyHealth != null)
+            {
+                int health =
+                    enemyHealth.GetHealth();
+
+                int maxHealth =
+                    Mathf.Max(
+                        1,
+                        enemyHealth.GetMaxHealth()
+                    );
+
+                float healthPercent =
+                    (float)health /
+                    maxHealth;
+
+                score +=
+                    healthPercent * 20f;
+            }
+
+
+            // ==================================================
+            // TARGET ALREADY IN RANGE
+            // ==================================================
+
+            if (distance <= attackRange)
+            {
+                score -= 100f;
+            }
+
+
+            // ==================================================
+            // DEBUG
+            // ==================================================
+
+            MoveDebug(
+                $"Target candidate: " +
+                $"{other.name}, " +
+                $"distance={distance}, " +
+                $"score={score}"
+            );
+
+
+            if (score < bestScore)
+            {
+                bestScore =
+                    score;
+
+                bestTarget =
                     other;
             }
         }
 
-        if (nearestEnemy != null)
+
+        if (bestTarget != null)
         {
             MoveDebug(
-                $"Nearest enemy: " +
-                $"{nearestEnemy.name}, " +
-                $"distance={nearestDistance}"
+                $"BEST TARGET: " +
+                $"{bestTarget.name}, " +
+                $"score={bestScore}"
             );
         }
 
-        return nearestEnemy;
+        return bestTarget;
+    }
+
+
+    // ==================================================
+    // FIND BEST ATTACK POSITION
+    // ==================================================
+
+    private Vector2Int FindBestAttackPosition(
+        Vector2Int start,
+        Vector2Int target)
+    {
+        List<Vector2Int> candidates =
+            GetAttackPositions(
+                target
+            );
+
+        if (candidates.Count == 0)
+        {
+            MoveDebug(
+                "No attack positions found."
+            );
+
+            return FindBestReachableCell(
+                start,
+                target
+            );
+        }
+
+
+        Vector2Int bestPosition =
+            start;
+
+        float bestScore =
+            float.MaxValue;
+
+        bool foundReachablePosition =
+            false;
+
+
+        for (int i = 0;
+             i < candidates.Count;
+             i++)
+        {
+            Vector2Int candidate =
+                candidates[i];
+
+            if (!gridManager.IsInsideGrid(
+                    candidate))
+            {
+                continue;
+            }
+
+            // Our own cell is always allowed.
+            if (candidate != start &&
+                gridManager.IsCellOccupied(
+                    candidate))
+            {
+                continue;
+            }
+
+
+            List<Vector2Int> path =
+                FindPath(
+                    start,
+                    candidate
+                );
+
+            if (path == null ||
+                path.Count < 2)
+            {
+                continue;
+            }
+
+            foundReachablePosition =
+                true;
+
+
+            int movementCost =
+                path.Count - 1;
+
+            int distanceToEnemy =
+                gridManager.GetDistance(
+                    candidate,
+                    target
+                );
+
+            float score =
+                movementCost * 10f;
+
+
+            // ==================================================
+            // PREFER SHORTER MOVEMENT
+            // ==================================================
+
+            if (preferCloserAttackPosition)
+            {
+                score +=
+                    distanceToEnemy * 5f;
+            }
+
+
+            // ==================================================
+            // OPEN SPACE
+            // ==================================================
+
+            if (preferMoreOpenPositions)
+            {
+                int openNeighbours =
+                    CountOpenNeighbours(
+                        candidate
+                    );
+
+                score -=
+                    openNeighbours * 2f;
+            }
+
+
+            // ==================================================
+            // SIDE POSITIONS
+            // ==================================================
+
+            if (preferSidePositions)
+            {
+                if (candidate.x != target.x &&
+                    candidate.y != target.y)
+                {
+                    score += 3f;
+                }
+            }
+
+
+            MoveDebug(
+                $"Attack position candidate: " +
+                $"{candidate}, " +
+                $"movementCost={movementCost}, " +
+                $"distance={distanceToEnemy}, " +
+                $"score={score}"
+            );
+
+
+            if (score < bestScore)
+            {
+                bestScore =
+                    score;
+
+                bestPosition =
+                    candidate;
+            }
+        }
+
+
+        if (foundReachablePosition)
+        {
+            MoveDebug(
+                $"BEST ATTACK POSITION: " +
+                $"{bestPosition}, " +
+                $"score={bestScore}"
+            );
+
+            return bestPosition;
+        }
+
+
+        // ==================================================
+        // NO ATTACK POSITION REACHABLE
+        // ==================================================
+
+        MoveDebug(
+            "No attack position reachable. " +
+            "Searching for best reachable cell."
+        );
+
+        return FindBestReachableCell(
+            start,
+            target
+        );
+    }
+
+
+    // ==================================================
+    // GET ATTACK POSITIONS
+    // ==================================================
+
+    private List<Vector2Int> GetAttackPositions(
+        Vector2Int target)
+    {
+        List<Vector2Int> positions =
+            new List<Vector2Int>();
+
+
+        // ==================================================
+        // RANGE 1
+        // ==================================================
+
+        if (attackRange == 1)
+        {
+            for (int i = 0;
+                 i < Directions.Length;
+                 i++)
+            {
+                positions.Add(
+                    target + Directions[i]
+                );
+            }
+
+            return positions;
+        }
+
+
+        // ==================================================
+        // LARGER RANGE
+        // ==================================================
+
+        int width =
+            gridManager.GetWidth();
+
+        int height =
+            gridManager.GetHeight();
+
+        for (int x = 0;
+             x < width;
+             x++)
+        {
+            for (int y = 0;
+                 y < height;
+                 y++)
+            {
+                Vector2Int position =
+                    new Vector2Int(
+                        x,
+                        y
+                    );
+
+                if (position == target)
+                {
+                    continue;
+                }
+
+                int distance =
+                    gridManager.GetDistance(
+                        position,
+                        target
+                    );
+
+                if (distance <= attackRange)
+                {
+                    positions.Add(
+                        position
+                    );
+                }
+            }
+        }
+
+        return positions;
+    }
+
+
+    // ==================================================
+    // PATHFINDING
+    // ==================================================
+
+    private List<Vector2Int> FindPath(
+        Vector2Int start,
+        Vector2Int destination)
+    {
+        if (start == destination)
+        {
+            return new List<Vector2Int>
+            {
+                start
+            };
+        }
+
+
+        Queue<Vector2Int> queue =
+            new Queue<Vector2Int>();
+
+        Dictionary<Vector2Int, Vector2Int> cameFrom =
+            new Dictionary<Vector2Int, Vector2Int>();
+
+        HashSet<Vector2Int> visited =
+            new HashSet<Vector2Int>();
+
+
+        queue.Enqueue(start);
+        visited.Add(start);
+
+
+        while (queue.Count > 0)
+        {
+            Vector2Int current =
+                queue.Dequeue();
+
+
+            for (int i = 0;
+                 i < Directions.Length;
+                 i++)
+            {
+                Vector2Int next =
+                    current + Directions[i];
+
+
+                if (visited.Contains(next))
+                {
+                    continue;
+                }
+
+                if (!gridManager.IsInsideGrid(
+                        next))
+                {
+                    continue;
+                }
+
+
+                // ==================================================
+                // DESTINATION
+                // ==================================================
+
+                if (next == destination)
+                {
+                    cameFrom[next] =
+                        current;
+
+                    return ReconstructPath(
+                        start,
+                        destination,
+                        cameFrom
+                    );
+                }
+
+
+                // ==================================================
+                // OCCUPIED
+                // ==================================================
+
+                if (gridManager.IsCellOccupied(
+                        next))
+                {
+                    continue;
+                }
+
+
+                visited.Add(next);
+
+                cameFrom[next] =
+                    current;
+
+                queue.Enqueue(next);
+            }
+        }
+
+
+        return null;
+    }
+
+
+    // ==================================================
+    // RECONSTRUCT PATH
+    // ==================================================
+
+    private List<Vector2Int> ReconstructPath(
+        Vector2Int start,
+        Vector2Int destination,
+        Dictionary<Vector2Int, Vector2Int> cameFrom)
+    {
+        List<Vector2Int> path =
+            new List<Vector2Int>();
+
+        Vector2Int current =
+            destination;
+
+
+        path.Add(current);
+
+
+        while (current != start)
+        {
+            if (!cameFrom.TryGetValue(
+                    current,
+                    out Vector2Int previous))
+            {
+                return null;
+            }
+
+            current =
+                previous;
+
+            path.Add(current);
+        }
+
+
+        path.Reverse();
+
+        return path;
+    }
+
+
+    // ==================================================
+    // BEST REACHABLE CELL
+    // ==================================================
+
+    private Vector2Int FindBestReachableCell(
+        Vector2Int start,
+        Vector2Int target)
+    {
+        Queue<Vector2Int> queue =
+            new Queue<Vector2Int>();
+
+        HashSet<Vector2Int> visited =
+            new HashSet<Vector2Int>();
+
+        Dictionary<Vector2Int, Vector2Int> cameFrom =
+            new Dictionary<Vector2Int, Vector2Int>();
+
+
+        queue.Enqueue(start);
+        visited.Add(start);
+
+
+        Vector2Int bestCell =
+            start;
+
+        float bestScore =
+            CalculateReachableCellScore(
+                start,
+                target,
+                0
+            );
+
+
+        while (queue.Count > 0)
+        {
+            Vector2Int current =
+                queue.Dequeue();
+
+
+            int pathDistance =
+                GetPathDistance(
+                    start,
+                    current,
+                    cameFrom
+                );
+
+
+            float score =
+                CalculateReachableCellScore(
+                    current,
+                    target,
+                    pathDistance
+                );
+
+
+            if (score < bestScore)
+            {
+                bestScore =
+                    score;
+
+                bestCell =
+                    current;
+            }
+
+
+            for (int i = 0;
+                 i < Directions.Length;
+                 i++)
+            {
+                Vector2Int next =
+                    current + Directions[i];
+
+
+                if (visited.Contains(next))
+                {
+                    continue;
+                }
+
+                if (!gridManager.IsInsideGrid(
+                        next))
+                {
+                    continue;
+                }
+
+                if (gridManager.IsCellOccupied(
+                        next))
+                {
+                    continue;
+                }
+
+
+                visited.Add(next);
+
+                cameFrom[next] =
+                    current;
+
+                queue.Enqueue(next);
+            }
+        }
+
+
+        if (bestCell == start)
+        {
+            MoveDebug(
+                "Best reachable cell is current cell."
+            );
+
+            return start;
+        }
+
+
+        List<Vector2Int> path =
+            ReconstructPath(
+                start,
+                bestCell,
+                cameFrom
+            );
+
+
+        if (path == null ||
+            path.Count < 2)
+        {
+            return start;
+        }
+
+
+        Vector2Int firstStep =
+            path[1];
+
+
+        MoveDebug(
+            $"Best reachable cell={bestCell}. " +
+            $"FirstStep={firstStep}"
+        );
+
+
+        return firstStep;
+    }
+
+
+    // ==================================================
+    // REACHABLE CELL SCORE
+    // ==================================================
+
+    private float CalculateReachableCellScore(
+        Vector2Int position,
+        Vector2Int target,
+        int movementCost)
+    {
+        int distance =
+            gridManager.GetDistance(
+                position,
+                target
+            );
+
+
+        float score =
+            distance * 10f;
+
+
+        score +=
+            movementCost * 1f;
+
+
+        if (preferMoreOpenPositions)
+        {
+            int openNeighbours =
+                CountOpenNeighbours(
+                    position
+                );
+
+            score -=
+                openNeighbours * 2f;
+        }
+
+
+        return score;
+    }
+
+
+    // ==================================================
+    // PATH DISTANCE
+    // ==================================================
+
+    private int GetPathDistance(
+        Vector2Int start,
+        Vector2Int current,
+        Dictionary<Vector2Int, Vector2Int> cameFrom)
+    {
+        if (current == start)
+        {
+            return 0;
+        }
+
+
+        int distance =
+            0;
+
+        Vector2Int position =
+            current;
+
+
+        while (position != start)
+        {
+            if (!cameFrom.TryGetValue(
+                    position,
+                    out Vector2Int previous))
+            {
+                break;
+            }
+
+            position =
+                previous;
+
+            distance++;
+        }
+
+
+        return distance;
+    }
+
+
+    // ==================================================
+    // OPEN NEIGHBOURS
+    // ==================================================
+
+    private int CountOpenNeighbours(
+        Vector2Int position)
+    {
+        int count =
+            0;
+
+
+        for (int i = 0;
+             i < Directions.Length;
+             i++)
+        {
+            Vector2Int neighbour =
+                position + Directions[i];
+
+
+            if (!gridManager.IsInsideGrid(
+                    neighbour))
+            {
+                continue;
+            }
+
+
+            if (!gridManager.IsCellOccupied(
+                    neighbour))
+            {
+                count++;
+            }
+        }
+
+
+        return count;
     }
 
 
@@ -582,5 +1283,11 @@ public class UnitMoveBrain : MonoBehaviour
         EnsureGridManager();
 
         return gridManager;
+    }
+
+
+    public bool IsMoving()
+    {
+        return isMoving;
     }
 }

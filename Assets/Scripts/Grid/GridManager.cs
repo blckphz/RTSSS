@@ -72,7 +72,6 @@ public class GridManager : MonoBehaviour
         }
 
         CreateFloor();
-
     }
 
     // ==================================================
@@ -361,7 +360,103 @@ public class GridManager : MonoBehaviour
     }
 
     // ==================================================
+    // START MOVEMENT
+    //
+    // Removes the unit from its old cell and reserves
+    // the destination cell.
+    //
+    // The actual transform movement is handled by
+    // UnitMoveBrain.
+    // ==================================================
+
+    public bool StartMoveUnit(
+        GameObject unit,
+        Vector2Int oldPosition,
+        Vector2Int newPosition)
+    {
+        if (unit == null)
+        {
+            return false;
+        }
+
+        if (!IsInsideGrid(oldPosition) ||
+            !IsInsideGrid(newPosition))
+        {
+            return false;
+        }
+
+        if (oldPosition == newPosition)
+        {
+            return false;
+        }
+
+        if (occupiedCells[
+                oldPosition.x,
+                oldPosition.y] != unit)
+        {
+            return false;
+        }
+
+        if (IsCellOccupied(newPosition))
+        {
+            return false;
+        }
+
+        // Remove from old cell.
+        occupiedCells[
+            oldPosition.x,
+            oldPosition.y
+        ] = null;
+
+        // Reserve destination immediately.
+        occupiedCells[
+            newPosition.x,
+            newPosition.y
+        ] = unit;
+
+        return true;
+    }
+
+    // ==================================================
+    // FINISH MOVEMENT
+    //
+    // The unit has already physically moved here.
+    // This makes sure its final transform position is
+    // exactly centered on the grid cell.
+    // ==================================================
+
+    public void FinishMoveUnit(
+        GameObject unit,
+        Vector2Int position)
+    {
+        if (unit == null)
+        {
+            return;
+        }
+
+        if (!IsInsideGrid(position))
+        {
+            return;
+        }
+
+        if (occupiedCells[
+                position.x,
+                position.y] != unit)
+        {
+            return;
+        }
+
+        unit.transform.position =
+            GridToWorldPosition(position);
+    }
+
+    // ==================================================
     // MOVE UNIT
+    //
+    // Instant movement version.
+    //
+    // Kept for systems that still need immediate
+    // grid movement.
     // ==================================================
 
     public bool MoveUnit(

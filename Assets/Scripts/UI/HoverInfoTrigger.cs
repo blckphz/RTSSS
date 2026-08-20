@@ -5,19 +5,26 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 {
     [Header("Tooltip Content")]
     [TextArea]
-    [SerializeField] private string hoverMessage = "Default Prefab Info";
+    [SerializeField]
+    private string hoverMessage =
+        "Default Prefab Info";
 
-    public string HoverMessage => hoverMessage;
+    public string HoverMessage =>
+        hoverMessage;
 
     [Header("Click Feedback")]
     [SerializeField] private float selectedScale = 1.1f;
     [SerializeField] private float scaleSpeed = 10f;
 
     [Header("Selected Visual")]
-    [Tooltip("SpriteRenderer on the child object that appears when selected.")]
-    [SerializeField] private SpriteRenderer selectedChildSprite;
+    [Tooltip(
+        "SpriteRenderer on the child object that appears when selected."
+    )]
+    [SerializeField]
+    private SpriteRenderer selectedChildSprite;
 
     private Vector3 originalScale;
+
     private bool isSelected;
 
     private SpriteRenderer spriteRenderer;
@@ -25,51 +32,88 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     private AttackUnit attackUnit;
     private CanvasInfoManager canvasInfoManager;
 
+
     // =============================================================
     // UNITY LIFECYCLE
     // =============================================================
 
     private void Awake()
     {
-        collider2D = GetComponent<Collider2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        attackUnit = GetComponent<AttackUnit>();
+        collider2D =
+            GetComponent<Collider2D>();
 
-        originalScale = transform.localScale;
+        spriteRenderer =
+            GetComponent<SpriteRenderer>();
+
+        attackUnit =
+            GetComponent<AttackUnit>();
+
+        originalScale =
+            transform.localScale;
+
+        // =========================================================
+        // VALIDATION
+        // =========================================================
 
         if (collider2D == null)
         {
-            Debug.LogError($"[HoverInfoTrigger] {gameObject.name} is missing a required Collider2D!", this);
+            Debug.LogError(
+                $"[HoverInfoTrigger] " +
+                $"{gameObject.name} is missing " +
+                "a required Collider2D!",
+                this
+            );
         }
 
         if (attackUnit == null)
         {
-            Debug.LogError($"[HoverInfoTrigger] {gameObject.name} is missing an AttackUnit component!", this);
+            Debug.LogError(
+                $"[HoverInfoTrigger] " +
+                $"{gameObject.name} is missing " +
+                "an AttackUnit component!",
+                this
+            );
         }
+
+        // =========================================================
+        // SELECTED VISUAL
+        // =========================================================
 
         if (selectedChildSprite != null)
         {
             selectedChildSprite.enabled = false;
         }
 
-        // Cache CanvasInfoManager reference
-        canvasInfoManager = FindObjectOfType<CanvasInfoManager>();
+        // =========================================================
+        // CANVAS INFO
+        // =========================================================
+
+        canvasInfoManager =
+            FindObjectOfType<CanvasInfoManager>();
     }
+
 
     private void Update()
     {
-        Vector3 targetScale = isSelected ? originalScale * selectedScale : originalScale;
+        Vector3 targetScale =
+            isSelected
+                ? originalScale * selectedScale
+                : originalScale;
 
-        // Skip Lerp if already at or very close to target scale
-        if ((transform.localScale - targetScale).sqrMagnitude > 0.0001f)
+        if (
+            (transform.localScale - targetScale)
+            .sqrMagnitude > 0.0001f
+        )
         {
-            transform.localScale = Vector3.Lerp(
-                transform.localScale,
-                targetScale,
-                Time.deltaTime * scaleSpeed
-            );
+            transform.localScale =
+                Vector3.Lerp(
+                    transform.localScale,
+                    targetScale,
+                    Time.deltaTime * scaleSpeed
+                );
         }
     }
+
 
     // =============================================================
     // HOVER DETECTION
@@ -83,23 +127,40 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         }
     }
 
+
     private void OnMouseExit()
     {
-        // Check if there is an active global selection in UIManager
+        // =========================================================
+        // IF SOMETHING IS SELECTED
+        // =========================================================
+
         if (UIManager.CurrentSelection != null)
         {
-            // If another unit is selected, show its info upon hover-off
             if (canvasInfoManager != null)
             {
-                canvasInfoManager.ShowCharacter(UIManager.CurrentSelection);
+                canvasInfoManager.ShowCharacter(
+                    UIManager.CurrentSelection
+                );
             }
+
+            return;
         }
-        else if (!isSelected && canvasInfoManager != null)
+
+        // =========================================================
+        // NOTHING SELECTED
+        // =========================================================
+
+        if (!isSelected &&
+            canvasInfoManager != null)
         {
-            // If nothing is selected and this isn't selected, clear the canvas
             canvasInfoManager.ClearInfo();
         }
     }
+
+
+    // =============================================================
+    // DISABLE
+    // =============================================================
 
     private void OnDisable()
     {
@@ -121,6 +182,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         }
     }
 
+
+    // =============================================================
+    // DESTROY
+    // =============================================================
+
     private void OnDestroy()
     {
         if (UIManager.CurrentSelection == this)
@@ -129,46 +195,83 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         }
     }
 
+
     // =============================================================
-    // INTERFACE & GETTERS / SETTERS
+    // CHARACTER DATA
     // =============================================================
 
     public CharacterSO GetCharacterData()
     {
-        if (attackUnit == null) return null;
+        if (attackUnit == null)
+        {
+            return null;
+        }
 
-        CharacterSO characterData = attackUnit.GetCharacterData();
+        CharacterSO characterData =
+            attackUnit.GetCharacterData();
+
         if (characterData == null)
         {
-            Debug.LogError($"[HoverInfoTrigger] AttackUnit on {gameObject.name} has no CharacterSO assigned!", this);
+            Debug.LogError(
+                $"[HoverInfoTrigger] " +
+                $"AttackUnit on {gameObject.name} " +
+                "has no CharacterSO assigned!",
+                this
+            );
         }
 
         return characterData;
     }
 
-    public AttackUnit GetAttackUnit() => attackUnit;
 
-    public bool IsSelected() => isSelected;
+    // =============================================================
+    // ATTACK UNIT
+    // =============================================================
+
+    public AttackUnit GetAttackUnit()
+    {
+        return attackUnit;
+    }
+
+
+    // =============================================================
+    // SELECTION
+    // =============================================================
+
+    public bool IsSelected()
+    {
+        return isSelected;
+    }
+
 
     public void SetSelected(bool selected)
     {
         isSelected = selected;
 
+        // =========================================================
+        // SELECTED VISUAL
+        // =========================================================
+
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled = selected;
+            selectedChildSprite.enabled =
+                selected;
         }
+
+        // =========================================================
+        // CANVAS
+        // =========================================================
 
         if (canvasInfoManager != null)
         {
             if (selected)
             {
-                // Lock info on canvas
-                canvasInfoManager.ShowCharacter(this);
+                canvasInfoManager.ShowCharacter(
+                    this
+                );
             }
             else
             {
-                // Clear info on deselection
                 canvasInfoManager.ClearInfo();
             }
         }

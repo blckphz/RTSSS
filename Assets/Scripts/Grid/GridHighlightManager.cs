@@ -109,7 +109,6 @@ public class GridHighlightManager : MonoBehaviour
 
     private bool hasPlacementPosition;
 
-
     // ==================================================
     // UNITY
     // ==================================================
@@ -129,12 +128,10 @@ public class GridHighlightManager : MonoBehaviour
         }
     }
 
-
     private void Start()
     {
         CacheTiles();
     }
-
 
     private void Update()
     {
@@ -143,7 +140,6 @@ public class GridHighlightManager : MonoBehaviour
             RefreshAbilityCells();
         }
     }
-
 
     // ==================================================
     // CACHE ALL TILES
@@ -168,14 +164,12 @@ public class GridHighlightManager : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2Int position =
-                    new Vector2Int(x, y);
-
-                CacheTile(position);
+                CacheTile(
+                    new Vector2Int(x, y)
+                );
             }
         }
     }
-
 
     // ==================================================
     // CACHE SINGLE TILE
@@ -244,7 +238,6 @@ public class GridHighlightManager : MonoBehaviour
             };
     }
 
-
     // ==================================================
     // REBUILD CACHE
     // ==================================================
@@ -253,7 +246,6 @@ public class GridHighlightManager : MonoBehaviour
     {
         CacheTiles();
     }
-
 
     // ==================================================
     // PLACEMENT HIGHLIGHT
@@ -290,7 +282,6 @@ public class GridHighlightManager : MonoBehaviour
         RefreshTile(position);
     }
 
-
     // ==================================================
 
     public void ClearPlacementTile()
@@ -309,14 +300,12 @@ public class GridHighlightManager : MonoBehaviour
         RefreshTile(oldPosition);
     }
 
-
     // ==================================================
 
     public bool HasPlacementTile()
     {
         return hasPlacementPosition;
     }
-
 
     // ==================================================
 
@@ -325,9 +314,33 @@ public class GridHighlightManager : MonoBehaviour
         return placementPosition;
     }
 
-
     // ==================================================
     // ABILITY RANGE
+    // ==================================================
+    //
+    // GENERIC RANGE PREVIEW.
+    //
+    // The ability itself decides the shape.
+    //
+    // For FrontAttack:
+    //
+    // Range 1:
+    //
+    // XXX
+    // XOX
+    // XXX
+    //
+    // Range 2:
+    //
+    // XXXXX
+    // XXXXX
+    // XXOXX
+    // XXXXX
+    // XXXXX
+    //
+    // This is ONLY the target-selection range.
+    //
+    // It does NOT display the actual FrontAttack hitbox.
     // ==================================================
 
     public void ShowAbilityRange(
@@ -363,10 +376,24 @@ public class GridHighlightManager : MonoBehaviour
                 Vector2Int position =
                     new Vector2Int(x, y);
 
-                if (gridManager.GetDistance(
-                        centerPosition,
-                        position
-                    ) <= range)
+                if (position == centerPosition)
+                {
+                    continue;
+                }
+
+                int distance =
+                    Mathf.Max(
+                        Mathf.Abs(
+                            position.x -
+                            centerPosition.x
+                        ),
+                        Mathf.Abs(
+                            position.y -
+                            centerPosition.y
+                        )
+                    );
+
+                if (distance <= range)
                 {
                     abilityCells.Add(
                         position
@@ -378,9 +405,105 @@ public class GridHighlightManager : MonoBehaviour
         RefreshAbilityCells();
     }
 
+    // ==================================================
+    // ABILITY RANGE FROM ABILITY
+    // ==================================================
+    //
+    // THIS IS THE MAIN METHOD TO USE.
+    //
+    // It asks the AbilitySO for its actual range shape.
+    //
+    // FrontAttack therefore uses its BOX range.
+    //
+    // Other abilities can have completely different
+    // range shapes without this manager knowing about them.
+    // ==================================================
+
+    public void ShowAbilityRange(
+        AbilitySO ability,
+        GameObject user)
+    {
+        ClearAbilityRange();
+
+        if (ability == null ||
+            user == null ||
+            gridManager == null)
+        {
+            return;
+        }
+
+        List<Vector2Int> rangeTiles =
+            ability.GetRangeTiles(
+                gridManager,
+                user
+            );
+
+        if (rangeTiles == null ||
+            rangeTiles.Count == 0)
+        {
+            return;
+        }
+
+        foreach (Vector2Int position
+                 in rangeTiles)
+        {
+            if (!gridManager.IsInsideGrid(
+                    position))
+            {
+                continue;
+            }
+
+            abilityCells.Add(
+                position
+            );
+        }
+
+        RefreshAbilityCells();
+    }
 
     // ==================================================
-    // CUSTOM ABILITY CELLS
+    // SHOW ACTUAL ABILITY TILES
+    // ==================================================
+    //
+    // These are ABSOLUTE GRID POSITIONS.
+    //
+    // This can be used AFTER a target has been selected
+    // if you want to preview the actual hitbox.
+    //
+    // For FrontAttack, this would show the 3-wide
+    // attack pattern in the selected direction.
+    // ==================================================
+
+    public void ShowAbilityTiles(
+        List<Vector2Int> positions)
+    {
+        ClearAbilityRange();
+
+        if (gridManager == null ||
+            positions == null ||
+            positions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (Vector2Int position in positions)
+        {
+            if (!gridManager.IsInsideGrid(
+                    position))
+            {
+                continue;
+            }
+
+            abilityCells.Add(
+                position
+            );
+        }
+
+        RefreshAbilityCells();
+    }
+
+    // ==================================================
+    // LEGACY OFFSET VERSION
     // ==================================================
 
     public void ShowAbilityCells(
@@ -419,7 +542,6 @@ public class GridHighlightManager : MonoBehaviour
         RefreshAbilityCells();
     }
 
-
     // ==================================================
     // SINGLE ABILITY CELL
     // ==================================================
@@ -444,9 +566,8 @@ public class GridHighlightManager : MonoBehaviour
         }
     }
 
-
     // ==================================================
-    // CLEAR ABILITY
+    // CLEAR ABILITY RANGE
     // ==================================================
 
     public void ClearAbilityRange()
@@ -463,12 +584,12 @@ public class GridHighlightManager : MonoBehaviour
 
         abilityCells.Clear();
 
-        foreach (Vector2Int position in cells)
+        foreach (Vector2Int position
+                 in cells)
         {
             RefreshTile(position);
         }
     }
-
 
     // ==================================================
     // REFRESH ABILITY CELLS
@@ -482,7 +603,6 @@ public class GridHighlightManager : MonoBehaviour
             RefreshTile(position);
         }
     }
-
 
     // ==================================================
     // REFRESH TILE
@@ -546,7 +666,7 @@ public class GridHighlightManager : MonoBehaviour
                 originalScale;
 
             // ==================================================
-            // EXPLOSION HAS HIGHEST PRIORITY
+            // EXPLOSION
             // ==================================================
 
             if (isExplosion)
@@ -574,7 +694,7 @@ public class GridHighlightManager : MonoBehaviour
             }
 
             // ==================================================
-            // ABILITY RANGE
+            // ABILITY
             // ==================================================
 
             else if (isAbility)
@@ -595,7 +715,7 @@ public class GridHighlightManager : MonoBehaviour
             }
 
             // ==================================================
-            // ORIGINAL
+            // NORMAL
             // ==================================================
 
             else
@@ -614,7 +734,6 @@ public class GridHighlightManager : MonoBehaviour
                 finalScale;
         }
     }
-
 
     // ==================================================
     // EXPLOSION TILE FLASH
@@ -640,7 +759,6 @@ public class GridHighlightManager : MonoBehaviour
         );
     }
 
-
     // ==================================================
 
     private IEnumerator ExplosionTileRoutine(
@@ -658,7 +776,7 @@ public class GridHighlightManager : MonoBehaviour
         float elapsed = 0f;
 
         // ==================================================
-        // SCALE UP / RED
+        // SCALE UP
         // ==================================================
 
         while (elapsed < explosionPulseDuration)
@@ -714,7 +832,7 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         // ==================================================
-        // SCALE DOWN / RESTORE
+        // SCALE DOWN
         // ==================================================
 
         elapsed = 0f;
@@ -772,14 +890,13 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         // ==================================================
-        // FORCE RESTORE
+        // RESTORE
         // ==================================================
 
         explosionCells.Remove(position);
 
         RefreshTile(position);
     }
-
 
     // ==================================================
     // ABILITY FLASH
@@ -810,9 +927,8 @@ public class GridHighlightManager : MonoBehaviour
         );
     }
 
-
     // ==================================================
-    // TILE SCALE PING-PONG
+    // TILE SCALE
     // ==================================================
 
     private float GetCurrentScale()
@@ -836,7 +952,6 @@ public class GridHighlightManager : MonoBehaviour
         );
     }
 
-
     // ==================================================
     // STATE
     // ==================================================
@@ -849,7 +964,6 @@ public class GridHighlightManager : MonoBehaviour
         );
     }
 
-
     // ==================================================
 
     public bool IsPlacementCell(
@@ -858,7 +972,6 @@ public class GridHighlightManager : MonoBehaviour
         return hasPlacementPosition &&
                placementPosition == position;
     }
-
 
     // ==================================================
     // CLEAR EVERYTHING
@@ -869,7 +982,6 @@ public class GridHighlightManager : MonoBehaviour
         ClearPlacementTile();
         ClearAbilityRange();
     }
-
 
     // ==================================================
     // GET GRID MANAGER
