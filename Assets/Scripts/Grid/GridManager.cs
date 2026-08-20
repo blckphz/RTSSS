@@ -3,26 +3,42 @@ using UnityEngine;
 public class GridManager : MonoBehaviour
 {
     [Header("Grid References")]
-    [SerializeField] private Grid grid;
-    [SerializeField] private GameObject floorTilePrefab;
-    [SerializeField] private Transform floorParent;
+    [SerializeField]
+    private Grid grid;
+
+    [SerializeField]
+    private GameObject floorTilePrefab;
+
+    [SerializeField]
+    private Transform floorParent;
+
 
     [Header("Grid Size")]
-    [SerializeField, Min(1)] private int width = 8;
-    [SerializeField, Min(1)] private int height = 8;
+    [SerializeField, Min(1)]
+    private int width = 8;
+
+    [SerializeField, Min(1)]
+    private int height = 8;
+
 
     [Header("Highlight Manager")]
-    [SerializeField] private GridHighlightManager highlightManager;
+    [SerializeField]
+    private GridHighlightManager highlightManager;
+
 
     [Header("Gizmos")]
-    [SerializeField] private bool showGridGizmos = true;
+    [SerializeField]
+    private bool showGridGizmos = true;
+
 
     // ==================================================
     // CORE DATA
     // ==================================================
 
     private GameObject[,] occupiedCells;
+
     private GameObject[,] floorTiles;
+
 
     // ==================================================
     // UNITY
@@ -32,6 +48,7 @@ public class GridManager : MonoBehaviour
     {
         Initialize();
     }
+
 
     // ==================================================
     // INITIALIZATION
@@ -54,16 +71,19 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+
         occupiedCells =
             new GameObject[width, height];
 
         floorTiles =
             new GameObject[width, height];
 
+
         if (floorParent == null)
         {
             floorParent = transform;
         }
+
 
         if (highlightManager == null)
         {
@@ -71,8 +91,10 @@ public class GridManager : MonoBehaviour
                 GetComponent<GridHighlightManager>();
         }
 
+
         CreateFloor();
     }
+
 
     // ==================================================
     // FLOOR CREATION
@@ -90,12 +112,14 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 Vector2Int position =
                     new Vector2Int(x, y);
+
 
                 GameObject tile =
                     Instantiate(
@@ -105,13 +129,17 @@ public class GridManager : MonoBehaviour
                         floorParent
                     );
 
+
                 tile.name =
                     $"Floor_{x}_{y}";
 
-                floorTiles[x, y] = tile;
+
+                floorTiles[x, y] =
+                    tile;
             }
         }
     }
+
 
     // ==================================================
     // POSITION CONVERSION
@@ -125,14 +153,17 @@ public class GridManager : MonoBehaviour
             return Vector2Int.zero;
         }
 
+
         Vector3Int cell =
             grid.WorldToCell(worldPosition);
+
 
         return new Vector2Int(
             cell.x,
             cell.y
         );
     }
+
 
     public Vector3 GridToWorldPosition(
         Vector2Int gridPosition)
@@ -142,6 +173,7 @@ public class GridManager : MonoBehaviour
             return Vector3.zero;
         }
 
+
         Vector3Int cell =
             new Vector3Int(
                 gridPosition.x,
@@ -149,8 +181,10 @@ public class GridManager : MonoBehaviour
                 0
             );
 
+
         return grid.GetCellCenterWorld(cell);
     }
+
 
     // ==================================================
     // GRID CHECKS
@@ -166,6 +200,7 @@ public class GridManager : MonoBehaviour
             position.y < height;
     }
 
+
     // ==================================================
     // FLOOR
     // ==================================================
@@ -178,11 +213,13 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
+
         return floorTiles[
             position.x,
             position.y
         ];
     }
+
 
     // ==================================================
     // UNIT VALIDATION
@@ -197,6 +234,7 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         if (!occupant.activeInHierarchy)
         {
             occupiedCells[
@@ -207,8 +245,10 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         HealthManager health =
             occupant.GetComponent<HealthManager>();
+
 
         if (health != null &&
             health.IsDead())
@@ -221,8 +261,10 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         return true;
     }
+
 
     // ==================================================
     // UNIT QUERIES
@@ -236,17 +278,20 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         GameObject occupant =
             occupiedCells[
                 position.x,
                 position.y
             ];
 
+
         return IsOccupantValid(
             occupant,
             position
         );
     }
+
 
     public GameObject GetUnitAt(
         Vector2Int position)
@@ -256,11 +301,13 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
+
         GameObject occupant =
             occupiedCells[
                 position.x,
                 position.y
             ];
+
 
         return IsOccupantValid(
             occupant,
@@ -269,6 +316,7 @@ public class GridManager : MonoBehaviour
             ? occupant
             : null;
     }
+
 
     // ==================================================
     // GET UNIT GRID POSITION
@@ -282,10 +330,12 @@ public class GridManager : MonoBehaviour
             return Vector2Int.zero;
         }
 
+
         return WorldToGridPosition(
             unit.transform.position
         );
     }
+
 
     // ==================================================
     // CHECK MOVEMENT
@@ -300,13 +350,16 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         if (!IsInsideGrid(position))
         {
             return false;
         }
 
+
         GameObject occupant =
             GetUnitAt(position);
+
 
         if (occupant != null &&
             occupant != unit)
@@ -314,8 +367,10 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         return true;
     }
+
 
     // ==================================================
     // UNIT MANAGEMENT
@@ -330,26 +385,32 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         if (!IsInsideGrid(position))
         {
             return false;
         }
+
 
         if (IsCellOccupied(position))
         {
             return false;
         }
 
+
         occupiedCells[
             position.x,
             position.y
         ] = unit;
 
+
         unit.transform.position =
             GridToWorldPosition(position);
 
+
         return true;
     }
+
 
     public void RemoveUnit(
         Vector2Int position)
@@ -359,11 +420,13 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+
         occupiedCells[
             position.x,
             position.y
         ] = null;
     }
+
 
     public void RemoveUnit(
         GameObject unit)
@@ -372,6 +435,7 @@ public class GridManager : MonoBehaviour
         {
             return;
         }
+
 
         for (int x = 0; x < width; x++)
         {
@@ -386,6 +450,7 @@ public class GridManager : MonoBehaviour
         }
     }
 
+
     public void CleanupDeadUnits()
     {
         for (int x = 0; x < width; x++)
@@ -394,6 +459,7 @@ public class GridManager : MonoBehaviour
             {
                 GameObject unit =
                     occupiedCells[x, y];
+
 
                 if (unit != null)
                 {
@@ -406,11 +472,9 @@ public class GridManager : MonoBehaviour
         }
     }
 
+
     // ==================================================
     // START MOVEMENT
-    //
-    // Removes the unit from its old cell and reserves
-    // the destination cell.
     // ==================================================
 
     public bool StartMoveUnit(
@@ -423,16 +487,19 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         if (!IsInsideGrid(oldPosition) ||
             !IsInsideGrid(newPosition))
         {
             return false;
         }
 
+
         if (oldPosition == newPosition)
         {
             return false;
         }
+
 
         if (occupiedCells[
                 oldPosition.x,
@@ -441,16 +508,19 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         if (IsCellOccupied(newPosition))
         {
             return false;
         }
 
-        // Remove from old cell.
+
+        // Remove old cell.
         occupiedCells[
             oldPosition.x,
             oldPosition.y
         ] = null;
+
 
         // Reserve destination immediately.
         occupiedCells[
@@ -458,8 +528,10 @@ public class GridManager : MonoBehaviour
             newPosition.y
         ] = unit;
 
+
         return true;
     }
+
 
     // ==================================================
     // FINISH MOVEMENT
@@ -474,10 +546,12 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+
         if (!IsInsideGrid(position))
         {
             return;
         }
+
 
         if (occupiedCells[
                 position.x,
@@ -486,14 +560,14 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+
         unit.transform.position =
             GridToWorldPosition(position);
     }
 
+
     // ==================================================
-    // MOVE UNIT
-    //
-    // Instant movement version.
+    // INSTANT MOVEMENT
     // ==================================================
 
     public bool MoveUnit(
@@ -506,42 +580,47 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         if (!IsInsideGrid(oldPosition) ||
             !IsInsideGrid(newPosition))
         {
             return false;
         }
 
-        if (
-            occupiedCells[
+
+        if (occupiedCells[
                 oldPosition.x,
-                oldPosition.y
-            ] != unit
-        )
+                oldPosition.y] != unit)
         {
             return false;
         }
+
 
         if (IsCellOccupied(newPosition))
         {
             return false;
         }
 
+
         occupiedCells[
             oldPosition.x,
             oldPosition.y
         ] = null;
+
 
         occupiedCells[
             newPosition.x,
             newPosition.y
         ] = unit;
 
+
         unit.transform.position =
             GridToWorldPosition(newPosition);
 
+
         return true;
     }
+
 
     // ==================================================
     // DISTANCE
@@ -556,6 +635,7 @@ public class GridManager : MonoBehaviour
             Mathf.Abs(a.y - b.y);
     }
 
+
     // ==================================================
     // GETTERS
     // ==================================================
@@ -565,20 +645,24 @@ public class GridManager : MonoBehaviour
         return width;
     }
 
+
     public int GetHeight()
     {
         return height;
     }
+
 
     public Grid GetGrid()
     {
         return grid;
     }
 
+
     public GridHighlightManager GetHighlightManager()
     {
         return highlightManager;
     }
+
 
     // ==================================================
     // GIZMOS
@@ -591,6 +675,7 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+
         if (grid == null)
         {
             grid = GetComponent<Grid>();
@@ -601,7 +686,10 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        Gizmos.color = Color.gray;
+
+        Gizmos.color =
+            Color.gray;
+
 
         for (int x = 0; x <= width; x++)
         {
@@ -611,6 +699,7 @@ public class GridManager : MonoBehaviour
             );
         }
 
+
         for (int y = 0; y <= height; y++)
         {
             Gizmos.DrawLine(
@@ -619,7 +708,10 @@ public class GridManager : MonoBehaviour
             );
         }
 
-        Gizmos.color = Color.white;
+
+        Gizmos.color =
+            Color.white;
+
 
         Vector3 bottomLeft =
             GetGridCorner(0, 0);
@@ -632,6 +724,7 @@ public class GridManager : MonoBehaviour
 
         Vector3 topRight =
             GetGridCorner(width, height);
+
 
         Gizmos.DrawLine(
             bottomLeft,
@@ -653,6 +746,7 @@ public class GridManager : MonoBehaviour
             bottomLeft
         );
     }
+
 
     private Vector3 GetGridCorner(
         int x,

@@ -17,6 +17,7 @@ MonoBehaviour:
   prefabToSpawn: {fileID: 2305230657848179651, guid: 9fea782588f72b74b9b9cc4baf5c27d7, type: 3}
   team: 0
   maxHealth: 100
+  moveRange: 4
   abilities:
   - {fileID: 11400000, guid: 700548be2ef013645be511273ce187fd, type: 2}
   - {fileID: 11400000, guid: 9b5d425a2b4fa654b9cdf148a6e4030c, type: 2}

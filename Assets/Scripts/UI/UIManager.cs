@@ -35,12 +35,10 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null &&
-            Instance != this)
+        if (Instance != null && Instance != this)
         {
             Debug.LogWarning(
-                "[UIManager] Duplicate UIManager found. " +
-                "Destroying duplicate.",
+                "[UIManager] Duplicate UIManager found. Destroying duplicate.",
                 this
             );
 
@@ -96,9 +94,7 @@ public class UIManager : MonoBehaviour
             Mouse.current.position.ReadValue();
 
         Ray ray =
-            clickCamera.ScreenPointToRay(
-                mousePosition
-            );
+            clickCamera.ScreenPointToRay(mousePosition);
 
         if (drawRay)
         {
@@ -125,8 +121,6 @@ public class UIManager : MonoBehaviour
 
         // =========================================================
         // TRY MOVING SELECTED UNIT
-        //
-        // This happens before normal object selection.
         // =========================================================
 
         if (allowPlayerMovement &&
@@ -188,7 +182,6 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         UnitMoveBrain moveBrain =
             attackUnit.GetComponent<UnitMoveBrain>();
 
@@ -197,8 +190,7 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.LogWarning(
-                    "[UIManager] Selected unit has " +
-                    "no UnitMoveBrain.",
+                    "[UIManager] Selected unit has no UnitMoveBrain.",
                     attackUnit
                 );
             }
@@ -278,7 +270,7 @@ public class UIManager : MonoBehaviour
 
 
         // =========================================================
-        // ONLY ALLOW HIGHLIGHTED MOVEMENT CELLS
+        // HIGHLIGHT MANAGER
         // =========================================================
 
         GridHighlightManager highlightManager =
@@ -289,13 +281,17 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
+
+        // =========================================================
+        // ONLY ALLOW HIGHLIGHTED CELLS
+        // =========================================================
+
         if (!highlightManager.IsMovementCell(destination))
         {
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] Cell {destination} " +
-                    "is outside the selected unit's movement range."
+                    $"[UIManager] Cell {destination} is outside the selected unit's movement range."
                 );
             }
 
@@ -312,8 +308,7 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] Cannot move to {destination}. " +
-                    "Cell is occupied."
+                    $"[UIManager] Cannot move to {destination}. Cell is occupied."
                 );
             }
 
@@ -345,9 +340,7 @@ public class UIManager : MonoBehaviour
         // =========================================================
 
         bool started =
-            moveBrain.TryMoveTo(
-                destination
-            );
+            moveBrain.TryMoveTo(destination);
 
         if (!started)
         {
@@ -365,8 +358,7 @@ public class UIManager : MonoBehaviour
         if (debugClick)
         {
             Debug.Log(
-                $"[UIManager] Player movement: " +
-                $"{currentPosition} -> {destination}",
+                $"[UIManager] Player movement: {currentPosition} -> {destination}",
                 attackUnit
             );
         }
@@ -388,8 +380,7 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // Clicking the already selected object
-        // does nothing.
+        // Clicking already selected object does nothing.
         if (CurrentSelection == trigger)
         {
             return;
@@ -410,16 +401,13 @@ public class UIManager : MonoBehaviour
         // NEW SELECTION
         // =========================================================
 
-        CurrentSelection =
-            trigger;
+        CurrentSelection = trigger;
 
         trigger.SetSelected(true);
 
 
         Debug.Log(
-            $"[UIManager] SELECTED -> " +
-            $"{trigger.gameObject.name} | " +
-            $"Message: {trigger.HoverMessage}",
+            $"[UIManager] SELECTED -> {trigger.gameObject.name} | Message: {trigger.HoverMessage}",
             trigger
         );
 
@@ -432,7 +420,7 @@ public class UIManager : MonoBehaviour
 
 
         // =========================================================
-        // UI / CAMERA
+        // UI
         // =========================================================
 
         if (CanvasJuiceManager.Instance != null)
@@ -442,8 +430,7 @@ public class UIManager : MonoBehaviour
         else
         {
             Debug.LogError(
-                "[UIManager] " +
-                "CanvasJuiceManager.Instance is NULL!"
+                "[UIManager] CanvasJuiceManager.Instance is NULL!"
             );
         }
     }
@@ -550,28 +537,14 @@ public class UIManager : MonoBehaviour
             CurrentSelection;
 
 
-        // =========================================================
-        // CLEAR OBJECT
-        // =========================================================
-
         previousSelection.SetSelected(false);
 
 
-        // =========================================================
-        // CLEAR MOVEMENT RANGE
-        // =========================================================
-
-        ClearMovementRange(
-            previousSelection
-        );
+        ClearMovementRange(previousSelection);
 
 
         CurrentSelection = null;
 
-
-        // =========================================================
-        // UI / CAMERA
-        // =========================================================
 
         if (CanvasJuiceManager.Instance != null)
         {
@@ -631,7 +604,7 @@ public class UIManager : MonoBehaviour
 
 
     // =============================================================
-    // CLEAR SELECTION FROM SPECIFIC OBJECT
+    // CLEAR SPECIFIC SELECTION
     // =============================================================
 
     public static void ClearSelection(

@@ -469,6 +469,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   raycastDistance: 1000
+  allowPlayerMovement: 1
   debugClick: 1
   drawRay: 1
 --- !u!114 &345656228
@@ -1332,6 +1333,7 @@ GameObject:
   - component: {fileID: 804482595}
   - component: {fileID: 804482594}
   - component: {fileID: 804482593}
+  - component: {fileID: 804482597}
   m_Layer: 0
   m_Name: GridManager
   m_TagString: Untagged
@@ -1353,8 +1355,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   enableDebugLogs: 1
   gridManager: {fileID: 0}
+  brain: {fileID: 0}
   placementColor: {r: 0, g: 1, b: 0, a: 1}
   placementAlpha: 0.5
+  movementRangeColor: {r: 0, g: 1, b: 0, a: 1}
+  movementRangeAlpha: 0.35
   abilityRangeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   abilityRangeAlpha: 0.35
   enemyTileColor: {r: 1, g: 0, b: 0, a: 1}
@@ -1427,6 +1432,7 @@ MonoBehaviour:
   width: 10
   height: 10
   highlightManager: {fileID: 804482593}
+  highlightBrain: {fileID: 0}
   showGridGizmos: 1
 --- !u!4 &804482596
 Transform:
@@ -1436,13 +1442,28 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 804482592}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 998.257, y: 462.7655, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 62.144592, y: -36.87628, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 2126825248}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &804482597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 804482592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ba2393f117883a4689722e50f25d767, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridHighlightBrain
+  gridManager: {fileID: 804482595}
+  highlightManager: {fileID: 804482593}
+  enableDebugLogs: 0
 --- !u!1 &813319353
 GameObject:
   m_ObjectHideFlags: 0
@@ -9190,6 +9211,7 @@ Transform:
   m_Children:
   - {fileID: 345656226}
   - {fileID: 813319354}
+  - {fileID: 804482596}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &653550517079312665
@@ -9256,7 +9278,6 @@ SceneRoots:
   - {fileID: 994161945}
   - {fileID: 619394802}
   - {fileID: 341319201}
-  - {fileID: 804482596}
   - {fileID: 1659253926}
   - {fileID: 1878894688}
   - {fileID: 205404454}
