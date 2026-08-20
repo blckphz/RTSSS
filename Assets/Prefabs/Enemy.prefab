@@ -105,6 +105,8 @@ GameObject:
   - component: {fileID: 2374263692071149587}
   - component: {fileID: 2375408908371313493}
   - component: {fileID: 3148016133544427552}
+  - component: {fileID: 6138558681720875464}
+  - component: {fileID: 1213053164979615894}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -220,6 +222,7 @@ MonoBehaviour:
   characterData: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
   abilities: []
   healthManager: {fileID: 3192282828779274466}
+  debugAttacks: 1
 --- !u!114 &2374263692071149587
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -309,3 +312,32 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &6138558681720875464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5869547761387176993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb8c912d489afb34abb30f1fac3ce175, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitMoveBrain
+  attackUnit: {fileID: 7430056509106207593}
+  gridManager: {fileID: 0}
+  debugMovement: 0
+--- !u!114 &1213053164979615894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5869547761387176993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5056b628930382c45984a20dfc858415, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitAttackBrain
+  attackUnit: {fileID: 0}
+  debugBrain: 0

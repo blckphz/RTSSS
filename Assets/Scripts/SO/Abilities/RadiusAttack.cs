@@ -2,9 +2,9 @@ using UnityEngine;
 
 [CreateAssetMenu(
     fileName = "BasicAttack",
-    menuName = "Combat/Abilities/Basic Attack"
+    menuName = "Combat/Abilities/RadiusAttack"
 )]
-public class BasicAttack : AbilitySO
+public class RadiusAttack : AbilitySO
 {
     // ==================================================
     // USE ABILITY
@@ -64,10 +64,6 @@ public class BasicAttack : AbilitySO
 
         if (targetHealth.IsDead())
         {
-            Debug.LogWarning(
-                $"[BasicAttack] {target.name} is already dead."
-            );
-
             return false;
         }
 
@@ -78,10 +74,6 @@ public class BasicAttack : AbilitySO
         int damage =
             GetDamage();
 
-        Debug.Log(
-            $"[BasicAttack] {user.name} attacks " +
-            $"{target.name} for {damage} damage."
-        );
 
         targetHealth.TakeDamage(damage);
 

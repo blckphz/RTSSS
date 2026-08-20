@@ -1,60 +1,173 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TargetingSystem : MonoBehaviour
 {
+    [Header("References")]
     [SerializeField] private GridManager gridManager;
+
+
+    // ==================================================
+    // UNITY
+    // ==================================================
 
     private void Awake()
     {
         if (gridManager == null)
-            gridManager = FindFirstObjectByType<GridManager>();
+        {
+            gridManager =
+                FindFirstObjectByType<GridManager>();
+        }
     }
 
-    public GameObject FindNearestTarget(AttackUnit attacker, Team targetTeam)
-    {
-        if (attacker == null || gridManager == null) return null;
 
-        AttackUnit[] allUnits = FindObjectsByType<AttackUnit>(FindObjectsSortMode.None);
-        Vector2Int attackerPos = gridManager.WorldToGridPosition(attacker.transform.position);
+    // ==================================================
+    // FIND NEAREST TARGET
+    // ==================================================
+
+    public GameObject FindNearestTarget(
+        AttackUnit attacker,
+        Team targetTeam)
+    {
+        if (attacker == null ||
+            gridManager == null)
+        {
+            return null;
+        }
+
+        AttackUnit[] allUnits =
+            FindObjectsByType<AttackUnit>(
+                FindObjectsSortMode.None
+            );
+
+        Vector2Int attackerPosition =
+            gridManager.WorldToGridPosition(
+                attacker.transform.position
+            );
 
         GameObject nearestTarget = null;
-        int nearestDistance = int.MaxValue;
 
-        foreach (AttackUnit unit in allUnits)
+        int nearestDistance =
+            int.MaxValue;
+
+        for (int i = 0;
+             i < allUnits.Length;
+             i++)
         {
-            if (unit == null || unit == attacker || !unit.gameObject.activeInHierarchy)
+            AttackUnit unit =
+                allUnits[i];
+
+            if (unit == null ||
+                unit == attacker)
+            {
                 continue;
+            }
 
-            HealthManager health = unit.GetHealthManager();
-            if (health == null || !health.IsAlive())
+            if (!unit.gameObject.activeInHierarchy)
+            {
                 continue;
+            }
 
-            Team unitTeam = health.GetTeam();
-            bool isEnemyTarget = (targetTeam == Team.Enemy) ? (unitTeam == Team.Enemy) : (unitTeam == Team.Player || unitTeam == Team.Ally);
+            if (unit.IsDead())
+            {
+                continue;
+            }
 
-            if (!isEnemyTarget) continue;
+            if (!IsValidTargetTeam(
+                    unit.GetTeam(),
+                    targetTeam))
+            {
+                continue;
+            }
 
-            Vector2Int targetPos = gridManager.WorldToGridPosition(unit.transform.position);
-            int distance = gridManager.GetDistance(attackerPos, targetPos);
+            Vector2Int targetPosition =
+                gridManager.WorldToGridPosition(
+                    unit.transform.position
+                );
+
+            int distance =
+                gridManager.GetDistance(
+                    attackerPosition,
+                    targetPosition
+                );
 
             if (distance < nearestDistance)
             {
-                nearestDistance = distance;
-                nearestTarget = unit.gameObject;
+                nearestDistance =
+                    distance;
+
+                nearestTarget =
+                    unit.gameObject;
             }
         }
 
         return nearestTarget;
     }
 
-    public int GetDistanceBetweenUnits(AttackUnit a, GameObject b)
+
+    // ==================================================
+    // TEAM VALIDATION
+    // ==================================================
+
+    private bool IsValidTargetTeam(
+        Team unitTeam,
+        Team targetTeam)
     {
-        if (a == null || b == null || gridManager == null) return int.MaxValue;
+        // Enemy targeting player/ally side.
+        if (targetTeam == Team.Player)
+        {
+            return unitTeam == Team.Player ||
+                   unitTeam == Team.Ally;
+        }
 
-        Vector2Int aPos = gridManager.WorldToGridPosition(a.transform.position);
-        Vector2Int bPos = gridManager.WorldToGridPosition(b.transform.position);
+        // Ally targeting enemy side.
+        if (targetTeam == Team.Enemy)
+        {
+            return unitTeam == Team.Enemy;
+        }
 
-        return gridManager.GetDistance(aPos, bPos);
+        // Direct team targeting.
+        return unitTeam == targetTeam;
+    }
+
+
+    // ==================================================
+    // DISTANCE
+    // ==================================================
+
+    public int GetDistanceBetweenUnits(
+        AttackUnit a,
+        GameObject b)
+    {
+        if (a == null ||
+            b == null ||
+            gridManager == null)
+        {
+            return int.MaxValue;
+        }
+
+        Vector2Int aPosition =
+            gridManager.WorldToGridPosition(
+                a.transform.position
+            );
+
+        Vector2Int bPosition =
+            gridManager.WorldToGridPosition(
+                b.transform.position
+            );
+
+        return gridManager.GetDistance(
+            aPosition,
+            bPosition
+        );
+    }
+
+
+    // ==================================================
+    // GRID
+    // ==================================================
+
+    public GridManager GetGridManager()
+    {
+        return gridManager;
     }
 }

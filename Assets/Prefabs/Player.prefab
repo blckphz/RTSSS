@@ -105,6 +105,8 @@ GameObject:
   - component: {fileID: 8427803419809321729}
   - component: {fileID: 6280651182369518804}
   - component: {fileID: 1982861054404513928}
+  - component: {fileID: 4421961331847324658}
+  - component: {fileID: 9126464460582162628}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -220,6 +222,7 @@ MonoBehaviour:
   characterData: {fileID: 11400000, guid: ad18bbb26e16b984498d916f39746623, type: 2}
   abilities: []
   healthManager: {fileID: 7781654838360763359}
+  debugAttacks: 1
 --- !u!114 &8427803419809321729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -309,3 +312,30 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &4421961331847324658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2305230657848179651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb8c912d489afb34abb30f1fac3ce175, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  attackUnit: {fileID: 7910321259876173858}
+  gridManager: {fileID: 0}
+  debugMovement: 1
+--- !u!114 &9126464460582162628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2305230657848179651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5056b628930382c45984a20dfc858415, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'

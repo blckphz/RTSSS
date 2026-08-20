@@ -3,6 +3,14 @@ using UnityEngine;
 
 public abstract class AbilitySO : ScriptableObject
 {
+    public enum RangeShape
+    {
+        Diamond,
+        Box,
+        FourDirections,
+        Diagonal
+    }
+
     [Header("Ability")]
     [SerializeField] private string abilityName;
 
@@ -15,9 +23,15 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField, Min(0)]
     private int cooldown = 0;
 
-    [Header("UI")]
+    [Header("Range")]
     [SerializeField, Min(1)]
     private int range = 1;
+
+    [SerializeField, Min(0)]
+    private int minDistance = 0;
+
+    [SerializeField]
+    private RangeShape rangeShape = RangeShape.Diamond;
 
     // ==================================================
     // GETTERS
@@ -48,14 +62,26 @@ public abstract class AbilitySO : ScriptableObject
         return range;
     }
 
+    public int GetMinDistance()
+    {
+        return minDistance;
+    }
+
+    public RangeShape GetRangeShape()
+    {
+        return rangeShape;
+    }
+
     // ==================================================
-    // HITBOX TILES
+    // GET RANGE TILES
     // ==================================================
 
     /// <summary>
-    /// Returns the tiles affected by the ability.
-    /// Specific abilities can override this if they have
-    /// special shapes such as cones, lines, areas, etc.
+    /// Returns the tiles affected by this ability's range.
+    ///
+    /// The returned positions are ABSOLUTE grid positions.
+    /// Minimum distance is excluded.
+    /// Maximum distance is defined by range.
     /// </summary>
     public virtual List<Vector2Int> GetHitboxTiles(
         GridManager gridManager,
@@ -71,54 +97,231 @@ public abstract class AbilitySO : ScriptableObject
             return tiles;
         }
 
-        Vector2Int userPosition =
+        Vector2Int origin =
             gridManager.WorldToGridPosition(
                 user.transform.position
             );
 
-        int abilityRange = Mathf.Max(1, range);
+        int abilityRange =
+            Mathf.Max(1, range);
 
-        // Add every tile within the ability range.
-        // This means the ability is no longer limited
-        // to only the immediately adjacent tiles.
-        for (int x = -abilityRange; x <= abilityRange; x++)
+        int minimumDistance =
+            Mathf.Clamp(
+                minDistance,
+                0,
+                abilityRange
+            );
+
+        switch (rangeShape)
         {
-            for (int y = -abilityRange; y <= abilityRange; y++)
-            {
-                Vector2Int tile =
-                    userPosition +
-                    new Vector2Int(x, y);
+            // ==========================================
+            // DIAMOND
+            // ==========================================
 
-                if (!gridManager.IsInsideGrid(tile))
-                    continue;
+            case RangeShape.Diamond:
 
-                int distance =
-                    gridManager.GetDistance(
-                        userPosition,
-                        tile
+                for (int x = -abilityRange;
+                     x <= abilityRange;
+                     x++)
+                {
+                    for (int y = -abilityRange;
+                         y <= abilityRange;
+                         y++)
+                    {
+                        Vector2Int offset =
+                            new Vector2Int(x, y);
+
+                        int distance =
+                            Mathf.Abs(x) +
+                            Mathf.Abs(y);
+
+                        // Outside maximum range
+                        if (distance > abilityRange)
+                        {
+                            continue;
+                        }
+
+                        // Inside minimum range
+                        if (distance < minimumDistance)
+                        {
+                            continue;
+                        }
+
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + offset
+                        );
+                    }
+                }
+
+                break;
+
+            // ==========================================
+            // BOX
+            // ==========================================
+
+            case RangeShape.Box:
+
+                for (int x = -abilityRange;
+                     x <= abilityRange;
+                     x++)
+                {
+                    for (int y = -abilityRange;
+                         y <= abilityRange;
+                         y++)
+                    {
+                        Vector2Int offset =
+                            new Vector2Int(x, y);
+
+                        int distance =
+                            Mathf.Max(
+                                Mathf.Abs(x),
+                                Mathf.Abs(y)
+                            );
+
+                        // Outside maximum range
+                        if (distance > abilityRange)
+                        {
+                            continue;
+                        }
+
+                        // Inside minimum range
+                        if (distance < minimumDistance)
+                        {
+                            continue;
+                        }
+
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + offset
+                        );
+                    }
+                }
+
+                break;
+
+            // ==========================================
+            // FOUR DIRECTIONS
+            // ==========================================
+
+            case RangeShape.FourDirections:
+
+                for (int i = 1;
+                     i <= abilityRange;
+                     i++)
+                {
+                    if (i < minimumDistance)
+                    {
+                        continue;
+                    }
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.up * i
                     );
 
-                if (distance <= abilityRange)
-                {
-                    tiles.Add(tile);
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.down * i
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.left * i
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.right * i
+                    );
                 }
-            }
+
+                break;
+
+            // ==========================================
+            // DIAGONAL
+            // ==========================================
+
+            case RangeShape.Diagonal:
+
+                for (int i = 1;
+                     i <= abilityRange;
+                     i++)
+                {
+                    if (i < minimumDistance)
+                    {
+                        continue;
+                    }
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(i, i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(-i, i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(i, -i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(-i, -i)
+                    );
+                }
+
+                break;
         }
 
         return tiles;
     }
 
     // ==================================================
+    // ADD VALID TILE
+    // ==================================================
+
+    private void AddValidTile(
+        GridManager gridManager,
+        List<Vector2Int> tiles,
+        Vector2Int position)
+    {
+        if (!gridManager.IsInsideGrid(position))
+        {
+            return;
+        }
+
+        if (!tiles.Contains(position))
+        {
+            tiles.Add(position);
+        }
+    }
+
+    // ==================================================
     // CAN HIT
     // ==================================================
 
-    /// <summary>
-    /// Determines whether the ability can hit the target.
-    ///
-    /// IMPORTANT:
-    /// The ability's RANGE is now the actual restriction.
-    /// There is no hardcoded 1-tile restriction here.
-    /// </summary>
     public virtual bool CanHit(
         GridManager gridManager,
         GameObject user,
@@ -141,26 +344,60 @@ public abstract class AbilitySO : ScriptableObject
                 target.transform.position
             );
 
+        // ==============================================
+        // DISTANCE
+        // ==============================================
+
         int distance =
             gridManager.GetDistance(
                 userPosition,
                 targetPosition
             );
 
-        int abilityRange =
-            Mathf.Max(1, range);
+        int minimumDistance =
+            Mathf.Clamp(
+                minDistance,
+                0,
+                range
+            );
+
+        int maximumDistance =
+            Mathf.Max(
+                minimumDistance,
+                range
+            );
+
+        // ==============================================
+        // MINIMUM DISTANCE CHECK
+        // ==============================================
+
+        if (distance < minimumDistance)
+        {
+            return false;
+        }
+
+        // ==============================================
+        // MAXIMUM DISTANCE CHECK
+        // ==============================================
+
+        if (distance > maximumDistance)
+        {
+            return false;
+        }
+
+        // ==============================================
+        // HITBOX CHECK
+        // ==============================================
+
+        List<Vector2Int> hitbox =
+            GetHitboxTiles(
+                gridManager,
+                user,
+                target
+            );
 
         bool canHit =
-            distance <= abilityRange;
-
-        Debug.Log(
-            $"[Ability] {abilityName}: " +
-            $"User={user.name}, " +
-            $"Target={target.name}, " +
-            $"Distance={distance}, " +
-            $"Range={abilityRange}, " +
-            $"CanHit={canHit}"
-        );
+            hitbox.Contains(targetPosition);
 
         return canHit;
     }

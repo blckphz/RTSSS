@@ -19,4 +19,5 @@ MonoBehaviour:
   maxHealth: 100
   abilities:
   - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
+  - {fileID: 11400000, guid: ef07fb65b86de7448930e443cf24632c, type: 2}
   RangedAttacker: 0

@@ -9,11 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fed2dc7bc9ea0f4ca986cdbbf4b1eef, type: 3}
-  m_Name: Scratch
-  m_EditorClassIdentifier: Assembly-CSharp::BasicAttack
-  abilityName: Scratch
-  description: does damage
+  m_Script: {fileID: 11500000, guid: 85799ed5eab80b7468015be60e332fbb, type: 3}
+  m_Name: FrontAttacks
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeSwoosh
+  abilityName: swing
+  description: 
   damage: 10
   cooldown: 0
-  range: 3
+  range: 2
+  minDistance: 0
+  rangeShape: 0
