@@ -13,9 +13,6 @@ public class AttackUnit : MonoBehaviour
     [Header("References")]
     [SerializeField] private HealthManager healthManager;
 
-    [Header("Debug")]
-    [SerializeField] private bool debugAttacks = true;
-
     private readonly Dictionary<AbilitySO, int> abilityCooldowns =
         new Dictionary<AbilitySO, int>();
 
@@ -23,29 +20,6 @@ public class AttackUnit : MonoBehaviour
         new List<AbilitySO>();
 
     private GridManager cachedGridManager;
-
-
-    // ==================================================
-    // DEBUG
-    // ==================================================
-
-    private void AttackDebug(string message)
-    {
-        if (!debugAttacks)
-        {
-            return;
-        }
-
-        Debug.Log(
-            $"[AttackUnit] {gameObject.name}: {message}",
-            gameObject
-        );
-    }
-
-
-    // ==================================================
-    // UNITY
-    // ==================================================
 
     private void Awake()
     {
@@ -62,26 +36,12 @@ public class AttackUnit : MonoBehaviour
         {
             InitializeCooldowns();
         }
-
-        AttackDebug(
-            $"Awake. Abilities={abilities.Count}, " +
-            $"HealthManager={(healthManager != null ? "FOUND" : "NULL")}"
-        );
     }
-
-
-    // ==================================================
-    // INITIALIZATION
-    // ==================================================
 
     public void Initialize(CharacterSO data)
     {
         if (data == null)
         {
-            AttackDebug(
-                "Initialize FAILED: CharacterSO is NULL."
-            );
-
             return;
         }
 
@@ -107,13 +67,7 @@ public class AttackUnit : MonoBehaviour
         }
 
         InitializeCooldowns();
-
-        AttackDebug(
-            $"Initialized character '{data.name}'. " +
-            $"Abilities={abilities.Count}"
-        );
     }
-
 
     private void InitializeCooldowns()
     {
@@ -130,11 +84,6 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
-
-    // ==================================================
-    // COOLDOWNS
-    // ==================================================
-
     public int GetAbilityCooldown(AbilitySO ability)
     {
         if (ability == null)
@@ -150,12 +99,10 @@ public class AttackUnit : MonoBehaviour
             : 0;
     }
 
-
     public bool IsAbilityOnCooldown(AbilitySO ability)
     {
         return GetAbilityCooldown(ability) > 0;
     }
-
 
     public bool IsAbilityReady(AbilitySO ability)
     {
@@ -172,7 +119,6 @@ public class AttackUnit : MonoBehaviour
         return GetAbilityCooldown(ability) <= 0;
     }
 
-
     public void StartNewRound()
     {
         cooldownKeysCache.Clear();
@@ -188,25 +134,14 @@ public class AttackUnit : MonoBehaviour
             if (ability != null &&
                 abilityCooldowns[ability] > 0)
             {
-                int oldCooldown =
-                    abilityCooldowns[ability];
-
                 abilityCooldowns[ability] =
                     Mathf.Max(
                         0,
                         abilityCooldowns[ability] - 1
                     );
-
-                AttackDebug(
-                    $"Cooldown tick: " +
-                    $"{ability.GetAbilityName()} " +
-                    $"{oldCooldown} -> " +
-                    $"{abilityCooldowns[ability]}"
-                );
             }
         }
     }
-
 
     private void StartAbilityCooldown(AbilitySO ability)
     {
@@ -220,89 +155,39 @@ public class AttackUnit : MonoBehaviour
                 0,
                 ability.GetCooldown()
             );
-
-        AttackDebug(
-            $"Started cooldown for " +
-            $"'{ability.GetAbilityName()}': " +
-            $"{abilityCooldowns[ability]}"
-        );
     }
-
-
-    // ==================================================
-    // ATTACK EXECUTION
-    // ==================================================
 
     public bool Attack(
         GameObject target,
         AbilitySO selectedAbility)
     {
-        AttackDebug(
-            $"Attack(target, ability) called. " +
-            $"Target=" +
-            $"{(target != null ? target.name : "NULL")}, " +
-            $"Ability=" +
-            $"{(selectedAbility != null ? selectedAbility.GetAbilityName() : "NULL")}"
-        );
-
         if (!CanAttack())
         {
-            AttackDebug(
-                "Attack FAILED: Unit cannot attack."
-            );
-
             return false;
         }
 
         if (target == null)
         {
-            AttackDebug(
-                "Attack FAILED: Target is NULL."
-            );
-
             return false;
         }
 
         if (selectedAbility == null)
         {
-            AttackDebug(
-                "Attack FAILED: Ability is NULL."
-            );
-
             return false;
         }
 
         if (!abilities.Contains(selectedAbility))
         {
-            AttackDebug(
-                $"Attack FAILED: Ability " +
-                $"'{selectedAbility.GetAbilityName()}' " +
-                $"is not owned by this unit."
-            );
-
             return false;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
-            AttackDebug(
-                $"Attack FAILED: Ability " +
-                $"'{selectedAbility.GetAbilityName()}' " +
-                $"is on cooldown. " +
-                $"Cooldown=" +
-                $"{GetAbilityCooldown(selectedAbility)}"
-            );
-
             return false;
         }
 
         if (!IsValidTarget(target))
         {
-            AttackDebug(
-                $"Attack FAILED: Target " +
-                $"'{target.name}' is invalid."
-            );
-
             return false;
         }
 
@@ -310,10 +195,6 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager == null)
         {
-            AttackDebug(
-                "Attack FAILED: GridManager is NULL."
-            );
-
             return false;
         }
 
@@ -324,27 +205,10 @@ public class AttackUnit : MonoBehaviour
                 target
             );
 
-        AttackDebug(
-            $"Ability.CanHit(" +
-            $"'{selectedAbility.GetAbilityName()}', " +
-            $"{target.name}) = {canHit}"
-        );
-
         if (!canHit)
         {
-            AttackDebug(
-                $"Attack FAILED: Target " +
-                $"'{target.name}' is outside ability hit area."
-            );
-
             return false;
         }
-
-        AttackDebug(
-            $"USING ABILITY " +
-            $"'{selectedAbility.GetAbilityName()}' " +
-            $"on '{target.name}'."
-        );
 
         bool success =
             selectedAbility.Use(
@@ -352,35 +216,15 @@ public class AttackUnit : MonoBehaviour
                 target
             );
 
-        AttackDebug(
-            $"Ability.Use result = {success}"
-        );
-
         if (!success)
         {
-            AttackDebug(
-                "Attack FAILED: Ability.Use returned false."
-            );
-
             return false;
         }
 
         StartAbilityCooldown(selectedAbility);
 
-        AttackDebug(
-            $"ATTACK SUCCESS. " +
-            $"Ability='{selectedAbility.GetAbilityName()}', " +
-            $"Target='{target.name}', " +
-            $"Cooldown={GetAbilityCooldown(selectedAbility)}"
-        );
-
         return true;
     }
-
-
-    // ==================================================
-    // TARGET VALIDATION
-    // ==================================================
 
     public bool IsValidTarget(GameObject target)
     {
@@ -421,11 +265,6 @@ public class AttackUnit : MonoBehaviour
         return true;
     }
 
-
-    // ==================================================
-    // CAN ATTACK
-    // ==================================================
-
     public bool CanAttack()
     {
         if (healthManager == null ||
@@ -445,17 +284,11 @@ public class AttackUnit : MonoBehaviour
         return false;
     }
 
-
     public bool IsDead()
     {
         return healthManager == null ||
                healthManager.IsDead();
     }
-
-
-    // ==================================================
-    // GRID MANAGER
-    // ==================================================
 
     public GridManager GetGridManager()
     {
@@ -463,7 +296,6 @@ public class AttackUnit : MonoBehaviour
 
         return cachedGridManager;
     }
-
 
     private void EnsureGridManager()
     {
@@ -473,11 +305,6 @@ public class AttackUnit : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
     }
-
-
-    // ==================================================
-    // RANGE
-    // ==================================================
 
     public int GetAttackRange()
     {
@@ -501,7 +328,6 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
-
     public int GetMaximumAttackRange()
     {
         int maxRange = 0;
@@ -523,22 +349,15 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
-
-    // ==================================================
-    // ABILITY MANAGEMENT
-    // ==================================================
-
     public List<AbilitySO> GetAbilities()
     {
         return abilities;
     }
 
-
     public int GetAbilityCount()
     {
         return abilities.Count;
     }
-
 
     public void AddAbility(AbilitySO ability)
     {
@@ -551,12 +370,7 @@ public class AttackUnit : MonoBehaviour
         abilities.Add(ability);
 
         abilityCooldowns[ability] = 0;
-
-        AttackDebug(
-            $"Added ability '{ability.GetAbilityName()}'."
-        );
     }
-
 
     public void RemoveAbility(AbilitySO ability)
     {
@@ -568,16 +382,7 @@ public class AttackUnit : MonoBehaviour
         abilities.Remove(ability);
 
         abilityCooldowns.Remove(ability);
-
-        AttackDebug(
-            $"Removed ability '{ability.GetAbilityName()}'."
-        );
     }
-
-
-    // ==================================================
-    // CHARACTER / TEAM
-    // ==================================================
 
     public Team GetTeam()
     {
@@ -586,12 +391,10 @@ public class AttackUnit : MonoBehaviour
             : healthManager.GetTeam();
     }
 
-
     public HealthManager GetHealthManager()
     {
         return healthManager;
     }
-
 
     public CharacterSO GetCharacterData()
     {

@@ -20,32 +20,6 @@ public class CombatManager : MonoBehaviour
     [Header("Testing")]
     [SerializeField] private bool spawnEnemiesAutomatically = true;
 
-    [Header("Debug")]
-    [SerializeField] private bool debugCombat = true;
-
-
-    // ==================================================
-    // DEBUG
-    // ==================================================
-
-    private void CombatDebug(string message)
-    {
-        if (!debugCombat)
-        {
-            return;
-        }
-
-        Debug.Log(
-            $"[CombatManager] {message}",
-            gameObject
-        );
-    }
-
-
-    // ==================================================
-    // UNITY
-    // ==================================================
-
     private void Awake()
     {
         if (gridManager == null)
@@ -53,13 +27,7 @@ public class CombatManager : MonoBehaviour
             gridManager =
                 FindFirstObjectByType<GridManager>();
         }
-
-        CombatDebug(
-            $"Awake. GridManager=" +
-            $"{(gridManager != null ? "FOUND" : "NULL")}"
-        );
     }
-
 
     private void Start()
     {
@@ -69,20 +37,10 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
-    // ==================================================
-    // ENEMY ROUND
-    // ==================================================
-
     public IEnumerator RunEnemyRound()
     {
         List<GameObject> enemies =
             GetAllEnemies();
-
-        CombatDebug(
-            $"Starting enemy round. " +
-            $"Enemy count={enemies.Count}"
-        );
 
         if (enemies.Count == 0)
         {
@@ -102,16 +60,7 @@ public class CombatManager : MonoBehaviour
 
             yield return null;
         }
-
-        CombatDebug(
-            "Enemy round complete."
-        );
     }
-
-
-    // ==================================================
-    // ENEMY TURN
-    // ==================================================
 
     private IEnumerator ProcessEnemyTurn(
         GameObject enemy)
@@ -126,10 +75,6 @@ public class CombatManager : MonoBehaviour
 
         if (attackUnit == null)
         {
-            CombatDebug(
-                $"{enemy.name}: AttackUnit missing."
-            );
-
             yield break;
         }
 
@@ -138,10 +83,6 @@ public class CombatManager : MonoBehaviour
 
         if (attackBrain == null)
         {
-            CombatDebug(
-                $"{enemy.name}: UnitAttackBrain missing."
-            );
-
             yield break;
         }
 
@@ -150,101 +91,37 @@ public class CombatManager : MonoBehaviour
 
         if (moveBrain == null)
         {
-            CombatDebug(
-                $"{enemy.name}: UnitMoveBrain missing."
-            );
-
             yield break;
         }
-
-
-        // ==================================================
-        // 1. ATTACK FROM CURRENT POSITION
-        // ==================================================
 
         if (enemiesAttackAfterMoving &&
             attackBrain.HasAnyTargetInAbilityRange())
         {
-            CombatDebug(
-                $"{enemy.name} can attack " +
-                "from current position."
-            );
-
-            int attacks =
-                attackBrain.UseAllAvailableAbilities();
-
-            CombatDebug(
-                $"{enemy.name} performed " +
-                $"{attacks} attack(s)."
-            );
+            attackBrain.UseAllAvailableAbilities();
 
             yield return null;
 
             yield break;
         }
 
-
-        // ==================================================
-        // 2. MOVE TOWARDS ENEMY
-        // ==================================================
-
         if (enemiesMoveAfterRound)
         {
-            CombatDebug(
-                $"{enemy.name}: Starting movement."
-            );
-
-            // IMPORTANT:
-            // Wait until the movement coroutine has
-            // completely finished.
             yield return StartCoroutine(
                 moveBrain.MoveTowardsEnemy()
             );
-
-            CombatDebug(
-                $"{enemy.name}: Movement complete."
-            );
         }
-
-
-        // ==================================================
-        // 3. ATTACK AFTER MOVING
-        // ==================================================
 
         if (enemiesAttackAfterMoving &&
             IsValidActiveUnit(enemy))
         {
             if (attackBrain.HasAnyTargetInAbilityRange())
             {
-                CombatDebug(
-                    $"{enemy.name} is now " +
-                    "in ability range."
-                );
-
-                int attacks =
-                    attackBrain.UseAllAvailableAbilities();
-
-                CombatDebug(
-                    $"{enemy.name} performed " +
-                    $"{attacks} attack(s) after moving."
-                );
-            }
-            else
-            {
-                CombatDebug(
-                    $"{enemy.name} is not in " +
-                    "ability range after moving."
-                );
+                attackBrain.UseAllAvailableAbilities();
             }
         }
 
         yield return null;
     }
-
-
-    // ==================================================
-    // UNIT QUERIES
-    // ==================================================
 
     private bool IsValidActiveUnit(
         GameObject unit)
@@ -266,7 +143,6 @@ public class CombatManager : MonoBehaviour
                health.IsAlive();
     }
 
-
     private List<GameObject> GetAllEnemies()
     {
         return GetUnitsByTeam(
@@ -274,14 +150,12 @@ public class CombatManager : MonoBehaviour
         );
     }
 
-
     private List<GameObject> GetAllAllies()
     {
         return GetUnitsByTeam(
             Team.Ally
         );
     }
-
 
     private List<GameObject> GetUnitsByTeam(
         Team targetTeam)
@@ -327,11 +201,6 @@ public class CombatManager : MonoBehaviour
         return units;
     }
 
-
-    // ==================================================
-    // SPAWNING
-    // ==================================================
-
     public void CheckForEnemies()
     {
         if (GetEnemyCount() == 0)
@@ -339,7 +208,6 @@ public class CombatManager : MonoBehaviour
             SpawnTestEnemies();
         }
     }
-
 
     private int GetEnemyCount()
     {
@@ -381,19 +249,12 @@ public class CombatManager : MonoBehaviour
         return count;
     }
 
-
     private void SpawnTestEnemies()
     {
         if (gridManager == null ||
             enemyPrefab == null ||
             enemyCharacter == null)
         {
-            CombatDebug(
-                "Cannot spawn enemies. " +
-                "GridManager, enemyPrefab or " +
-                "enemyCharacter is NULL."
-            );
-
             return;
         }
 
@@ -408,10 +269,6 @@ public class CombatManager : MonoBehaviour
 
         if (availableCells.Count == 0)
         {
-            CombatDebug(
-                "No available cells for enemy spawning."
-            );
-
             return;
         }
 
@@ -421,9 +278,11 @@ public class CombatManager : MonoBehaviour
                 availableCells.Count
             );
 
-        for (int i = 0;
-             i < amount;
-             i++)
+        for (
+            int i = 0;
+            i < amount;
+            i++
+        )
         {
             int randomIndex =
                 Random.Range(
@@ -444,7 +303,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
     private bool SpawnEnemy(
         Vector2Int gridPosition)
     {
@@ -454,13 +312,13 @@ public class CombatManager : MonoBehaviour
         }
 
         if (!gridManager.IsInsideGrid(
-            gridPosition))
+                gridPosition))
         {
             return false;
         }
 
         if (gridManager.IsCellOccupied(
-            gridPosition))
+                gridPosition))
         {
             return false;
         }
@@ -490,11 +348,6 @@ public class CombatManager : MonoBehaviour
         {
             Destroy(enemy);
 
-            CombatDebug(
-                $"Failed to spawn enemy. " +
-                $"HealthManager or AttackUnit missing."
-            );
-
             return false;
         }
 
@@ -515,14 +368,8 @@ public class CombatManager : MonoBehaviour
             enemyCharacter
         );
 
-        CombatDebug(
-            $"Spawned enemy '{enemy.name}' " +
-            $"at {gridPosition}."
-        );
-
         return true;
     }
-
 
     private List<Vector2Int> GetAvailableCells()
     {
@@ -540,13 +387,17 @@ public class CombatManager : MonoBehaviour
         int height =
             gridManager.GetHeight();
 
-        for (int x = 0;
-             x < width;
-             x++)
+        for (
+            int x = 0;
+            x < width;
+            x++
+        )
         {
-            for (int y = 0;
-                 y < height;
-                 y++)
+            for (
+                int y = 0;
+                y < height;
+                y++
+            )
             {
                 Vector2Int position =
                     new Vector2Int(
@@ -555,7 +406,7 @@ public class CombatManager : MonoBehaviour
                     );
 
                 if (!gridManager.IsCellOccupied(
-                    position))
+                        position))
                 {
                     cells.Add(position);
                 }
@@ -565,18 +416,12 @@ public class CombatManager : MonoBehaviour
         return cells;
     }
 
-
-    // ==================================================
-    // PUBLIC INTERFACE
-    // ==================================================
-
     public void StartEnemyRound()
     {
         StartCoroutine(
             RunEnemyRound()
         );
     }
-
 
     public GridManager GetGridManager()
     {

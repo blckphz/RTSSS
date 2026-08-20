@@ -16,21 +16,6 @@ public interface IGridHighlight
 
     // =========================================================
     // ABILITY RANGE
-    //
-    // This is the TARGETING / PREVIEW area.
-    //
-    // Example Range 4:
-    //
-    // X X X X X X X X X
-    // X X X X X X X X X
-    // X X X X X X X X X
-    // X X X X X X X X X
-    // X X X X O X X X X
-    // X X X X X X X X X
-    // X X X X X X X X X
-    // X X X X X X X X X
-    // X X X X X X X X X
-    //
     // =========================================================
 
     void ShowAbilityRange(
@@ -52,16 +37,6 @@ public interface IGridHighlight
 
     // =========================================================
     // ATTACK
-    //
-    // This is the ACTUAL ATTACK AREA.
-    //
-    // FrontAttack might produce:
-    //
-    //     XXX
-    //     XXX
-    //     XXX
-    //      O
-    //
     // =========================================================
 
     void ShowAttackCell(

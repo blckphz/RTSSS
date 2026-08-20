@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GridHighlightManager : MonoBehaviour
+public class GridHighlightManager : MonoBehaviour, IGridHighlight
 {
     [Header("References")]
     [SerializeField] private GridManager gridManager;
@@ -26,6 +26,24 @@ public class GridHighlightManager : MonoBehaviour
 
     [SerializeField, Range(0f, 1f)]
     private float abilityRangeAlpha = 0.35f;
+
+    // ==================================================
+    // ENEMY IN RANGE
+    // ==================================================
+
+    [Header("Enemy In Range")]
+    [SerializeField] private Color enemyRangeColor = Color.red;
+
+    [SerializeField, Range(0f, 1f)]
+    private float enemyRangeAlpha = 0.9f;
+
+    // ==================================================
+    // ENEMY HOVER SHADER
+    // ==================================================
+
+    [Header("Enemy Hover Shader")]
+    [SerializeField]
+    private string hoverShaderObjectName = "HoverShaderSprite";
 
     // ==================================================
     // ABILITY FLASH
@@ -102,8 +120,16 @@ public class GridHighlightManager : MonoBehaviour
             new HashSet<Vector2Int>();
 
     private readonly HashSet<Vector2Int>
+        attackCells =
+            new HashSet<Vector2Int>();
+
+    private readonly HashSet<Vector2Int>
         explosionCells =
             new HashSet<Vector2Int>();
+
+    private readonly HashSet<GameObject>
+        hoveredEnemies =
+            new HashSet<GameObject>();
 
     private Vector2Int placementPosition;
 
@@ -131,6 +157,8 @@ public class GridHighlightManager : MonoBehaviour
     private void Start()
     {
         CacheTiles();
+
+        ClearAllHoverShaderSprites();
     }
 
     private void Update()
@@ -139,6 +167,13 @@ public class GridHighlightManager : MonoBehaviour
         {
             RefreshAbilityCells();
         }
+
+        if (attackCells.Count > 0)
+        {
+            RefreshAttackCells();
+        }
+
+        RefreshEnemyHoverShaders();
     }
 
     // ==================================================
@@ -317,31 +352,6 @@ public class GridHighlightManager : MonoBehaviour
     // ==================================================
     // ABILITY RANGE
     // ==================================================
-    //
-    // GENERIC RANGE PREVIEW.
-    //
-    // The ability itself decides the shape.
-    //
-    // For FrontAttack:
-    //
-    // Range 1:
-    //
-    // XXX
-    // XOX
-    // XXX
-    //
-    // Range 2:
-    //
-    // XXXXX
-    // XXXXX
-    // XXOXX
-    // XXXXX
-    // XXXXX
-    //
-    // This is ONLY the target-selection range.
-    //
-    // It does NOT display the actual FrontAttack hitbox.
-    // ==================================================
 
     public void ShowAbilityRange(
         Vector2Int centerPosition,
@@ -406,17 +416,7 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ==================================================
-    // ABILITY RANGE FROM ABILITY
-    // ==================================================
-    //
-    // THIS IS THE MAIN METHOD TO USE.
-    //
-    // It asks the AbilitySO for its actual range shape.
-    //
-    // FrontAttack therefore uses its BOX range.
-    //
-    // Other abilities can have completely different
-    // range shapes without this manager knowing about them.
+    // SHOW ABILITY RANGE FROM ABILITY
     // ==================================================
 
     public void ShowAbilityRange(
@@ -462,16 +462,7 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ==================================================
-    // SHOW ACTUAL ABILITY TILES
-    // ==================================================
-    //
-    // These are ABSOLUTE GRID POSITIONS.
-    //
-    // This can be used AFTER a target has been selected
-    // if you want to preview the actual hitbox.
-    //
-    // For FrontAttack, this would show the 3-wide
-    // attack pattern in the selected direction.
+    // CUSTOM ABILITY TILES
     // ==================================================
 
     public void ShowAbilityTiles(
@@ -503,6 +494,7 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ==================================================
+    // CUSTOM ABILITY CELLS
     // LEGACY OFFSET VERSION
     // ==================================================
 
@@ -567,7 +559,7 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ==================================================
-    // CLEAR ABILITY RANGE
+    // CLEAR ABILITY
     // ==================================================
 
     public void ClearAbilityRange()
@@ -605,6 +597,419 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ==================================================
+    // ATTACK HIGHLIGHT
+    // ==================================================
+
+    public void ShowAttackCell(
+        Vector2Int position)
+    {
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        if (!gridManager.IsInsideGrid(position))
+        {
+            return;
+        }
+
+        if (attackCells.Add(position))
+        {
+            RefreshTile(position);
+        }
+    }
+
+    // ==================================================
+
+    public void ShowAttackCells(
+        List<Vector2Int> positions)
+    {
+        ClearAttackCells();
+
+        if (gridManager == null ||
+            positions == null ||
+            positions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (Vector2Int position in positions)
+        {
+            if (!gridManager.IsInsideGrid(position))
+            {
+                continue;
+            }
+
+            attackCells.Add(position);
+        }
+
+        RefreshAttackCells();
+    }
+
+    // ==================================================
+
+    public void ShowAttackRange(
+        Vector2Int centerPosition,
+        int range)
+    {
+        ClearAttackCells();
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        if (!gridManager.IsInsideGrid(
+                centerPosition))
+        {
+            return;
+        }
+
+        range =
+            Mathf.Max(0, range);
+
+        int width =
+            gridManager.GetWidth();
+
+        int height =
+            gridManager.GetHeight();
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Vector2Int position =
+                    new Vector2Int(x, y);
+
+                if (position == centerPosition)
+                {
+                    continue;
+                }
+
+                int distance =
+                    Mathf.Max(
+                        Mathf.Abs(
+                            position.x -
+                            centerPosition.x
+                        ),
+                        Mathf.Abs(
+                            position.y -
+                            centerPosition.y
+                        )
+                    );
+
+                if (distance <= range)
+                {
+                    attackCells.Add(position);
+                }
+            }
+        }
+
+        RefreshAttackCells();
+    }
+
+    // ==================================================
+
+    public void ClearAttackCells()
+    {
+        if (attackCells.Count == 0)
+        {
+            return;
+        }
+
+        List<Vector2Int> cells =
+            new List<Vector2Int>(
+                attackCells
+            );
+
+        attackCells.Clear();
+
+        foreach (Vector2Int position
+                 in cells)
+        {
+            RefreshTile(position);
+        }
+    }
+
+    // ==================================================
+
+    private void RefreshAttackCells()
+    {
+        foreach (Vector2Int position
+                 in attackCells)
+        {
+            RefreshTile(position);
+        }
+    }
+
+    // ==================================================
+    // ENEMY DETECTION
+    // ==================================================
+
+    private bool IsEnemyOnTile(
+        Vector2Int position)
+    {
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+        GameObject unit =
+            gridManager.GetUnitAt(position);
+
+        if (unit == null)
+        {
+            return false;
+        }
+
+        AttackUnit attackUnit =
+            unit.GetComponent<AttackUnit>();
+
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+        return
+            attackUnit.GetTeam() ==
+            Team.Enemy;
+    }
+
+    // ==================================================
+    // ENEMY HOVER SHADER
+    // ==================================================
+
+    private void RefreshEnemyHoverShaders()
+    {
+        HashSet<GameObject> enemiesInRange =
+            new HashSet<GameObject>();
+
+        // ----------------------------------------------
+        // ABILITY CELLS
+        // ----------------------------------------------
+
+        foreach (Vector2Int position in abilityCells)
+        {
+            AddEnemyFromTile(
+                position,
+                enemiesInRange
+            );
+        }
+
+        // ----------------------------------------------
+        // ATTACK CELLS
+        // ----------------------------------------------
+
+        foreach (Vector2Int position in attackCells)
+        {
+            AddEnemyFromTile(
+                position,
+                enemiesInRange
+            );
+        }
+
+        // ----------------------------------------------
+        // ENABLE NEW ENEMIES
+        // ----------------------------------------------
+
+        foreach (GameObject enemy in enemiesInRange)
+        {
+            if (enemy == null)
+            {
+                continue;
+            }
+
+            SetHoverShader(
+                enemy,
+                true
+            );
+        }
+
+        // ----------------------------------------------
+        // DISABLE ENEMIES THAT LEFT RANGE
+        // ----------------------------------------------
+
+        List<GameObject> previousEnemies =
+            new List<GameObject>(
+                hoveredEnemies
+            );
+
+        foreach (GameObject enemy in previousEnemies)
+        {
+            if (enemy == null)
+            {
+                hoveredEnemies.Remove(enemy);
+                continue;
+            }
+
+            if (!enemiesInRange.Contains(enemy))
+            {
+                SetHoverShader(
+                    enemy,
+                    false
+                );
+
+                hoveredEnemies.Remove(enemy);
+            }
+        }
+
+        // ----------------------------------------------
+        // STORE CURRENT ENEMIES
+        // ----------------------------------------------
+
+        foreach (GameObject enemy in enemiesInRange)
+        {
+            if (enemy != null)
+            {
+                hoveredEnemies.Add(enemy);
+            }
+        }
+    }
+
+    // ==================================================
+
+    private void AddEnemyFromTile(
+        Vector2Int position,
+        HashSet<GameObject> enemies)
+    {
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        GameObject unit =
+            gridManager.GetUnitAt(position);
+
+        if (unit == null)
+        {
+            return;
+        }
+
+        AttackUnit attackUnit =
+            unit.GetComponent<AttackUnit>();
+
+        if (attackUnit == null)
+        {
+            return;
+        }
+
+        if (attackUnit.GetTeam() != Team.Enemy)
+        {
+            return;
+        }
+
+        enemies.Add(unit);
+    }
+
+    // ==================================================
+
+    private void SetHoverShader(
+        GameObject unit,
+        bool enabled)
+    {
+        if (unit == null)
+        {
+            return;
+        }
+
+        Transform hoverTransform =
+            FindChildRecursive(
+                unit.transform,
+                hoverShaderObjectName
+            );
+
+        if (hoverTransform == null)
+        {
+            return;
+        }
+
+        SpriteRenderer spriteRenderer =
+            hoverTransform.GetComponent<SpriteRenderer>();
+
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        spriteRenderer.enabled =
+            enabled;
+    }
+
+    // ==================================================
+
+    private Transform FindChildRecursive(
+        Transform parent,
+        string childName)
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        if (parent.name == childName)
+        {
+            return parent;
+        }
+
+        for (int i = 0;
+             i < parent.childCount;
+             i++)
+        {
+            Transform result =
+                FindChildRecursive(
+                    parent.GetChild(i),
+                    childName
+                );
+
+            if (result != null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    // ==================================================
+
+    private void ClearAllHoverShaderSprites()
+    {
+        hoveredEnemies.Clear();
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        int width =
+            gridManager.GetWidth();
+
+        int height =
+            gridManager.GetHeight();
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                GameObject unit =
+                    gridManager.GetUnitAt(
+                        new Vector2Int(x, y)
+                    );
+
+                if (unit == null)
+                {
+                    continue;
+                }
+
+                SetHoverShader(
+                    unit,
+                    false
+                );
+            }
+        }
+    }
+
+    // ==================================================
     // REFRESH TILE
     // ==================================================
 
@@ -632,8 +1037,14 @@ public class GridHighlightManager : MonoBehaviour
         bool isAbility =
             abilityCells.Contains(position);
 
+        bool isAttack =
+            attackCells.Contains(position);
+
         bool isExplosion =
             explosionCells.Contains(position);
+
+        bool isEnemy =
+            IsEnemyOnTile(position);
 
         float currentAbilityAlpha =
             GetCurrentAbilityAlpha();
@@ -680,6 +1091,28 @@ public class GridHighlightManager : MonoBehaviour
             }
 
             // ==================================================
+            // ENEMY
+            // ==================================================
+
+            else if ((isAbility || isAttack) &&
+                     isEnemy)
+            {
+                finalColor =
+                    Color.Lerp(
+                        original,
+                        enemyRangeColor,
+                        enemyRangeAlpha
+                    );
+
+                if (animateTileScale)
+                {
+                    finalScale =
+                        originalScale *
+                        currentScale;
+                }
+            }
+
+            // ==================================================
             // PLACEMENT
             // ==================================================
 
@@ -698,6 +1131,27 @@ public class GridHighlightManager : MonoBehaviour
             // ==================================================
 
             else if (isAbility)
+            {
+                finalColor =
+                    Color.Lerp(
+                        original,
+                        abilityRangeColor,
+                        currentAbilityAlpha
+                    );
+
+                if (animateTileScale)
+                {
+                    finalScale =
+                        originalScale *
+                        currentScale;
+                }
+            }
+
+            // ==================================================
+            // ATTACK
+            // ==================================================
+
+            else if (isAttack)
             {
                 finalColor =
                     Color.Lerp(
@@ -981,6 +1435,9 @@ public class GridHighlightManager : MonoBehaviour
     {
         ClearPlacementTile();
         ClearAbilityRange();
+        ClearAttackCells();
+
+        ClearAllHoverShaderSprites();
     }
 
     // ==================================================
