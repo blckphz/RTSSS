@@ -26,6 +26,10 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField, Min(0)]
     private int cooldown = 0;
 
+    [Tooltip("Number of times this ability can be used per turn. 0 = unlimited.")]
+    [SerializeField, Min(0)]
+    private int usesPerTurn = 1;
+
     [Header("Targeting Range")]
     [SerializeField, Min(1)]
     private int range = 1;
@@ -54,6 +58,11 @@ public abstract class AbilitySO : ScriptableObject
     public int GetCooldown()
     {
         return cooldown;
+    }
+
+    public int GetUsesPerTurn()
+    {
+        return usesPerTurn;
     }
 
     public int GetRange()

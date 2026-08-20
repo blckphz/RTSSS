@@ -2,103 +2,37 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GridHighlightManager : MonoBehaviour, IGridHighlight
+public class GridHighlightManager : MonoBehaviour
 {
-    [Header("References")]
     [SerializeField] private GridManager gridManager;
 
-    // ==================================================
-    // PLACEMENT HIGHLIGHT
-    // ==================================================
-
-    [Header("Placement Highlight")]
     [SerializeField] private Color placementColor = Color.green;
+    [SerializeField, Range(0f, 1f)] private float placementAlpha = 0.5f;
 
-    [SerializeField, Range(0f, 1f)]
-    private float placementAlpha = 0.5f;
-
-    // ==================================================
-    // ABILITY RANGE
-    // ==================================================
-
-    [Header("Ability Range")]
     [SerializeField] private Color abilityRangeColor = Color.yellow;
+    [SerializeField, Range(0f, 1f)] private float abilityRangeAlpha = 0.35f;
 
-    [SerializeField, Range(0f, 1f)]
-    private float abilityRangeAlpha = 0.35f;
+    [SerializeField] private Color enemyTileColor = Color.red;
+    [SerializeField, Range(0f, 1f)] private float enemyTileAlpha = 0.85f;
+    [SerializeField] private Color enemyHoverColor = Color.red;
+    [SerializeField] private bool enableEnemyHoverShader = true;
+    [SerializeField] private string enemyHoverObjectName = "HoverShaderSprite";
 
-    // ==================================================
-    // ENEMY IN RANGE
-    // ==================================================
+    [SerializeField] private bool pulseAbility = true;
+    [SerializeField, Min(0f)] private float pulseSpeed = 5f;
+    [SerializeField, Range(0f, 1f)] private float pulseAmount = 0.2f;
 
-    [Header("Enemy In Range")]
-    [SerializeField] private Color enemyRangeColor = Color.red;
+    [SerializeField] private bool animateTileScale = true;
+    [SerializeField, Min(0f)] private float scaleAmount = 0.06f;
+    [SerializeField, Min(0f)] private float scaleSpeed = 5f;
 
-    [SerializeField, Range(0f, 1f)]
-    private float enemyRangeAlpha = 0.9f;
-
-    // ==================================================
-    // ENEMY HOVER SHADER
-    // ==================================================
-
-    [Header("Enemy Hover Shader")]
-    [SerializeField]
-    private string hoverShaderObjectName = "HoverShaderSprite";
-
-    // ==================================================
-    // ABILITY FLASH
-    // ==================================================
-
-    [Header("Ability Flash")]
-    [SerializeField]
-    private bool pulseAbility = true;
-
-    [SerializeField, Min(0f)]
-    private float pulseSpeed = 5f;
-
-    [SerializeField, Range(0f, 1f)]
-    private float pulseAmount = 0.2f;
-
-    // ==================================================
-    // TILE SCALE JUICE
-    // ==================================================
-
-    [Header("Tile Scale Ping-Pong")]
-    [SerializeField]
-    private bool animateTileScale = true;
-
-    [SerializeField, Min(0f)]
-    private float scaleAmount = 0.06f;
-
-    [SerializeField, Min(0f)]
-    private float scaleSpeed = 5f;
-
-    // ==================================================
-    // EXPLOSION TILE
-    // ==================================================
-
-    [Header("Explosion Tile")]
-    [SerializeField]
-    private Color explosionColor = Color.red;
-
-    [SerializeField, Min(0f)]
-    private float explosionPulseAmount = 0.12f;
-
-    [SerializeField, Min(0.01f)]
-    private float explosionPulseDuration = 0.12f;
+    [SerializeField] private Color explosionColor = Color.red;
+    [SerializeField, Min(0f)] private float explosionPulseAmount = 0.12f;
+    [SerializeField, Min(0.01f)] private float explosionPulseDuration = 0.12f;
 
     [SerializeField]
     private AnimationCurve explosionPulseCurve =
-        AnimationCurve.EaseInOut(
-            0f,
-            0f,
-            1f,
-            1f
-        );
-
-    // ==================================================
-    // TILE VISUAL
-    // ==================================================
+        AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     private class TileVisual
     {
@@ -107,58 +41,41 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         public Vector3[] originalScales;
     }
 
-    private readonly Dictionary<Vector2Int, TileVisual>
-        tileVisuals =
-            new Dictionary<Vector2Int, TileVisual>();
+    private readonly Dictionary<Vector2Int, TileVisual> tileVisuals =
+        new Dictionary<Vector2Int, TileVisual>();
 
-    // ==================================================
-    // HIGHLIGHT STATES
-    // ==================================================
+    private readonly HashSet<Vector2Int> abilityCells =
+        new HashSet<Vector2Int>();
 
-    private readonly HashSet<Vector2Int>
-        abilityCells =
-            new HashSet<Vector2Int>();
+    private readonly HashSet<Vector2Int> explosionCells =
+        new HashSet<Vector2Int>();
 
-    private readonly HashSet<Vector2Int>
-        attackCells =
-            new HashSet<Vector2Int>();
-
-    private readonly HashSet<Vector2Int>
-        explosionCells =
-            new HashSet<Vector2Int>();
-
-    private readonly HashSet<GameObject>
-        hoveredEnemies =
-            new HashSet<GameObject>();
+    private readonly HashSet<SpriteRenderer> activeEnemyHoverRenderers =
+        new HashSet<SpriteRenderer>();
 
     private Vector2Int placementPosition;
-
     private bool hasPlacementPosition;
+    private GameObject currentRangeUser;
 
-    // ==================================================
-    // UNITY
-    // ==================================================
+    private static readonly int OutlineColorID =
+        Shader.PropertyToID("_OutlineColor");
 
     private void Awake()
     {
         if (gridManager == null)
         {
-            gridManager =
-                GetComponent<GridManager>();
+            gridManager = GetComponent<GridManager>();
         }
 
         if (gridManager == null)
         {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
+            gridManager = FindFirstObjectByType<GridManager>();
         }
     }
 
     private void Start()
     {
         CacheTiles();
-
-        ClearAllHoverShaderSprites();
     }
 
     private void Update()
@@ -167,18 +84,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         {
             RefreshAbilityCells();
         }
-
-        if (attackCells.Count > 0)
-        {
-            RefreshAttackCells();
-        }
-
-        RefreshEnemyHoverShaders();
     }
-
-    // ==================================================
-    // CACHE ALL TILES
-    // ==================================================
 
     private void CacheTiles()
     {
@@ -189,36 +95,22 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
 
         tileVisuals.Clear();
 
-        int width =
-            gridManager.GetWidth();
-
-        int height =
-            gridManager.GetHeight();
+        int width = gridManager.GetWidth();
+        int height = gridManager.GetHeight();
 
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                CacheTile(
-                    new Vector2Int(x, y)
-                );
+                CacheTile(new Vector2Int(x, y));
             }
         }
     }
 
-    // ==================================================
-    // CACHE SINGLE TILE
-    // ==================================================
-
-    private void CacheTile(
-        Vector2Int position)
+    private void CacheTile(Vector2Int position)
     {
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        if (tileVisuals.ContainsKey(position))
+        if (gridManager == null ||
+            tileVisuals.ContainsKey(position))
         {
             return;
         }
@@ -232,9 +124,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         }
 
         SpriteRenderer[] renderers =
-            tile.GetComponentsInChildren<SpriteRenderer>(
-                true
-            );
+            tile.GetComponentsInChildren<SpriteRenderer>(true);
 
         if (renderers == null ||
             renderers.Length == 0)
@@ -248,9 +138,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         Vector3[] originalScales =
             new Vector3[renderers.Length];
 
-        for (int i = 0;
-             i < renderers.Length;
-             i++)
+        for (int i = 0; i < renderers.Length; i++)
         {
             if (renderers[i] == null)
             {
@@ -273,21 +161,12 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             };
     }
 
-    // ==================================================
-    // REBUILD CACHE
-    // ==================================================
-
     public void RebuildTileCache()
     {
         CacheTiles();
     }
 
-    // ==================================================
-    // PLACEMENT HIGHLIGHT
-    // ==================================================
-
-    public void SetPlacementTile(
-        Vector2Int position)
+    public void SetPlacementTile(Vector2Int position)
     {
         if (gridManager == null)
         {
@@ -308,16 +187,11 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
 
         ClearPlacementTile();
 
-        placementPosition =
-            position;
-
-        hasPlacementPosition =
-            true;
+        placementPosition = position;
+        hasPlacementPosition = true;
 
         RefreshTile(position);
     }
-
-    // ==================================================
 
     public void ClearPlacementTile()
     {
@@ -329,29 +203,20 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         Vector2Int oldPosition =
             placementPosition;
 
-        hasPlacementPosition =
-            false;
+        hasPlacementPosition = false;
 
         RefreshTile(oldPosition);
     }
-
-    // ==================================================
 
     public bool HasPlacementTile()
     {
         return hasPlacementPosition;
     }
 
-    // ==================================================
-
     public Vector2Int GetPlacementTile()
     {
         return placementPosition;
     }
-
-    // ==================================================
-    // ABILITY RANGE
-    // ==================================================
 
     public void ShowAbilityRange(
         Vector2Int centerPosition,
@@ -359,25 +224,18 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
     {
         ClearAbilityRange();
 
-        if (gridManager == null)
+        currentRangeUser = null;
+
+        if (gridManager == null ||
+            !gridManager.IsInsideGrid(centerPosition))
         {
             return;
         }
 
-        if (!gridManager.IsInsideGrid(
-                centerPosition))
-        {
-            return;
-        }
+        range = Mathf.Max(0, range);
 
-        range =
-            Mathf.Max(0, range);
-
-        int width =
-            gridManager.GetWidth();
-
-        int height =
-            gridManager.GetHeight();
+        int width = gridManager.GetWidth();
+        int height = gridManager.GetHeight();
 
         for (int x = 0; x < width; x++)
         {
@@ -405,9 +263,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
 
                 if (distance <= range)
                 {
-                    abilityCells.Add(
-                        position
-                    );
+                    abilityCells.Add(position);
                 }
             }
         }
@@ -415,15 +271,13 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         RefreshAbilityCells();
     }
 
-    // ==================================================
-    // SHOW ABILITY RANGE FROM ABILITY
-    // ==================================================
-
     public void ShowAbilityRange(
         AbilitySO ability,
         GameObject user)
     {
         ClearAbilityRange();
+
+        currentRangeUser = user;
 
         if (ability == null ||
             user == null ||
@@ -444,187 +298,25 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             return;
         }
 
-        foreach (Vector2Int position
-                 in rangeTiles)
+        foreach (Vector2Int position in rangeTiles)
         {
-            if (!gridManager.IsInsideGrid(
-                    position))
+            if (!gridManager.IsInsideGrid(position))
             {
                 continue;
             }
 
-            abilityCells.Add(
-                position
-            );
+            abilityCells.Add(position);
         }
 
         RefreshAbilityCells();
     }
-
-    // ==================================================
-    // CUSTOM ABILITY TILES
-    // ==================================================
 
     public void ShowAbilityTiles(
         List<Vector2Int> positions)
     {
         ClearAbilityRange();
 
-        if (gridManager == null ||
-            positions == null ||
-            positions.Count == 0)
-        {
-            return;
-        }
-
-        foreach (Vector2Int position in positions)
-        {
-            if (!gridManager.IsInsideGrid(
-                    position))
-            {
-                continue;
-            }
-
-            abilityCells.Add(
-                position
-            );
-        }
-
-        RefreshAbilityCells();
-    }
-
-    // ==================================================
-    // CUSTOM ABILITY CELLS
-    // LEGACY OFFSET VERSION
-    // ==================================================
-
-    public void ShowAbilityCells(
-        Vector2Int origin,
-        List<Vector2Int> offsets)
-    {
-        ClearAbilityRange();
-
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        if (offsets == null ||
-            offsets.Count == 0)
-        {
-            return;
-        }
-
-        foreach (Vector2Int offset in offsets)
-        {
-            Vector2Int position =
-                origin + offset;
-
-            if (!gridManager.IsInsideGrid(
-                    position))
-            {
-                continue;
-            }
-
-            abilityCells.Add(
-                position
-            );
-        }
-
-        RefreshAbilityCells();
-    }
-
-    // ==================================================
-    // SINGLE ABILITY CELL
-    // ==================================================
-
-    public void ShowAbilityCell(
-        Vector2Int position)
-    {
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        if (!gridManager.IsInsideGrid(
-                position))
-        {
-            return;
-        }
-
-        if (abilityCells.Add(position))
-        {
-            RefreshTile(position);
-        }
-    }
-
-    // ==================================================
-    // CLEAR ABILITY
-    // ==================================================
-
-    public void ClearAbilityRange()
-    {
-        if (abilityCells.Count == 0)
-        {
-            return;
-        }
-
-        List<Vector2Int> cells =
-            new List<Vector2Int>(
-                abilityCells
-            );
-
-        abilityCells.Clear();
-
-        foreach (Vector2Int position
-                 in cells)
-        {
-            RefreshTile(position);
-        }
-    }
-
-    // ==================================================
-    // REFRESH ABILITY CELLS
-    // ==================================================
-
-    private void RefreshAbilityCells()
-    {
-        foreach (Vector2Int position
-                 in abilityCells)
-        {
-            RefreshTile(position);
-        }
-    }
-
-    // ==================================================
-    // ATTACK HIGHLIGHT
-    // ==================================================
-
-    public void ShowAttackCell(
-        Vector2Int position)
-    {
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        if (!gridManager.IsInsideGrid(position))
-        {
-            return;
-        }
-
-        if (attackCells.Add(position))
-        {
-            RefreshTile(position);
-        }
-    }
-
-    // ==================================================
-
-    public void ShowAttackCells(
-        List<Vector2Int> positions)
-    {
-        ClearAttackCells();
+        currentRangeUser = null;
 
         if (gridManager == null ||
             positions == null ||
@@ -640,381 +332,91 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
                 continue;
             }
 
-            attackCells.Add(position);
+            abilityCells.Add(position);
         }
 
-        RefreshAttackCells();
+        RefreshAbilityCells();
     }
 
-    // ==================================================
-
-    public void ShowAttackRange(
-        Vector2Int centerPosition,
-        int range)
+    public void ShowAbilityCells(
+        Vector2Int origin,
+        List<Vector2Int> offsets)
     {
-        ClearAttackCells();
+        ClearAbilityRange();
 
-        if (gridManager == null)
+        currentRangeUser = null;
+
+        if (gridManager == null ||
+            offsets == null ||
+            offsets.Count == 0)
         {
             return;
         }
 
-        if (!gridManager.IsInsideGrid(
-                centerPosition))
+        foreach (Vector2Int offset in offsets)
         {
-            return;
-        }
+            Vector2Int position =
+                origin + offset;
 
-        range =
-            Mathf.Max(0, range);
-
-        int width =
-            gridManager.GetWidth();
-
-        int height =
-            gridManager.GetHeight();
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
+            if (!gridManager.IsInsideGrid(position))
             {
-                Vector2Int position =
-                    new Vector2Int(x, y);
-
-                if (position == centerPosition)
-                {
-                    continue;
-                }
-
-                int distance =
-                    Mathf.Max(
-                        Mathf.Abs(
-                            position.x -
-                            centerPosition.x
-                        ),
-                        Mathf.Abs(
-                            position.y -
-                            centerPosition.y
-                        )
-                    );
-
-                if (distance <= range)
-                {
-                    attackCells.Add(position);
-                }
+                continue;
             }
+
+            abilityCells.Add(position);
         }
 
-        RefreshAttackCells();
+        RefreshAbilityCells();
     }
 
-    // ==================================================
-
-    public void ClearAttackCells()
+    public void ShowAbilityCell(Vector2Int position)
     {
-        if (attackCells.Count == 0)
+        if (gridManager == null ||
+            !gridManager.IsInsideGrid(position))
+        {
+            return;
+        }
+
+        if (abilityCells.Add(position))
+        {
+            RefreshTile(position);
+            RefreshEnemyHoverForTile(position);
+        }
+    }
+
+    public void ClearAbilityRange()
+    {
+        ClearAllEnemyHovers();
+
+        currentRangeUser = null;
+
+        if (abilityCells.Count == 0)
         {
             return;
         }
 
         List<Vector2Int> cells =
-            new List<Vector2Int>(
-                attackCells
-            );
+            new List<Vector2Int>(abilityCells);
 
-        attackCells.Clear();
+        abilityCells.Clear();
 
-        foreach (Vector2Int position
-                 in cells)
+        foreach (Vector2Int position in cells)
         {
             RefreshTile(position);
         }
     }
 
-    // ==================================================
-
-    private void RefreshAttackCells()
+    private void RefreshAbilityCells()
     {
-        foreach (Vector2Int position
-                 in attackCells)
-        {
-            RefreshTile(position);
-        }
-    }
-
-    // ==================================================
-    // ENEMY DETECTION
-    // ==================================================
-
-    private bool IsEnemyOnTile(
-        Vector2Int position)
-    {
-        if (gridManager == null)
-        {
-            return false;
-        }
-
-        GameObject unit =
-            gridManager.GetUnitAt(position);
-
-        if (unit == null)
-        {
-            return false;
-        }
-
-        AttackUnit attackUnit =
-            unit.GetComponent<AttackUnit>();
-
-        if (attackUnit == null)
-        {
-            return false;
-        }
-
-        return
-            attackUnit.GetTeam() ==
-            Team.Enemy;
-    }
-
-    // ==================================================
-    // ENEMY HOVER SHADER
-    // ==================================================
-
-    private void RefreshEnemyHoverShaders()
-    {
-        HashSet<GameObject> enemiesInRange =
-            new HashSet<GameObject>();
-
-        // ----------------------------------------------
-        // ABILITY CELLS
-        // ----------------------------------------------
-
         foreach (Vector2Int position in abilityCells)
         {
-            AddEnemyFromTile(
-                position,
-                enemiesInRange
-            );
+            RefreshTile(position);
         }
 
-        // ----------------------------------------------
-        // ATTACK CELLS
-        // ----------------------------------------------
-
-        foreach (Vector2Int position in attackCells)
-        {
-            AddEnemyFromTile(
-                position,
-                enemiesInRange
-            );
-        }
-
-        // ----------------------------------------------
-        // ENABLE NEW ENEMIES
-        // ----------------------------------------------
-
-        foreach (GameObject enemy in enemiesInRange)
-        {
-            if (enemy == null)
-            {
-                continue;
-            }
-
-            SetHoverShader(
-                enemy,
-                true
-            );
-        }
-
-        // ----------------------------------------------
-        // DISABLE ENEMIES THAT LEFT RANGE
-        // ----------------------------------------------
-
-        List<GameObject> previousEnemies =
-            new List<GameObject>(
-                hoveredEnemies
-            );
-
-        foreach (GameObject enemy in previousEnemies)
-        {
-            if (enemy == null)
-            {
-                hoveredEnemies.Remove(enemy);
-                continue;
-            }
-
-            if (!enemiesInRange.Contains(enemy))
-            {
-                SetHoverShader(
-                    enemy,
-                    false
-                );
-
-                hoveredEnemies.Remove(enemy);
-            }
-        }
-
-        // ----------------------------------------------
-        // STORE CURRENT ENEMIES
-        // ----------------------------------------------
-
-        foreach (GameObject enemy in enemiesInRange)
-        {
-            if (enemy != null)
-            {
-                hoveredEnemies.Add(enemy);
-            }
-        }
+        RefreshAllEnemyHovers();
     }
 
-    // ==================================================
-
-    private void AddEnemyFromTile(
-        Vector2Int position,
-        HashSet<GameObject> enemies)
-    {
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        GameObject unit =
-            gridManager.GetUnitAt(position);
-
-        if (unit == null)
-        {
-            return;
-        }
-
-        AttackUnit attackUnit =
-            unit.GetComponent<AttackUnit>();
-
-        if (attackUnit == null)
-        {
-            return;
-        }
-
-        if (attackUnit.GetTeam() != Team.Enemy)
-        {
-            return;
-        }
-
-        enemies.Add(unit);
-    }
-
-    // ==================================================
-
-    private void SetHoverShader(
-        GameObject unit,
-        bool enabled)
-    {
-        if (unit == null)
-        {
-            return;
-        }
-
-        Transform hoverTransform =
-            FindChildRecursive(
-                unit.transform,
-                hoverShaderObjectName
-            );
-
-        if (hoverTransform == null)
-        {
-            return;
-        }
-
-        SpriteRenderer spriteRenderer =
-            hoverTransform.GetComponent<SpriteRenderer>();
-
-        if (spriteRenderer == null)
-        {
-            return;
-        }
-
-        spriteRenderer.enabled =
-            enabled;
-    }
-
-    // ==================================================
-
-    private Transform FindChildRecursive(
-        Transform parent,
-        string childName)
-    {
-        if (parent == null)
-        {
-            return null;
-        }
-
-        if (parent.name == childName)
-        {
-            return parent;
-        }
-
-        for (int i = 0;
-             i < parent.childCount;
-             i++)
-        {
-            Transform result =
-                FindChildRecursive(
-                    parent.GetChild(i),
-                    childName
-                );
-
-            if (result != null)
-            {
-                return result;
-            }
-        }
-
-        return null;
-    }
-
-    // ==================================================
-
-    private void ClearAllHoverShaderSprites()
-    {
-        hoveredEnemies.Clear();
-
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        int width =
-            gridManager.GetWidth();
-
-        int height =
-            gridManager.GetHeight();
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                GameObject unit =
-                    gridManager.GetUnitAt(
-                        new Vector2Int(x, y)
-                    );
-
-                if (unit == null)
-                {
-                    continue;
-                }
-
-                SetHoverShader(
-                    unit,
-                    false
-                );
-            }
-        }
-    }
-
-    // ==================================================
-    // REFRESH TILE
-    // ==================================================
-
-    private void RefreshTile(
-        Vector2Int position)
+    private void RefreshTile(Vector2Int position)
     {
         if (gridManager == null)
         {
@@ -1037,14 +439,14 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         bool isAbility =
             abilityCells.Contains(position);
 
-        bool isAttack =
-            attackCells.Contains(position);
-
         bool isExplosion =
             explosionCells.Contains(position);
 
+        GameObject unit =
+            gridManager.GetUnitAt(position);
+
         bool isEnemy =
-            IsEnemyOnTile(position);
+            IsEnemyUnit(unit);
 
         float currentAbilityAlpha =
             GetCurrentAbilityAlpha();
@@ -1052,9 +454,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         float currentScale =
             GetCurrentScale();
 
-        for (int i = 0;
-             i < visual.renderers.Length;
-             i++)
+        for (int i = 0; i < visual.renderers.Length; i++)
         {
             SpriteRenderer renderer =
                 visual.renderers[i];
@@ -1076,10 +476,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             Vector3 finalScale =
                 originalScale;
 
-            // ==================================================
-            // EXPLOSION
-            // ==================================================
-
             if (isExplosion)
             {
                 finalColor =
@@ -1089,20 +485,16 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
                     originalScale *
                     (1f + explosionPulseAmount);
             }
-
-            // ==================================================
-            // ENEMY
-            // ==================================================
-
-            else if ((isAbility || isAttack) &&
-                     isEnemy)
+            else if (isAbility && isEnemy)
             {
+                Color enemyColor =
+                    enemyTileColor;
+
+                enemyColor.a =
+                    enemyTileAlpha;
+
                 finalColor =
-                    Color.Lerp(
-                        original,
-                        enemyRangeColor,
-                        enemyRangeAlpha
-                    );
+                    enemyColor;
 
                 if (animateTileScale)
                 {
@@ -1111,11 +503,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
                         currentScale;
                 }
             }
-
-            // ==================================================
-            // PLACEMENT
-            // ==================================================
-
             else if (isPlacement)
             {
                 finalColor =
@@ -1125,11 +512,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
                         placementAlpha
                     );
             }
-
-            // ==================================================
-            // ABILITY
-            // ==================================================
-
             else if (isAbility)
             {
                 finalColor =
@@ -1147,40 +529,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
                 }
             }
 
-            // ==================================================
-            // ATTACK
-            // ==================================================
-
-            else if (isAttack)
-            {
-                finalColor =
-                    Color.Lerp(
-                        original,
-                        abilityRangeColor,
-                        currentAbilityAlpha
-                    );
-
-                if (animateTileScale)
-                {
-                    finalScale =
-                        originalScale *
-                        currentScale;
-                }
-            }
-
-            // ==================================================
-            // NORMAL
-            // ==================================================
-
-            else
-            {
-                finalColor =
-                    original;
-
-                finalScale =
-                    originalScale;
-            }
-
             renderer.color =
                 finalColor;
 
@@ -1189,19 +537,182 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         }
     }
 
-    // ==================================================
-    // EXPLOSION TILE FLASH
-    // ==================================================
-
-    public void FlashExplosionTile(
-        Vector2Int position)
+    private bool IsEnemyUnit(GameObject unit)
     {
-        if (gridManager == null)
+        if (unit == null)
+        {
+            return false;
+        }
+
+        // Check AttackUnit first
+        AttackUnit attackUnit = unit.GetComponent<AttackUnit>();
+        if (attackUnit != null && !attackUnit.IsDead())
+        {
+            if (currentRangeUser != null)
+            {
+                AttackUnit sourceAttackUnit = currentRangeUser.GetComponent<AttackUnit>();
+                if (sourceAttackUnit != null)
+                {
+                    return attackUnit.GetTeam() != sourceAttackUnit.GetTeam();
+                }
+            }
+            return true;
+        }
+
+        // Fallback to HealthManager check
+        HealthManager targetHealth = unit.GetComponent<HealthManager>();
+        if (targetHealth != null && !targetHealth.IsDead())
+        {
+            if (currentRangeUser != null)
+            {
+                HealthManager sourceHealth = currentRangeUser.GetComponent<HealthManager>();
+                if (sourceHealth != null)
+                {
+                    return targetHealth.GetTeam() != sourceHealth.GetTeam();
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    private void RefreshAllEnemyHovers()
+    {
+        ClearAllEnemyHovers();
+
+        if (!enableEnemyHoverShader ||
+            gridManager == null)
         {
             return;
         }
 
-        if (!gridManager.IsInsideGrid(position))
+        foreach (Vector2Int position in abilityCells)
+        {
+            RefreshEnemyHoverForTile(position);
+        }
+    }
+
+    private void RefreshEnemyHoverForTile(
+        Vector2Int position)
+    {
+        if (!enableEnemyHoverShader ||
+            gridManager == null ||
+            !abilityCells.Contains(position))
+        {
+            return;
+        }
+
+        GameObject unit =
+            gridManager.GetUnitAt(position);
+
+        if (unit == null)
+        {
+            return;
+        }
+
+        if (ShouldOutlineUnit(unit))
+        {
+            SetEnemyHover(unit, true);
+        }
+    }
+
+    private bool ShouldOutlineUnit(GameObject unit)
+    {
+        return IsEnemyUnit(unit);
+    }
+
+    private void SetEnemyHover(
+        GameObject targetUnit,
+        bool enabled)
+    {
+        if (targetUnit == null)
+        {
+            return;
+        }
+
+        Transform hoverShader =
+            targetUnit.transform.Find(
+                enemyHoverObjectName
+            );
+
+        if (hoverShader == null)
+        {
+            // If child sprite wasn't found by exact name, try searching active components
+            SpriteRenderer sr = targetUnit.GetComponentInChildren<SpriteRenderer>();
+            if (sr != null && sr.gameObject != targetUnit)
+            {
+                hoverShader = sr.transform;
+            }
+        }
+
+        if (hoverShader == null)
+        {
+            return;
+        }
+
+        SpriteRenderer renderer =
+            hoverShader.GetComponent<SpriteRenderer>();
+
+        if (renderer == null)
+        {
+            return;
+        }
+
+        if (enabled)
+        {
+            MaterialPropertyBlock block =
+                new MaterialPropertyBlock();
+
+            renderer.GetPropertyBlock(block);
+
+            block.SetColor(
+                OutlineColorID,
+                enemyHoverColor
+            );
+
+            renderer.SetPropertyBlock(block);
+
+            renderer.enabled = true;
+
+            activeEnemyHoverRenderers.Add(
+                renderer
+            );
+        }
+        else
+        {
+            renderer.enabled = false;
+            renderer.SetPropertyBlock(null);
+
+            activeEnemyHoverRenderers.Remove(
+                renderer
+            );
+        }
+    }
+
+    private void ClearAllEnemyHovers()
+    {
+        foreach (
+            SpriteRenderer renderer
+            in activeEnemyHoverRenderers)
+        {
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            renderer.enabled = false;
+            renderer.SetPropertyBlock(null);
+        }
+
+        activeEnemyHoverRenderers.Clear();
+    }
+
+    public void FlashExplosionTile(
+        Vector2Int position)
+    {
+        if (gridManager == null ||
+            !gridManager.IsInsideGrid(position))
         {
             return;
         }
@@ -1212,8 +723,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             ExplosionTileRoutine(position)
         );
     }
-
-    // ==================================================
 
     private IEnumerator ExplosionTileRoutine(
         Vector2Int position)
@@ -1228,10 +737,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         explosionCells.Add(position);
 
         float elapsed = 0f;
-
-        // ==================================================
-        // SCALE UP
-        // ==================================================
 
         while (elapsed < explosionPulseDuration)
         {
@@ -1251,9 +756,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             float curveValue =
                 explosionPulseCurve.Evaluate(t);
 
-            for (int i = 0;
-                 i < visual.renderers.Length;
-                 i++)
+            for (int i = 0; i < visual.renderers.Length; i++)
             {
                 SpriteRenderer renderer =
                     visual.renderers[i];
@@ -1284,10 +787,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
 
             yield return null;
         }
-
-        // ==================================================
-        // SCALE DOWN
-        // ==================================================
 
         elapsed = 0f;
 
@@ -1309,9 +808,7 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             float curveValue =
                 explosionPulseCurve.Evaluate(t);
 
-            for (int i = 0;
-                 i < visual.renderers.Length;
-                 i++)
+            for (int i = 0; i < visual.renderers.Length; i++)
             {
                 SpriteRenderer renderer =
                     visual.renderers[i];
@@ -1343,18 +840,10 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
             yield return null;
         }
 
-        // ==================================================
-        // RESTORE
-        // ==================================================
-
         explosionCells.Remove(position);
 
         RefreshTile(position);
     }
-
-    // ==================================================
-    // ABILITY FLASH
-    // ==================================================
 
     private float GetCurrentAbilityAlpha()
     {
@@ -1381,10 +870,6 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         );
     }
 
-    // ==================================================
-    // TILE SCALE
-    // ==================================================
-
     private float GetCurrentScale()
     {
         if (!animateTileScale ||
@@ -1406,19 +891,11 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
         );
     }
 
-    // ==================================================
-    // STATE
-    // ==================================================
-
     public bool IsAbilityCell(
         Vector2Int position)
     {
-        return abilityCells.Contains(
-            position
-        );
+        return abilityCells.Contains(position);
     }
-
-    // ==================================================
 
     public bool IsPlacementCell(
         Vector2Int position)
@@ -1427,22 +904,12 @@ public class GridHighlightManager : MonoBehaviour, IGridHighlight
                placementPosition == position;
     }
 
-    // ==================================================
-    // CLEAR EVERYTHING
-    // ==================================================
-
     public void ClearAllHighlights()
     {
         ClearPlacementTile();
         ClearAbilityRange();
-        ClearAttackCells();
-
-        ClearAllHoverShaderSprites();
+        ClearAllEnemyHovers();
     }
-
-    // ==================================================
-    // GET GRID MANAGER
-    // ==================================================
 
     public GridManager GetGridManager()
     {

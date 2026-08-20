@@ -4,19 +4,28 @@ using UnityEngine;
 public class AttackUnit : MonoBehaviour
 {
     [Header("Character Data")]
-    [SerializeField] private CharacterSO characterData;
+    [SerializeField]
+    private CharacterSO characterData;
 
     [Header("Abilities")]
     [SerializeField]
-    private List<AbilitySO> abilities = new List<AbilitySO>();
+    private List<AbilitySO> abilities =
+        new List<AbilitySO>();
 
     [Header("References")]
-    [SerializeField] private HealthManager healthManager;
+    [SerializeField]
+    private HealthManager healthManager;
 
-    private readonly Dictionary<AbilitySO, int> abilityCooldowns =
+    private readonly Dictionary<AbilitySO, int>
+        abilityCooldowns =
         new Dictionary<AbilitySO, int>();
 
-    private readonly List<AbilitySO> cooldownKeysCache =
+    private readonly Dictionary<AbilitySO, int>
+        abilityUsesRemaining =
+        new Dictionary<AbilitySO, int>();
+
+    private readonly List<AbilitySO>
+        cooldownKeysCache =
         new List<AbilitySO>();
 
     private GridManager cachedGridManager;
@@ -25,7 +34,8 @@ public class AttackUnit : MonoBehaviour
     {
         if (healthManager == null)
         {
-            healthManager = GetComponent<HealthManager>();
+            healthManager =
+                GetComponent<HealthManager>();
         }
 
         if (characterData != null)
@@ -54,9 +64,14 @@ public class AttackUnit : MonoBehaviour
 
         if (characterAbilities != null)
         {
-            for (int i = 0; i < characterAbilities.Count; i++)
+            for (
+                int i = 0;
+                i < characterAbilities.Count;
+                i++
+            )
             {
-                AbilitySO ability = characterAbilities[i];
+                AbilitySO ability =
+                    characterAbilities[i];
 
                 if (ability != null &&
                     !abilities.Contains(ability))
@@ -72,19 +87,35 @@ public class AttackUnit : MonoBehaviour
     private void InitializeCooldowns()
     {
         abilityCooldowns.Clear();
+        abilityUsesRemaining.Clear();
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
-            if (ability != null)
+            if (ability == null)
             {
-                abilityCooldowns[ability] = 0;
+                continue;
             }
+
+            abilityCooldowns[ability] = 0;
+
+            abilityUsesRemaining[ability] =
+                ability.GetUsesPerTurn();
         }
     }
 
-    public int GetAbilityCooldown(AbilitySO ability)
+    // ==================================================
+    // COOLDOWN
+    // ==================================================
+
+    public int GetAbilityCooldown(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -99,12 +130,91 @@ public class AttackUnit : MonoBehaviour
             : 0;
     }
 
-    public bool IsAbilityOnCooldown(AbilitySO ability)
+    public bool IsAbilityOnCooldown(
+        AbilitySO ability)
     {
         return GetAbilityCooldown(ability) > 0;
     }
 
-    public bool IsAbilityReady(AbilitySO ability)
+    // ==================================================
+    // USES PER TURN
+    // ==================================================
+
+    public int GetAbilityUsesRemaining(
+        AbilitySO ability)
+    {
+        if (ability == null)
+        {
+            return -1;
+        }
+
+        // 0 means unlimited.
+        if (ability.GetUsesPerTurn() <= 0)
+        {
+            return 0;
+        }
+
+        return abilityUsesRemaining.TryGetValue(
+            ability,
+            out int uses
+        )
+            ? uses
+            : 0;
+    }
+
+    public bool HasAbilityUsesRemaining(
+        AbilitySO ability)
+    {
+        if (ability == null)
+        {
+            return false;
+        }
+
+        // 0 means unlimited.
+        if (ability.GetUsesPerTurn() <= 0)
+        {
+            return true;
+        }
+
+        return GetAbilityUsesRemaining(
+            ability
+        ) > 0;
+    }
+
+    private void ConsumeAbilityUse(
+        AbilitySO ability)
+    {
+        if (ability == null)
+        {
+            return;
+        }
+
+        // Unlimited.
+        if (ability.GetUsesPerTurn() <= 0)
+        {
+            return;
+        }
+
+        if (!abilityUsesRemaining.ContainsKey(
+                ability))
+        {
+            abilityUsesRemaining[ability] =
+                ability.GetUsesPerTurn();
+        }
+
+        abilityUsesRemaining[ability] =
+            Mathf.Max(
+                0,
+                abilityUsesRemaining[ability] - 1
+            );
+    }
+
+    // ==================================================
+    // READY
+    // ==================================================
+
+    public bool IsAbilityReady(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -116,8 +226,19 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        return GetAbilityCooldown(ability) <= 0;
+        if (GetAbilityCooldown(ability) > 0)
+        {
+            return false;
+        }
+
+        return HasAbilityUsesRemaining(
+            ability
+        );
     }
+
+    // ==================================================
+    // ROUND
+    // ==================================================
 
     public void StartNewRound()
     {
@@ -127,12 +248,21 @@ public class AttackUnit : MonoBehaviour
             abilityCooldowns.Keys
         );
 
-        for (int i = 0; i < cooldownKeysCache.Count; i++)
+        for (
+            int i = 0;
+            i < cooldownKeysCache.Count;
+            i++
+        )
         {
-            AbilitySO ability = cooldownKeysCache[i];
+            AbilitySO ability =
+                cooldownKeysCache[i];
 
-            if (ability != null &&
-                abilityCooldowns[ability] > 0)
+            if (ability == null)
+            {
+                continue;
+            }
+
+            if (abilityCooldowns[ability] > 0)
             {
                 abilityCooldowns[ability] =
                     Mathf.Max(
@@ -140,10 +270,20 @@ public class AttackUnit : MonoBehaviour
                         abilityCooldowns[ability] - 1
                     );
             }
+
+            // Reset uses at the beginning of
+            // every new round.
+            abilityUsesRemaining[ability] =
+                ability.GetUsesPerTurn();
         }
     }
 
-    private void StartAbilityCooldown(AbilitySO ability)
+    // ==================================================
+    // COOLDOWN START
+    // ==================================================
+
+    private void StartAbilityCooldown(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -156,6 +296,10 @@ public class AttackUnit : MonoBehaviour
                 ability.GetCooldown()
             );
     }
+
+    // ==================================================
+    // ATTACK
+    // ==================================================
 
     public bool Attack(
         GameObject target,
@@ -176,12 +320,14 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!abilities.Contains(selectedAbility))
+        if (!abilities.Contains(
+                selectedAbility))
         {
             return false;
         }
 
-        if (!IsAbilityReady(selectedAbility))
+        if (!IsAbilityReady(
+                selectedAbility))
         {
             return false;
         }
@@ -221,12 +367,25 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        StartAbilityCooldown(selectedAbility);
+        // Only consume the use after
+        // the ability successfully executes.
+        ConsumeAbilityUse(
+            selectedAbility
+        );
+
+        StartAbilityCooldown(
+            selectedAbility
+        );
 
         return true;
     }
 
-    public bool IsValidTarget(GameObject target)
+    // ==================================================
+    // TARGET VALIDATION
+    // ==================================================
+
+    public bool IsValidTarget(
+        GameObject target)
     {
         if (target == null)
         {
@@ -273,7 +432,11 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
             if (abilities[i] != null)
             {
@@ -289,6 +452,10 @@ public class AttackUnit : MonoBehaviour
         return healthManager == null ||
                healthManager.IsDead();
     }
+
+    // ==================================================
+    // GRID
+    // ==================================================
 
     public GridManager GetGridManager()
     {
@@ -306,13 +473,22 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
+    // ==================================================
+    // RANGE
+    // ==================================================
+
     public int GetAttackRange()
     {
         int maxRange = 0;
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
             if (ability != null &&
                 IsAbilityReady(ability))
@@ -332,9 +508,14 @@ public class AttackUnit : MonoBehaviour
     {
         int maxRange = 0;
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
             if (ability != null)
             {
@@ -349,6 +530,10 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
+    // ==================================================
+    // ABILITIES
+    // ==================================================
+
     public List<AbilitySO> GetAbilities()
     {
         return abilities;
@@ -359,7 +544,8 @@ public class AttackUnit : MonoBehaviour
         return abilities.Count;
     }
 
-    public void AddAbility(AbilitySO ability)
+    public void AddAbility(
+        AbilitySO ability)
     {
         if (ability == null ||
             abilities.Contains(ability))
@@ -370,9 +556,13 @@ public class AttackUnit : MonoBehaviour
         abilities.Add(ability);
 
         abilityCooldowns[ability] = 0;
+
+        abilityUsesRemaining[ability] =
+            ability.GetUsesPerTurn();
     }
 
-    public void RemoveAbility(AbilitySO ability)
+    public void RemoveAbility(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -382,7 +572,15 @@ public class AttackUnit : MonoBehaviour
         abilities.Remove(ability);
 
         abilityCooldowns.Remove(ability);
+
+        abilityUsesRemaining.Remove(
+            ability
+        );
     }
+
+    // ==================================================
+    // CHARACTER / TEAM
+    // ==================================================
 
     public Team GetTeam()
     {
