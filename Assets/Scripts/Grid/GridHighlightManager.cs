@@ -123,7 +123,11 @@ public class GridHighlightManager : MonoBehaviour
 
 
     // =============================================================
-    // MOVEMENT CELLS
+    // MOVEMENT / ATTACK CELLS
+    // =============================================================
+    //
+    // Movement and attack share the same tile set.
+    //
     // =============================================================
 
     private readonly HashSet<Vector2Int>
@@ -163,6 +167,22 @@ public class GridHighlightManager : MonoBehaviour
     // =============================================================
 
     private GameObject currentRangeUser;
+
+
+    // =============================================================
+    // MOVEMENT HIGHLIGHT VISIBILITY
+    // =============================================================
+    //
+    // Movement/attack use the same tile set.
+    //
+    // When an ability/attack is being hovered, the movement
+    // visualization is temporarily hidden.
+    //
+    // The actual movementCells are NOT cleared.
+    //
+    // =============================================================
+
+    private bool suppressMovementHighlight;
 
 
     private static readonly int OutlineColorID =
@@ -248,9 +268,13 @@ public class GridHighlightManager : MonoBehaviour
             gridManager.GetHeight();
 
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0;
+             x < width;
+             x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0;
+                 y < height;
+                 y++)
             {
                 CacheTile(
                     new Vector2Int(x, y)
@@ -425,7 +449,7 @@ public class GridHighlightManager : MonoBehaviour
 
 
     // =============================================================
-    // MOVEMENT RANGE
+    // MOVEMENT / ATTACK RANGE
     // =============================================================
 
     public void ShowMovementRange(
@@ -434,6 +458,7 @@ public class GridHighlightManager : MonoBehaviour
         GameObject user = null)
     {
         ClearMovementRange();
+
 
         if (gridManager == null)
         {
@@ -589,6 +614,34 @@ public class GridHighlightManager : MonoBehaviour
     }
 
 
+    // =============================================================
+    // TEMPORARILY HIDE MOVEMENT / ATTACK HIGHLIGHT
+    // =============================================================
+
+    public void SetMovementHighlightSuppressed(
+        bool suppressed)
+    {
+        if (suppressMovementHighlight ==
+            suppressed)
+        {
+            return;
+        }
+
+
+        suppressMovementHighlight =
+            suppressed;
+
+
+        RefreshMovementCells();
+    }
+
+
+    public bool IsMovementHighlightSuppressed()
+    {
+        return suppressMovementHighlight;
+    }
+
+
     private void RefreshMovementCells()
     {
         foreach (Vector2Int position
@@ -608,6 +661,8 @@ public class GridHighlightManager : MonoBehaviour
         int range)
     {
         ClearAbilityRange();
+
+        SetMovementHighlightSuppressed(true);
 
         currentRangeUser = null;
 
@@ -689,6 +744,8 @@ public class GridHighlightManager : MonoBehaviour
     {
         ClearAbilityRange();
 
+        SetMovementHighlightSuppressed(true);
+
         currentRangeUser =
             user;
 
@@ -741,6 +798,8 @@ public class GridHighlightManager : MonoBehaviour
     {
         ClearAbilityRange();
 
+        SetMovementHighlightSuppressed(true);
+
         currentRangeUser =
             user;
 
@@ -779,6 +838,8 @@ public class GridHighlightManager : MonoBehaviour
         GameObject user = null)
     {
         ClearAbilityRange();
+
+        SetMovementHighlightSuppressed(true);
 
         currentRangeUser =
             user;
@@ -819,6 +880,9 @@ public class GridHighlightManager : MonoBehaviour
     public void ShowAbilityCell(
         Vector2Int position)
     {
+        SetMovementHighlightSuppressed(true);
+
+
         if (gridManager == null ||
             !gridManager.IsInsideGrid(
                 position))
@@ -843,6 +907,10 @@ public class GridHighlightManager : MonoBehaviour
         ClearAllEnemyHovers();
 
         currentRangeUser = null;
+
+        // Ability/attack hover is ending,
+        // so restore the shared movement/attack tiles.
+        SetMovementHighlightSuppressed(false);
 
 
         if (abilityCells.Count == 0)
@@ -1005,30 +1073,16 @@ public class GridHighlightManager : MonoBehaviour
 
 
             // =====================================================
-            // MOVEMENT
+            // ABILITY / ATTACK
             // =====================================================
-
-            else if (isMovement)
-            {
-                finalColor =
-                    Color.Lerp(
-                        original,
-                        movementRangeColor,
-                        movementRangeAlpha
-                    );
-
-
-                if (animateTileScale)
-                {
-                    finalScale =
-                        originalScale *
-                        currentScale;
-                }
-            }
-
-
-            // =====================================================
-            // ABILITY
+            //
+            // IMPORTANT:
+            // Ability/attack takes priority over movement.
+            //
+            // Therefore, if a tile exists in both
+            // abilityCells and movementCells, the ability
+            // highlight is displayed.
+            //
             // =====================================================
 
             else if (isAbility)
@@ -1053,6 +1107,38 @@ public class GridHighlightManager : MonoBehaviour
                             currentAbilityAlpha
                         );
                 }
+
+
+                if (animateTileScale)
+                {
+                    finalScale =
+                        originalScale *
+                        currentScale;
+                }
+            }
+
+
+            // =====================================================
+            // MOVEMENT / ATTACK
+            // =====================================================
+            //
+            // Movement and attack share movementCells.
+            //
+            // When an ability/attack is being hovered,
+            // suppressMovementHighlight is true and this
+            // visualization is skipped.
+            //
+            // =====================================================
+
+            else if (isMovement &&
+                     !suppressMovementHighlight)
+            {
+                finalColor =
+                    Color.Lerp(
+                        original,
+                        movementRangeColor,
+                        movementRangeAlpha
+                    );
 
 
                 if (animateTileScale)
@@ -1441,7 +1527,8 @@ public class GridHighlightManager : MonoBehaviour
         }
 
 
-        elapsed = 0f;
+        elapsed =
+            0f;
 
 
         while (elapsed <
@@ -1590,9 +1677,6 @@ public class GridHighlightManager : MonoBehaviour
     }
 
 
- 
-
-
     public bool IsPlacementCell(
         Vector2Int position)
     {
@@ -1624,6 +1708,10 @@ public class GridHighlightManager : MonoBehaviour
         ClearAbilityRange();
 
         ClearAllEnemyHovers();
+
+        // Make absolutely sure movement highlighting
+        // is restored after everything is cleared.
+        SetMovementHighlightSuppressed(false);
     }
 
 
