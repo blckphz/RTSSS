@@ -329,7 +329,6 @@ GameObject:
   - component: {fileID: 341319204}
   - component: {fileID: 341319203}
   - component: {fileID: 341319206}
-  - component: {fileID: 341319205}
   m_Layer: 0
   m_Name: CombatManager
   m_TagString: Untagged
@@ -384,7 +383,6 @@ MonoBehaviour:
   autoBattle: 0
   combatManager: {fileID: 341319204}
   gridManager: {fileID: 0}
-  playerAction: {fileID: 341319205}
   autoBattleToggle: {fileID: 2057494571}
   delayBetweenUnits: 0.5
 --- !u!114 &341319204
@@ -407,19 +405,6 @@ MonoBehaviour:
   enemiesMoveAfterRound: 1
   enemiesAttackAfterMoving: 1
   spawnEnemiesAutomatically: 1
---- !u!114 &341319205
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 341319197}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 132e84b6fd78aa44eb4b18f915493d93, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAction
-  gridManager: {fileID: 0}
 --- !u!114 &341319206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1366,14 +1351,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f4f4cc3dddc33a4097171a138502db7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  enableDebugLogs: 1
   gridManager: {fileID: 0}
   placementColor: {r: 0, g: 1, b: 0, a: 1}
   placementAlpha: 0.5
   abilityRangeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   abilityRangeAlpha: 0.35
-  enemyRangeColor: {r: 1, g: 0, b: 0, a: 1}
-  enemyRangeAlpha: 0.9
-  hoverShaderObjectName: HoverShaderSprite
+  enemyTileColor: {r: 1, g: 0, b: 0, a: 1}
+  enemyTileAlpha: 0.85
+  enemyHoverColor: {r: 1, g: 0, b: 0, a: 1}
+  enableEnemyHoverShader: 1
+  enemyHoverObjectName: HoverShaderSprite
   pulseAbility: 1
   pulseSpeed: 5
   pulseAmount: 0.2

@@ -13,7 +13,6 @@ public class RoundManager : MonoBehaviour
         EnemyTurn
     }
 
-
     [Serializable]
     public struct AbilityLogEntry
     {
@@ -22,60 +21,65 @@ public class RoundManager : MonoBehaviour
         public string abilityName;
     }
 
-
     // ==================================================
     // ROUND STATE
     // ==================================================
 
     [Header("Round State")]
-    [SerializeField] private int currentRound = 0;
+    [SerializeField]
+    private int currentRound = 0;
+
     [SerializeField]
     private RoundState currentState =
         RoundState.Setup;
 
-    [SerializeField] private bool autoBattle = false;
-
+    [SerializeField]
+    private bool autoBattle = false;
 
     // ==================================================
     // DEPENDENCIES
     // ==================================================
 
     [Header("Dependencies")]
-    [SerializeField] private CombatManager combatManager;
-    [SerializeField] private GridManager gridManager;
-    [SerializeField] private PlayerAction playerAction;
+    [SerializeField]
+    private CombatManager combatManager;
 
+    [SerializeField]
+    private GridManager gridManager;
 
     // ==================================================
     // UI / SETTINGS
     // ==================================================
 
     [Header("UI & Settings")]
-    [SerializeField] private Toggle autoBattleToggle;
-    [SerializeField] private float delayBetweenUnits = 0.5f;
+    [SerializeField]
+    private Toggle autoBattleToggle;
 
+    [SerializeField]
+    private float delayBetweenUnits = 0.5f;
 
     // ==================================================
     // INTERNAL
     // ==================================================
 
-    private readonly List<AbilityLogEntry> roundAbilityLogs =
+    private readonly List<AbilityLogEntry>
+        roundAbilityLogs =
         new List<AbilityLogEntry>();
 
-    private readonly List<AttackUnit> cachedUnits =
+    private readonly List<AttackUnit>
+        cachedUnits =
         new List<AttackUnit>();
 
     private WaitForSeconds unitDelay;
 
     private bool roundRunning;
 
-
     // ==================================================
     // EVENTS
     // ==================================================
 
-    public event Action<AbilityLogEntry> OnAbilityUsed;
-
+    public event Action<AbilityLogEntry>
+        OnAbilityUsed;
 
     // ==================================================
     // UNITY
@@ -86,25 +90,13 @@ public class RoundManager : MonoBehaviour
         if (combatManager == null)
         {
             combatManager =
-                FindFirstObjectByType<CombatManager>();
+                FindObjectOfType<CombatManager>();
         }
 
         if (gridManager == null)
         {
             gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
-
-        if (playerAction == null)
-        {
-            playerAction =
-                GetComponent<PlayerAction>();
-
-            if (playerAction == null)
-            {
-                playerAction =
-                    FindFirstObjectByType<PlayerAction>();
-            }
+                FindObjectOfType<GridManager>();
         }
 
         unitDelay =
@@ -126,7 +118,6 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-
     private void OnDestroy()
     {
         if (autoBattleToggle != null)
@@ -137,7 +128,6 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-
     private void Update()
     {
         if (autoBattle &&
@@ -147,7 +137,6 @@ public class RoundManager : MonoBehaviour
             StartRound();
         }
     }
-
 
     // ==================================================
     // START ROUND
@@ -178,33 +167,22 @@ public class RoundManager : MonoBehaviour
         );
     }
 
-
     // ==================================================
     // ROUND PIPELINE
     // ==================================================
 
     private IEnumerator RunRoundPipeline()
     {
-        // --------------------------------------------------
-        // CLEAN DEAD UNITS
-        // --------------------------------------------------
-
         if (gridManager != null)
         {
             gridManager.CleanupDeadUnits();
         }
 
-
-        // --------------------------------------------------
-        // ENSURE ENEMIES
-        // --------------------------------------------------
-
         EnsureEnemiesExist();
 
-
-        // --------------------------------------------------
-        // PLAYER / ALLY TURN
-        // --------------------------------------------------
+        // ------------------------------------------
+        // PLAYER / ALLY
+        // ------------------------------------------
 
         currentState =
             RoundState.PlayerAndAllyTurn;
@@ -213,10 +191,9 @@ public class RoundManager : MonoBehaviour
             ExecutePlayerAndAllyTurn()
         );
 
-
-        // --------------------------------------------------
-        // ENEMY TURN
-        // --------------------------------------------------
+        // ------------------------------------------
+        // ENEMY
+        // ------------------------------------------
 
         currentState =
             RoundState.EnemyTurn;
@@ -225,10 +202,9 @@ public class RoundManager : MonoBehaviour
             ExecuteEnemyTurn()
         );
 
-
-        // --------------------------------------------------
-        // END ROUND
-        // --------------------------------------------------
+        // ------------------------------------------
+        // END
+        // ------------------------------------------
 
         currentState =
             RoundState.Setup;
@@ -236,28 +212,15 @@ public class RoundManager : MonoBehaviour
         roundRunning = false;
     }
 
-
     // ==================================================
     // PLAYER / ALLY TURN
     // ==================================================
 
     private IEnumerator ExecutePlayerAndAllyTurn()
     {
-        if (playerAction == null)
-        {
-            Debug.LogWarning(
-                "[RoundManager] PlayerAction is NULL.",
-                this
-            );
-
-            yield break;
-        }
-
         RefreshCachedUnits();
 
-        for (int i = 0;
-             i < cachedUnits.Count;
-             i++)
+        for (int i = 0; i < cachedUnits.Count; i++)
         {
             AttackUnit unit =
                 cachedUnits[i];
@@ -276,13 +239,10 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
-            GameObject target =
-                FindNearestEnemy(unit);
-
             string result =
-                playerAction.TryExecuteUnitTurn(
+                CombatUtility.ExecuteUnitTurn(
                     unit,
-                    target
+                    gridManager
                 );
 
             if (!string.IsNullOrEmpty(result))
@@ -296,7 +256,6 @@ public class RoundManager : MonoBehaviour
             yield return unitDelay;
         }
     }
-
 
     // ==================================================
     // ENEMY TURN
@@ -319,100 +278,6 @@ public class RoundManager : MonoBehaviour
         );
     }
 
-
-    // ==================================================
-    // FIND TARGET
-    // ==================================================
-
-    private GameObject FindNearestEnemy(
-        AttackUnit attacker)
-    {
-        if (attacker == null)
-        {
-            return null;
-        }
-
-        AttackUnit[] allUnits =
-            FindObjectsByType<AttackUnit>(
-                FindObjectsSortMode.None
-            );
-
-        GameObject closestTarget = null;
-
-        int closestDistance =
-            int.MaxValue;
-
-        Vector2Int attackerPosition =
-            gridManager != null
-                ? gridManager.WorldToGridPosition(
-                    attacker.transform.position
-                )
-                : Vector2Int.zero;
-
-        for (int i = 0;
-             i < allUnits.Length;
-             i++)
-        {
-            AttackUnit candidate =
-                allUnits[i];
-
-            if (candidate == null ||
-                candidate == attacker)
-            {
-                continue;
-            }
-
-            if (candidate.IsDead())
-            {
-                continue;
-            }
-
-            if (candidate.GetTeam() ==
-                attacker.GetTeam())
-            {
-                continue;
-            }
-
-            int distance;
-
-            if (gridManager != null)
-            {
-                Vector2Int candidatePosition =
-                    gridManager.WorldToGridPosition(
-                        candidate.transform.position
-                    );
-
-                distance =
-                    gridManager.GetDistance(
-                        attackerPosition,
-                        candidatePosition
-                    );
-            }
-            else
-            {
-                distance =
-                    Mathf.RoundToInt(
-                        Vector3.Distance(
-                            attacker.transform.position,
-                            candidate.transform.position
-                        )
-                    );
-            }
-
-            if (distance < closestDistance)
-            {
-                closestDistance =
-                    distance;
-
-                closestTarget =
-                    candidate.gameObject;
-            }
-        }
-
-        return closestTarget;
-    }
-
-
     // ==================================================
     // VALIDATION
     // ==================================================
@@ -420,50 +285,33 @@ public class RoundManager : MonoBehaviour
     private bool IsValidUnit(
         AttackUnit unit)
     {
-        if (unit == null)
-        {
-            return false;
-        }
-
-        if (!unit.gameObject.activeInHierarchy)
-        {
-            return false;
-        }
-
-        return !unit.IsDead();
+        return CombatUtility.IsAlive(unit);
     }
 
-
     // ==================================================
-    // REFRESH UNITS
+    // REFRESH
     // ==================================================
 
     private void RefreshCachedUnits()
     {
         cachedUnits.Clear();
 
-        AttackUnit[] units =
-            FindObjectsByType<AttackUnit>(
-                FindObjectsSortMode.None
-            );
+        List<AttackUnit> units =
+            CombatUtility.GetAllAliveUnits();
 
-        for (int i = 0;
-             i < units.Length;
-             i++)
+        for (int i = 0; i < units.Count; i++)
         {
-            AttackUnit unit =
-                units[i];
-
-            if (IsValidUnit(unit))
+            if (units[i] != null)
             {
-                cachedUnits.Add(unit);
+                cachedUnits.Add(
+                    units[i]
+                );
             }
         }
     }
 
-
     // ==================================================
-    // ENEMY SPAWNING
+    // ENEMIES
     // ==================================================
 
     private void EnsureEnemiesExist()
@@ -473,37 +321,12 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        AttackUnit[] units =
-            FindObjectsByType<AttackUnit>(
-                FindObjectsSortMode.None
-            );
-
-        for (int i = 0;
-             i < units.Length;
-             i++)
+        if (CombatUtility.GetUnitCount(
+                Team.Enemy) == 0)
         {
-            AttackUnit unit =
-                units[i];
-
-            if (unit == null)
-            {
-                continue;
-            }
-
-            if (unit.GetTeam() != Team.Enemy)
-            {
-                continue;
-            }
-
-            if (!unit.IsDead())
-            {
-                return;
-            }
+            combatManager.CheckForEnemies();
         }
-
-        combatManager.CheckForEnemies();
     }
-
 
     // ==================================================
     // COOLDOWNS
@@ -511,9 +334,7 @@ public class RoundManager : MonoBehaviour
 
     private void UpdateAllUnitCooldowns()
     {
-        for (int i = 0;
-             i < cachedUnits.Count;
-             i++)
+        for (int i = 0; i < cachedUnits.Count; i++)
         {
             AttackUnit unit =
                 cachedUnits[i];
@@ -527,9 +348,8 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-
     // ==================================================
-    // ABILITY LOGGING
+    // LOGGING
     // ==================================================
 
     private void LogAbilityUse(
@@ -549,7 +369,6 @@ public class RoundManager : MonoBehaviour
         OnAbilityUsed?.Invoke(entry);
     }
 
-
     // ==================================================
     // AUTO BATTLE
     // ==================================================
@@ -557,10 +376,8 @@ public class RoundManager : MonoBehaviour
     public void SetAutoBattle(
         bool enabled)
     {
-        autoBattle =
-            enabled;
+        autoBattle = enabled;
     }
-
 
     public void ToggleAutoBattle()
     {
@@ -576,7 +393,6 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-
     // ==================================================
     // ACCESSORS
     // ==================================================
@@ -590,13 +406,11 @@ public class RoundManager : MonoBehaviour
         );
     }
 
-
     public List<AbilityLogEntry>
         GetAllAbilityLogs()
     {
         return roundAbilityLogs;
     }
-
 
     public bool IsSetupPhase()
     {
@@ -604,18 +418,15 @@ public class RoundManager : MonoBehaviour
                RoundState.Setup;
     }
 
-
     public bool IsRoundRunning()
     {
         return roundRunning;
     }
 
-
     public int GetCurrentRound()
     {
         return currentRound;
     }
-
 
     public RoundState GetCurrentState()
     {

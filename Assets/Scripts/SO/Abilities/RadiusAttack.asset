@@ -16,5 +16,12 @@ MonoBehaviour:
   description: does damage
   damage: 10
   cooldown: 0
+  usesPerTurn: 3
+  useDuration: 0.25
   range: 1
+  minDistance: 0
   rangeShape: 0
+  explosionPrefab: {fileID: 0}
+  explosionRadius: 1
+  useAbilityDamage: 1
+  explosionDamage: 10

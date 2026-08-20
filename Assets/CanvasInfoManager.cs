@@ -31,7 +31,6 @@ public class CanvasInfoManager : MonoBehaviour
         SetupReferences();
     }
 
-
     private void Update()
     {
         CheckAbilityHover();
@@ -239,6 +238,7 @@ public class CanvasInfoManager : MonoBehaviour
                 eventCamera
             );
 
+
         // ==================================================
         // NOTHING CHANGED
         // ==================================================
@@ -382,8 +382,6 @@ public class CanvasInfoManager : MonoBehaviour
     // SHOW ABILITY RANGE
     // ==================================================
     //
-    // IMPORTANT:
-    //
     // This is the TARGETING RANGE preview.
     //
     // It intentionally uses:
@@ -498,8 +496,6 @@ public class CanvasInfoManager : MonoBehaviour
         // GET TARGETING RANGE
         // ==================================================
         //
-        // THIS IS THE IMPORTANT FIX.
-        //
         // GetRangeTiles() returns the actual targeting
         // range defined by the AbilitySO.
         //
@@ -529,10 +525,19 @@ public class CanvasInfoManager : MonoBehaviour
         // GetRangeTiles() already returns absolute grid
         // positions, so there is no need to rotate or
         // offset anything.
+        //
+        // IMPORTANT:
+        //
+        // Pass selectedObject as the USER/CASTER.
+        //
+        // GridHighlightManager needs this object to
+        // compare the caster's team against the target's
+        // team.
         // ==================================================
 
         highlightManager.ShowAbilityTiles(
-            rangeTiles
+            rangeTiles,
+            selectedObject
         );
     }
 

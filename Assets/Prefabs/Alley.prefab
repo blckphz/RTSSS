@@ -104,12 +104,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 958c6e53865aa8040930da3ffd13a872, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
-  team: 1
+  team: 0
   maxHealth: 100
   health: 0
   spriteRenderer: {fileID: 797159259785541317}
   flashIntensity: 1
   flashDuration: 0.15
+  queueDamageFlashes: 1
+  minimumFlashInterval: 0.03
   enableDebugLogs: 1
 --- !u!114 &4481711699922484246
 MonoBehaviour:
@@ -124,5 +126,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   characterData: {fileID: 11400000, guid: ad18bbb26e16b984498d916f39746623, type: 2}
-  ability: {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
+  abilities: []
   healthManager: {fileID: 6395833664064288601}

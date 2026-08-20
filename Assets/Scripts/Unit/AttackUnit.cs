@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -389,6 +390,111 @@ public class AttackUnit : MonoBehaviour
         );
 
         return true;
+    }
+
+    // ==================================================
+    // ATTACK ROUTINE
+    // ==================================================
+
+    public IEnumerator AttackRoutine(
+        GameObject target,
+        AbilitySO selectedAbility)
+    {
+        if (!CanAttack())
+        {
+            yield break;
+        }
+
+        if (target == null)
+        {
+            yield break;
+        }
+
+        if (selectedAbility == null)
+        {
+            yield break;
+        }
+
+        if (!abilities.Contains(
+                selectedAbility))
+        {
+            yield break;
+        }
+
+        if (!IsAbilityReady(
+                selectedAbility))
+        {
+            yield break;
+        }
+
+        if (!IsValidTarget(target))
+        {
+            yield break;
+        }
+
+        EnsureGridManager();
+
+        if (cachedGridManager == null)
+        {
+            yield break;
+        }
+
+        bool canHit =
+            selectedAbility.CanHit(
+                cachedGridManager,
+                gameObject,
+                target
+            );
+
+        if (!canHit)
+        {
+            yield break;
+        }
+
+        // ------------------------------------------
+        // USE ABILITY
+        // ------------------------------------------
+
+        bool success =
+            selectedAbility.Use(
+                gameObject,
+                target
+            );
+
+        if (!success)
+        {
+            yield break;
+        }
+
+        ConsumeAbilityUse(
+            selectedAbility
+        );
+
+        StartAbilityCooldown(
+            selectedAbility
+        );
+
+        // ------------------------------------------
+        // PLAY ATTACK ANIMATION
+        // ------------------------------------------
+
+        IAttackAnimation attackAnimation =
+            GetComponent<IAttackAnimation>();
+
+        if (attackAnimation == null)
+        {
+            yield break;
+        }
+
+        attackAnimation.PlayAttackAnimation();
+
+        // ------------------------------------------
+        // WAIT FOR ANIMATION
+        // ------------------------------------------
+
+        yield return StartCoroutine(
+            attackAnimation.WaitForAttackFinished()
+        );
     }
 
     // ==================================================
