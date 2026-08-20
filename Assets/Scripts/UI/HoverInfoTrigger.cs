@@ -13,8 +13,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         hoverMessage;
 
     [Header("Click Feedback")]
-    [SerializeField] private float selectedScale = 1.1f;
-    [SerializeField] private float scaleSpeed = 10f;
+    [SerializeField]
+    private float selectedScale = 1.1f;
+
+    [SerializeField]
+    private float scaleSpeed = 10f;
 
     [Header("Selected Visual")]
     [Tooltip(
@@ -31,7 +34,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     private Collider2D collider2D;
     private AttackUnit attackUnit;
     private CanvasInfoManager canvasInfoManager;
-
 
     // =============================================================
     // UNITY LIFECYCLE
@@ -81,7 +83,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled = false;
+            selectedChildSprite.enabled =
+                false;
         }
 
         // =========================================================
@@ -89,9 +92,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         // =========================================================
 
         canvasInfoManager =
-            FindObjectOfType<CanvasInfoManager>();
+            FindFirstObjectByType<CanvasInfoManager>();
     }
-
 
     private void Update()
     {
@@ -109,11 +111,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
                 Vector3.Lerp(
                     transform.localScale,
                     targetScale,
-                    Time.deltaTime * scaleSpeed
+                    Time.deltaTime *
+                    scaleSpeed
                 );
         }
     }
-
 
     // =============================================================
     // HOVER DETECTION
@@ -123,17 +125,14 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     {
         if (canvasInfoManager != null)
         {
-            canvasInfoManager.ShowCharacter(this);
+            canvasInfoManager.ShowCharacter(
+                this
+            );
         }
     }
 
-
     private void OnMouseExit()
     {
-        // =========================================================
-        // IF SOMETHING IS SELECTED
-        // =========================================================
-
         if (UIManager.CurrentSelection != null)
         {
             if (canvasInfoManager != null)
@@ -146,10 +145,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             return;
         }
 
-        // =========================================================
-        // NOTHING SELECTED
-        // =========================================================
-
         if (!isSelected &&
             canvasInfoManager != null)
         {
@@ -157,31 +152,28 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         }
     }
 
-
     // =============================================================
     // DISABLE
     // =============================================================
 
     private void OnDisable()
     {
-        isSelected = false;
+        isSelected =
+            false;
 
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled = false;
+            selectedChildSprite.enabled =
+                false;
         }
 
         if (UIManager.CurrentSelection == this)
         {
-            UIManager.ClearSelection(this);
-        }
-
-        if (canvasInfoManager != null)
-        {
-            canvasInfoManager.ClearInfo();
+            UIManager.ClearSelection(
+                this
+            );
         }
     }
-
 
     // =============================================================
     // DESTROY
@@ -191,10 +183,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     {
         if (UIManager.CurrentSelection == this)
         {
-            UIManager.ClearSelection(this);
+            UIManager.ClearSelection(
+                this
+            );
         }
     }
-
 
     // =============================================================
     // CHARACTER DATA
@@ -223,7 +216,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         return characterData;
     }
 
-
     // =============================================================
     // ATTACK UNIT
     // =============================================================
@@ -232,7 +224,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     {
         return attackUnit;
     }
-
 
     // =============================================================
     // SELECTION
@@ -243,10 +234,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         return isSelected;
     }
 
-
-    public void SetSelected(bool selected)
+    public void SetSelected(
+        bool selected)
     {
-        isSelected = selected;
+        isSelected =
+            selected;
 
         // =========================================================
         // SELECTED VISUAL

@@ -8,21 +8,39 @@ public class UIManager : MonoBehaviour
     public static HoverInfoTrigger CurrentSelection { get; private set; }
 
     [Header("Click Raycast")]
-    [SerializeField] private Camera clickCamera;
-    [SerializeField] private LayerMask clickLayers = ~0;
-    [SerializeField] private float raycastDistance = 1000f;
+    [SerializeField]
+    private Camera clickCamera;
+
+    [SerializeField]
+    private LayerMask clickLayers = ~0;
+
+    [SerializeField]
+    private float raycastDistance = 1000f;
+
+    [Header("Movement")]
+    [SerializeField]
+    private bool allowPlayerMovement = true;
 
     [Header("Debug")]
-    [SerializeField] private bool debugClick = true;
-    [SerializeField] private bool drawRay = true;
+    [SerializeField]
+    private bool debugClick = true;
+
+    [SerializeField]
+    private bool drawRay = true;
+
+
+    // =============================================================
+    // UNITY
+    // =============================================================
 
     private void Awake()
     {
-
-        if (Instance != null && Instance != this)
+        if (Instance != null &&
+            Instance != this)
         {
             Debug.LogWarning(
-                "[UIManager] Duplicate UIManager found. Destroying duplicate.",
+                "[UIManager] Duplicate UIManager found. " +
+                "Destroying duplicate.",
                 this
             );
 
@@ -46,10 +64,16 @@ public class UIManager : MonoBehaviour
         }
     }
 
+
     private void Update()
     {
         CheckMouseClick();
     }
+
+
+    // =============================================================
+    // MOUSE CLICK
+    // =============================================================
 
     private void CheckMouseClick()
     {
@@ -63,8 +87,6 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Only raycast when the left mouse button
-        // is actually clicked.
         if (!Mouse.current.leftButton.wasPressedThisFrame)
         {
             return;
@@ -74,7 +96,9 @@ public class UIManager : MonoBehaviour
             Mouse.current.position.ReadValue();
 
         Ray ray =
-            clickCamera.ScreenPointToRay(mousePosition);
+            clickCamera.ScreenPointToRay(
+                mousePosition
+            );
 
         if (drawRay)
         {
@@ -86,7 +110,11 @@ public class UIManager : MonoBehaviour
             );
         }
 
-        // 2D raycast because the objects use Collider2D.
+
+        // =========================================================
+        // 2D RAYCAST
+        // =========================================================
+
         RaycastHit2D hit =
             Physics2D.GetRayIntersection(
                 ray,
@@ -94,12 +122,31 @@ public class UIManager : MonoBehaviour
                 clickLayers
             );
 
+
+        // =========================================================
+        // TRY MOVING SELECTED UNIT
+        //
+        // This happens before normal object selection.
+        // =========================================================
+
+        if (allowPlayerMovement &&
+            CurrentSelection != null)
+        {
+            if (TryMoveSelectedUnit(mousePosition))
+            {
+                return;
+            }
+        }
+
+
+        // =========================================================
+        // CLICKED OBJECT
+        // =========================================================
+
         if (hit.collider != null)
         {
             HoverInfoTrigger trigger =
                 hit.collider.GetComponentInParent<HoverInfoTrigger>();
-
-          
 
             if (trigger != null)
             {
@@ -109,19 +156,237 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Clicked empty space.
+
+        // =========================================================
+        // EMPTY SPACE
+        // =========================================================
+
         if (CurrentSelection != null)
         {
             ClearSelection();
         }
     }
 
-    public static void SelectObject(HoverInfoTrigger trigger)
+
+    // =============================================================
+    // PLAYER MOVEMENT
+    // =============================================================
+
+    private bool TryMoveSelectedUnit(
+        Vector2 mousePosition)
+    {
+        if (CurrentSelection == null)
+        {
+            return false;
+        }
+
+        AttackUnit attackUnit =
+            CurrentSelection.GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            if (debugClick)
+            {
+                Debug.LogWarning(
+                    "[UIManager] Selected unit has " +
+                    "no UnitMoveBrain.",
+                    attackUnit
+                );
+            }
+
+            return false;
+        }
+
+
+        // =========================================================
+        // UNIT ALREADY MOVING
+        // =========================================================
+
+        if (moveBrain.IsMoving())
+        {
+            return true;
+        }
+
+
+        GridManager gridManager =
+            moveBrain.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+
+        // =========================================================
+        // SCREEN -> WORLD
+        // =========================================================
+
+        Vector3 worldPosition =
+            clickCamera.ScreenToWorldPoint(
+                new Vector3(
+                    mousePosition.x,
+                    mousePosition.y,
+                    Mathf.Abs(
+                        clickCamera.transform.position.z
+                    )
+                )
+            );
+
+
+        // =========================================================
+        // WORLD -> GRID
+        // =========================================================
+
+        Vector2Int destination =
+            gridManager.WorldToGridPosition(
+                worldPosition
+            );
+
+        Vector2Int currentPosition =
+            gridManager.WorldToGridPosition(
+                attackUnit.transform.position
+            );
+
+
+        // =========================================================
+        // SAME CELL
+        // =========================================================
+
+        if (destination == currentPosition)
+        {
+            return false;
+        }
+
+
+        // =========================================================
+        // INSIDE GRID
+        // =========================================================
+
+        if (!gridManager.IsInsideGrid(destination))
+        {
+            return false;
+        }
+
+
+        // =========================================================
+        // ONLY ALLOW HIGHLIGHTED MOVEMENT CELLS
+        // =========================================================
+
+        GridHighlightManager highlightManager =
+            gridManager.GetHighlightManager();
+
+        if (highlightManager == null)
+        {
+            return false;
+        }
+
+        if (!highlightManager.IsMovementCell(destination))
+        {
+            if (debugClick)
+            {
+                Debug.Log(
+                    $"[UIManager] Cell {destination} " +
+                    "is outside the selected unit's movement range."
+                );
+            }
+
+            return false;
+        }
+
+
+        // =========================================================
+        // OCCUPIED
+        // =========================================================
+
+        if (gridManager.IsCellOccupied(destination))
+        {
+            if (debugClick)
+            {
+                Debug.Log(
+                    $"[UIManager] Cannot move to {destination}. " +
+                    "Cell is occupied."
+                );
+            }
+
+            return false;
+        }
+
+
+        // =========================================================
+        // RANGE CHECK
+        // =========================================================
+
+        int moveRange =
+            moveBrain.GetMoveRange();
+
+        int distance =
+            gridManager.GetDistance(
+                currentPosition,
+                destination
+            );
+
+        if (distance > moveRange)
+        {
+            return false;
+        }
+
+
+        // =========================================================
+        // ACTUAL MOVEMENT
+        // =========================================================
+
+        bool started =
+            moveBrain.TryMoveTo(
+                destination
+            );
+
+        if (!started)
+        {
+            return false;
+        }
+
+
+        // =========================================================
+        // CLEAR MOVEMENT RANGE
+        // =========================================================
+
+        highlightManager.ClearMovementRange();
+
+
+        if (debugClick)
+        {
+            Debug.Log(
+                $"[UIManager] Player movement: " +
+                $"{currentPosition} -> {destination}",
+                attackUnit
+            );
+        }
+
+        return true;
+    }
+
+
+    // =============================================================
+    // SELECT OBJECT
+    // =============================================================
+
+    public static void SelectObject(
+        HoverInfoTrigger trigger)
     {
         if (trigger == null)
         {
             return;
         }
+
 
         // Clicking the already selected object
         // does nothing.
@@ -130,16 +395,26 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Remove selection from previous object.
+
+        // =========================================================
+        // CLEAR OLD SELECTION
+        // =========================================================
+
         if (CurrentSelection != null)
         {
             ClearSelection();
         }
 
-        CurrentSelection = trigger;
 
-        // Tell the object it has been selected.
+        // =========================================================
+        // NEW SELECTION
+        // =========================================================
+
+        CurrentSelection =
+            trigger;
+
         trigger.SetSelected(true);
+
 
         Debug.Log(
             $"[UIManager] SELECTED -> " +
@@ -148,7 +423,18 @@ public class UIManager : MonoBehaviour
             trigger
         );
 
-        // Show UI / move camera.
+
+        // =========================================================
+        // SHOW MOVEMENT RANGE
+        // =========================================================
+
+        ShowMovementRange(trigger);
+
+
+        // =========================================================
+        // UI / CAMERA
+        // =========================================================
+
         if (CanvasJuiceManager.Instance != null)
         {
             CanvasJuiceManager.Instance.ShowHoverInfo();
@@ -156,10 +442,101 @@ public class UIManager : MonoBehaviour
         else
         {
             Debug.LogError(
-                "[UIManager] CanvasJuiceManager.Instance is NULL!"
+                "[UIManager] " +
+                "CanvasJuiceManager.Instance is NULL!"
             );
         }
     }
+
+
+    // =============================================================
+    // SHOW MOVEMENT RANGE
+    // =============================================================
+
+    private static void ShowMovementRange(
+        HoverInfoTrigger trigger)
+    {
+        if (trigger == null)
+        {
+            return;
+        }
+
+
+        AttackUnit attackUnit =
+            trigger.GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return;
+        }
+
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            Debug.LogWarning(
+                "[UIManager] Selected unit has no UnitMoveBrain.",
+                attackUnit
+            );
+
+            return;
+        }
+
+
+        GridManager gridManager =
+            moveBrain.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+
+        GridHighlightManager highlightManager =
+            gridManager.GetHighlightManager();
+
+        if (highlightManager == null)
+        {
+            Debug.LogWarning(
+                "[UIManager] GridHighlightManager is missing.",
+                gridManager
+            );
+
+            return;
+        }
+
+
+        // =========================================================
+        // UNIT POSITION
+        // =========================================================
+
+        Vector2Int position =
+            gridManager.WorldToGridPosition(
+                trigger.transform.position
+            );
+
+
+        // =========================================================
+        // MOVEMENT RANGE
+        // =========================================================
+
+        int moveRange =
+            moveBrain.GetMoveRange();
+
+
+        highlightManager.ShowMovementRange(
+            position,
+            moveRange,
+            trigger.gameObject
+        );
+    }
+
+
+    // =============================================================
+    // CLEAR SELECTION
+    // =============================================================
 
     public static void ClearSelection()
     {
@@ -168,24 +545,103 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Tell the object to return to normal.
-        CurrentSelection.SetSelected(false);
+
+        HoverInfoTrigger previousSelection =
+            CurrentSelection;
+
+
+        // =========================================================
+        // CLEAR OBJECT
+        // =========================================================
+
+        previousSelection.SetSelected(false);
+
+
+        // =========================================================
+        // CLEAR MOVEMENT RANGE
+        // =========================================================
+
+        ClearMovementRange(
+            previousSelection
+        );
+
 
         CurrentSelection = null;
 
-        // Hide UI / return camera.
+
+        // =========================================================
+        // UI / CAMERA
+        // =========================================================
+
         if (CanvasJuiceManager.Instance != null)
         {
             CanvasJuiceManager.Instance.HideHoverInfo();
         }
     }
 
-    public static void ClearSelection(HoverInfoTrigger trigger)
+
+    // =============================================================
+    // CLEAR MOVEMENT RANGE
+    // =============================================================
+
+    private static void ClearMovementRange(
+        HoverInfoTrigger trigger)
     {
         if (trigger == null)
         {
             return;
         }
+
+
+        AttackUnit attackUnit =
+            trigger.GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return;
+        }
+
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            return;
+        }
+
+
+        GridManager gridManager =
+            moveBrain.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+
+        GridHighlightManager highlightManager =
+            gridManager.GetHighlightManager();
+
+        if (highlightManager != null)
+        {
+            highlightManager.ClearMovementRange();
+        }
+    }
+
+
+    // =============================================================
+    // CLEAR SELECTION FROM SPECIFIC OBJECT
+    // =============================================================
+
+    public static void ClearSelection(
+        HoverInfoTrigger trigger)
+    {
+        if (trigger == null)
+        {
+            return;
+        }
+
 
         if (CurrentSelection == trigger)
         {

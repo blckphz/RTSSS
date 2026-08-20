@@ -271,6 +271,53 @@ public class GridManager : MonoBehaviour
     }
 
     // ==================================================
+    // GET UNIT GRID POSITION
+    // ==================================================
+
+    public Vector2Int GetUnitGridPosition(
+        GameObject unit)
+    {
+        if (unit == null)
+        {
+            return Vector2Int.zero;
+        }
+
+        return WorldToGridPosition(
+            unit.transform.position
+        );
+    }
+
+    // ==================================================
+    // CHECK MOVEMENT
+    // ==================================================
+
+    public bool CanMoveToCell(
+        GameObject unit,
+        Vector2Int position)
+    {
+        if (unit == null)
+        {
+            return false;
+        }
+
+        if (!IsInsideGrid(position))
+        {
+            return false;
+        }
+
+        GameObject occupant =
+            GetUnitAt(position);
+
+        if (occupant != null &&
+            occupant != unit)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    // ==================================================
     // UNIT MANAGEMENT
     // ==================================================
 
@@ -364,9 +411,6 @@ public class GridManager : MonoBehaviour
     //
     // Removes the unit from its old cell and reserves
     // the destination cell.
-    //
-    // The actual transform movement is handled by
-    // UnitMoveBrain.
     // ==================================================
 
     public bool StartMoveUnit(
@@ -419,10 +463,6 @@ public class GridManager : MonoBehaviour
 
     // ==================================================
     // FINISH MOVEMENT
-    //
-    // The unit has already physically moved here.
-    // This makes sure its final transform position is
-    // exactly centered on the grid cell.
     // ==================================================
 
     public void FinishMoveUnit(
@@ -454,9 +494,6 @@ public class GridManager : MonoBehaviour
     // MOVE UNIT
     //
     // Instant movement version.
-    //
-    // Kept for systems that still need immediate
-    // grid movement.
     // ==================================================
 
     public bool MoveUnit(

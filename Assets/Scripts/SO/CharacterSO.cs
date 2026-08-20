@@ -20,6 +20,8 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
 
     public int maxHealth = 100;
 
+    public int moveRange;
+
     [Header("Abilities")]
     [SerializeField]
     private List<AbilitySO> abilities =
@@ -29,29 +31,17 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     public bool RangedAttacker;
 
 
-    // ============================================================
-    // GET ABILITIES
-    // ============================================================
-
     public List<AbilitySO> GetAbilities()
     {
         return abilities;
     }
 
 
-    // ============================================================
-    // GET ABILITY COUNT
-    // ============================================================
-
     public int GetAbilityCount()
     {
         return abilities.Count;
     }
 
-
-    // ============================================================
-    // GET CHARACTER DATA
-    // ============================================================
 
     public CharacterSO GetCharacterData()
     {
