@@ -30,6 +30,10 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField, Min(0)]
     private int usesPerTurn = 1;
 
+    [Tooltip("Time the attack/effect takes before the next attack can happen.")]
+    [SerializeField, Min(0f)]
+    private float useDuration = 0.25f;
+
     [Header("Targeting Range")]
     [SerializeField, Min(1)]
     private int range = 1;
@@ -39,6 +43,10 @@ public abstract class AbilitySO : ScriptableObject
 
     [SerializeField]
     private RangeShape rangeShape = RangeShape.Diamond;
+
+    // ==================================================
+    // GETTERS
+    // ==================================================
 
     public string GetAbilityName()
     {
@@ -65,6 +73,11 @@ public abstract class AbilitySO : ScriptableObject
         return usesPerTurn;
     }
 
+    public float GetUseDuration()
+    {
+        return useDuration;
+    }
+
     public int GetRange()
     {
         return range;
@@ -79,6 +92,10 @@ public abstract class AbilitySO : ScriptableObject
     {
         return rangeShape;
     }
+
+    // ==================================================
+    // RANGE
+    // ==================================================
 
     public virtual List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
@@ -147,14 +164,11 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
-                        Vector2Int position =
-                            origin +
-                            new Vector2Int(x, y);
-
                         AddValidTile(
                             gridManager,
                             tiles,
-                            position
+                            origin +
+                            new Vector2Int(x, y)
                         );
                     }
                 }
@@ -196,14 +210,11 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
-                        Vector2Int position =
-                            origin +
-                            new Vector2Int(x, y);
-
                         AddValidTile(
                             gridManager,
                             tiles,
-                            position
+                            origin +
+                            new Vector2Int(x, y)
                         );
                     }
                 }
@@ -226,25 +237,29 @@ public abstract class AbilitySO : ScriptableObject
                     AddValidTile(
                         gridManager,
                         tiles,
-                        origin + Vector2Int.up * i
+                        origin +
+                        Vector2Int.up * i
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
-                        origin + Vector2Int.down * i
+                        origin +
+                        Vector2Int.down * i
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
-                        origin + Vector2Int.left * i
+                        origin +
+                        Vector2Int.left * i
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
-                        origin + Vector2Int.right * i
+                        origin +
+                        Vector2Int.right * i
                     );
                 }
 
@@ -298,6 +313,10 @@ public abstract class AbilitySO : ScriptableObject
         return tiles;
     }
 
+    // ==================================================
+    // HITBOX
+    // ==================================================
+
     public virtual List<Vector2Int> GetHitboxTiles(
         GridManager gridManager,
         GameObject user,
@@ -309,6 +328,10 @@ public abstract class AbilitySO : ScriptableObject
             user
         );
     }
+
+    // ==================================================
+    // VALID TILE
+    // ==================================================
 
     protected void AddValidTile(
         GridManager gridManager,
@@ -331,6 +354,10 @@ public abstract class AbilitySO : ScriptableObject
             tiles.Add(position);
         }
     }
+
+    // ==================================================
+    // CAN HIT
+    // ==================================================
 
     public virtual bool CanHit(
         GridManager gridManager,
@@ -399,6 +426,10 @@ public abstract class AbilitySO : ScriptableObject
             targetPosition
         );
     }
+
+    // ==================================================
+    // USE
+    // ==================================================
 
     public virtual bool Use(
         GameObject user,

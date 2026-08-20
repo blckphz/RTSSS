@@ -7,6 +7,17 @@ using UnityEngine;
 )]
 public class FrontAttack : AbilitySO
 {
+    [Header("Front Attack Effect")]
+    [SerializeField]
+    private GameObject hitEffectPrefab;
+
+    [SerializeField]
+    private Vector3 hitEffectOffset;
+
+    // ==================================================
+    // RANGE
+    // ==================================================
+
     public override List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
         GameObject user
@@ -72,20 +83,21 @@ public class FrontAttack : AbilitySO
                     continue;
                 }
 
-                Vector2Int position =
-                    userPosition +
-                    new Vector2Int(x, y);
-
                 AddValidTile(
                     gridManager,
                     tiles,
-                    position
+                    userPosition +
+                    new Vector2Int(x, y)
                 );
             }
         }
 
         return tiles;
     }
+
+    // ==================================================
+    // CAN HIT
+    // ==================================================
 
     public override bool CanHit(
         GridManager gridManager,
@@ -158,6 +170,10 @@ public class FrontAttack : AbilitySO
             targetPosition
         );
     }
+
+    // ==================================================
+    // HITBOX
+    // ==================================================
 
     public override List<Vector2Int> GetHitboxTiles(
         GridManager gridManager,
@@ -268,6 +284,10 @@ public class FrontAttack : AbilitySO
         return tiles;
     }
 
+    // ==================================================
+    // ATTACK DIRECTION
+    // ==================================================
+
     private Vector2Int GetAttackDirection(
         Vector2Int userPosition,
         Vector2Int targetPosition
@@ -314,6 +334,10 @@ public class FrontAttack : AbilitySO
             : Vector2Int.down;
     }
 
+    // ==================================================
+    // NEARBY ENEMY
+    // ==================================================
+
     private Vector2Int DetectNearbyEnemyDirection(
         GridManager gridManager,
         GameObject user,
@@ -353,13 +377,16 @@ public class FrontAttack : AbilitySO
                     userPosition +
                     new Vector2Int(x, y);
 
-                if (!gridManager.IsInsideGrid(position))
+                if (!gridManager.IsInsideGrid(
+                        position))
                 {
                     continue;
                 }
 
                 GameObject unit =
-                    gridManager.GetUnitAt(position);
+                    gridManager.GetUnitAt(
+                        position
+                    );
 
                 if (unit == null ||
                     unit == user)
@@ -414,6 +441,10 @@ public class FrontAttack : AbilitySO
         );
     }
 
+    // ==================================================
+    // FACING
+    // ==================================================
+
     private Vector2Int GetUserFacingDirection(
         GameObject user
     )
@@ -456,6 +487,10 @@ public class FrontAttack : AbilitySO
         return Vector2Int.up;
     }
 
+    // ==================================================
+    // USE
+    // ==================================================
+
     public override bool Use(
         GameObject user,
         GameObject target
@@ -478,8 +513,7 @@ public class FrontAttack : AbilitySO
         if (!CanHit(
                 gridManager,
                 user,
-                target
-            ))
+                target))
         {
             return false;
         }
@@ -518,8 +552,23 @@ public class FrontAttack : AbilitySO
             }
         }
 
+        // One effect for this complete
+        // ability use.
+        if (hitSomething)
+        {
+            PlayHitEffect(
+                gridManager,
+                user,
+                target
+            );
+        }
+
         return hitSomething;
     }
+
+    // ==================================================
+    // ATTACK TILE
+    // ==================================================
 
     private bool AttackTile(
         GridManager gridManager,
@@ -527,13 +576,16 @@ public class FrontAttack : AbilitySO
         GameObject user
     )
     {
-        if (!gridManager.IsInsideGrid(position))
+        if (!gridManager.IsInsideGrid(
+                position))
         {
             return false;
         }
 
         GameObject target =
-            gridManager.GetUnitAt(position);
+            gridManager.GetUnitAt(
+                position
+            );
 
         if (
             target == null ||
@@ -566,11 +618,51 @@ public class FrontAttack : AbilitySO
             return false;
         }
 
-        int damage =
-            GetDamage();
-
-        targetHealth.TakeDamage(damage);
+        targetHealth.TakeDamage(
+            GetDamage()
+        );
 
         return true;
+    }
+
+    // ==================================================
+    // EFFECT
+    // ==================================================
+
+    private void PlayHitEffect(
+        GridManager gridManager,
+        GameObject user,
+        GameObject target
+    )
+    {
+        if (hitEffectPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 position =
+            target.transform.position +
+            hitEffectOffset;
+
+        GameObject effect =
+            Object.Instantiate(
+                hitEffectPrefab,
+                position,
+                Quaternion.identity
+            );
+
+        if (effect == null)
+        {
+            return;
+        }
+
+        ParticleSystem particles =
+            effect.GetComponent<ParticleSystem>();
+
+        if (particles != null)
+        {
+            particles.Stop(true);
+            particles.Play(true);
+        }
     }
 }

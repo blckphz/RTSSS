@@ -30,6 +30,10 @@ public class AttackUnit : MonoBehaviour
 
     private GridManager cachedGridManager;
 
+    // ==================================================
+    // UNITY
+    // ==================================================
+
     private void Awake()
     {
         if (healthManager == null)
@@ -48,7 +52,12 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
-    public void Initialize(CharacterSO data)
+    // ==================================================
+    // INITIALIZE
+    // ==================================================
+
+    public void Initialize(
+        CharacterSO data)
     {
         if (data == null)
         {
@@ -73,8 +82,10 @@ public class AttackUnit : MonoBehaviour
                 AbilitySO ability =
                     characterAbilities[i];
 
-                if (ability != null &&
-                    !abilities.Contains(ability))
+                if (
+                    ability != null &&
+                    !abilities.Contains(ability)
+                )
                 {
                     abilities.Add(ability);
                 }
@@ -133,7 +144,9 @@ public class AttackUnit : MonoBehaviour
     public bool IsAbilityOnCooldown(
         AbilitySO ability)
     {
-        return GetAbilityCooldown(ability) > 0;
+        return GetAbilityCooldown(
+            ability
+        ) > 0;
     }
 
     // ==================================================
@@ -170,7 +183,7 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        // 0 means unlimited.
+        // 0 = unlimited.
         if (ability.GetUsesPerTurn() <= 0)
         {
             return true;
@@ -221,12 +234,14 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!abilities.Contains(ability))
+        if (!abilities.Contains(
+                ability))
         {
             return false;
         }
 
-        if (GetAbilityCooldown(ability) > 0)
+        if (GetAbilityCooldown(
+                ability) > 0)
         {
             return false;
         }
@@ -271,8 +286,6 @@ public class AttackUnit : MonoBehaviour
                     );
             }
 
-            // Reset uses at the beginning of
-            // every new round.
             abilityUsesRemaining[ability] =
                 ability.GetUsesPerTurn();
         }
@@ -367,8 +380,6 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        // Only consume the use after
-        // the ability successfully executes.
         ConsumeAbilityUse(
             selectedAbility
         );
@@ -381,7 +392,7 @@ public class AttackUnit : MonoBehaviour
     }
 
     // ==================================================
-    // TARGET VALIDATION
+    // TARGET
     // ==================================================
 
     public bool IsValidTarget(
@@ -415,8 +426,10 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (targetHealth.GetTeam() ==
-            healthManager.GetTeam())
+        if (
+            targetHealth.GetTeam() ==
+            healthManager.GetTeam()
+        )
         {
             return false;
         }
@@ -426,8 +439,10 @@ public class AttackUnit : MonoBehaviour
 
     public bool CanAttack()
     {
-        if (healthManager == null ||
-            healthManager.IsDead())
+        if (
+            healthManager == null ||
+            healthManager.IsDead()
+        )
         {
             return false;
         }
@@ -490,8 +505,10 @@ public class AttackUnit : MonoBehaviour
             AbilitySO ability =
                 abilities[i];
 
-            if (ability != null &&
-                IsAbilityReady(ability))
+            if (
+                ability != null &&
+                IsAbilityReady(ability)
+            )
             {
                 maxRange =
                     Mathf.Max(
@@ -547,8 +564,10 @@ public class AttackUnit : MonoBehaviour
     public void AddAbility(
         AbilitySO ability)
     {
-        if (ability == null ||
-            abilities.Contains(ability))
+        if (
+            ability == null ||
+            abilities.Contains(ability)
+        )
         {
             return;
         }
@@ -571,7 +590,9 @@ public class AttackUnit : MonoBehaviour
 
         abilities.Remove(ability);
 
-        abilityCooldowns.Remove(ability);
+        abilityCooldowns.Remove(
+            ability
+        );
 
         abilityUsesRemaining.Remove(
             ability
@@ -579,7 +600,7 @@ public class AttackUnit : MonoBehaviour
     }
 
     // ==================================================
-    // CHARACTER / TEAM
+    // ACCESSORS
     // ==================================================
 
     public Team GetTeam()

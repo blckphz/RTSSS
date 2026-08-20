@@ -69,6 +69,21 @@ public class ExplosionAttack : MonoBehaviour
     }
 
 
+    public void SetExplosionDamage(
+        int newDamage)
+    {
+        damage =
+            Mathf.Max(0, newDamage);
+    }
+
+
+    public void SetOwner(
+        GameObject explosionOwner)
+    {
+        owner = explosionOwner;
+    }
+
+
     // ==================================================
     // UNITY
     // ==================================================
@@ -111,6 +126,11 @@ public class ExplosionAttack : MonoBehaviour
     private void TryStartExplosion()
     {
         if (!explodeOnStart)
+        {
+            return;
+        }
+
+        if (exploded)
         {
             return;
         }
@@ -165,6 +185,7 @@ public class ExplosionAttack : MonoBehaviour
             $"Radius={radius}, Damage={damage}"
         );
 
+
         // ----------------------------------------------
         // EXPLOSION PREFAB FLASH
         // ----------------------------------------------
@@ -174,17 +195,22 @@ public class ExplosionAttack : MonoBehaviour
             PlayExplosionFlash();
         }
 
+
         // ----------------------------------------------
         // AFFECT EVERY TILE
         // ----------------------------------------------
 
-        for (int x = -radius;
-             x <= radius;
-             x++)
+        for (
+            int x = -radius;
+            x <= radius;
+            x++
+        )
         {
-            for (int y = -radius;
-                 y <= radius;
-                 y++)
+            for (
+                int y = -radius;
+                y <= radius;
+                y++
+            )
             {
                 int distance =
                     Mathf.Abs(x) +
@@ -205,24 +231,33 @@ public class ExplosionAttack : MonoBehaviour
                     continue;
                 }
 
+
                 // --------------------------------------
                 // DAMAGE UNIT
                 // --------------------------------------
 
                 AttackTile(position);
 
+
                 // --------------------------------------
                 // FLASH FLOOR TILE
                 // --------------------------------------
 
-                if (animateTiles &&
-                    highlightManager != null)
+                if (
+                    animateTiles &&
+                    highlightManager != null
+                )
                 {
                     highlightManager
                         .FlashExplosionTile(position);
                 }
             }
         }
+
+
+        // ----------------------------------------------
+        // DESTROY
+        // ----------------------------------------------
 
         DestroyExplosion();
     }
@@ -235,6 +270,11 @@ public class ExplosionAttack : MonoBehaviour
     private void AttackTile(
         Vector2Int position)
     {
+        if (gridManager == null)
+        {
+            return;
+        }
+
         GameObject target =
             gridManager.GetUnitAt(position);
 
@@ -261,6 +301,7 @@ public class ExplosionAttack : MonoBehaviour
             return;
         }
 
+
         // ----------------------------------------------
         // TEAM CHECK
         // ----------------------------------------------
@@ -272,13 +313,16 @@ public class ExplosionAttack : MonoBehaviour
 
             if (ownerHealth != null)
             {
-                if (ownerHealth.GetTeam() ==
-                    targetHealth.GetTeam())
+                if (
+                    ownerHealth.GetTeam() ==
+                    targetHealth.GetTeam()
+                )
                 {
                     return;
                 }
             }
         }
+
 
         // ----------------------------------------------
         // DAMAGE
@@ -310,6 +354,7 @@ public class ExplosionAttack : MonoBehaviour
                 0f
             );
         }
+
 
         ParticleSystem particles =
             GetComponent<ParticleSystem>();
@@ -354,5 +399,17 @@ public class ExplosionAttack : MonoBehaviour
     public int GetDamage()
     {
         return damage;
+    }
+
+
+    public GameObject GetOwner()
+    {
+        return owner;
+    }
+
+
+    public bool HasExploded()
+    {
+        return exploded;
     }
 }
