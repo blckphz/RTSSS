@@ -4,6 +4,7 @@ using UnityEngine;
 public class GridHighlightBrain : MonoBehaviour
 {
     [Header("References")]
+
     [SerializeField]
     private GridManager gridManager;
 
@@ -12,6 +13,7 @@ public class GridHighlightBrain : MonoBehaviour
 
 
     [Header("Debug Settings")]
+
     [SerializeField]
     private bool enableDebugLogs = true;
 
@@ -34,13 +36,11 @@ public class GridHighlightBrain : MonoBehaviour
                 GetComponent<GridManager>();
         }
 
-
         if (gridManager == null)
         {
             gridManager =
                 FindFirstObjectByType<GridManager>();
         }
-
 
         if (highlightManager == null)
         {
@@ -48,13 +48,11 @@ public class GridHighlightBrain : MonoBehaviour
                 GetComponent<GridHighlightManager>();
         }
 
-
         if (highlightManager == null)
         {
             highlightManager =
                 FindFirstObjectByType<GridHighlightManager>();
         }
-
 
         if (
             gridManager == null &&
@@ -67,7 +65,6 @@ public class GridHighlightBrain : MonoBehaviour
                 this
             );
         }
-
 
         if (
             highlightManager == null &&
@@ -100,12 +97,10 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
         if (user != null)
         {
             UnitMoveBrain moveBrain =
                 user.GetComponent<UnitMoveBrain>();
-
 
             if (
                 moveBrain != null &&
@@ -113,7 +108,6 @@ public class GridHighlightBrain : MonoBehaviour
             )
             {
                 highlightManager.ClearMovementRange();
-
 
                 if (enableDebugLogs)
                 {
@@ -124,19 +118,19 @@ public class GridHighlightBrain : MonoBehaviour
                     );
                 }
 
-
                 return;
             }
         }
 
-
-        if (!gridManager.IsInsideGrid(
-                centerPosition))
+        if (
+            !gridManager.IsInsideGrid(
+                centerPosition
+            )
+        )
         {
             highlightManager.ClearMovementRange();
             return;
         }
-
 
         range =
             Mathf.Max(
@@ -144,19 +138,16 @@ public class GridHighlightBrain : MonoBehaviour
                 range
             );
 
-
         List<Vector2Int> movementCells =
             CalculateMovementRange(
                 centerPosition,
                 range
             );
 
-
         highlightManager.ShowMovementTiles(
             movementCells,
             user
         );
-
 
         if (enableDebugLogs)
         {
@@ -178,14 +169,11 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> cells =
             new List<Vector2Int>();
 
-
         int width =
             gridManager.GetWidth();
 
-
         int height =
             gridManager.GetHeight();
-
 
         for (int x = 0; x < width; x++)
         {
@@ -197,12 +185,10 @@ public class GridHighlightBrain : MonoBehaviour
                         y
                     );
 
-
                 if (position == centerPosition)
                 {
                     continue;
                 }
-
 
                 int distance =
                     gridManager.GetDistance(
@@ -210,24 +196,23 @@ public class GridHighlightBrain : MonoBehaviour
                         position
                     );
 
-
                 if (distance > range)
                 {
                     continue;
                 }
 
-
-                if (gridManager.IsCellOccupied(
-                        position))
+                if (
+                    gridManager.IsCellOccupied(
+                        position
+                    )
+                )
                 {
                     continue;
                 }
 
-
                 cells.Add(position);
             }
         }
-
 
         return cells;
     }
@@ -249,14 +234,15 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
-        if (!gridManager.IsInsideGrid(
-                centerPosition))
+        if (
+            !gridManager.IsInsideGrid(
+                centerPosition
+            )
+        )
         {
             highlightManager.ClearAbilityRange();
             return;
         }
-
 
         range =
             Mathf.Max(
@@ -264,13 +250,11 @@ public class GridHighlightBrain : MonoBehaviour
                 range
             );
 
-
         List<Vector2Int> cells =
             CalculateAbilityRange(
                 centerPosition,
                 range
             );
-
 
         highlightManager.ShowAbilityTiles(
             cells
@@ -285,14 +269,11 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> cells =
             new List<Vector2Int>();
 
-
         int width =
             gridManager.GetWidth();
 
-
         int height =
             gridManager.GetHeight();
-
 
         for (int x = 0; x < width; x++)
         {
@@ -304,12 +285,10 @@ public class GridHighlightBrain : MonoBehaviour
                         y
                     );
 
-
                 if (position == centerPosition)
                 {
                     continue;
                 }
-
 
                 int distance =
                     Mathf.Max(
@@ -323,14 +302,12 @@ public class GridHighlightBrain : MonoBehaviour
                         )
                     );
 
-
                 if (distance <= range)
                 {
                     cells.Add(position);
                 }
             }
         }
-
 
         return cells;
     }
@@ -352,7 +329,6 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
         if (
             ability == null ||
             user == null
@@ -363,12 +339,36 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
+        // ========================================================
+        // ABILITY-SPECIFIC POST-MOVE RESTRICTION
+        // ========================================================
+
+        if (!ability.CanUseAfterMovement(user))
+        {
+            highlightManager.ClearAbilityRange();
+
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    $"[GridHighlightBrain] " +
+                    $"Ability '{ability.GetAbilityName()}' " +
+                    $"cannot be used after movement."
+                );
+            }
+
+            return;
+        }
+
+
+        // ========================================================
+        // GET RANGE
+        // ========================================================
+
         List<Vector2Int> rangeTiles =
             ability.GetRangeTiles(
                 gridManager,
                 user
             );
-
 
         if (rangeTiles == null)
         {
@@ -376,6 +376,10 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
+
+        // ========================================================
+        // FILTER VALID TILES
+        // ========================================================
 
         List<Vector2Int> validTiles =
             FilterValidAbilityTiles(
@@ -393,8 +397,10 @@ public class GridHighlightBrain : MonoBehaviour
         {
             Debug.Log(
                 $"[GridHighlightBrain] " +
-                $"Showing ability '{ability.name}'. " +
+                $"Showing ability '{ability.GetAbilityName()}'. " +
                 $"Heal: {isHealAbility}. " +
+                $"Can attack after move: " +
+                $"{ability.CanAttackWithThisAfterMove()}. " +
                 $"Valid tiles: {validTiles.Count}."
             );
         }
@@ -416,7 +422,6 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> validTiles =
             new List<Vector2Int>();
 
-
         if (
             ability == null ||
             user == null ||
@@ -427,21 +432,33 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
+        // If the ability cannot be used after movement,
+        // don't return ANY valid tiles.
+        if (!ability.CanUseAfterMovement(user))
+        {
+            return validTiles;
+        }
+
+
         foreach (Vector2Int position in positions)
         {
-            if (!gridManager.IsInsideGrid(
-                    position))
+            if (
+                !gridManager.IsInsideGrid(
+                    position
+                )
+            )
             {
                 continue;
             }
 
-
-            if (validTiles.Contains(
-                    position))
+            if (
+                validTiles.Contains(
+                    position
+                )
+            )
             {
                 continue;
             }
-
 
             bool canHit =
                 ability.CanHitTile(
@@ -450,13 +467,11 @@ public class GridHighlightBrain : MonoBehaviour
                     position
                 );
 
-
             if (canHit)
             {
                 validTiles.Add(position);
             }
         }
-
 
         return validTiles;
     }
@@ -478,12 +493,10 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
         List<Vector2Int> validTiles =
             FilterValidTiles(
                 positions
             );
-
 
         highlightManager.ShowAbilityTiles(
             validTiles,
@@ -510,10 +523,8 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
         List<Vector2Int> cells =
             new List<Vector2Int>();
-
 
         foreach (
             Vector2Int offset
@@ -523,20 +534,20 @@ public class GridHighlightBrain : MonoBehaviour
             Vector2Int position =
                 origin + offset;
 
-
-            if (!gridManager.IsInsideGrid(
-                    position))
+            if (
+                !gridManager.IsInsideGrid(
+                    position
+                )
+            )
             {
                 continue;
             }
-
 
             if (!cells.Contains(position))
             {
                 cells.Add(position);
             }
         }
-
 
         highlightManager.ShowAbilityTiles(
             cells,
@@ -560,13 +571,14 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
-        if (!gridManager.IsInsideGrid(
-                position))
+        if (
+            !gridManager.IsInsideGrid(
+                position
+            )
+        )
         {
             return;
         }
-
 
         highlightManager.ShowAbilityCell(
             position
@@ -584,32 +596,34 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> validTiles =
             new List<Vector2Int>();
 
-
         if (positions == null)
         {
             return validTiles;
         }
-
 
         foreach (
             Vector2Int position
             in positions
         )
         {
-            if (!gridManager.IsInsideGrid(
-                    position))
+            if (
+                !gridManager.IsInsideGrid(
+                    position
+                )
+            )
             {
                 continue;
             }
 
-
-            if (!validTiles.Contains(
-                    position))
+            if (
+                !validTiles.Contains(
+                    position
+                )
+            )
             {
                 validTiles.Add(position);
             }
         }
-
 
         return validTiles;
     }
@@ -628,10 +642,8 @@ public class GridHighlightBrain : MonoBehaviour
             return false;
         }
 
-
         AttackUnit attackUnit =
             unit.GetComponent<AttackUnit>();
-
 
         if (
             attackUnit != null &&
@@ -643,7 +655,6 @@ public class GridHighlightBrain : MonoBehaviour
                 AttackUnit sourceAttackUnit =
                     sourceUser.GetComponent<AttackUnit>();
 
-
                 if (sourceAttackUnit != null)
                 {
                     return
@@ -652,14 +663,11 @@ public class GridHighlightBrain : MonoBehaviour
                 }
             }
 
-
             return false;
         }
 
-
         HealthManager targetHealth =
             unit.GetComponent<HealthManager>();
-
 
         if (
             targetHealth != null &&
@@ -671,7 +679,6 @@ public class GridHighlightBrain : MonoBehaviour
                 HealthManager sourceHealth =
                     sourceUser.GetComponent<HealthManager>();
 
-
                 if (sourceHealth != null)
                 {
                     return
@@ -680,10 +687,8 @@ public class GridHighlightBrain : MonoBehaviour
                 }
             }
 
-
             return false;
         }
-
 
         return false;
     }
@@ -700,7 +705,6 @@ public class GridHighlightBrain : MonoBehaviour
         {
             return false;
         }
-
 
         return gridManager.IsInsideGrid(
             position

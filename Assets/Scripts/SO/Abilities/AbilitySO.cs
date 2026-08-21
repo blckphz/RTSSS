@@ -24,6 +24,7 @@ public abstract class AbilitySO : ScriptableObject
     // ============================================================
 
     [Header("Ability")]
+
     [SerializeField]
     private string abilityName;
 
@@ -145,6 +146,53 @@ public abstract class AbilitySO : ScriptableObject
 
     public bool CanAttackWithThisAfterMove()
     {
+        return canAttackWithThisAfterMove;
+    }
+
+
+    // ============================================================
+    // MOVEMENT RESTRICTION
+    // ============================================================
+
+    /// <summary>
+    /// Returns TRUE if this ability is currently allowed to be used
+    /// by this unit with regard to movement.
+    ///
+    /// Before movement:
+    ///     TRUE
+    ///
+    /// After movement + ability allows it:
+    ///     TRUE
+    ///
+    /// After movement + ability does NOT allow it:
+    ///     FALSE
+    /// </summary>
+    public bool CanUseAfterMovement(
+        GameObject user)
+    {
+        if (user == null)
+        {
+            return false;
+        }
+
+        UnitMoveBrain moveBrain =
+            user.GetComponent<UnitMoveBrain>();
+
+        // If this unit does not have a movement brain,
+        // do not block the ability here.
+        if (moveBrain == null)
+        {
+            return true;
+        }
+
+        // Unit has not consumed movement yet.
+        if (moveBrain.CanMoveThisTurn())
+        {
+            return true;
+        }
+
+        // Unit already moved.
+        // Only the abilities explicitly allowing it may continue.
         return canAttackWithThisAfterMove;
     }
 
@@ -488,6 +536,13 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+        // IMPORTANT:
+        // This checks the ability-specific movement restriction.
+        if (!CanUseAfterMovement(user))
+        {
+            return false;
+        }
+
         if (
             !CanTargetObject(
                 user,
@@ -633,6 +688,13 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+        // IMPORTANT:
+        // Prevent using a normal ability after movement.
+        if (!CanUseAfterMovement(user))
+        {
+            return false;
+        }
+
         if (
             !gridManager.IsInsideGrid(
                 targetPosition
@@ -676,6 +738,13 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+        // IMPORTANT:
+        // Final safety check.
+        if (!CanUseAfterMovement(user))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -694,6 +763,13 @@ public abstract class AbilitySO : ScriptableObject
             user == null ||
             gridManager == null
         )
+        {
+            return false;
+        }
+
+        // IMPORTANT:
+        // Final safety check.
+        if (!CanUseAfterMovement(user))
         {
             return false;
         }
