@@ -63,6 +63,8 @@ public class RoundManager : MonoBehaviour
 
     private bool roundRunning;
 
+    private CanvasInfoManager canvasInfoManager;
+
 
     public event Action<AbilityLogEntry>
         OnAbilityUsed;
@@ -81,6 +83,12 @@ public class RoundManager : MonoBehaviour
             gridManager =
                 FindObjectOfType<GridManager>();
         }
+
+        // Find the UI manager so we can refresh
+        // the currently selected character when
+        // a new player turn begins.
+        canvasInfoManager =
+            FindFirstObjectByType<CanvasInfoManager>();
 
         unitDelay =
             new WaitForSeconds(
@@ -204,13 +212,38 @@ public class RoundManager : MonoBehaviour
         EnsureEnemiesExist();
 
 
+        // ==================================================
+        // PLAYER / ALLY TURN START
+        // ==================================================
+
         currentState =
             RoundState.PlayerAndAllyTurn;
+
+
+        /*
+         * A new player turn has started.
+         *
+         * StartNewRound() was already called in
+         * StartRound(), so cooldowns and uses-per-turn
+         * have now been reset.
+         *
+         * Refresh the currently selected unit's UI
+         * so the displayed cooldowns / uses are updated.
+         */
+        if (canvasInfoManager != null)
+        {
+            canvasInfoManager.RefreshCurrentSelection();
+        }
+
 
         yield return StartCoroutine(
             ExecutePlayerAndAllyTurn()
         );
 
+
+        // ==================================================
+        // ENEMY TURN
+        // ==================================================
 
         currentState =
             RoundState.EnemyTurn;
@@ -219,6 +252,10 @@ public class RoundManager : MonoBehaviour
             ExecuteEnemyTurn()
         );
 
+
+        // ==================================================
+        // ROUND FINISHED
+        // ==================================================
 
         currentState =
             RoundState.Setup;
@@ -375,7 +412,10 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
-            // This now also resets hasMovedThisTurn.
+            // This resets:
+            // - ability cooldowns
+            // - uses per turn
+            // - hasMovedThisTurn
             unit.StartNewRound();
         }
     }

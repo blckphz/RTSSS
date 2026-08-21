@@ -154,19 +154,6 @@ public abstract class AbilitySO : ScriptableObject
     // MOVEMENT RESTRICTION
     // ============================================================
 
-    /// <summary>
-    /// Returns TRUE if this ability is currently allowed to be used
-    /// by this unit with regard to movement.
-    ///
-    /// Before movement:
-    ///     TRUE
-    ///
-    /// After movement + ability allows it:
-    ///     TRUE
-    ///
-    /// After movement + ability does NOT allow it:
-    ///     FALSE
-    /// </summary>
     public bool CanUseAfterMovement(
         GameObject user)
     {
@@ -178,7 +165,7 @@ public abstract class AbilitySO : ScriptableObject
         UnitMoveBrain moveBrain =
             user.GetComponent<UnitMoveBrain>();
 
-        // If this unit does not have a movement brain,
+        // If there is no movement brain,
         // do not block the ability here.
         if (moveBrain == null)
         {
@@ -192,7 +179,6 @@ public abstract class AbilitySO : ScriptableObject
         }
 
         // Unit already moved.
-        // Only the abilities explicitly allowing it may continue.
         return canAttackWithThisAfterMove;
     }
 
@@ -536,8 +522,6 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        // IMPORTANT:
-        // This checks the ability-specific movement restriction.
         if (!CanUseAfterMovement(user))
         {
             return false;
@@ -688,8 +672,6 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        // IMPORTANT:
-        // Prevent using a normal ability after movement.
         if (!CanUseAfterMovement(user))
         {
             return false;
@@ -738,8 +720,6 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        // IMPORTANT:
-        // Final safety check.
         if (!CanUseAfterMovement(user))
         {
             return false;
@@ -767,8 +747,6 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        // IMPORTANT:
-        // Final safety check.
         if (!CanUseAfterMovement(user))
         {
             return false;

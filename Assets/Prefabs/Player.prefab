@@ -239,6 +239,13 @@ MonoBehaviour:
   hoverMessage: Default Prefab Info
   selectedScale: 1.1
   scaleSpeed: 10
+  enableHoverScale: 1
+  hoverScaleAmount: 0.05
+  hoverScaleSmoothTime: 0.08
+  enableAbilityTargetScale: 1
+  abilityTargetScaleAmount: 0.06
+  abilityTargetScaleSmoothTime: 0.08
+  debugHover: 1
   selectedChildSprite: {fileID: 3350255872931640762}
 --- !u!61 &6280651182369518804
 BoxCollider2D:
@@ -274,7 +281,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.024063498, y: 0.31785625}
+  m_Offset: {x: -0.024063498, y: 0.36343327}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -284,7 +291,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.44052523, y: 0.6474179}
+  m_Size: {x: 0.44052523, y: 0.73857194}
   m_EdgeRadius: 0
 --- !u!50 &1982861054404513928
 Rigidbody2D:
@@ -337,6 +344,7 @@ MonoBehaviour:
   preferMoreOpenPositions: 1
   preferSidePositions: 1
   allowMovingAwayToGoAroundObstacles: 1
+  debugMovement: 1
 --- !u!114 &9126464460582162628
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -350,3 +358,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   attackUnit: {fileID: 0}
+  debugAttack: 1

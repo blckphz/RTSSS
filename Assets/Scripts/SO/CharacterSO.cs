@@ -21,6 +21,7 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     public int maxHealth = 100;
 
     public int moveRange;
+    public bool canwalkdiagonally;
 
     [Header("Abilities")]
     [SerializeField]

@@ -15,10 +15,11 @@ MonoBehaviour:
   abilityName: Scratch
   description: does damage
   damage: 10
-  cooldown: 0
-  canAttackWithThisAfterMove: 0
+  cooldown: 3
+  canAttackWithThisAfterMove: 1
   usesPerTurn: 3
   useDuration: 0.25
+  targetType: 0
   range: 1
   minDistance: 0
   rangeShape: 0

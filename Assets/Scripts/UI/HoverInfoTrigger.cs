@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Collider2D))]
 public class HoverInfoTrigger :
@@ -28,33 +29,60 @@ public class HoverInfoTrigger :
 
 
     // ============================================================
-    // ABILITY TARGET PULSE
+    // NORMAL HOVER SCALE
     // ============================================================
 
-    [Header("Ability Target Pulse")]
+    [Header("Normal Hover Scale")]
     [Tooltip(
-        "Enables the subtle scale pulse when hovering a valid target of the selected ability."
+        "Enables the small scale increase while the mouse is hovering over the unit."
     )]
     [SerializeField]
-    private bool enableAbilityTargetPulse = true;
+    private bool enableHoverScale = true;
 
     [Tooltip(
-        "Maximum additional scale during the pulse."
+        "Additional scale applied while the mouse is hovering over the unit."
     )]
-    [SerializeField, Range(0f, 0.15f)]
-    private float abilityTargetPulseAmount = 0.035f;
+    [SerializeField, Range(0f, 0.2f)]
+    private float hoverScaleAmount = 0.05f;
 
     [Tooltip(
-        "Speed of the pulse."
-    )]
-    [SerializeField, Min(0f)]
-    private float abilityTargetPulseSpeed = 5f;
-
-    [Tooltip(
-        "How smoothly the pulse turns on and off."
+        "How quickly the normal hover scale turns on and off."
     )]
     [SerializeField, Min(0.01f)]
-    private float abilityTargetPulseSmoothTime = 0.08f;
+    private float hoverScaleSmoothTime = 0.08f;
+
+
+    // ============================================================
+    // ABILITY TARGET SCALE
+    // ============================================================
+
+    [Header("Ability Target Scale")]
+    [Tooltip(
+        "Enables the slightly larger scale when this unit is a valid target of the selected ability."
+    )]
+    [SerializeField]
+    private bool enableAbilityTargetScale = true;
+
+    [Tooltip(
+        "Additional scale applied to a valid ability target."
+    )]
+    [SerializeField, Range(0f, 0.25f)]
+    private float abilityTargetScaleAmount = 0.06f;
+
+    [Tooltip(
+        "How quickly the ability target scale turns on and off."
+    )]
+    [SerializeField, Min(0.01f)]
+    private float abilityTargetScaleSmoothTime = 0.08f;
+
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    [Header("Debug")]
+    [SerializeField]
+    private bool debugHover = true;
 
 
     // ============================================================
@@ -77,23 +105,34 @@ public class HoverInfoTrigger :
 
     private bool isSelected;
 
+    private bool isHovered;
+
     private bool isAbilityTargetHovered;
 
     private SpriteRenderer spriteRenderer;
+
     private Collider2D collider2D;
 
     private AttackUnit attackUnit;
 
     private CanvasInfoManager canvasInfoManager;
+
     private GridHighlightManager gridHighlightManager;
 
+    private Camera hoverCamera;
+
 
     // ============================================================
-    // PULSE STATE
+    // SCALE STATE
     // ============================================================
 
-    private float currentPulseScale;
-    private float pulseVelocity;
+    private float currentHoverScale;
+
+    private float hoverScaleVelocity;
+
+    private float currentAbilityTargetScale;
+
+    private float abilityTargetScaleVelocity;
 
 
     // ============================================================
@@ -105,14 +144,21 @@ public class HoverInfoTrigger :
         collider2D =
             GetComponent<Collider2D>();
 
+
         spriteRenderer =
             GetComponent<SpriteRenderer>();
+
 
         attackUnit =
             GetComponent<AttackUnit>();
 
+
         originalScale =
             transform.localScale;
+
+
+        hoverCamera =
+            Camera.main;
 
 
         if (collider2D == null)
@@ -135,6 +181,16 @@ public class HoverInfoTrigger :
         }
 
 
+        if (hoverCamera == null)
+        {
+            Debug.LogWarning(
+                $"[HoverInfoTrigger] " +
+                $"{gameObject.name} could not find Camera.main.",
+                this
+            );
+        }
+
+
         if (selectedChildSprite != null)
         {
             selectedChildSprite.enabled =
@@ -145,6 +201,7 @@ public class HoverInfoTrigger :
         canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
 
+
         gridHighlightManager =
             FindFirstObjectByType<GridHighlightManager>();
     }
@@ -152,7 +209,168 @@ public class HoverInfoTrigger :
 
     private void Update()
     {
+        CheckMouseHover();
+
         UpdateScale();
+    }
+
+
+    // ============================================================
+    // NEW INPUT SYSTEM HOVER
+    // ============================================================
+
+    private void CheckMouseHover()
+    {
+        if (Mouse.current == null)
+        {
+            if (isHovered)
+            {
+                SetHovered(false);
+            }
+
+            return;
+        }
+
+
+        if (hoverCamera == null)
+        {
+            hoverCamera =
+                Camera.main;
+        }
+
+
+        if (hoverCamera == null)
+        {
+            return;
+        }
+
+
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
+
+
+        Ray ray =
+            hoverCamera.ScreenPointToRay(
+                mousePosition
+            );
+
+
+        RaycastHit2D hit =
+            Physics2D.GetRayIntersection(
+                ray,
+                Mathf.Infinity
+            );
+
+
+        bool mouseIsOverThisUnit =
+            false;
+
+
+        if (hit.collider != null)
+        {
+            HoverInfoTrigger trigger =
+                hit.collider.GetComponentInParent<
+                    HoverInfoTrigger
+                >();
+
+
+            if (trigger == this)
+            {
+                mouseIsOverThisUnit =
+                    true;
+            }
+        }
+
+
+        if (mouseIsOverThisUnit != isHovered)
+        {
+            SetHovered(
+                mouseIsOverThisUnit
+            );
+        }
+    }
+
+
+    // ============================================================
+    // SET HOVERED
+    // ============================================================
+
+    private void SetHovered(
+        bool hovered)
+    {
+        isHovered =
+            hovered;
+
+
+        if (debugHover)
+        {
+            Debug.Log(
+                $"[HoverInfoTrigger] " +
+                $"{gameObject.name} hover = {hovered}",
+                this
+            );
+        }
+
+
+        if (hovered)
+        {
+            OnHoverEnter();
+        }
+        else
+        {
+            OnHoverExit();
+        }
+    }
+
+
+    // ============================================================
+    // HOVER ENTER
+    // ============================================================
+
+    private void OnHoverEnter()
+    {
+        if (canvasInfoManager != null)
+        {
+            canvasInfoManager.ShowCharacter(
+                this
+            );
+        }
+
+
+        UpdateAbilityTargetHover();
+    }
+
+
+    // ============================================================
+    // HOVER EXIT
+    // ============================================================
+
+    private void OnHoverExit()
+    {
+        isAbilityTargetHovered =
+            false;
+
+
+        if (UIManager.CurrentSelection != null)
+        {
+            if (canvasInfoManager != null)
+            {
+                canvasInfoManager.ShowCharacter(
+                    UIManager.CurrentSelection
+                );
+            }
+
+            return;
+        }
+
+
+        if (
+            !isSelected &&
+            canvasInfoManager != null
+        )
+        {
+            canvasInfoManager.ClearInfo();
+        }
     }
 
 
@@ -173,37 +391,56 @@ public class HoverInfoTrigger :
 
 
         // --------------------------------------------------------
-        // TARGET PULSE
+        // NORMAL HOVER SCALE
         // --------------------------------------------------------
 
-        float targetPulse =
+        float targetHoverScale =
             0f;
 
-        if (isAbilityTargetHovered &&
-            enableAbilityTargetPulse)
-        {
-            float pulse =
-                (Mathf.Sin(
-                    Time.time *
-                    abilityTargetPulseSpeed
-                ) + 1f) * 0.5f;
 
-            targetPulse =
-                pulse *
-                abilityTargetPulseAmount;
+        if (
+            isHovered &&
+            enableHoverScale
+        )
+        {
+            targetHoverScale =
+                hoverScaleAmount;
         }
 
 
+        currentHoverScale =
+            Mathf.SmoothDamp(
+                currentHoverScale,
+                targetHoverScale,
+                ref hoverScaleVelocity,
+                hoverScaleSmoothTime
+            );
+
+
         // --------------------------------------------------------
-        // SMOOTH PULSE
+        // ABILITY TARGET SCALE
         // --------------------------------------------------------
 
-        currentPulseScale =
+        float targetAbilityScale =
+            0f;
+
+
+        if (
+            isAbilityTargetHovered &&
+            enableAbilityTargetScale
+        )
+        {
+            targetAbilityScale =
+                abilityTargetScaleAmount;
+        }
+
+
+        currentAbilityTargetScale =
             Mathf.SmoothDamp(
-                currentPulseScale,
-                targetPulse,
-                ref pulseVelocity,
-                abilityTargetPulseSmoothTime
+                currentAbilityTargetScale,
+                targetAbilityScale,
+                ref abilityTargetScaleVelocity,
+                abilityTargetScaleSmoothTime
             );
 
 
@@ -213,17 +450,14 @@ public class HoverInfoTrigger :
 
         float finalScale =
             baseScale +
-            currentPulseScale;
+            currentHoverScale +
+            currentAbilityTargetScale;
 
 
         Vector3 targetScale =
             originalScale *
             finalScale;
 
-
-        // --------------------------------------------------------
-        // SMOOTH SCALE
-        // --------------------------------------------------------
 
         transform.localScale =
             Vector3.Lerp(
@@ -232,55 +466,6 @@ public class HoverInfoTrigger :
                 Time.deltaTime *
                 scaleSpeed
             );
-    }
-
-
-    // ============================================================
-    // HOVER ENTER
-    // ============================================================
-
-    private void OnMouseEnter()
-    {
-        if (canvasInfoManager != null)
-        {
-            canvasInfoManager.ShowCharacter(
-                this
-            );
-        }
-
-
-        UpdateAbilityTargetHover();
-    }
-
-
-    // ============================================================
-    // HOVER EXIT
-    // ============================================================
-
-    private void OnMouseExit()
-    {
-        isAbilityTargetHovered =
-            false;
-
-
-        if (UIManager.CurrentSelection != null)
-        {
-            if (canvasInfoManager != null)
-            {
-                canvasInfoManager.ShowCharacter(
-                    UIManager.CurrentSelection
-                );
-            }
-
-            return;
-        }
-
-
-        if (!isSelected &&
-            canvasInfoManager != null)
-        {
-            canvasInfoManager.ClearInfo();
-        }
     }
 
 
@@ -294,7 +479,7 @@ public class HoverInfoTrigger :
             false;
 
 
-        if (!enableAbilityTargetPulse)
+        if (!enableAbilityTargetScale)
         {
             return;
         }
@@ -315,7 +500,8 @@ public class HoverInfoTrigger :
         if (gridHighlightManager == null)
         {
             gridHighlightManager =
-                FindFirstObjectByType<GridHighlightManager>();
+                FindFirstObjectByType<
+                    GridHighlightManager>();
         }
 
 
@@ -325,8 +511,12 @@ public class HoverInfoTrigger :
         }
 
 
-        if (gridHighlightManager.IsValidCurrentAbilityTarget(
-                gameObject))
+        if (
+            gridHighlightManager
+                .IsValidCurrentAbilityTarget(
+                    gameObject
+                )
+        )
         {
             isAbilityTargetHovered =
                 true;
@@ -340,12 +530,32 @@ public class HoverInfoTrigger :
 
     private void OnDisable()
     {
-        isSelected = false;
+        isSelected =
+            false;
 
-        isAbilityTargetHovered = false;
 
-        currentPulseScale = 0f;
-        pulseVelocity = 0f;
+        isHovered =
+            false;
+
+
+        isAbilityTargetHovered =
+            false;
+
+
+        currentHoverScale =
+            0f;
+
+
+        hoverScaleVelocity =
+            0f;
+
+
+        currentAbilityTargetScale =
+            0f;
+
+
+        abilityTargetScaleVelocity =
+            0f;
 
 
         if (selectedChildSprite != null)
@@ -417,6 +627,91 @@ public class HoverInfoTrigger :
     public AttackUnit GetAttackUnit()
     {
         return attackUnit;
+    }
+
+
+    // ============================================================
+    // ABILITIES
+    // ============================================================
+
+    /// <summary>
+    /// Returns the current cooldown of the specified ability.
+    ///
+    /// 0 = ready.
+    /// Greater than 0 = cooldown turns remaining.
+    /// </summary>
+    public int GetAbilityCooldown(
+        AbilitySO ability)
+    {
+        if (attackUnit == null)
+        {
+            return -1;
+        }
+
+
+        return attackUnit.GetAbilityCooldown(
+            ability
+        );
+    }
+
+
+    /// <summary>
+    /// Returns true if the ability currently has
+    /// a cooldown remaining.
+    /// </summary>
+    public bool IsAbilityOnCooldown(
+        AbilitySO ability)
+    {
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+
+        return attackUnit.IsAbilityOnCooldown(
+            ability
+        );
+    }
+
+
+    /// <summary>
+    /// Returns the number of uses remaining
+    /// for this turn.
+    ///
+    /// For unlimited abilities:
+    /// returns 0.
+    /// </summary>
+    public int GetAbilityUsesRemaining(
+        AbilitySO ability)
+    {
+        if (attackUnit == null)
+        {
+            return -1;
+        }
+
+
+        return attackUnit.GetAbilityUsesRemaining(
+            ability
+        );
+    }
+
+
+    /// <summary>
+    /// Returns true if this ability can currently
+    /// be used by this unit.
+    /// </summary>
+    public bool IsAbilityReady(
+        AbilitySO ability)
+    {
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+
+        return attackUnit.IsAbilityReady(
+            ability
+        );
     }
 
 

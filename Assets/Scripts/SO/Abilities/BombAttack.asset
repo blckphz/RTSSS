@@ -15,10 +15,11 @@ MonoBehaviour:
   abilityName: bomb
   description: 
   damage: 10
-  cooldown: 0
+  cooldown: 3
   canAttackWithThisAfterMove: 0
   usesPerTurn: 1
   useDuration: 3
+  targetType: 0
   range: 4
   minDistance: 2
   rangeShape: 2

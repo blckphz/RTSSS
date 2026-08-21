@@ -50,11 +50,14 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null &&
-            Instance != this)
+        if (
+            Instance != null &&
+            Instance != this
+        )
         {
             Debug.LogWarning(
-                "[UIManager] Duplicate UIManager found. Destroying duplicate.",
+                "[UIManager] Duplicate UIManager found. " +
+                "Destroying duplicate.",
                 this
             );
 
@@ -96,17 +99,6 @@ public class UIManager : MonoBehaviour
     // ============================================================
     // RIGHT CLICK
     // ============================================================
-    //
-    // New Unity Input System:
-    //
-    // Mouse.current.rightButton.wasPressedThisFrame
-    //
-    // Right click cancels the currently selected ability.
-    //
-    // IMPORTANT:
-    // This does NOT affect movement.
-    // Movement restrictions remain untouched.
-    //
 
     private void CheckRightClick()
     {
@@ -122,21 +114,59 @@ public class UIManager : MonoBehaviour
         }
 
 
-        if (!HasSelectedAbility())
+        // ========================================================
+        // ABILITY SELECTED
+        // ========================================================
+
+        if (HasSelectedAbility())
         {
+            if (debugClick)
+            {
+                Debug.Log(
+                    "[UIManager] Ability deselected with RIGHT CLICK."
+                );
+            }
+
+
+            ClearSelectedAbility();
+
             return;
         }
 
 
-        if (debugClick)
+        // ========================================================
+        // UNIT SELECTED
+        // ========================================================
+
+        if (CurrentSelection != null)
         {
-            Debug.Log(
-                "[UIManager] Ability deselected with RIGHT CLICK."
-            );
+            if (debugClick)
+            {
+                Debug.Log(
+                    "[UIManager] Unit deselected with RIGHT CLICK -> " +
+                    $"{CurrentSelection.gameObject.name}",
+                    CurrentSelection
+                );
+            }
+
+
+            ClearSelection();
+
+            return;
         }
 
 
-        ClearSelectedAbility();
+        // ========================================================
+        // NOTHING SELECTED
+        // ========================================================
+
+        if (debugClick)
+        {
+            Debug.Log(
+                "[UIManager] Right click pressed, " +
+                "but nothing was selected."
+            );
+        }
     }
 
 
@@ -174,12 +204,16 @@ public class UIManager : MonoBehaviour
 
         if (canvasInfoManager != null)
         {
-            if (canvasInfoManager.TrySelectAbilityUnderMouse())
+            if (
+                canvasInfoManager
+                    .TrySelectAbilityUnderMouse()
+            )
             {
                 if (debugClick)
                 {
                     Debug.Log(
-                        "[UIManager] Click consumed by ability UI."
+                        "[UIManager] " +
+                        "Click consumed by ability UI."
                     );
                 }
 
@@ -222,23 +256,54 @@ public class UIManager : MonoBehaviour
 
 
         // ========================================================
-        // 2. ABILITY TARGETING
+        // IMPORTANT:
+        //
+        // Check what was actually clicked BEFORE attempting
+        // to move the currently selected unit.
+        //
+        // This prevents:
+        //
+        // Selected Unit A
+        //        ↓
+        // Click Unit B
+        //
+        // from accidentally moving Unit A instead of selecting B.
+        // ========================================================
+
+        HoverInfoTrigger clickedTrigger = null;
+
+
+        if (hit.collider != null)
+        {
+            clickedTrigger =
+                hit.collider
+                    .GetComponentInParent<
+                        HoverInfoTrigger
+                    >();
+        }
+
+
+        // ========================================================
+        // 3. ABILITY TARGETING
         // ========================================================
 
         if (HasSelectedAbility())
         {
-            if (TryUseSelectedAbility(
+            if (
+                TryUseSelectedAbility(
                     mousePosition,
-                    hit))
+                    hit
+                )
+            )
             {
                 return;
             }
 
 
             /*
-             * If an ability is selected, clicking somewhere
-             * that is not a valid ability target should NOT
-             * accidentally move the unit.
+             * If an ability is selected,
+             * clicking an invalid target should
+             * NOT move the unit.
              */
 
             return;
@@ -246,14 +311,33 @@ public class UIManager : MonoBehaviour
 
 
         // ========================================================
-        // 3. MOVEMENT
+        // 4. CLICKED UNIT
         // ========================================================
 
-        if (allowPlayerMovement &&
-            CurrentSelection != null)
+        if (clickedTrigger != null)
         {
-            if (TryMoveSelectedUnit(
-                    mousePosition))
+            SelectObject(
+                clickedTrigger
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // 5. MOVEMENT
+        // ========================================================
+
+        if (
+            allowPlayerMovement &&
+            CurrentSelection != null
+        )
+        {
+            if (
+                TryMoveSelectedUnit(
+                    mousePosition
+                )
+            )
             {
                 return;
             }
@@ -261,29 +345,7 @@ public class UIManager : MonoBehaviour
 
 
         // ========================================================
-        // 4. CLICKED OBJECT
-        // ========================================================
-
-        if (hit.collider != null)
-        {
-            HoverInfoTrigger trigger =
-                hit.collider
-                    .GetComponentInParent<HoverInfoTrigger>();
-
-
-            if (trigger != null)
-            {
-                SelectObject(
-                    trigger
-                );
-
-                return;
-            }
-        }
-
-
-        // ========================================================
-        // 5. EMPTY SPACE
+        // 6. EMPTY SPACE
         // ========================================================
 
         if (CurrentSelection != null)
@@ -361,7 +423,7 @@ public class UIManager : MonoBehaviour
 
 
         // ========================================================
-        // ONLY PLAYER / ALLY UNITS CAN USE PLAYER INPUT
+        // ONLY PLAYER / ALLY
         // ========================================================
 
         if (!IsPlayerControlledUnit(
@@ -375,6 +437,7 @@ public class UIManager : MonoBehaviour
                     CurrentSelection
                 );
             }
+
 
             return false;
         }
@@ -411,6 +474,34 @@ public class UIManager : MonoBehaviour
 
 
         // ========================================================
+        // ABILITY READY CHECK
+        // ========================================================
+
+        if (!attackUnit.IsAbilityReady(ability))
+        {
+            if (debugClick)
+            {
+                Debug.Log(
+                    $"[UIManager] Ability " +
+                    $"'{ability.GetAbilityName()}' is NOT ready.\n" +
+                    $"Reason: " +
+                    $"{attackUnit.GetAbilityReadyFailureReason(ability)}\n" +
+                    $"Uses remaining: " +
+                    $"{attackUnit.GetAbilityUsesRemaining(ability)}\n" +
+                    $"Cooldown: " +
+                    $"{attackUnit.GetAbilityCooldown(ability)}\n" +
+                    $"Moved this turn: " +
+                    $"{attackUnit.HasMovedThisTurn()}",
+                    attackUnit
+                );
+            }
+
+
+            return false;
+        }
+
+
+        // ========================================================
         // MOVEMENT BRAIN
         // ========================================================
 
@@ -423,10 +514,12 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.LogWarning(
-                    "[UIManager] Selected unit has no UnitMoveBrain.",
+                    "[UIManager] Selected unit has no " +
+                    "UnitMoveBrain.",
                     attackUnit
                 );
             }
+
 
             return false;
         }
@@ -483,10 +576,12 @@ public class UIManager : MonoBehaviour
             {
                 Debug.Log(
                     $"[UIManager] Cannot use " +
-                    $"{ability.GetAbilityName()} at {targetTile}. " +
+                    $"{ability.GetAbilityName()} at " +
+                    $"{targetTile}. " +
                     $"Tile is outside grid."
                 );
             }
+
 
             return false;
         }
@@ -503,31 +598,31 @@ public class UIManager : MonoBehaviour
             );
 
 
-        if (rangeTiles == null ||
-            !rangeTiles.Contains(targetTile))
+        if (
+            rangeTiles == null ||
+            !rangeTiles.Contains(
+                targetTile
+            )
+        )
         {
             if (debugClick)
             {
                 Debug.Log(
                     $"[UIManager] Cannot use " +
-                    $"{ability.GetAbilityName()} at {targetTile}. " +
+                    $"{ability.GetAbilityName()} at " +
+                    $"{targetTile}. " +
                     $"Tile is outside ability range."
                 );
             }
+
 
             return false;
         }
 
 
         // ========================================================
-        // BOMB
+        // BOMB / TILE ABILITY
         // ========================================================
-        //
-        // Bombs target a TILE.
-        //
-        // They do NOT require an enemy or another object
-        // to exist on the clicked tile.
-        //
 
         BombAttack bombAttack =
             ability as BombAttack;
@@ -538,16 +633,16 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] Bomb target tile -> {targetTile}"
+                    $"[UIManager] Bomb target tile -> " +
+                    $"{targetTile}"
                 );
             }
 
 
             bool bombUsed =
-                bombAttack.UseAtTile(
-                    CurrentSelection.gameObject,
-                    gridManager,
-                    targetTile
+                attackUnit.AttackAtTile(
+                    targetTile,
+                    ability
                 );
 
 
@@ -557,10 +652,11 @@ public class UIManager : MonoBehaviour
                 {
                     Debug.Log(
                         $"[UIManager] Bomb " +
-                        $"{ability.GetAbilityName()} failed at " +
-                        $"{targetTile}."
+                        $"{ability.GetAbilityName()} " +
+                        $"failed at {targetTile}."
                     );
                 }
+
 
                 return false;
             }
@@ -570,14 +666,17 @@ public class UIManager : MonoBehaviour
             {
                 Debug.Log(
                     $"[UIManager] Bomb USED -> " +
-                    $"{ability.GetAbilityName()} at tile " +
-                    $"{targetTile}",
+                    $"{ability.GetAbilityName()} " +
+                    $"at tile {targetTile}. " +
+                    $"Uses remaining: " +
+                    $"{attackUnit.GetAbilityUsesRemaining(ability)}",
                     CurrentSelection
                 );
             }
 
 
             ClearSelectedAbility();
+
 
             return true;
         }
@@ -603,10 +702,12 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] {ability.GetAbilityName()} " +
+                    $"[UIManager] " +
+                    $"{ability.GetAbilityName()} " +
                     $"requires a target at {targetTile}."
                 );
             }
+
 
             return false;
         }
@@ -624,23 +725,26 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] {ability.GetAbilityName()} " +
-                    $"cannot hit target '{targetObject.name}'."
+                    $"[UIManager] " +
+                    $"{ability.GetAbilityName()} " +
+                    $"cannot hit target " +
+                    $"'{targetObject.name}'."
                 );
             }
+
 
             return false;
         }
 
 
         // ========================================================
-        // USE NORMAL ABILITY
+        // USE THROUGH ATTACK UNIT
         // ========================================================
 
         bool used =
-            ability.Use(
-                CurrentSelection.gameObject,
-                targetObject
+            attackUnit.Attack(
+                targetObject,
+                ability
             );
 
 
@@ -650,10 +754,11 @@ public class UIManager : MonoBehaviour
             {
                 Debug.Log(
                     $"[UIManager] Ability " +
-                    $"{ability.GetAbilityName()} failed at " +
-                    $"{targetTile}."
+                    $"{ability.GetAbilityName()} " +
+                    $"failed at {targetTile}."
                 );
             }
+
 
             return false;
         }
@@ -667,14 +772,17 @@ public class UIManager : MonoBehaviour
         {
             Debug.Log(
                 $"[UIManager] Ability USED -> " +
-                $"{ability.GetAbilityName()} at tile " +
-                $"{targetTile}",
+                $"{ability.GetAbilityName()} " +
+                $"at tile {targetTile}. " +
+                $"Uses remaining: " +
+                $"{attackUnit.GetAbilityUsesRemaining(ability)}",
                 CurrentSelection
             );
         }
 
 
         ClearSelectedAbility();
+
 
         return true;
     }
@@ -723,7 +831,9 @@ public class UIManager : MonoBehaviour
 
             HoverInfoTrigger trigger =
                 colliders[i]
-                    .GetComponentInParent<HoverInfoTrigger>();
+                    .GetComponentInParent<
+                        HoverInfoTrigger
+                    >();
 
 
             if (trigger != null)
@@ -786,11 +896,6 @@ public class UIManager : MonoBehaviour
         }
 
 
-        /*
-         * Enemy units can be selected for inspection,
-         * but they cannot be moved by player input.
-         */
-
         if (!IsPlayerControlledUnit(
                 CurrentSelection.gameObject))
         {
@@ -817,18 +922,19 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.LogWarning(
-                    "[UIManager] Selected unit has no UnitMoveBrain.",
+                    "[UIManager] Selected unit has no " +
+                    "UnitMoveBrain.",
                     attackUnit
                 );
             }
+
 
             return false;
         }
 
 
         // ========================================================
-        // IMPORTANT:
-        // DO NOT ALLOW A SECOND MOVE WHILE ALREADY MOVING
+        // DON'T ALLOW SECOND MOVE
         // ========================================================
 
         if (moveBrain.IsMoving())
@@ -871,8 +977,10 @@ public class UIManager : MonoBehaviour
             );
 
 
-        if (destination ==
-            currentPosition)
+        if (
+            destination ==
+            currentPosition
+        )
         {
             return false;
         }
@@ -895,15 +1003,6 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // ========================================================
-        // IMPORTANT:
-        // MOVEMENT IS ONLY POSSIBLE ON THE CURRENT
-        // MOVEMENT HIGHLIGHT CELLS.
-        //
-        // After movement, UnitMoveBrain.CanMoveThisTurn()
-        // prevents the range from being shown again.
-        // ========================================================
-
         if (!highlightManager.IsMovementCell(
                 destination))
         {
@@ -915,13 +1014,10 @@ public class UIManager : MonoBehaviour
                 );
             }
 
+
             return false;
         }
 
-
-        // ========================================================
-        // OCCUPIED CELL
-        // ========================================================
 
         if (gridManager.IsCellOccupied(
                 destination))
@@ -929,18 +1025,16 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] Cannot move to {destination}. " +
+                    $"[UIManager] Cannot move to " +
+                    $"{destination}. " +
                     $"Cell is occupied."
                 );
             }
 
+
             return false;
         }
 
-
-        // ========================================================
-        // MOVE RANGE
-        // ========================================================
 
         int moveRange =
             moveBrain.GetMoveRange();
@@ -958,10 +1052,13 @@ public class UIManager : MonoBehaviour
             if (debugClick)
             {
                 Debug.Log(
-                    $"[UIManager] Cannot move to {destination}. " +
-                    $"Distance {distance} > move range {moveRange}."
+                    $"[UIManager] Cannot move to " +
+                    $"{destination}. " +
+                    $"Distance {distance} > " +
+                    $"move range {moveRange}."
                 );
             }
+
 
             return false;
         }
@@ -982,10 +1079,6 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
-        // ========================================================
-        // CLEAR MOVEMENT HIGHLIGHTS
-        // ========================================================
 
         highlightManager.ClearMovementRange();
 
@@ -1015,18 +1108,6 @@ public class UIManager : MonoBehaviour
         {
             return;
         }
-
-
-        /*
-         * DO NOT BLOCK ENEMY SELECTION.
-         *
-         * Enemies remain selectable for:
-         * - HP
-         * - information
-         * - abilities
-         *
-         * But enemy abilities cannot be activated by the player.
-         */
 
 
         if (CurrentSelection == trigger)
@@ -1094,13 +1175,10 @@ public class UIManager : MonoBehaviour
         }
 
 
-        /*
-         * Enemy can be selected for inspection,
-         * but player movement range should not be shown.
-         */
-
-        if (attackUnit.GetTeam() ==
-            Team.Enemy)
+        if (
+            attackUnit.GetTeam() ==
+            Team.Enemy
+        )
         {
             return;
         }
@@ -1116,19 +1194,12 @@ public class UIManager : MonoBehaviour
         }
 
 
-        /*
-         * IMPORTANT:
-         *
-         * Do not show movement after the unit has already
-         * consumed its movement this turn.
-         *
-         * This is the restriction you mentioned.
-         */
-
         if (!moveBrain.CanMoveThisTurn())
         {
-            if (Instance != null &&
-                Instance.debugClick)
+            if (
+                Instance != null &&
+                Instance.debugClick
+            )
             {
                 Debug.Log(
                     $"[UIManager] Movement range blocked for " +
@@ -1136,6 +1207,7 @@ public class UIManager : MonoBehaviour
                     $"Movement already consumed."
                 );
             }
+
 
             return;
         }
@@ -1208,8 +1280,10 @@ public class UIManager : MonoBehaviour
         CurrentSelection = null;
 
 
-        if (Instance != null &&
-            Instance.canvasInfoManager != null)
+        if (
+            Instance != null &&
+            Instance.canvasInfoManager != null
+        )
         {
             Instance.canvasInfoManager.ClearInfo();
         }
