@@ -15,6 +15,11 @@ public class CanvasInfoManager : MonoBehaviour
     private Image characterIcon;
 
 
+    [Header("Tooltip")]
+    [SerializeField]
+    private tooltipManager tooltipManager;
+
+
     [Header("Grid Highlighting")]
     [SerializeField]
     private GridManager gridManager;
@@ -24,11 +29,13 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     private int lastHoveredAbilityIndex = -1;
+
     private int lastLinkIndex = -1;
 
     private int selectedAbilityIndex = -1;
 
     private AbilitySO selectedAbility;
+
 
     private readonly StringBuilder textBuilder =
         new StringBuilder();
@@ -237,6 +244,13 @@ public class CanvasInfoManager : MonoBehaviour
             highlightManager =
                 FindFirstObjectByType<GridHighlightManager>();
         }
+
+
+        if (tooltipManager == null)
+        {
+            tooltipManager =
+                FindFirstObjectByType<tooltipManager>();
+        }
     }
 
 
@@ -295,6 +309,9 @@ public class CanvasInfoManager : MonoBehaviour
         lastLinkIndex = -1;
 
 
+        HideStatusTooltip();
+
+
         RefreshCharacter(
             character
         );
@@ -351,14 +368,6 @@ public class CanvasInfoManager : MonoBehaviour
                 UIManager.CurrentSelection.GetAttackUnit();
         }
 
-
-        /*
-         * We first try to get the HealthManager from the
-         * currently selected AttackUnit.
-         *
-         * If the UI is showing another hovered character,
-         * we also try to find that character's HealthManager.
-         */
 
         HealthManager healthManager = null;
 
@@ -460,8 +469,6 @@ public class CanvasInfoManager : MonoBehaviour
 
 
             /*
-             * IMPORTANT:
-             *
              * Ability cooldowns and uses are always taken from
              * the actual selected AttackUnit.
              *
@@ -492,13 +499,13 @@ public class CanvasInfoManager : MonoBehaviour
                 }
 
 
-                string abilityName =
-                    ability.GetAbilityName();
-
-
                 // ------------------------------------------------
                 // ABILITY NAME
                 // ------------------------------------------------
+
+                string abilityName =
+                    ability.GetAbilityName();
+
 
                 textBuilder.AppendLine(
                     $"<link=\"ability_{i}\">" +
@@ -512,49 +519,36 @@ public class CanvasInfoManager : MonoBehaviour
                 // DESCRIPTION
                 // ------------------------------------------------
 
-                textBuilder.AppendLine(
-                    ability.GetDescription()
-                );
+                string description =
+                    ability.GetDescription();
+
+
+                if (!string.IsNullOrEmpty(description))
+                {
+                    textBuilder.AppendLine(
+                        description
+                    );
+                }
 
 
                 // ------------------------------------------------
-                // DAMAGE / HEAL
+                // DAMAGE / HEAL + RANGE
                 // ------------------------------------------------
 
                 if (ability is HealAbilitySO healAbility)
                 {
                     textBuilder.AppendLine(
-                        $"Heal: " +
-                        $"{healAbility.GetHealAmount()}"
+                        $"Heal: {healAbility.GetHealAmount()} | " +
+                        $"Range: {ability.GetRange()}"
                     );
                 }
                 else
                 {
                     textBuilder.AppendLine(
-                        $"Damage: " +
-                        $"{ability.GetDamage()}"
+                        $"Damage: {ability.GetDamage()} | " +
+                        $"Range: {ability.GetRange()}"
                     );
                 }
-
-
-                // ------------------------------------------------
-                // RANGE
-                // ------------------------------------------------
-
-                textBuilder.AppendLine(
-                    $"Range: " +
-                    $"{ability.GetRange()}"
-                );
-
-
-                // ------------------------------------------------
-                // SHAPE
-                // ------------------------------------------------
-
-                textBuilder.AppendLine(
-                    $"Shape: " +
-                    $"{ability.GetRangeShape()}"
-                );
 
 
                 // ------------------------------------------------
@@ -574,12 +568,6 @@ public class CanvasInfoManager : MonoBehaviour
                 }
 
 
-                textBuilder.AppendLine(
-                    $"Cooldown: " +
-                    $"{currentCooldown}"
-                );
-
-
                 // ------------------------------------------------
                 // USES PER TURN
                 // ------------------------------------------------
@@ -588,11 +576,13 @@ public class CanvasInfoManager : MonoBehaviour
                     ability.GetUsesPerTurn();
 
 
+                string usesText;
+
+
                 if (usesPerTurn <= 0)
                 {
-                    textBuilder.AppendLine(
-                        "Uses: Unlimited"
-                    );
+                    usesText =
+                        "Unlimited";
                 }
                 else
                 {
@@ -603,20 +593,30 @@ public class CanvasInfoManager : MonoBehaviour
                     if (attackUnit != null)
                     {
                         usesRemaining =
-                            attackUnit
-                                .GetAbilityUsesRemaining(
-                                    ability
-                                );
+                            attackUnit.GetAbilityUsesRemaining(
+                                ability
+                            );
                     }
 
 
-                    textBuilder.AppendLine(
-                        $"Uses: " +
-                        $"{usesRemaining}" +
-                        $"/{usesPerTurn}"
-                    );
+                    usesText =
+                        $"{usesRemaining}/{usesPerTurn}";
                 }
 
+
+                // ------------------------------------------------
+                // COOLDOWN + USES
+                // ------------------------------------------------
+
+                textBuilder.AppendLine(
+                    $"Cooldown: {currentCooldown} | " +
+                    $"Uses: {usesText}"
+                );
+
+
+                // ------------------------------------------------
+                // SPACE BETWEEN ABILITIES
+                // ------------------------------------------------
 
                 textBuilder.AppendLine();
             }
@@ -640,6 +640,11 @@ public class CanvasInfoManager : MonoBehaviour
 
 
             infoText.ForceMeshUpdate();
+
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(
+                infoText.rectTransform
+            );
         }
 
 
@@ -671,6 +676,7 @@ public class CanvasInfoManager : MonoBehaviour
             Mouse.current == null
         )
         {
+            HideStatusTooltip();
             return;
         }
 
@@ -691,19 +697,24 @@ public class CanvasInfoManager : MonoBehaviour
             );
 
 
-        if (linkIndex == lastLinkIndex)
-        {
-            return;
-        }
-
-
-        lastLinkIndex =
-            linkIndex;
-
+        // ========================================================
+        // NOTHING HOVERED
+        // ========================================================
 
         if (linkIndex == -1)
         {
-            ClearAbilityHover();
+            if (lastLinkIndex != -1)
+            {
+                lastLinkIndex = -1;
+
+
+                HideStatusTooltip();
+
+
+                ClearAbilityHover();
+            }
+
+
             return;
         }
 
@@ -717,7 +728,7 @@ public class CanvasInfoManager : MonoBehaviour
             linkIndex >= textInfo.linkCount
         )
         {
-            ClearAbilityHover();
+            HideStatusTooltip();
             return;
         }
 
@@ -730,48 +741,143 @@ public class CanvasInfoManager : MonoBehaviour
             link.GetLinkID();
 
 
-        if (!linkId.StartsWith("ability_"))
+        // ========================================================
+        // STATUS EFFECT
+        // ========================================================
+
+        if (linkId.StartsWith("status_"))
         {
-            ClearAbilityHover();
+            /*
+             * IMPORTANT:
+             *
+             * We DO NOT clear ability highlighting here.
+             *
+             * This means you can have a selected ability,
+             * then hover "Stun", and the ability range remains
+             * visible.
+             */
+
+
+            if (linkIndex != lastLinkIndex)
+            {
+                lastLinkIndex =
+                    linkIndex;
+
+
+                string statusId =
+                    linkId.Substring(
+                        "status_".Length
+                    );
+
+
+                ShowStatusTooltip(
+                    statusId
+                );
+            }
+
+
             return;
         }
 
 
-        string indexString =
-            linkId.Substring(
-                "ability_".Length
+        // ========================================================
+        // ABILITY
+        // ========================================================
+
+        if (linkId.StartsWith("ability_"))
+        {
+            HideStatusTooltip();
+
+
+            if (linkIndex == lastLinkIndex)
+            {
+                return;
+            }
+
+
+            lastLinkIndex =
+                linkIndex;
+
+
+            string indexString =
+                linkId.Substring(
+                    "ability_".Length
+                );
+
+
+            if (!int.TryParse(
+                    indexString,
+                    out int abilityIndex))
+            {
+                ClearAbilityHover();
+                return;
+            }
+
+
+            if (
+                abilityIndex ==
+                lastHoveredAbilityIndex
+            )
+            {
+                return;
+            }
+
+
+            lastHoveredAbilityIndex =
+                abilityIndex;
+
+
+            ShowAbilityRange(
+                abilityIndex
             );
 
 
-        if (!int.TryParse(
-                indexString,
-                out int abilityIndex))
-        {
-            ClearAbilityHover();
             return;
         }
 
 
-        if (
-            abilityIndex ==
-            lastHoveredAbilityIndex
-        )
+        // ========================================================
+        // UNKNOWN LINK
+        // ========================================================
+
+        HideStatusTooltip();
+
+        ClearAbilityHover();
+    }
+
+
+    // ============================================================
+    // SHOW STATUS TOOLTIP
+    // ============================================================
+
+    private void ShowStatusTooltip(
+        string statusId)
+    {
+        if (tooltipManager == null)
         {
             return;
         }
 
 
-        lastHoveredAbilityIndex =
-            abilityIndex;
-
-
-        // ========================================================
-        // ONLY SHOW RANGE IF ABILITY CAN ACTUALLY BE USED
-        // ========================================================
-
-        ShowAbilityRange(
-            abilityIndex
+        tooltipManager.ShowStatusTooltip(
+            statusId
         );
+    }
+
+
+    // ============================================================
+    // HIDE STATUS TOOLTIP
+    // ============================================================
+
+    private void HideStatusTooltip()
+    {
+        if (tooltipManager == null)
+        {
+            return;
+        }
+
+
+        tooltipManager.HideTooltip();
     }
 
 
@@ -829,6 +935,59 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
+    // POINTER OVER STATUS
+    // ============================================================
+
+    public bool IsPointerOverStatusLink()
+    {
+        if (
+            infoText == null ||
+            !infoText.gameObject.activeInHierarchy ||
+            Mouse.current == null
+        )
+        {
+            return false;
+        }
+
+
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
+
+
+        int linkIndex =
+            TMP_TextUtilities.FindIntersectingLink(
+                infoText,
+                mousePosition,
+                GetEventCamera()
+            );
+
+
+        if (linkIndex < 0)
+        {
+            return false;
+        }
+
+
+        TMP_TextInfo textInfo =
+            infoText.textInfo;
+
+
+        if (linkIndex >= textInfo.linkCount)
+        {
+            return false;
+        }
+
+
+        TMP_LinkInfo link =
+            textInfo.linkInfo[linkIndex];
+
+
+        return link.GetLinkID()
+            .StartsWith("status_");
+    }
+
+
+    // ============================================================
     // SELECT ABILITY UNDER MOUSE
     // ============================================================
 
@@ -879,6 +1038,12 @@ public class CanvasInfoManager : MonoBehaviour
         string linkId =
             link.GetLinkID();
 
+
+        /*
+         * Only ability links can select abilities.
+         *
+         * Status links do nothing when clicked.
+         */
 
         if (!linkId.StartsWith("ability_"))
         {
@@ -975,7 +1140,10 @@ public class CanvasInfoManager : MonoBehaviour
             ability.GetUsesPerTurn();
 
 
-        // 0 means unlimited.
+        /*
+         * 0 means unlimited.
+         */
+
         if (usesPerTurn > 0)
         {
             int usesRemaining =
@@ -1140,9 +1308,6 @@ public class CanvasInfoManager : MonoBehaviour
          *
          * If an ability is selected, hovering away from an
          * ability link must NOT clear its range.
-         *
-         * However, ShowAbilityRange() now checks whether the
-         * selected ability is still usable.
          */
 
         if (selectedAbility == null)
@@ -1309,6 +1474,7 @@ public class CanvasInfoManager : MonoBehaviour
     public void ClearInfo()
     {
         lastHoveredAbilityIndex = -1;
+
         lastLinkIndex = -1;
 
 
@@ -1321,10 +1487,14 @@ public class CanvasInfoManager : MonoBehaviour
          */
 
         selectedAbilityIndex = -1;
+
         selectedAbility = null;
 
 
         ClearAbilityHighlights();
+
+
+        HideStatusTooltip();
 
 
         if (infoText != null)
@@ -1337,6 +1507,7 @@ public class CanvasInfoManager : MonoBehaviour
         if (characterIcon != null)
         {
             characterIcon.sprite = null;
+
             characterIcon.enabled = false;
         }
     }
@@ -1349,13 +1520,18 @@ public class CanvasInfoManager : MonoBehaviour
     public void ClearSelectedAbility()
     {
         selectedAbilityIndex = -1;
+
         selectedAbility = null;
 
 
         lastHoveredAbilityIndex = -1;
+
         lastLinkIndex = -1;
 
 
         ClearAbilityHighlights();
+
+
+        HideStatusTooltip();
     }
 }

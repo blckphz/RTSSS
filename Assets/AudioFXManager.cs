@@ -1,0 +1,231 @@
+using UnityEngine;
+
+public class AudioFXManager : MonoBehaviour
+{
+    public static AudioFXManager Instance { get; private set; }
+
+
+    [Header("Audio Source")]
+    [SerializeField]
+    private AudioSource audioSource;
+
+
+    // ============================================================
+    // UNIT HOVER
+    // ============================================================
+
+    [Header("Unit Hover")]
+    [SerializeField]
+    private AudioClip unitHoverClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float unitHoverVolume = 1f;
+
+
+    // ============================================================
+    // UNIT CLICK
+    // ============================================================
+
+    [Header("Unit Click")]
+    [SerializeField]
+    private AudioClip unitClickClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float unitClickVolume = 1f;
+
+
+    // ============================================================
+    // UNIT DESELECT
+    // ============================================================
+
+    [Header("Unit Deselect")]
+    [SerializeField]
+    private AudioClip unitDeselectClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float unitDeselectVolume = 1f;
+
+
+    // ============================================================
+    // UNIT DAMAGE
+    // ============================================================
+
+    [Header("Unit Damage")]
+    [SerializeField]
+    private AudioClip unitDamageClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float unitDamageVolume = 1f;
+
+
+    // ============================================================
+    // UNITY
+    // ============================================================
+
+    private void Awake()
+    {
+        // --------------------------------------------------------
+        // SINGLETON
+        // --------------------------------------------------------
+
+        if (
+            Instance != null &&
+            Instance != this
+        )
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+
+        Instance =
+            this;
+
+
+        // --------------------------------------------------------
+        // AUDIO SOURCE
+        // --------------------------------------------------------
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
+
+
+        if (audioSource == null)
+        {
+            audioSource =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+
+        audioSource.playOnAwake =
+            false;
+
+
+        Debug.Log(
+            "[AudioFXManager] Initialized."
+        );
+    }
+
+
+    // ============================================================
+    // UNIT HOVER
+    // ============================================================
+
+    public void PlayUnitHover()
+    {
+        if (unitHoverClip == null)
+        {
+            Debug.LogWarning(
+                "[AudioFXManager] " +
+                "Unit Hover Clip is not assigned."
+            );
+
+            return;
+        }
+
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            unitHoverClip,
+            unitHoverVolume
+        );
+    }
+
+
+    // ============================================================
+    // UNIT CLICK
+    // ============================================================
+
+    public void PlayUnitClick()
+    {
+        if (unitClickClip == null)
+        {
+            Debug.LogWarning(
+                "[AudioFXManager] " +
+                "Unit Click Clip is not assigned."
+            );
+
+            return;
+        }
+
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            unitClickClip,
+            unitClickVolume
+        );
+    }
+
+
+    // ============================================================
+    // UNIT DESELECT
+    // ============================================================
+
+    public void PlayUnitDeselect()
+    {
+        if (unitDeselectClip == null)
+        {
+            Debug.LogWarning(
+                "[AudioFXManager] " +
+                "Unit Deselect Clip is not assigned."
+            );
+
+            return;
+        }
+
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            unitDeselectClip,
+            unitDeselectVolume
+        );
+    }
+
+
+    // ============================================================
+    // UNIT DAMAGE
+    // ============================================================
+
+    public void PlayUnitDamage()
+    {
+        if (unitDamageClip == null)
+        {
+            Debug.LogWarning(
+                "[AudioFXManager] " +
+                "Unit Damage Clip is not assigned."
+            );
+
+            return;
+        }
+
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            unitDamageClip,
+            unitDamageVolume
+        );
+    }
+}

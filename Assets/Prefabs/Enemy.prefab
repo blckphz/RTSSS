@@ -239,11 +239,20 @@ MonoBehaviour:
   hoverMessage: Default Prefab Info
   selectedScale: 1.1
   scaleSpeed: 10
-  enableAbilityTargetPulse: 1
-  abilityTargetPulseAmount: 0.035
-  abilityTargetPulseSpeed: 5
-  abilityTargetPulseSmoothTime: 0.08
-  selectedChildSprite: {fileID: 8492982824580401747}
+  enableScreenShake: 1
+  screenShakeDuration: 0.15
+  screenShakeMagnitude: 0.5
+  enableHoverScreenShake: 1
+  hoverScreenShakeDuration: 0.05
+  hoverScreenShakeMagnitude: 0.08
+  enableHoverScale: 1
+  hoverScaleAmount: 0.05
+  hoverScaleSmoothTime: 0.08
+  enableAbilityTargetScale: 1
+  abilityTargetScaleAmount: 0.06
+  abilityTargetScaleSmoothTime: 0.08
+  selectedChildSprite: {fileID: 0}
+  debugHover: 1
 --- !u!61 &2375408908371313493
 BoxCollider2D:
   m_ObjectHideFlags: 0

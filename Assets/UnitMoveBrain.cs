@@ -21,8 +21,11 @@ public class UnitMoveBrain : MonoBehaviour
     // ============================================================
 
     [Header("Movement")]
+
+    // Faster movement.
+    // Old value: 0.25f
     [SerializeField, Min(0.01f)]
-    private float moveDuration = 0.25f;
+    private float moveDuration = 0.08f;
 
 
     // ============================================================
@@ -68,9 +71,9 @@ public class UnitMoveBrain : MonoBehaviour
     // DEBUG
     // ============================================================
 
-    [Header("Debug")]
+    [Header("Enemy Movement Debug")]
     [SerializeField]
-    private bool debugMovement = true;
+    private bool debugEnemyMovement = true;
 
 
     // ============================================================
@@ -99,7 +102,6 @@ public class UnitMoveBrain : MonoBehaviour
         new Vector2Int(-1, -1)
     };
 
-
     private const int CardinalDirectionCount = 4;
 
 
@@ -111,26 +113,21 @@ public class UnitMoveBrain : MonoBehaviour
         pathCache =
         new List<Vector2Int>(32);
 
-
     private readonly List<Vector2Int>
         candidatesCache =
         new List<Vector2Int>(16);
-
 
     private readonly Dictionary<Vector2Int, Vector2Int>
         cameFromCache =
         new Dictionary<Vector2Int, Vector2Int>(128);
 
-
     private readonly Dictionary<Vector2Int, int>
         gScoreCache =
         new Dictionary<Vector2Int, int>(128);
 
-
     private readonly HashSet<Vector2Int>
         visitedCache =
         new HashSet<Vector2Int>(128);
-
 
     private readonly PriorityQueue<Vector2Int>
         openSetCache =
@@ -149,12 +146,24 @@ public class UnitMoveBrain : MonoBehaviour
                 GetComponent<AttackUnit>();
         }
 
-
         EnsureGridManager();
-
 
         movementConsumed = false;
         isMoving = false;
+    }
+
+
+    // ============================================================
+    // ENEMY MOVEMENT DEBUG
+    // ============================================================
+
+    private bool ShouldDebugEnemyMovement()
+    {
+        return
+            debugEnemyMovement &&
+            attackUnit != null &&
+            !attackUnit.IsDead() &&
+            attackUnit.GetTeam() != Team.Player;
     }
 
 
@@ -171,7 +180,6 @@ public class UnitMoveBrain : MonoBehaviour
         {
             return false;
         }
-
 
         return
             attackUnit.GetTeam() != Team.Player;
@@ -191,11 +199,10 @@ public class UnitMoveBrain : MonoBehaviour
     {
         movementConsumed = true;
 
-
-        if (debugMovement)
+        if (ShouldDebugEnemyMovement())
         {
             Debug.Log(
-                $"[MoveBrain] {gameObject.name} movement CONSUMED.",
+                $"[MoveBrain] ENEMY {gameObject.name} movement CONSUMED.",
                 gameObject
             );
         }
@@ -206,11 +213,10 @@ public class UnitMoveBrain : MonoBehaviour
     {
         movementConsumed = false;
 
-
-        if (debugMovement)
+        if (ShouldDebugEnemyMovement())
         {
             Debug.Log(
-                $"[MoveBrain] {gameObject.name} movement RESET.",
+                $"[MoveBrain] ENEMY {gameObject.name} movement RESET.",
                 gameObject
             );
         }
@@ -236,18 +242,15 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         if (ability == null)
         {
             return false;
         }
 
-
         if (!movementConsumed)
         {
             return true;
         }
-
 
         return
             ability.CanAttackWithThisAfterMove();
@@ -270,21 +273,17 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         EnsureGridManager();
-
 
         if (gridManager == null)
         {
             return false;
         }
 
-
         Vector2Int start =
             gridManager.WorldToGridPosition(
                 transform.position
             );
-
 
         if (
             start == destination ||
@@ -295,16 +294,13 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         int moveRange =
             GetMoveRange();
-
 
         if (moveRange <= 0)
         {
             return false;
         }
-
 
         if (!FindPath(
                 start,
@@ -315,24 +311,19 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         int movementCost =
             pathCache.Count - 1;
-
 
         if (movementCost > moveRange)
         {
             return false;
         }
 
-
         ConsumeMovement();
-
 
         StartCoroutine(
             MoveAlongPath(pathCache)
         );
-
 
         return true;
     }
@@ -354,9 +345,7 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
-
         isMoving = true;
-
 
         for (
             int i = 1;
@@ -369,10 +358,8 @@ public class UnitMoveBrain : MonoBehaviour
                     transform.position
                 );
 
-
             Vector2Int nextPosition =
                 path[i];
-
 
             if (!gridManager.IsInsideGrid(
                     nextPosition
@@ -381,7 +368,6 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
             }
 
-
             bool movementStarted =
                 gridManager.StartMoveUnit(
                     gameObject,
@@ -389,25 +375,20 @@ public class UnitMoveBrain : MonoBehaviour
                     nextPosition
                 );
 
-
             if (!movementStarted)
             {
                 break;
             }
 
-
             Vector3 startWorldPosition =
                 transform.position;
-
 
             Vector3 targetWorldPosition =
                 gridManager.GridToWorldPosition(
                     nextPosition
                 );
 
-
             float elapsed = 0f;
-
 
             while (
                 elapsed < moveDuration
@@ -421,10 +402,8 @@ public class UnitMoveBrain : MonoBehaviour
                     break;
                 }
 
-
                 elapsed +=
                     Time.deltaTime;
-
 
                 float progress =
                     Mathf.SmoothStep(
@@ -436,7 +415,6 @@ public class UnitMoveBrain : MonoBehaviour
                         )
                     );
 
-
                 transform.position =
                     Vector3.Lerp(
                         startWorldPosition,
@@ -444,24 +422,17 @@ public class UnitMoveBrain : MonoBehaviour
                         progress
                     );
 
-
                 yield return null;
             }
 
-
             transform.position =
                 targetWorldPosition;
-
 
             gridManager.FinishMoveUnit(
                 gameObject,
                 nextPosition
             );
-
-
-            yield return null;
         }
-
 
         isMoving = false;
     }
@@ -482,44 +453,36 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
-
         EnsureGridManager();
-
 
         if (gridManager == null)
         {
             yield break;
         }
 
-
         AttackUnit target =
             FindBestTarget();
-
 
         if (target == null)
         {
             yield break;
         }
 
-
         Vector2Int currentPosition =
             gridManager.WorldToGridPosition(
                 transform.position
             );
-
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
 
-
         int currentDistance =
             GetMovementDistance(
                 currentPosition,
                 targetPosition
             );
-
 
         if (
             currentDistance <= attackRange
@@ -528,13 +491,11 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
-
         Vector2Int attackPosition =
             FindBestAttackPosition(
                 currentPosition,
                 targetPosition
             );
-
 
         if (
             attackPosition ==
@@ -543,7 +504,6 @@ public class UnitMoveBrain : MonoBehaviour
         {
             yield break;
         }
-
 
         if (
             !FindPath(
@@ -557,16 +517,13 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
-
         int moveRange =
             GetMoveRange();
-
 
         if (moveRange <= 0)
         {
             yield break;
         }
-
 
         int stepsToTake =
             Mathf.Min(
@@ -574,18 +531,14 @@ public class UnitMoveBrain : MonoBehaviour
                 pathCache.Count - 1
             );
 
-
         if (stepsToTake <= 0)
         {
             yield break;
         }
 
-
         ConsumeMovement();
 
-
         isMoving = true;
-
 
         for (
             int i = 1;
@@ -598,10 +551,8 @@ public class UnitMoveBrain : MonoBehaviour
                     transform.position
                 );
 
-
             Vector2Int nextPosition =
                 pathCache[i];
-
 
             if (!gridManager.IsInsideGrid(
                     nextPosition
@@ -610,14 +561,12 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
             }
 
-
             if (gridManager.IsCellOccupied(
                     nextPosition
                 ))
             {
                 break;
             }
-
 
             if (!gridManager.StartMoveUnit(
                     gameObject,
@@ -628,19 +577,15 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
             }
 
-
             Vector3 startWorldPosition =
                 transform.position;
-
 
             Vector3 targetWorldPosition =
                 gridManager.GridToWorldPosition(
                     nextPosition
                 );
 
-
             float elapsed = 0f;
-
 
             while (
                 elapsed < moveDuration
@@ -654,10 +599,8 @@ public class UnitMoveBrain : MonoBehaviour
                     break;
                 }
 
-
                 elapsed +=
                     Time.deltaTime;
-
 
                 float progress =
                     Mathf.SmoothStep(
@@ -669,7 +612,6 @@ public class UnitMoveBrain : MonoBehaviour
                         )
                     );
 
-
                 transform.position =
                     Vector3.Lerp(
                         startWorldPosition,
@@ -677,38 +619,30 @@ public class UnitMoveBrain : MonoBehaviour
                         progress
                     );
 
-
                 yield return null;
             }
 
-
             transform.position =
                 targetWorldPosition;
-
 
             gridManager.FinishMoveUnit(
                 gameObject,
                 nextPosition
             );
-
-
-            yield return null;
         }
-
 
         isMoving = false;
 
-
-        if (debugMovement)
+        if (ShouldDebugEnemyMovement())
         {
             Vector2Int finalPosition =
                 gridManager.WorldToGridPosition(
                     transform.position
                 );
 
-
             Debug.Log(
-                $"[MoveBrain] {gameObject.name} moved {stepsToTake} tile(s). " +
+                $"[MoveBrain] ENEMY {gameObject.name} moved " +
+                $"{stepsToTake} tile(s). " +
                 $"Move range: {moveRange}. " +
                 $"Start: {currentPosition}. " +
                 $"End: {finalPosition}.",
@@ -729,11 +663,9 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         StartCoroutine(
             MoveTowardsEnemy()
         );
-
 
         return true;
     }
@@ -753,36 +685,29 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         result.Clear();
 
-
         EnsureGridManager();
-
 
         if (gridManager == null)
         {
             return false;
         }
 
-
         if (attackUnit == null)
         {
             return false;
         }
-
 
         if (attackUnit.IsDead())
         {
             return false;
         }
 
-
         Vector2Int start =
             gridManager.WorldToGridPosition(
                 transform.position
             );
-
 
         if (!gridManager.IsInsideGrid(
                 destination
@@ -791,14 +716,12 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         if (start == destination)
         {
             result.Add(start);
 
             return true;
         }
-
 
         if (!FindPath(
                 start,
@@ -809,7 +732,6 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         if (result.Count < 2)
         {
             result.Clear();
@@ -817,14 +739,11 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         int movementCost =
             result.Count - 1;
 
-
         int moveRange =
             GetMoveRange();
-
 
         if (movementCost > moveRange)
         {
@@ -832,7 +751,6 @@ public class UnitMoveBrain : MonoBehaviour
 
             return false;
         }
-
 
         return true;
     }
@@ -857,10 +775,8 @@ public class UnitMoveBrain : MonoBehaviour
             return 0;
         }
 
-
         CharacterSO characterData =
             attackUnit.GetCharacterData();
-
 
         return characterData == null
             ? 0
@@ -882,10 +798,8 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
         CharacterSO characterData =
             attackUnit.GetCharacterData();
-
 
         return
             characterData != null &&
@@ -921,12 +835,10 @@ public class UnitMoveBrain : MonoBehaviour
                 a.x - b.x
             );
 
-
         int dy =
             Mathf.Abs(
                 a.y - b.y
             );
-
 
         if (CanWalkDiagonally())
         {
@@ -935,7 +847,6 @@ public class UnitMoveBrain : MonoBehaviour
                 dy
             );
         }
-
 
         return dx + dy;
     }
@@ -952,15 +863,12 @@ public class UnitMoveBrain : MonoBehaviour
             return null;
         }
 
-
         EnsureGridManager();
-
 
         if (gridManager == null)
         {
             return null;
         }
-
 
         AttackUnit[] allUnits =
             FindObjectsByType<AttackUnit>(
@@ -968,19 +876,15 @@ public class UnitMoveBrain : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-
         AttackUnit bestTarget = null;
-
 
         float bestScore =
             float.MaxValue;
-
 
         Vector2Int myPosition =
             gridManager.WorldToGridPosition(
                 transform.position
             );
-
 
         for (
             int i = 0;
@@ -990,7 +894,6 @@ public class UnitMoveBrain : MonoBehaviour
         {
             AttackUnit other =
                 allUnits[i];
-
 
             if (
                 other == null ||
@@ -1003,12 +906,10 @@ public class UnitMoveBrain : MonoBehaviour
                 continue;
             }
 
-
             Vector2Int enemyPosition =
                 gridManager.WorldToGridPosition(
                     other.transform.position
                 );
-
 
             int distance =
                 GetMovementDistance(
@@ -1016,9 +917,7 @@ public class UnitMoveBrain : MonoBehaviour
                     enemyPosition
                 );
 
-
             float score = 0f;
-
 
             if (preferCloserEnemies)
             {
@@ -1026,10 +925,8 @@ public class UnitMoveBrain : MonoBehaviour
                     distance * 10f;
             }
 
-
             HealthManager enemyHealth =
                 other.GetHealthManager();
-
 
             if (
                 preferLowHealthEnemies &&
@@ -1043,11 +940,9 @@ public class UnitMoveBrain : MonoBehaviour
                         enemyHealth.GetMaxHealth()
                     );
 
-
                 score +=
                     healthPercent * 20f;
             }
-
 
             if (
                 distance <= attackRange
@@ -1056,18 +951,15 @@ public class UnitMoveBrain : MonoBehaviour
                 score -= 100f;
             }
 
-
             if (score < bestScore)
             {
                 bestScore =
                     score;
 
-
                 bestTarget =
                     other;
             }
         }
-
 
         return bestTarget;
     }
@@ -1087,7 +979,6 @@ public class UnitMoveBrain : MonoBehaviour
             candidatesCache
         );
 
-
         if (candidatesCache.Count == 0)
         {
             return FindBestReachableCell(
@@ -1096,18 +987,14 @@ public class UnitMoveBrain : MonoBehaviour
             );
         }
 
-
         Vector2Int bestPosition =
             start;
-
 
         float bestScore =
             float.MaxValue;
 
-
         bool foundReachablePosition =
             false;
-
 
         for (
             int i = 0;
@@ -1118,14 +1005,12 @@ public class UnitMoveBrain : MonoBehaviour
             Vector2Int candidate =
                 candidatesCache[i];
 
-
             if (!gridManager.IsInsideGrid(
                     candidate
                 ))
             {
                 continue;
             }
-
 
             if (
                 candidate != start &&
@@ -1136,7 +1021,6 @@ public class UnitMoveBrain : MonoBehaviour
             {
                 continue;
             }
-
 
             if (
                 !FindPath(
@@ -1150,14 +1034,11 @@ public class UnitMoveBrain : MonoBehaviour
                 continue;
             }
 
-
             foundReachablePosition =
                 true;
 
-
             int movementCost =
                 pathCache.Count - 1;
-
 
             int distanceToEnemy =
                 GetMovementDistance(
@@ -1165,17 +1046,14 @@ public class UnitMoveBrain : MonoBehaviour
                     target
                 );
 
-
             float score =
                 movementCost * 10f;
-
 
             if (preferCloserAttackPosition)
             {
                 score +=
                     distanceToEnemy * 5f;
             }
-
 
             if (preferMoreOpenPositions)
             {
@@ -1184,7 +1062,6 @@ public class UnitMoveBrain : MonoBehaviour
                         candidate
                     ) * 2f;
             }
-
 
             if (
                 preferSidePositions &&
@@ -1195,18 +1072,15 @@ public class UnitMoveBrain : MonoBehaviour
                 score += 3f;
             }
 
-
             if (score < bestScore)
             {
                 bestScore =
                     score;
 
-
                 bestPosition =
                     candidate;
             }
         }
-
 
         return foundReachablePosition
             ? bestPosition
@@ -1228,7 +1102,6 @@ public class UnitMoveBrain : MonoBehaviour
     {
         results.Clear();
 
-
         if (attackRange == 1)
         {
             for (
@@ -1247,25 +1120,20 @@ public class UnitMoveBrain : MonoBehaviour
                     continue;
                 }
 
-
                 results.Add(
                     target +
                     Directions[i]
                 );
             }
 
-
             return;
         }
-
 
         int width =
             gridManager.GetWidth();
 
-
         int height =
             gridManager.GetHeight();
-
 
         for (
             int x = 0;
@@ -1285,12 +1153,10 @@ public class UnitMoveBrain : MonoBehaviour
                         y
                     );
 
-
                 if (position == target)
                 {
                     continue;
                 }
-
 
                 if (
                     GetMovementDistance(
@@ -1320,7 +1186,6 @@ public class UnitMoveBrain : MonoBehaviour
     {
         resultPath.Clear();
 
-
         if (start == destination)
         {
             resultPath.Add(start);
@@ -1328,15 +1193,12 @@ public class UnitMoveBrain : MonoBehaviour
             return true;
         }
 
-
         openSetCache.Clear();
         visitedCache.Clear();
         cameFromCache.Clear();
         gScoreCache.Clear();
 
-
         gScoreCache[start] = 0;
-
 
         openSetCache.Enqueue(
             start,
@@ -1346,10 +1208,8 @@ public class UnitMoveBrain : MonoBehaviour
             )
         );
 
-
         int directionCount =
             GetDirectionCount();
-
 
         while (
             openSetCache.Count > 0
@@ -1357,7 +1217,6 @@ public class UnitMoveBrain : MonoBehaviour
         {
             Vector2Int current =
                 openSetCache.Dequeue();
-
 
             if (
                 current ==
@@ -1371,19 +1230,15 @@ public class UnitMoveBrain : MonoBehaviour
                     resultPath
                 );
 
-
                 return true;
             }
-
 
             visitedCache.Add(
                 current
             );
 
-
             int currentG =
                 gScoreCache[current];
-
 
             for (
                 int i = 0;
@@ -1394,11 +1249,9 @@ public class UnitMoveBrain : MonoBehaviour
                 Vector2Int direction =
                     Directions[i];
 
-
                 Vector2Int next =
                     current +
                     direction;
-
 
                 if (
                     visitedCache.Contains(next) ||
@@ -1407,11 +1260,6 @@ public class UnitMoveBrain : MonoBehaviour
                 {
                     continue;
                 }
-
-
-                // ------------------------------------------------
-                // DIAGONAL CORNER CUTTING
-                // ------------------------------------------------
 
                 if (
                     IsDiagonalDirection(
@@ -1425,13 +1273,11 @@ public class UnitMoveBrain : MonoBehaviour
                             0
                         );
 
-
                     Vector2Int vertical =
                         new Vector2Int(
                             0,
                             direction.y
                         );
-
 
                     if (
                         gridManager.IsCellOccupied(
@@ -1446,11 +1292,6 @@ public class UnitMoveBrain : MonoBehaviour
                     }
                 }
 
-
-                // ------------------------------------------------
-                // OCCUPIED CELL
-                // ------------------------------------------------
-
                 if (
                     next != destination &&
                     gridManager.IsCellOccupied(
@@ -1461,10 +1302,8 @@ public class UnitMoveBrain : MonoBehaviour
                     continue;
                 }
 
-
                 int tentativeG =
                     currentG + 1;
-
 
                 if (
                     !gScoreCache.TryGetValue(
@@ -1477,10 +1316,8 @@ public class UnitMoveBrain : MonoBehaviour
                     cameFromCache[next] =
                         current;
 
-
                     gScoreCache[next] =
                         tentativeG;
-
 
                     int fScore =
                         tentativeG +
@@ -1488,7 +1325,6 @@ public class UnitMoveBrain : MonoBehaviour
                             next,
                             destination
                         );
-
 
                     if (!openSetCache.Contains(
                             next
@@ -1502,7 +1338,6 @@ public class UnitMoveBrain : MonoBehaviour
                 }
             }
         }
-
 
         return false;
     }
@@ -1522,11 +1357,9 @@ public class UnitMoveBrain : MonoBehaviour
         Vector2Int current =
             destination;
 
-
         path.Add(
             current
         );
-
 
         while (
             current != start
@@ -1540,16 +1373,13 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
             }
 
-
             current =
                 previous;
-
 
             path.Add(
                 current
             );
         }
-
 
         path.Reverse();
     }
@@ -1567,18 +1397,14 @@ public class UnitMoveBrain : MonoBehaviour
         Queue<Vector2Int> queue =
             new Queue<Vector2Int>();
 
-
         visitedCache.Clear();
         cameFromCache.Clear();
-
 
         queue.Enqueue(start);
         visitedCache.Add(start);
 
-
         Vector2Int bestCell =
             start;
-
 
         float bestScore =
             CalculateReachableCellScore(
@@ -1587,10 +1413,8 @@ public class UnitMoveBrain : MonoBehaviour
                 0
             );
 
-
         int directionCount =
             GetDirectionCount();
-
 
         while (
             queue.Count > 0
@@ -1599,14 +1423,12 @@ public class UnitMoveBrain : MonoBehaviour
             Vector2Int current =
                 queue.Dequeue();
 
-
             int pathDistance =
                 GetPathDistance(
                     start,
                     current,
                     cameFromCache
                 );
-
 
             float score =
                 CalculateReachableCellScore(
@@ -1615,17 +1437,14 @@ public class UnitMoveBrain : MonoBehaviour
                     pathDistance
                 );
 
-
             if (score < bestScore)
             {
                 bestScore =
                     score;
 
-
                 bestCell =
                     current;
             }
-
 
             for (
                 int i = 0;
@@ -1636,11 +1455,9 @@ public class UnitMoveBrain : MonoBehaviour
                 Vector2Int direction =
                     Directions[i];
 
-
                 Vector2Int next =
                     current +
                     direction;
-
 
                 if (
                     visitedCache.Contains(next) ||
@@ -1650,11 +1467,6 @@ public class UnitMoveBrain : MonoBehaviour
                 {
                     continue;
                 }
-
-
-                // ------------------------------------------------
-                // DIAGONAL CORNER CUTTING
-                // ------------------------------------------------
 
                 if (
                     IsDiagonalDirection(
@@ -1668,13 +1480,11 @@ public class UnitMoveBrain : MonoBehaviour
                             0
                         );
 
-
                     Vector2Int vertical =
                         new Vector2Int(
                             0,
                             direction.y
                         );
-
 
                     if (
                         gridManager.IsCellOccupied(
@@ -1689,24 +1499,19 @@ public class UnitMoveBrain : MonoBehaviour
                     }
                 }
 
-
                 visitedCache.Add(next);
-
 
                 cameFromCache[next] =
                     current;
-
 
                 queue.Enqueue(next);
             }
         }
 
-
         if (bestCell == start)
         {
             return start;
         }
-
 
         ReconstructPath(
             start,
@@ -1714,7 +1519,6 @@ public class UnitMoveBrain : MonoBehaviour
             cameFromCache,
             pathCache
         );
-
 
         return
             pathCache.Count >= 2
@@ -1739,11 +1543,9 @@ public class UnitMoveBrain : MonoBehaviour
                 target
             );
 
-
         float score =
             distance * 10f +
             movementCost;
-
 
         if (preferMoreOpenPositions)
         {
@@ -1752,7 +1554,6 @@ public class UnitMoveBrain : MonoBehaviour
                     position
                 ) * 2f;
         }
-
 
         return score;
     }
@@ -1773,13 +1574,10 @@ public class UnitMoveBrain : MonoBehaviour
             return 0;
         }
 
-
         int distance = 0;
-
 
         Vector2Int position =
             current;
-
 
         while (
             position != start
@@ -1793,14 +1591,11 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
             }
 
-
             position =
                 previous;
 
-
             distance++;
         }
-
 
         return distance;
     }
@@ -1816,10 +1611,8 @@ public class UnitMoveBrain : MonoBehaviour
     {
         int count = 0;
 
-
         int directionCount =
             GetDirectionCount();
-
 
         for (
             int i = 0;
@@ -1830,11 +1623,9 @@ public class UnitMoveBrain : MonoBehaviour
             Vector2Int direction =
                 Directions[i];
 
-
             Vector2Int neighbour =
                 position +
                 direction;
-
 
             if (
                 !gridManager.IsInsideGrid(
@@ -1848,7 +1639,6 @@ public class UnitMoveBrain : MonoBehaviour
                 continue;
             }
 
-
             if (
                 IsDiagonalDirection(
                     direction
@@ -1861,13 +1651,11 @@ public class UnitMoveBrain : MonoBehaviour
                         0
                     );
 
-
                 Vector2Int vertical =
                     new Vector2Int(
                         0,
                         direction.y
                     );
-
 
                 if (
                     gridManager.IsCellOccupied(
@@ -1882,10 +1670,8 @@ public class UnitMoveBrain : MonoBehaviour
                 }
             }
 
-
             count++;
         }
-
 
         return count;
     }
@@ -1962,7 +1748,6 @@ public class UnitMoveBrain : MonoBehaviour
         {
             int bestIndex = 0;
 
-
             for (
                 int i = 1;
                 i < elements.Count;
@@ -1978,15 +1763,12 @@ public class UnitMoveBrain : MonoBehaviour
                 }
             }
 
-
             T bestItem =
                 elements[bestIndex].Key;
-
 
             elements.RemoveAt(
                 bestIndex
             );
-
 
             return bestItem;
         }
@@ -2010,7 +1792,6 @@ public class UnitMoveBrain : MonoBehaviour
                     return true;
                 }
             }
-
 
             return false;
         }

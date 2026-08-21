@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BombAttack
   m_EditorClassIdentifier: Assembly-CSharp::BombAttack
   abilityName: bomb
-  description: 
+  description: Deals damage and inflicts <link="status_stun"><color=yellow><u>Stun</u></color></link>.
   damage: 10
   cooldown: 3
   canAttackWithThisAfterMove: 0

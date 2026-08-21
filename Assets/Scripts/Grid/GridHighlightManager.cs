@@ -36,16 +36,6 @@ public class GridHighlightManager : MonoBehaviour
 
 
     // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-
-    [SerializeField]
-    private bool debugMovementTileColor = true;
-
-
-    // ============================================================
     // ENEMY TARGET HOVER
     // ============================================================
 
@@ -129,15 +119,6 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly HashSet<Vector2Int>
         explosionCells =
-            new HashSet<Vector2Int>();
-
-
-    // ============================================================
-    // MOVEMENT DEBUG CACHE
-    // ============================================================
-
-    private readonly HashSet<Vector2Int>
-        movementHighlightedTiles =
             new HashSet<Vector2Int>();
 
 
@@ -544,8 +525,6 @@ public class GridHighlightManager : MonoBehaviour
         {
             SetCurrentRangeUser(null);
 
-            movementHighlightedTiles.Clear();
-
             return;
         }
 
@@ -559,8 +538,6 @@ public class GridHighlightManager : MonoBehaviour
 
 
         movementCells.Clear();
-
-        movementHighlightedTiles.Clear();
 
 
         int count =
@@ -852,10 +829,6 @@ public class GridHighlightManager : MonoBehaviour
             placementPosition == position
         )
         {
-            movementHighlightedTiles.Remove(
-                position
-            );
-
             visual.ShowPlacement();
 
             return;
@@ -868,11 +841,6 @@ public class GridHighlightManager : MonoBehaviour
 
         if (abilityCells.Contains(position))
         {
-            movementHighlightedTiles.Remove(
-                position
-            );
-
-
             GameObject unit =
                 gridManager.GetUnitAt(
                     position
@@ -914,19 +882,6 @@ public class GridHighlightManager : MonoBehaviour
                 movementRangeAlpha
             );
 
-
-            if (
-                debugMovementTileColor &&
-                movementHighlightedTiles.Add(position)
-            )
-            {
-                Debug.Log(
-                    $"[GridHighlightManager] Movement tile color changed: {position} | Color: {movementRangeColor} | Alpha: {movementRangeAlpha}",
-                    visual.gameObject
-                );
-            }
-
-
             return;
         }
 
@@ -934,11 +889,6 @@ public class GridHighlightManager : MonoBehaviour
         // ========================================================
         // DEFAULT
         // ========================================================
-
-        movementHighlightedTiles.Remove(
-            position
-        );
-
 
         visual.Reset();
     }
@@ -1709,8 +1659,6 @@ public class GridHighlightManager : MonoBehaviour
         ClearAllTargetPulse();
 
         explosionCells.Clear();
-
-        movementHighlightedTiles.Clear();
 
         suppressMovementHighlight =
             false;

@@ -29,6 +29,45 @@ public class HoverInfoTrigger :
 
 
     // ============================================================
+    // SCREEN SHAKE
+    // ============================================================
+
+    [Header("Screen Shake")]
+    [SerializeField]
+    private bool enableScreenShake = true;
+
+    [SerializeField]
+    private float screenShakeDuration = 0.15f;
+
+    [SerializeField]
+    private float screenShakeMagnitude = 0.5f;
+
+
+    // ============================================================
+    // HOVER SCREEN SHAKE
+    // ============================================================
+
+    [Header("Hover Screen Shake")]
+    [Tooltip(
+        "Enables a small screen shake when the mouse first enters the unit."
+    )]
+    [SerializeField]
+    private bool enableHoverScreenShake = true;
+
+    [Tooltip(
+        "Duration of the small screen shake when hovering over the unit."
+    )]
+    [SerializeField]
+    private float hoverScreenShakeDuration = 0.05f;
+
+    [Tooltip(
+        "Intensity of the small screen shake when hovering over the unit."
+    )]
+    [SerializeField]
+    private float hoverScreenShakeMagnitude = 0.08f;
+
+
+    // ============================================================
     // NORMAL HOVER SCALE
     // ============================================================
 
@@ -77,15 +116,6 @@ public class HoverInfoTrigger :
 
 
     // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-    [SerializeField]
-    private bool debugHover = true;
-
-
-    // ============================================================
     // SELECTED VISUAL
     // ============================================================
 
@@ -95,6 +125,15 @@ public class HoverInfoTrigger :
     )]
     [SerializeField]
     private SpriteRenderer selectedChildSprite;
+
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    [Header("Debug")]
+    [SerializeField]
+    private bool debugHover = true;
 
 
     // ============================================================
@@ -121,6 +160,8 @@ public class HoverInfoTrigger :
 
     private Camera hoverCamera;
 
+    private AudioFXManager audioFXManager;
+
 
     // ============================================================
     // SCALE STATE
@@ -141,25 +182,32 @@ public class HoverInfoTrigger :
 
     private void Awake()
     {
+        // --------------------------------------------------------
+        // REFERENCES
+        // --------------------------------------------------------
+
         collider2D =
             GetComponent<Collider2D>();
-
 
         spriteRenderer =
             GetComponent<SpriteRenderer>();
 
-
         attackUnit =
             GetComponent<AttackUnit>();
-
 
         originalScale =
             transform.localScale;
 
-
         hoverCamera =
             Camera.main;
 
+        audioFXManager =
+            AudioFXManager.Instance;
+
+
+        // --------------------------------------------------------
+        // VALIDATION
+        // --------------------------------------------------------
 
         if (collider2D == null)
         {
@@ -170,7 +218,6 @@ public class HoverInfoTrigger :
             );
         }
 
-
         if (attackUnit == null)
         {
             Debug.LogError(
@@ -179,7 +226,6 @@ public class HoverInfoTrigger :
                 this
             );
         }
-
 
         if (hoverCamera == null)
         {
@@ -190,6 +236,19 @@ public class HoverInfoTrigger :
             );
         }
 
+        if (audioFXManager == null)
+        {
+            Debug.LogWarning(
+                $"[HoverInfoTrigger] " +
+                $"{gameObject.name} could not find AudioFXManager.",
+                this
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // SELECTED VISUAL
+        // --------------------------------------------------------
 
         if (selectedChildSprite != null)
         {
@@ -198,9 +257,12 @@ public class HoverInfoTrigger :
         }
 
 
+        // --------------------------------------------------------
+        // MANAGERS
+        // --------------------------------------------------------
+
         canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
-
 
         gridHighlightManager =
             FindFirstObjectByType<GridHighlightManager>();
@@ -329,6 +391,43 @@ public class HoverInfoTrigger :
 
     private void OnHoverEnter()
     {
+        // --------------------------------------------------------
+        // HOVER SOUND
+        // --------------------------------------------------------
+
+        if (audioFXManager == null)
+        {
+            audioFXManager =
+                AudioFXManager.Instance;
+        }
+
+
+        if (audioFXManager != null)
+        {
+            audioFXManager.PlayUnitHover();
+        }
+
+
+        // --------------------------------------------------------
+        // HOVER SCREEN SHAKE
+        // --------------------------------------------------------
+
+        if (
+            enableHoverScreenShake &&
+            ScreenShaker.Instance != null
+        )
+        {
+            ScreenShaker.Instance.Shake(
+                hoverScreenShakeMagnitude,
+                hoverScreenShakeDuration
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // CHARACTER INFO
+        // --------------------------------------------------------
+
         if (canvasInfoManager != null)
         {
             canvasInfoManager.ShowCharacter(
@@ -336,6 +435,10 @@ public class HoverInfoTrigger :
             );
         }
 
+
+        // --------------------------------------------------------
+        // ABILITY TARGET
+        // --------------------------------------------------------
 
         UpdateAbilityTargetHover();
     }
@@ -520,6 +623,129 @@ public class HoverInfoTrigger :
         {
             isAbilityTargetHovered =
                 true;
+        }
+    }
+
+
+    // ============================================================
+    // SELECTION
+    // ============================================================
+
+    public bool IsSelected()
+    {
+        return isSelected;
+    }
+
+
+    public void SetSelected(
+        bool selected)
+    {
+        // --------------------------------------------------------
+        // CHECK SELECTION STATE CHANGES
+        // --------------------------------------------------------
+
+        bool becomingSelected =
+            selected && !isSelected;
+
+        bool becomingDeselected =
+            !selected && isSelected;
+
+
+        // --------------------------------------------------------
+        // GET AUDIO MANAGER
+        // --------------------------------------------------------
+
+        if (
+            audioFXManager == null &&
+            (
+                becomingSelected ||
+                becomingDeselected
+            )
+        )
+        {
+            audioFXManager =
+                AudioFXManager.Instance;
+        }
+
+
+        // --------------------------------------------------------
+        // SELECT SOUND
+        // --------------------------------------------------------
+
+        if (becomingSelected)
+        {
+            if (audioFXManager != null)
+            {
+                audioFXManager.PlayUnitClick();
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // DESELECT SOUND
+        // --------------------------------------------------------
+
+        if (becomingDeselected)
+        {
+            if (audioFXManager != null)
+            {
+                audioFXManager.PlayUnitDeselect();
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // SCREEN SHAKE
+        // --------------------------------------------------------
+
+        if (
+            becomingSelected &&
+            enableScreenShake &&
+            ScreenShaker.Instance != null
+        )
+        {
+            ScreenShaker.Instance.Shake(
+                screenShakeMagnitude,
+                screenShakeDuration
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // SET STATE
+        // --------------------------------------------------------
+
+        isSelected =
+            selected;
+
+
+        // --------------------------------------------------------
+        // SELECTED VISUAL
+        // --------------------------------------------------------
+
+        if (selectedChildSprite != null)
+        {
+            selectedChildSprite.enabled =
+                selected;
+        }
+
+
+        // --------------------------------------------------------
+        // CHARACTER INFO
+        // --------------------------------------------------------
+
+        if (canvasInfoManager != null)
+        {
+            if (selected)
+            {
+                canvasInfoManager.ShowCharacter(
+                    this
+                );
+            }
+            else
+            {
+                canvasInfoManager.ClearInfo();
+            }
         }
     }
 
@@ -712,45 +938,5 @@ public class HoverInfoTrigger :
         return attackUnit.IsAbilityReady(
             ability
         );
-    }
-
-
-    // ============================================================
-    // SELECTION
-    // ============================================================
-
-    public bool IsSelected()
-    {
-        return isSelected;
-    }
-
-
-    public void SetSelected(
-        bool selected)
-    {
-        isSelected =
-            selected;
-
-
-        if (selectedChildSprite != null)
-        {
-            selectedChildSprite.enabled =
-                selected;
-        }
-
-
-        if (canvasInfoManager != null)
-        {
-            if (selected)
-            {
-                canvasInfoManager.ShowCharacter(
-                    this
-                );
-            }
-            else
-            {
-                canvasInfoManager.ClearInfo();
-            }
-        }
     }
 }

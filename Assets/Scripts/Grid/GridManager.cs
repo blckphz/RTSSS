@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
+    // ==================================================
+    // GRID REFERENCES
+    // ==================================================
+
     [Header("Grid References")]
     [SerializeField]
     private Grid grid;
@@ -13,6 +17,10 @@ public class GridManager : MonoBehaviour
     private Transform floorParent;
 
 
+    // ==================================================
+    // GRID SIZE
+    // ==================================================
+
     [Header("Grid Size")]
     [SerializeField, Min(1)]
     private int width = 8;
@@ -21,10 +29,18 @@ public class GridManager : MonoBehaviour
     private int height = 8;
 
 
+    // ==================================================
+    // HIGHLIGHT MANAGER
+    // ==================================================
+
     [Header("Highlight Manager")]
     [SerializeField]
     private GridHighlightManager highlightManager;
 
+
+    // ==================================================
+    // GIZMOS
+    // ==================================================
 
     [Header("Gizmos")]
     [SerializeField]
@@ -61,6 +77,7 @@ public class GridManager : MonoBehaviour
             grid = GetComponent<Grid>();
         }
 
+
         if (grid == null)
         {
             Debug.LogError(
@@ -74,6 +91,7 @@ public class GridManager : MonoBehaviour
 
         occupiedCells =
             new GameObject[width, height];
+
 
         floorTiles =
             new GameObject[width, height];
@@ -250,8 +268,10 @@ public class GridManager : MonoBehaviour
             occupant.GetComponent<HealthManager>();
 
 
-        if (health != null &&
-            health.IsDead())
+        if (
+            health != null &&
+            health.IsDead()
+        )
         {
             occupiedCells[
                 position.x,
@@ -361,8 +381,10 @@ public class GridManager : MonoBehaviour
             GetUnitAt(position);
 
 
-        if (occupant != null &&
-            occupant != unit)
+        if (
+            occupant != null &&
+            occupant != unit
+        )
         {
             return false;
         }
@@ -378,7 +400,8 @@ public class GridManager : MonoBehaviour
 
     public bool PlaceUnit(
         GameObject unit,
-        Vector2Int position)
+        Vector2Int position,
+        bool playSound = true)
     {
         if (unit == null)
         {
@@ -398,15 +421,22 @@ public class GridManager : MonoBehaviour
         }
 
 
+        // --------------------------------------------------
+        // REGISTER UNIT
+        // --------------------------------------------------
+
         occupiedCells[
             position.x,
             position.y
         ] = unit;
 
 
+        // --------------------------------------------------
+        // MOVE UNIT TO GRID POSITION
+        // --------------------------------------------------
+
         unit.transform.position =
             GridToWorldPosition(position);
-
 
         return true;
     }
@@ -444,6 +474,7 @@ public class GridManager : MonoBehaviour
                 if (occupiedCells[x, y] == unit)
                 {
                     occupiedCells[x, y] = null;
+
                     return;
                 }
             }
@@ -488,8 +519,10 @@ public class GridManager : MonoBehaviour
         }
 
 
-        if (!IsInsideGrid(oldPosition) ||
-            !IsInsideGrid(newPosition))
+        if (
+            !IsInsideGrid(oldPosition) ||
+            !IsInsideGrid(newPosition)
+        )
         {
             return false;
         }
@@ -501,9 +534,12 @@ public class GridManager : MonoBehaviour
         }
 
 
-        if (occupiedCells[
+        if (
+            occupiedCells[
                 oldPosition.x,
-                oldPosition.y] != unit)
+                oldPosition.y
+            ] != unit
+        )
         {
             return false;
         }
@@ -515,14 +551,20 @@ public class GridManager : MonoBehaviour
         }
 
 
-        // Remove old cell.
+        // --------------------------------------------------
+        // REMOVE OLD CELL
+        // --------------------------------------------------
+
         occupiedCells[
             oldPosition.x,
             oldPosition.y
         ] = null;
 
 
-        // Reserve destination immediately.
+        // --------------------------------------------------
+        // RESERVE DESTINATION
+        // --------------------------------------------------
+
         occupiedCells[
             newPosition.x,
             newPosition.y
@@ -553,9 +595,12 @@ public class GridManager : MonoBehaviour
         }
 
 
-        if (occupiedCells[
+        if (
+            occupiedCells[
                 position.x,
-                position.y] != unit)
+                position.y
+            ] != unit
+        )
         {
             return;
         }
@@ -581,16 +626,21 @@ public class GridManager : MonoBehaviour
         }
 
 
-        if (!IsInsideGrid(oldPosition) ||
-            !IsInsideGrid(newPosition))
+        if (
+            !IsInsideGrid(oldPosition) ||
+            !IsInsideGrid(newPosition)
+        )
         {
             return false;
         }
 
 
-        if (occupiedCells[
+        if (
+            occupiedCells[
                 oldPosition.x,
-                oldPosition.y] != unit)
+                oldPosition.y
+            ] != unit
+        )
         {
             return false;
         }
@@ -680,6 +730,7 @@ public class GridManager : MonoBehaviour
         {
             grid = GetComponent<Grid>();
 
+
             if (grid == null)
             {
                 return;
@@ -716,11 +767,14 @@ public class GridManager : MonoBehaviour
         Vector3 bottomLeft =
             GetGridCorner(0, 0);
 
+
         Vector3 bottomRight =
             GetGridCorner(width, 0);
 
+
         Vector3 topLeft =
             GetGridCorner(0, height);
+
 
         Vector3 topRight =
             GetGridCorner(width, height);
@@ -731,15 +785,18 @@ public class GridManager : MonoBehaviour
             bottomRight
         );
 
+
         Gizmos.DrawLine(
             bottomRight,
             topRight
         );
 
+
         Gizmos.DrawLine(
             topRight,
             topLeft
         );
+
 
         Gizmos.DrawLine(
             topLeft,
