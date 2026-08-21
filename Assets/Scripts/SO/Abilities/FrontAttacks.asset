@@ -16,6 +16,11 @@ MonoBehaviour:
   description: 
   damage: 10
   cooldown: 0
-  range: 3
+  canAttackWithThisAfterMove: 0
+  usesPerTurn: 1
+  useDuration: 0.25
+  range: 1
   minDistance: 0
   rangeShape: 1
+  hitEffectPrefab: {fileID: 0}
+  hitEffectOffset: {x: 0, y: 0, z: 0}

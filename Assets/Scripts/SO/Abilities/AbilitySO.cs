@@ -26,6 +26,10 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField, Min(0)]
     private int cooldown = 0;
 
+    [Tooltip("If enabled, this ability may be used after the unit moves.")]
+    [SerializeField]
+    public bool canAttackWithThisAfterMove = false;
+
     [Tooltip("Number of times this ability can be used per turn. 0 = unlimited.")]
     [SerializeField, Min(0)]
     private int usesPerTurn = 1;
@@ -91,6 +95,11 @@ public abstract class AbilitySO : ScriptableObject
     public RangeShape GetRangeShape()
     {
         return rangeShape;
+    }
+
+    public bool CanAttackWithThisAfterMove()
+    {
+        return canAttackWithThisAfterMove;
     }
 
     // ==================================================

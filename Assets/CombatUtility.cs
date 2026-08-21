@@ -13,11 +13,14 @@ public static class CombatUtility
         List<AttackUnit> units =
             new List<AttackUnit>();
 
-        // Compatible with older Unity versions.
         AttackUnit[] foundUnits =
             Object.FindObjectsOfType<AttackUnit>();
 
-        for (int i = 0; i < foundUnits.Length; i++)
+        for (
+            int i = 0;
+            i < foundUnits.Length;
+            i++
+        )
         {
             AttackUnit unit =
                 foundUnits[i];
@@ -31,6 +34,7 @@ public static class CombatUtility
         return units;
     }
 
+
     public static List<AttackUnit> GetAllAliveUnits()
     {
         List<AttackUnit> units =
@@ -39,13 +43,19 @@ public static class CombatUtility
         AttackUnit[] foundUnits =
             Object.FindObjectsOfType<AttackUnit>();
 
-        for (int i = 0; i < foundUnits.Length; i++)
+        for (
+            int i = 0;
+            i < foundUnits.Length;
+            i++
+        )
         {
             AttackUnit unit =
                 foundUnits[i];
 
-            if (IsValidUnit(unit) &&
-                !unit.IsDead())
+            if (
+                IsValidUnit(unit) &&
+                !unit.IsDead()
+            )
             {
                 units.Add(unit);
             }
@@ -53,6 +63,7 @@ public static class CombatUtility
 
         return units;
     }
+
 
     public static List<GameObject> GetAllUnitObjects()
     {
@@ -62,7 +73,11 @@ public static class CombatUtility
         List<AttackUnit> units =
             GetAllAliveUnits();
 
-        for (int i = 0; i < units.Count; i++)
+        for (
+            int i = 0;
+            i < units.Count;
+            i++
+        )
         {
             if (units[i] != null)
             {
@@ -75,6 +90,7 @@ public static class CombatUtility
         return objects;
     }
 
+
     public static List<AttackUnit> GetUnitsByTeam(
         Team team)
     {
@@ -84,7 +100,11 @@ public static class CombatUtility
         List<AttackUnit> allUnits =
             GetAllAliveUnits();
 
-        for (int i = 0; i < allUnits.Count; i++)
+        for (
+            int i = 0;
+            i < allUnits.Count;
+            i++
+        )
         {
             AttackUnit unit =
                 allUnits[i];
@@ -103,6 +123,7 @@ public static class CombatUtility
         return units;
     }
 
+
     public static List<GameObject> GetObjectsByTeam(
         Team team)
     {
@@ -112,7 +133,11 @@ public static class CombatUtility
         List<AttackUnit> units =
             GetUnitsByTeam(team);
 
-        for (int i = 0; i < units.Count; i++)
+        for (
+            int i = 0;
+            i < units.Count;
+            i++
+        )
         {
             if (units[i] != null)
             {
@@ -125,11 +150,13 @@ public static class CombatUtility
         return objects;
     }
 
+
     public static int GetUnitCount(
         Team team)
     {
         return GetUnitsByTeam(team).Count;
     }
+
 
     public static bool IsValidUnit(
         AttackUnit unit)
@@ -147,12 +174,15 @@ public static class CombatUtility
         return true;
     }
 
+
     public static bool IsAlive(
         AttackUnit unit)
     {
-        return IsValidUnit(unit) &&
-               !unit.IsDead();
+        return
+            IsValidUnit(unit) &&
+            !unit.IsDead();
     }
+
 
     // ==================================================
     // TARGETS
@@ -175,19 +205,27 @@ public static class CombatUtility
         Team attackerTeam =
             attacker.GetTeam();
 
-        for (int i = 0; i < allUnits.Count; i++)
+        for (
+            int i = 0;
+            i < allUnits.Count;
+            i++
+        )
         {
             AttackUnit candidate =
                 allUnits[i];
 
-            if (candidate == null ||
-                candidate == attacker)
+            if (
+                candidate == null ||
+                candidate == attacker
+            )
             {
                 continue;
             }
 
-            if (candidate.GetTeam() ==
-                attackerTeam)
+            if (
+                candidate.GetTeam() ==
+                attackerTeam
+            )
             {
                 continue;
             }
@@ -197,6 +235,7 @@ public static class CombatUtility
 
         return enemies;
     }
+
 
     public static GameObject FindNearestEnemy(
         AttackUnit attacker,
@@ -224,10 +263,15 @@ public static class CombatUtility
         Vector2Int attackerPosition =
             gridManager != null
                 ? gridManager.WorldToGridPosition(
-                    attacker.transform.position)
+                    attacker.transform.position
+                )
                 : Vector2Int.zero;
 
-        for (int i = 0; i < enemies.Count; i++)
+        for (
+            int i = 0;
+            i < enemies.Count;
+            i++
+        )
         {
             AttackUnit candidate =
                 enemies[i];
@@ -243,12 +287,14 @@ public static class CombatUtility
             {
                 Vector2Int candidatePosition =
                     gridManager.WorldToGridPosition(
-                        candidate.transform.position);
+                        candidate.transform.position
+                    );
 
                 distance =
                     gridManager.GetDistance(
                         attackerPosition,
-                        candidatePosition);
+                        candidatePosition
+                    );
             }
             else
             {
@@ -256,7 +302,9 @@ public static class CombatUtility
                     Mathf.RoundToInt(
                         Vector3.Distance(
                             attacker.transform.position,
-                            candidate.transform.position));
+                            candidate.transform.position
+                        )
+                    );
             }
 
             if (distance < closestDistance)
@@ -274,6 +322,7 @@ public static class CombatUtility
             : null;
     }
 
+
     // ==================================================
     // ATTACK
     // ==================================================
@@ -282,8 +331,10 @@ public static class CombatUtility
         AttackUnit attacker,
         GameObject target)
     {
-        if (attacker == null ||
-            target == null)
+        if (
+            attacker == null ||
+            target == null
+        )
         {
             return false;
         }
@@ -295,6 +346,7 @@ public static class CombatUtility
 
         return attacker.IsValidTarget(target);
     }
+
 
     public static int ExecuteAllAvailableAttacks(
         AttackUnit attacker)
@@ -315,18 +367,30 @@ public static class CombatUtility
         return brain.UseAllAvailableAbilities();
     }
 
+
     // ==================================================
-    // MOVEMENT + ATTACK
+    // FULL UNIT TURN
     // ==================================================
 
-    public static string ExecuteUnitTurn(
+    /// <summary>
+    /// Full turn sequence:
+    ///
+    /// 1. Attack with anything currently available.
+    /// 2. Move toward enemy.
+    /// 3. Wait until movement has actually finished.
+    /// 4. Attack again, but only with abilities where
+    ///    canattackwiththisaftermove is enabled.
+    /// </summary>
+    public static IEnumerator ExecuteUnitTurnCoroutine(
         AttackUnit unit,
         GridManager gridManager)
     {
-        if (unit == null ||
-            unit.IsDead())
+        if (
+            unit == null ||
+            unit.IsDead()
+        )
         {
-            return string.Empty;
+            yield break;
         }
 
         UnitAttackBrain attackBrain =
@@ -335,12 +399,87 @@ public static class CombatUtility
         UnitMoveBrain moveBrain =
             unit.GetComponent<UnitMoveBrain>();
 
-        // ------------------------------------------
-        // ATTACK BEFORE MOVING
-        // ------------------------------------------
 
-        if (attackBrain != null &&
-            attackBrain.HasAnyTargetInAbilityRange())
+        // ==================================================
+        // 1. ATTACK BEFORE MOVING
+        // ==================================================
+
+        if (
+            attackBrain != null &&
+            !unit.IsDead()
+        )
+        {
+            int attacks =
+                attackBrain.UseAllAvailableAbilities();
+
+            if (attacks > 0)
+            {
+                yield return null;
+            }
+        }
+
+
+        // ==================================================
+        // 2. MOVE
+        // ==================================================
+
+        if (
+            moveBrain != null &&
+            !unit.IsDead()
+        )
+        {
+            yield return moveBrain.MoveTowardsEnemy();
+        }
+
+
+        // ==================================================
+        // 3. ATTACK AFTER MOVING
+        // ==================================================
+
+        if (
+            attackBrain != null &&
+            !unit.IsDead()
+        )
+        {
+            int attacks =
+                attackBrain.UseAllAvailableAbilities(
+                    true
+                );
+
+            if (attacks > 0)
+            {
+                yield return null;
+            }
+        }
+    }
+
+
+    // ==================================================
+    // LEGACY NON-COROUTINE TURN
+    // ==================================================
+
+    /// <summary>
+    /// Kept for compatibility with existing code.
+    ///
+    /// For proper attack -> move -> attack sequencing,
+    /// use ExecuteUnitTurnCoroutine().
+    /// </summary>
+    public static string ExecuteUnitTurn(
+        AttackUnit unit,
+        GridManager gridManager)
+    {
+        if (
+            unit == null ||
+            unit.IsDead()
+        )
+        {
+            return string.Empty;
+        }
+
+        UnitAttackBrain attackBrain =
+            unit.GetComponent<UnitAttackBrain>();
+
+        if (attackBrain != null)
         {
             int attacks =
                 attackBrain.UseAllAvailableAbilities();
@@ -349,43 +488,11 @@ public static class CombatUtility
             {
                 return attackBrain.GetPrimaryAbilityName();
             }
-        }
-
-        // ------------------------------------------
-        // MOVE
-        // ------------------------------------------
-
-        bool moved = false;
-
-        if (moveBrain != null)
-        {
-            moved =
-                moveBrain.TryMoveTowardsEnemy();
-        }
-
-        // ------------------------------------------
-        // ATTACK AFTER MOVING
-        // ------------------------------------------
-
-        if (attackBrain != null &&
-            !unit.IsDead())
-        {
-            int attacks =
-                attackBrain.UseAllAvailableAbilities();
-
-            if (attacks > 0)
-            {
-                return attackBrain.GetPrimaryAbilityName();
-            }
-        }
-
-        if (moved)
-        {
-            return "Move";
         }
 
         return string.Empty;
     }
+
 
     // ==================================================
     // ENEMY TURN
@@ -396,8 +503,10 @@ public static class CombatUtility
         bool moveFirst,
         bool attackAfterMoving)
     {
-        if (enemy == null ||
-            enemy.IsDead())
+        if (
+            enemy == null ||
+            enemy.IsDead()
+        )
         {
             yield break;
         }
@@ -413,49 +522,49 @@ public static class CombatUtility
             yield break;
         }
 
-        // ------------------------------------------
-        // ATTACK IF ALREADY IN RANGE
-        // ------------------------------------------
 
-        if (attackAfterMoving &&
-            attackBrain.HasAnyTargetInAbilityRange())
+        // ==================================================
+        // 1. ATTACK BEFORE MOVING
+        // ==================================================
+
+        if (!enemy.IsDead())
         {
             attackBrain.UseAllAvailableAbilities();
 
             yield return null;
-
-            yield break;
         }
 
-        // ------------------------------------------
-        // MOVE
-        // ------------------------------------------
 
-        if (moveFirst &&
+        // ==================================================
+        // 2. MOVE
+        // ==================================================
+
+        if (
             moveBrain != null &&
-            !enemy.IsDead())
+            !enemy.IsDead()
+        )
         {
-            // IMPORTANT:
-            // Your UnitMoveBrain exposes
-            // MoveTowardsEnemy() with NO argument.
             yield return moveBrain.MoveTowardsEnemy();
         }
 
-        // ------------------------------------------
-        // ATTACK AFTER MOVING
-        // ------------------------------------------
 
-        if (attackAfterMoving &&
-            !enemy.IsDead())
+        // ==================================================
+        // 3. ATTACK AFTER MOVING
+        // ==================================================
+
+        if (
+            attackAfterMoving &&
+            !enemy.IsDead()
+        )
         {
-            if (attackBrain.HasAnyTargetInAbilityRange())
-            {
-                attackBrain.UseAllAvailableAbilities();
-            }
+            attackBrain.UseAllAvailableAbilities(
+                true
+            );
         }
 
         yield return null;
     }
+
 
     // ==================================================
     // GRID
@@ -466,19 +575,24 @@ public static class CombatUtility
         return Object.FindObjectOfType<GridManager>();
     }
 
+
     public static Vector2Int GetGridPosition(
         AttackUnit unit,
         GridManager gridManager)
     {
-        if (unit == null ||
-            gridManager == null)
+        if (
+            unit == null ||
+            gridManager == null
+        )
         {
             return Vector2Int.zero;
         }
 
         return gridManager.WorldToGridPosition(
-            unit.transform.position);
+            unit.transform.position
+        );
     }
+
 
     // ==================================================
     // WIN / LOSE
@@ -490,10 +604,12 @@ public static class CombatUtility
         return GetUnitCount(team) > 0;
     }
 
+
     public static bool AreEnemiesDefeated()
     {
         return !HasTeamAlive(Team.Enemy);
     }
+
 
     public static bool ArePlayerUnitsDefeated()
     {
@@ -503,7 +619,8 @@ public static class CombatUtility
         bool allyAlive =
             HasTeamAlive(Team.Ally);
 
-        return !playerAlive &&
-               !allyAlive;
+        return
+            !playerAlive &&
+            !allyAlive;
     }
 }

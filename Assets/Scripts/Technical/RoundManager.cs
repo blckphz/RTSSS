@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,6 +13,7 @@ public class RoundManager : MonoBehaviour
         EnemyTurn
     }
 
+
     [Serializable]
     public struct AbilityLogEntry
     {
@@ -20,6 +21,7 @@ public class RoundManager : MonoBehaviour
         public string unitName;
         public string abilityName;
     }
+
 
     // ==================================================
     // ROUND STATE
@@ -36,6 +38,7 @@ public class RoundManager : MonoBehaviour
     [SerializeField]
     private bool autoBattle = false;
 
+
     // ==================================================
     // DEPENDENCIES
     // ==================================================
@@ -47,6 +50,7 @@ public class RoundManager : MonoBehaviour
     [SerializeField]
     private GridManager gridManager;
 
+
     // ==================================================
     // UI / SETTINGS
     // ==================================================
@@ -57,6 +61,7 @@ public class RoundManager : MonoBehaviour
 
     [SerializeField]
     private float delayBetweenUnits = 0.5f;
+
 
     // ==================================================
     // INTERNAL
@@ -74,12 +79,14 @@ public class RoundManager : MonoBehaviour
 
     private bool roundRunning;
 
+
     // ==================================================
     // EVENTS
     // ==================================================
 
     public event Action<AbilityLogEntry>
         OnAbilityUsed;
+
 
     // ==================================================
     // UNITY
@@ -118,6 +125,7 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+
     private void OnDestroy()
     {
         if (autoBattleToggle != null)
@@ -128,15 +136,19 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+
     private void Update()
     {
-        if (autoBattle &&
+        if (
+            autoBattle &&
             currentState == RoundState.Setup &&
-            !roundRunning)
+            !roundRunning
+        )
         {
             StartRound();
         }
     }
+
 
     // ==================================================
     // START ROUND
@@ -156,7 +168,8 @@ public class RoundManager : MonoBehaviour
 
         currentRound++;
 
-        roundRunning = true;
+        roundRunning =
+            true;
 
         RefreshCachedUnits();
 
@@ -166,6 +179,7 @@ public class RoundManager : MonoBehaviour
             RunRoundPipeline()
         );
     }
+
 
     // ==================================================
     // ROUND PIPELINE
@@ -180,9 +194,10 @@ public class RoundManager : MonoBehaviour
 
         EnsureEnemiesExist();
 
-        // ------------------------------------------
+
+        // ==================================================
         // PLAYER / ALLY
-        // ------------------------------------------
+        // ==================================================
 
         currentState =
             RoundState.PlayerAndAllyTurn;
@@ -191,9 +206,10 @@ public class RoundManager : MonoBehaviour
             ExecutePlayerAndAllyTurn()
         );
 
-        // ------------------------------------------
+
+        // ==================================================
         // ENEMY
-        // ------------------------------------------
+        // ==================================================
 
         currentState =
             RoundState.EnemyTurn;
@@ -202,15 +218,18 @@ public class RoundManager : MonoBehaviour
             ExecuteEnemyTurn()
         );
 
-        // ------------------------------------------
+
+        // ==================================================
         // END
-        // ------------------------------------------
+        // ==================================================
 
         currentState =
             RoundState.Setup;
 
-        roundRunning = false;
+        roundRunning =
+            false;
     }
+
 
     // ==================================================
     // PLAYER / ALLY TURN
@@ -220,7 +239,11 @@ public class RoundManager : MonoBehaviour
     {
         RefreshCachedUnits();
 
-        for (int i = 0; i < cachedUnits.Count; i++)
+        for (
+            int i = 0;
+            i < cachedUnits.Count;
+            i++
+        )
         {
             AttackUnit unit =
                 cachedUnits[i];
@@ -233,29 +256,32 @@ public class RoundManager : MonoBehaviour
             Team team =
                 unit.GetTeam();
 
-            if (team != Team.Player &&
-                team != Team.Ally)
+            if (
+                team != Team.Player &&
+                team != Team.Ally
+            )
             {
                 continue;
             }
 
-            string result =
-                CombatUtility.ExecuteUnitTurn(
+
+            // ==================================================
+            // ATTACK -> MOVE -> ATTACK
+            // ==================================================
+
+            yield return StartCoroutine(
+                CombatUtility.ExecuteUnitTurnCoroutine(
                     unit,
                     gridManager
-                );
+                )
+            );
 
-            if (!string.IsNullOrEmpty(result))
-            {
-                LogAbilityUse(
-                    unit.name,
-                    result
-                );
-            }
 
+            // Wait before the next unit.
             yield return unitDelay;
         }
     }
+
 
     // ==================================================
     // ENEMY TURN
@@ -278,6 +304,7 @@ public class RoundManager : MonoBehaviour
         );
     }
 
+
     // ==================================================
     // VALIDATION
     // ==================================================
@@ -287,6 +314,7 @@ public class RoundManager : MonoBehaviour
     {
         return CombatUtility.IsAlive(unit);
     }
+
 
     // ==================================================
     // REFRESH
@@ -299,7 +327,11 @@ public class RoundManager : MonoBehaviour
         List<AttackUnit> units =
             CombatUtility.GetAllAliveUnits();
 
-        for (int i = 0; i < units.Count; i++)
+        for (
+            int i = 0;
+            i < units.Count;
+            i++
+        )
         {
             if (units[i] != null)
             {
@@ -309,6 +341,7 @@ public class RoundManager : MonoBehaviour
             }
         }
     }
+
 
     // ==================================================
     // ENEMIES
@@ -321,12 +354,16 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        if (CombatUtility.GetUnitCount(
-                Team.Enemy) == 0)
+        if (
+            CombatUtility.GetUnitCount(
+                Team.Enemy
+            ) == 0
+        )
         {
             combatManager.CheckForEnemies();
         }
     }
+
 
     // ==================================================
     // COOLDOWNS
@@ -334,7 +371,11 @@ public class RoundManager : MonoBehaviour
 
     private void UpdateAllUnitCooldowns()
     {
-        for (int i = 0; i < cachedUnits.Count; i++)
+        for (
+            int i = 0;
+            i < cachedUnits.Count;
+            i++
+        )
         {
             AttackUnit unit =
                 cachedUnits[i];
@@ -347,6 +388,7 @@ public class RoundManager : MonoBehaviour
             unit.StartNewRound();
         }
     }
+
 
     // ==================================================
     // LOGGING
@@ -369,6 +411,7 @@ public class RoundManager : MonoBehaviour
         OnAbilityUsed?.Invoke(entry);
     }
 
+
     // ==================================================
     // AUTO BATTLE
     // ==================================================
@@ -376,8 +419,10 @@ public class RoundManager : MonoBehaviour
     public void SetAutoBattle(
         bool enabled)
     {
-        autoBattle = enabled;
+        autoBattle =
+            enabled;
     }
+
 
     public void ToggleAutoBattle()
     {
@@ -393,6 +438,7 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+
     // ==================================================
     // ACCESSORS
     // ==================================================
@@ -406,11 +452,13 @@ public class RoundManager : MonoBehaviour
         );
     }
 
+
     public List<AbilityLogEntry>
         GetAllAbilityLogs()
     {
         return roundAbilityLogs;
     }
+
 
     public bool IsSetupPhase()
     {
@@ -418,15 +466,18 @@ public class RoundManager : MonoBehaviour
                RoundState.Setup;
     }
 
+
     public bool IsRoundRunning()
     {
         return roundRunning;
     }
 
+
     public int GetCurrentRound()
     {
         return currentRound;
     }
+
 
     public RoundState GetCurrentState()
     {
