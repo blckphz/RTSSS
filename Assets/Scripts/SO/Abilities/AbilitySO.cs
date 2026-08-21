@@ -11,6 +11,18 @@ public abstract class AbilitySO : ScriptableObject
         Diagonal
     }
 
+    public enum TargetType
+    {
+        Enemy,
+        Ally,
+        Any
+    }
+
+
+    // ============================================================
+    // ABILITY
+    // ============================================================
+
     [Header("Ability")]
     [SerializeField]
     private string abilityName;
@@ -19,26 +31,54 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField]
     private string description;
 
+
+    // ============================================================
+    // COMBAT
+    // ============================================================
+
     [Header("Combat")]
+
     [SerializeField]
     private int damage = 10;
 
     [SerializeField, Min(0)]
     private int cooldown = 0;
 
-    [Tooltip("If enabled, this ability may be used after the unit moves.")]
+    [Tooltip(
+        "If TRUE, this ability can be used after the unit has moved this turn."
+    )]
     [SerializeField]
-    public bool canAttackWithThisAfterMove = false;
+    private bool canAttackWithThisAfterMove = false;
 
-    [Tooltip("Number of times this ability can be used per turn. 0 = unlimited.")]
+    [Tooltip(
+        "Number of times this ability can be used per turn. 0 = unlimited."
+    )]
     [SerializeField, Min(0)]
     private int usesPerTurn = 1;
 
-    [Tooltip("Time the attack/effect takes before the next attack can happen.")]
+    [Tooltip(
+        "Time the attack/effect takes before the next attack can happen."
+    )]
     [SerializeField, Min(0f)]
     private float useDuration = 0.25f;
 
+
+    // ============================================================
+    // TARGETING
+    // ============================================================
+
+    [Header("Targeting")]
+
+    [SerializeField]
+    private TargetType targetType = TargetType.Enemy;
+
+
+    // ============================================================
+    // TARGETING RANGE
+    // ============================================================
+
     [Header("Targeting Range")]
+
     [SerializeField, Min(1)]
     private int range = 1;
 
@@ -48,9 +88,10 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField]
     private RangeShape rangeShape = RangeShape.Diamond;
 
-    // ==================================================
+
+    // ============================================================
     // GETTERS
-    // ==================================================
+    // ============================================================
 
     public string GetAbilityName()
     {
@@ -97,14 +138,20 @@ public abstract class AbilitySO : ScriptableObject
         return rangeShape;
     }
 
+    public TargetType GetTargetType()
+    {
+        return targetType;
+    }
+
     public bool CanAttackWithThisAfterMove()
     {
         return canAttackWithThisAfterMove;
     }
 
-    // ==================================================
+
+    // ============================================================
     // RANGE
-    // ==================================================
+    // ============================================================
 
     public virtual List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
@@ -114,8 +161,10 @@ public abstract class AbilitySO : ScriptableObject
         List<Vector2Int> tiles =
             new List<Vector2Int>();
 
-        if (gridManager == null ||
-            user == null)
+        if (
+            gridManager == null ||
+            user == null
+        )
         {
             return tiles;
         }
@@ -154,7 +203,10 @@ public abstract class AbilitySO : ScriptableObject
                         y++
                     )
                     {
-                        if (x == 0 && y == 0)
+                        if (
+                            x == 0 &&
+                            y == 0
+                        )
                         {
                             continue;
                         }
@@ -163,12 +215,18 @@ public abstract class AbilitySO : ScriptableObject
                             Mathf.Abs(x) +
                             Mathf.Abs(y);
 
-                        if (distance > abilityRange)
+                        if (
+                            distance >
+                            abilityRange
+                        )
                         {
                             continue;
                         }
 
-                        if (distance < minimumDistance)
+                        if (
+                            distance <
+                            minimumDistance
+                        )
                         {
                             continue;
                         }
@@ -177,12 +235,16 @@ public abstract class AbilitySO : ScriptableObject
                             gridManager,
                             tiles,
                             origin +
-                            new Vector2Int(x, y)
+                            new Vector2Int(
+                                x,
+                                y
+                            )
                         );
                     }
                 }
 
                 break;
+
 
             case RangeShape.Box:
 
@@ -198,7 +260,10 @@ public abstract class AbilitySO : ScriptableObject
                         y++
                     )
                     {
-                        if (x == 0 && y == 0)
+                        if (
+                            x == 0 &&
+                            y == 0
+                        )
                         {
                             continue;
                         }
@@ -209,12 +274,18 @@ public abstract class AbilitySO : ScriptableObject
                                 Mathf.Abs(y)
                             );
 
-                        if (distance > abilityRange)
+                        if (
+                            distance >
+                            abilityRange
+                        )
                         {
                             continue;
                         }
 
-                        if (distance < minimumDistance)
+                        if (
+                            distance <
+                            minimumDistance
+                        )
                         {
                             continue;
                         }
@@ -223,12 +294,16 @@ public abstract class AbilitySO : ScriptableObject
                             gridManager,
                             tiles,
                             origin +
-                            new Vector2Int(x, y)
+                            new Vector2Int(
+                                x,
+                                y
+                            )
                         );
                     }
                 }
 
                 break;
+
 
             case RangeShape.FourDirections:
 
@@ -238,7 +313,10 @@ public abstract class AbilitySO : ScriptableObject
                     i++
                 )
                 {
-                    if (i < minimumDistance)
+                    if (
+                        i <
+                        minimumDistance
+                    )
                     {
                         continue;
                     }
@@ -274,6 +352,7 @@ public abstract class AbilitySO : ScriptableObject
 
                 break;
 
+
             case RangeShape.Diagonal:
 
                 for (
@@ -282,7 +361,10 @@ public abstract class AbilitySO : ScriptableObject
                     i++
                 )
                 {
-                    if (i < minimumDistance)
+                    if (
+                        i <
+                        minimumDistance
+                    )
                     {
                         continue;
                     }
@@ -291,28 +373,40 @@ public abstract class AbilitySO : ScriptableObject
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(i, i)
+                        new Vector2Int(
+                            i,
+                            i
+                        )
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(-i, i)
+                        new Vector2Int(
+                            -i,
+                            i
+                        )
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(i, -i)
+                        new Vector2Int(
+                            i,
+                            -i
+                        )
                     );
 
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(-i, -i)
+                        new Vector2Int(
+                            -i,
+                            -i
+                        )
                     );
                 }
 
@@ -322,9 +416,10 @@ public abstract class AbilitySO : ScriptableObject
         return tiles;
     }
 
-    // ==================================================
+
+    // ============================================================
     // HITBOX
-    // ==================================================
+    // ============================================================
 
     public virtual List<Vector2Int> GetHitboxTiles(
         GridManager gridManager,
@@ -338,9 +433,10 @@ public abstract class AbilitySO : ScriptableObject
         );
     }
 
-    // ==================================================
+
+    // ============================================================
     // VALID TILE
-    // ==================================================
+    // ============================================================
 
     protected void AddValidTile(
         GridManager gridManager,
@@ -353,20 +449,29 @@ public abstract class AbilitySO : ScriptableObject
             return;
         }
 
-        if (!gridManager.IsInsideGrid(position))
+        if (
+            !gridManager.IsInsideGrid(
+                position
+            )
+        )
         {
             return;
         }
 
-        if (!tiles.Contains(position))
+        if (
+            !tiles.Contains(
+                position
+            )
+        )
         {
             tiles.Add(position);
         }
     }
 
-    // ==================================================
-    // CAN HIT
-    // ==================================================
+
+    // ============================================================
+    // CAN HIT GAMEOBJECT
+    // ============================================================
 
     public virtual bool CanHit(
         GridManager gridManager,
@@ -374,48 +479,165 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target
     )
     {
-        if (gridManager == null ||
+        if (
+            gridManager == null ||
             user == null ||
-            target == null)
+            target == null
+        )
         {
             return false;
         }
 
-        Vector2Int userPosition =
-            gridManager.WorldToGridPosition(
-                user.transform.position
-            );
+        if (
+            !CanTargetObject(
+                user,
+                target
+            )
+        )
+        {
+            return false;
+        }
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
 
-        int distance =
-            gridManager.GetDistance(
-                userPosition,
-                targetPosition
-            );
+        return CanHitTile(
+            gridManager,
+            user,
+            targetPosition
+        );
+    }
 
-        int minimumDistance =
-            Mathf.Clamp(
-                minDistance,
-                0,
-                range
-            );
 
-        int maximumDistance =
-            Mathf.Max(
-                minimumDistance,
-                range
-            );
+    // ============================================================
+    // CAN TARGET OBJECT
+    // ============================================================
 
-        if (distance < minimumDistance)
+    public virtual bool CanTargetObject(
+        GameObject user,
+        GameObject target
+    )
+    {
+        if (
+            user == null ||
+            target == null
+        )
         {
             return false;
         }
 
-        if (distance > maximumDistance)
+        AttackUnit userUnit =
+            user.GetComponent<AttackUnit>();
+
+        AttackUnit targetUnit =
+            target.GetComponent<AttackUnit>();
+
+        if (
+            userUnit == null ||
+            targetUnit == null
+        )
+        {
+            return false;
+        }
+
+        Team userTeam =
+            userUnit.GetTeam();
+
+        Team targetTeam =
+            targetUnit.GetTeam();
+
+
+        if (
+            targetType ==
+            TargetType.Enemy
+        )
+        {
+            if (
+                userTeam == Team.Player ||
+                userTeam == Team.Ally
+            )
+            {
+                return targetTeam == Team.Enemy;
+            }
+
+            if (
+                userTeam ==
+                Team.Enemy
+            )
+            {
+                return
+                    targetTeam == Team.Player ||
+                    targetTeam == Team.Ally;
+            }
+
+            return false;
+        }
+
+
+        if (
+            targetType ==
+            TargetType.Ally
+        )
+        {
+            if (
+                userTeam == Team.Player ||
+                userTeam == Team.Ally
+            )
+            {
+                return
+                    targetTeam == Team.Player ||
+                    targetTeam == Team.Ally;
+            }
+
+            if (
+                userTeam ==
+                Team.Enemy
+            )
+            {
+                return targetTeam == Team.Enemy;
+            }
+
+            return false;
+        }
+
+
+        if (
+            targetType ==
+            TargetType.Any
+        )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    // ============================================================
+    // CAN HIT TILE
+    // ============================================================
+
+    public virtual bool CanHitTile(
+        GridManager gridManager,
+        GameObject user,
+        Vector2Int targetPosition
+    )
+    {
+        if (
+            gridManager == null ||
+            user == null
+        )
+        {
+            return false;
+        }
+
+        if (
+            !gridManager.IsInsideGrid(
+                targetPosition
+            )
+        )
         {
             return false;
         }
@@ -436,17 +658,53 @@ public abstract class AbilitySO : ScriptableObject
         );
     }
 
-    // ==================================================
-    // USE
-    // ==================================================
+
+    // ============================================================
+    // USE GAMEOBJECT
+    // ============================================================
 
     public virtual bool Use(
         GameObject user,
         GameObject target
     )
     {
-        if (user == null ||
-            target == null)
+        if (
+            user == null ||
+            target == null
+        )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+
+    // ============================================================
+    // USE AT TILE
+    // ============================================================
+
+    public virtual bool UseAtTile(
+        GameObject user,
+        GridManager gridManager,
+        Vector2Int targetTile
+    )
+    {
+        if (
+            user == null ||
+            gridManager == null
+        )
+        {
+            return false;
+        }
+
+        if (
+            !CanHitTile(
+                gridManager,
+                user,
+                targetTile
+            )
+        )
         {
             return false;
         }

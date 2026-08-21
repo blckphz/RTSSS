@@ -32,6 +32,13 @@ public class AttackUnit : MonoBehaviour
     private GridManager cachedGridManager;
 
     // ==================================================
+    // TURN STATE
+    // ==================================================
+
+    private bool hasMovedThisTurn;
+
+
+    // ==================================================
     // UNITY
     // ==================================================
 
@@ -52,6 +59,7 @@ public class AttackUnit : MonoBehaviour
             InitializeCooldowns();
         }
     }
+
 
     // ==================================================
     // INITIALIZE
@@ -96,6 +104,7 @@ public class AttackUnit : MonoBehaviour
         InitializeCooldowns();
     }
 
+
     private void InitializeCooldowns()
     {
         abilityCooldowns.Clear();
@@ -122,6 +131,25 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
+
+    // ==================================================
+    // TURN MOVEMENT STATE
+    // ==================================================
+
+    public bool HasMovedThisTurn()
+    {
+        return hasMovedThisTurn;
+    }
+
+
+    public void SetHasMovedThisTurn(
+        bool value)
+    {
+        hasMovedThisTurn =
+            value;
+    }
+
+
     // ==================================================
     // COOLDOWN
     // ==================================================
@@ -142,6 +170,7 @@ public class AttackUnit : MonoBehaviour
             : 0;
     }
 
+
     public bool IsAbilityOnCooldown(
         AbilitySO ability)
     {
@@ -149,6 +178,7 @@ public class AttackUnit : MonoBehaviour
             ability
         ) > 0;
     }
+
 
     // ==================================================
     // USES PER TURN
@@ -176,6 +206,7 @@ public class AttackUnit : MonoBehaviour
             : 0;
     }
 
+
     public bool HasAbilityUsesRemaining(
         AbilitySO ability)
     {
@@ -194,6 +225,7 @@ public class AttackUnit : MonoBehaviour
             ability
         ) > 0;
     }
+
 
     private void ConsumeAbilityUse(
         AbilitySO ability)
@@ -223,6 +255,7 @@ public class AttackUnit : MonoBehaviour
             );
     }
 
+
     // ==================================================
     // READY
     // ==================================================
@@ -247,10 +280,27 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        return HasAbilityUsesRemaining(
-            ability
-        );
+        if (!HasAbilityUsesRemaining(
+                ability))
+        {
+            return false;
+        }
+
+        // ==================================================
+        // MOVED THIS TURN RESTRICTION
+        // ==================================================
+
+        if (
+            hasMovedThisTurn &&
+            !ability.CanAttackWithThisAfterMove()
+        )
+        {
+            return false;
+        }
+
+        return true;
     }
+
 
     // ==================================================
     // ROUND
@@ -258,6 +308,18 @@ public class AttackUnit : MonoBehaviour
 
     public void StartNewRound()
     {
+        // ------------------------------------------
+        // RESET MOVEMENT STATE
+        // ------------------------------------------
+
+        hasMovedThisTurn =
+            false;
+
+
+        // ------------------------------------------
+        // UPDATE COOLDOWNS
+        // ------------------------------------------
+
         cooldownKeysCache.Clear();
 
         cooldownKeysCache.AddRange(
@@ -292,6 +354,7 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
+
     // ==================================================
     // COOLDOWN START
     // ==================================================
@@ -310,6 +373,7 @@ public class AttackUnit : MonoBehaviour
                 ability.GetCooldown()
             );
     }
+
 
     // ==================================================
     // ATTACK
@@ -391,6 +455,7 @@ public class AttackUnit : MonoBehaviour
 
         return true;
     }
+
 
     // ==================================================
     // ATTACK ROUTINE
@@ -474,6 +539,7 @@ public class AttackUnit : MonoBehaviour
             selectedAbility
         );
 
+
         // ------------------------------------------
         // PLAY ATTACK ANIMATION
         // ------------------------------------------
@@ -488,6 +554,7 @@ public class AttackUnit : MonoBehaviour
 
         attackAnimation.PlayAttackAnimation();
 
+
         // ------------------------------------------
         // WAIT FOR ANIMATION
         // ------------------------------------------
@@ -496,6 +563,7 @@ public class AttackUnit : MonoBehaviour
             attackAnimation.WaitForAttackFinished()
         );
     }
+
 
     // ==================================================
     // TARGET
@@ -543,6 +611,7 @@ public class AttackUnit : MonoBehaviour
         return true;
     }
 
+
     public bool CanAttack()
     {
         if (
@@ -568,11 +637,13 @@ public class AttackUnit : MonoBehaviour
         return false;
     }
 
+
     public bool IsDead()
     {
         return healthManager == null ||
                healthManager.IsDead();
     }
+
 
     // ==================================================
     // GRID
@@ -585,6 +656,7 @@ public class AttackUnit : MonoBehaviour
         return cachedGridManager;
     }
 
+
     private void EnsureGridManager()
     {
         if (cachedGridManager == null)
@@ -593,6 +665,7 @@ public class AttackUnit : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
     }
+
 
     // ==================================================
     // RANGE
@@ -627,6 +700,7 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
+
     public int GetMaximumAttackRange()
     {
         int maxRange = 0;
@@ -653,6 +727,7 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
+
     // ==================================================
     // ABILITIES
     // ==================================================
@@ -662,10 +737,12 @@ public class AttackUnit : MonoBehaviour
         return abilities;
     }
 
+
     public int GetAbilityCount()
     {
         return abilities.Count;
     }
+
 
     public void AddAbility(
         AbilitySO ability)
@@ -686,6 +763,7 @@ public class AttackUnit : MonoBehaviour
             ability.GetUsesPerTurn();
     }
 
+
     public void RemoveAbility(
         AbilitySO ability)
     {
@@ -705,6 +783,7 @@ public class AttackUnit : MonoBehaviour
         );
     }
 
+
     // ==================================================
     // ACCESSORS
     // ==================================================
@@ -716,10 +795,12 @@ public class AttackUnit : MonoBehaviour
             : healthManager.GetTeam();
     }
 
+
     public HealthManager GetHealthManager()
     {
         return healthManager;
     }
+
 
     public CharacterSO GetCharacterData()
     {

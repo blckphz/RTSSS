@@ -32,9 +32,10 @@ public class CombatManager : MonoBehaviour
     [SerializeField]
     private bool spawnEnemiesAutomatically = true;
 
-    // ==================================================
+
+    // ============================================================
     // UNITY
-    // ==================================================
+    // ============================================================
 
     private void Awake()
     {
@@ -45,6 +46,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+
     private void Start()
     {
         if (spawnEnemiesAutomatically)
@@ -53,9 +55,10 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    // ==================================================
+
+    // ============================================================
     // ENEMY ROUND
-    // ==================================================
+    // ============================================================
 
     public IEnumerator RunEnemyRound()
     {
@@ -64,7 +67,11 @@ public class CombatManager : MonoBehaviour
                 Team.Enemy
             );
 
-        for (int i = 0; i < enemies.Count; i++)
+        for (
+            int i = 0;
+            i < enemies.Count;
+            i++
+        )
         {
             AttackUnit enemy =
                 enemies[i];
@@ -77,7 +84,7 @@ public class CombatManager : MonoBehaviour
             yield return StartCoroutine(
                 CombatUtility.ExecuteEnemyTurn(
                     enemy,
-                    enemiesMoveAfterRound,
+                    !enemiesMoveAfterRound,
                     enemiesAttackAfterMoving
                 )
             );
@@ -86,6 +93,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+
     public void StartEnemyRound()
     {
         StartCoroutine(
@@ -93,9 +101,10 @@ public class CombatManager : MonoBehaviour
         );
     }
 
-    // ==================================================
+
+    // ============================================================
     // ENEMIES
-    // ==================================================
+    // ============================================================
 
     public void CheckForEnemies()
     {
@@ -105,12 +114,14 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+
     public int GetEnemyCount()
     {
         return CombatUtility.GetUnitCount(
             Team.Enemy
         );
     }
+
 
     public List<GameObject> GetAllEnemies()
     {
@@ -119,6 +130,7 @@ public class CombatManager : MonoBehaviour
         );
     }
 
+
     public List<GameObject> GetAllAllies()
     {
         return CombatUtility.GetObjectsByTeam(
@@ -126,15 +138,18 @@ public class CombatManager : MonoBehaviour
         );
     }
 
-    // ==================================================
+
+    // ============================================================
     // SPAWN
-    // ==================================================
+    // ============================================================
 
     private void SpawnTestEnemies()
     {
-        if (gridManager == null ||
+        if (
+            gridManager == null ||
             enemyPrefab == null ||
-            enemyCharacter == null)
+            enemyCharacter == null
+        )
         {
             return;
         }
@@ -159,7 +174,11 @@ public class CombatManager : MonoBehaviour
                 availableCells.Count
             );
 
-        for (int i = 0; i < amount; i++)
+        for (
+            int i = 0;
+            i < amount;
+            i++
+        )
         {
             int randomIndex =
                 Random.Range(
@@ -178,8 +197,10 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+
     private bool SpawnEnemy(
-        Vector2Int gridPosition)
+        Vector2Int gridPosition
+    )
     {
         if (gridManager == null)
         {
@@ -216,8 +237,10 @@ public class CombatManager : MonoBehaviour
         AttackUnit attackUnit =
             enemy.GetComponent<AttackUnit>();
 
-        if (health == null ||
-            attackUnit == null)
+        if (
+            health == null ||
+            attackUnit == null
+        )
         {
             Destroy(enemy);
             return false;
@@ -242,6 +265,7 @@ public class CombatManager : MonoBehaviour
         return true;
     }
 
+
     private List<Vector2Int> GetAvailableCells()
     {
         List<Vector2Int> cells =
@@ -258,12 +282,23 @@ public class CombatManager : MonoBehaviour
         int height =
             gridManager.GetHeight();
 
-        for (int x = 0; x < width; x++)
+        for (
+            int x = 0;
+            x < width;
+            x++
+        )
         {
-            for (int y = 0; y < height; y++)
+            for (
+                int y = 0;
+                y < height;
+                y++
+            )
             {
                 Vector2Int position =
-                    new Vector2Int(x, y);
+                    new Vector2Int(
+                        x,
+                        y
+                    );
 
                 if (!gridManager.IsCellOccupied(
                         position))
@@ -276,9 +311,10 @@ public class CombatManager : MonoBehaviour
         return cells;
     }
 
-    // ==================================================
+
+    // ============================================================
     // ACCESSORS
-    // ==================================================
+    // ============================================================
 
     public GridManager GetGridManager()
     {

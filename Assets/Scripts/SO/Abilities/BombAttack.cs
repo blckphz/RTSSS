@@ -28,10 +28,12 @@ public class BombAttack : AbilitySO
         return explosionPrefab;
     }
 
+
     public float GetExplosionDelay()
     {
         return explosionDelay;
     }
+
 
     public int GetExplosionRadius()
     {
@@ -42,11 +44,6 @@ public class BombAttack : AbilitySO
     // ==================================================
     // GET EXPLOSION TILES
     // ==================================================
-    // Kept available for other systems that may want to
-    // query the bomb's actual explosion area.
-    //
-    // This does NOT display anything.
-    // ==================================================
 
     public List<Vector2Int> GetExplosionTiles(
         GridManager gridManager,
@@ -55,23 +52,31 @@ public class BombAttack : AbilitySO
         List<Vector2Int> tiles =
             new List<Vector2Int>();
 
+
         if (gridManager == null)
         {
             return tiles;
         }
 
+
         int width =
             gridManager.GetWidth();
 
+
         int height =
             gridManager.GetHeight();
+
 
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 Vector2Int position =
-                    new Vector2Int(x, y);
+                    new Vector2Int(
+                        x,
+                        y
+                    );
+
 
                 if (gridManager.GetDistance(
                         centerPosition,
@@ -83,17 +88,27 @@ public class BombAttack : AbilitySO
             }
         }
 
+
         return tiles;
     }
 
 
     // ==================================================
-    // USE ABILITY
+    // USE AT TILE
     // ==================================================
+    //
+    // IMPORTANT:
+    //
+    // Bombs do NOT need a unit on the target tile.
+    //
+    // The clicked tile itself becomes the center of
+    // the explosion.
+    //
 
-    public override bool Use(
+    public override bool UseAtTile(
         GameObject user,
-        GameObject target)
+        GridManager gridManager,
+        Vector2Int targetTile)
     {
         // --------------------------------------------------
         // VALIDATION
@@ -102,83 +117,57 @@ public class BombAttack : AbilitySO
         if (user == null)
         {
             Debug.LogWarning(
-                "[BombAttack] Use failed: user is NULL."
+                "[BombAttack] UseAtTile failed: user is NULL."
             );
 
             return false;
         }
 
-        if (target == null)
+
+        if (gridManager == null)
         {
             Debug.LogWarning(
-                "[BombAttack] Use failed: target is NULL."
+                "[BombAttack] UseAtTile failed: GridManager is NULL."
             );
 
             return false;
         }
+
 
         if (explosionPrefab == null)
         {
             Debug.LogError(
-                "[BombAttack] Use failed: explosionPrefab is NULL."
+                "[BombAttack] UseAtTile failed: explosionPrefab is NULL."
             );
 
             return false;
         }
 
-
-        // --------------------------------------------------
-        // GRID
-        // --------------------------------------------------
-
-        GridManager gridManager =
-            Object.FindFirstObjectByType<GridManager>();
-
-        if (gridManager == null)
-        {
-            Debug.LogError(
-                "[BombAttack] Use failed: GridManager not found."
-            );
-
-            return false;
-        }
-
-
-        // --------------------------------------------------
-        // RANGE CHECK
-        // --------------------------------------------------
-
-        if (!CanHit(
-                gridManager,
-                user,
-                target
-            ))
-        {
-            Debug.LogWarning(
-                $"[BombAttack] Use failed: " +
-                $"target '{target.name}' is outside range."
-            );
-
-            return false;
-        }
-
-
-        // --------------------------------------------------
-        // TARGET TILE
-        // --------------------------------------------------
-
-        Vector2Int targetPosition =
-            gridManager.WorldToGridPosition(
-                target.transform.position
-            );
 
         if (!gridManager.IsInsideGrid(
-                targetPosition
-            ))
+                targetTile))
         {
             Debug.LogWarning(
-                $"[BombAttack] Use failed: " +
-                $"target tile {targetPosition} is outside grid."
+                $"[BombAttack] UseAtTile failed: " +
+                $"{targetTile} is outside the grid."
+            );
+
+            return false;
+        }
+
+
+        // --------------------------------------------------
+        // RANGE
+        // --------------------------------------------------
+
+        if (!CanHitTile(
+                gridManager,
+                user,
+                targetTile))
+        {
+            Debug.LogWarning(
+                $"[BombAttack] UseAtTile failed: " +
+                $"target tile {targetTile} is outside range."
             );
 
             return false;
@@ -191,8 +180,9 @@ public class BombAttack : AbilitySO
 
         Vector3 explosionPosition =
             gridManager.GridToWorldPosition(
-                targetPosition
+                targetTile
             );
+
 
         explosionPosition.z =
             user.transform.position.z;
@@ -209,10 +199,11 @@ public class BombAttack : AbilitySO
                 Quaternion.identity
             );
 
+
         if (explosion == null)
         {
             Debug.LogError(
-                "[BombAttack] Use failed: " +
+                "[BombAttack] UseAtTile failed: " +
                 "Instantiate returned NULL."
             );
 
@@ -227,30 +218,33 @@ public class BombAttack : AbilitySO
         ExplosionAttack explosionAttack =
             explosion.GetComponent<ExplosionAttack>();
 
+
         if (explosionAttack == null)
         {
             Debug.LogError(
-                $"[BombAttack] Use failed: " +
+                $"[BombAttack] UseAtTile failed: " +
                 $"explosion prefab '{explosionPrefab.name}' " +
                 $"does not contain an ExplosionAttack component."
             );
 
-            Object.Destroy(explosion);
+
+            Object.Destroy(
+                explosion
+            );
+
 
             return false;
         }
 
 
         // --------------------------------------------------
-        // IMPORTANT:
-        // SET EVERYTHING BEFORE INITIALIZE
-        //
-        // Initialize() may immediately call Explode().
+        // CONFIGURE EXPLOSION
         // --------------------------------------------------
 
         explosionAttack.SetExplosionRadius(
             explosionRadius
         );
+
 
         explosionAttack.SetExplosionDelay(
             explosionDelay
@@ -271,14 +265,101 @@ public class BombAttack : AbilitySO
         // --------------------------------------------------
 
         Debug.Log(
-            $"[BombAttack] Bomb spawned successfully. " +
-            $"User={user.name}, " +
-            $"Target={target.name}, " +
-            $"Tile={targetPosition}, " +
+            $"[BombAttack] Bomb placed at tile " +
+            $"{targetTile}. " +
             $"Radius={explosionRadius}, " +
             $"Delay={explosionDelay}"
         );
 
+
         return true;
+    }
+
+
+    // ==================================================
+    // USE ON GAMEOBJECT
+    // ==================================================
+    //
+    // Kept for compatibility with other systems that
+    // may call Use(user, target).
+    //
+    // UIManager uses UseAtTile() for bombs.
+    //
+
+    public override bool Use(
+        GameObject user,
+        GameObject target)
+    {
+        // --------------------------------------------------
+        // VALIDATION
+        // --------------------------------------------------
+
+        if (user == null)
+        {
+            Debug.LogWarning(
+                "[BombAttack] Use failed: user is NULL."
+            );
+
+            return false;
+        }
+
+
+        if (target == null)
+        {
+            Debug.LogWarning(
+                "[BombAttack] Use failed: target is NULL."
+            );
+
+            return false;
+        }
+
+
+        if (explosionPrefab == null)
+        {
+            Debug.LogError(
+                "[BombAttack] Use failed: explosionPrefab is NULL."
+            );
+
+            return false;
+        }
+
+
+        // --------------------------------------------------
+        // GRID
+        // --------------------------------------------------
+
+        GridManager gridManager =
+            Object.FindFirstObjectByType<GridManager>();
+
+
+        if (gridManager == null)
+        {
+            Debug.LogError(
+                "[BombAttack] Use failed: GridManager not found."
+            );
+
+            return false;
+        }
+
+
+        // --------------------------------------------------
+        // TARGET TILE
+        // --------------------------------------------------
+
+        Vector2Int targetPosition =
+            gridManager.WorldToGridPosition(
+                target.transform.position
+            );
+
+
+        // --------------------------------------------------
+        // USE AS TILE TARGET
+        // --------------------------------------------------
+
+        return UseAtTile(
+            user,
+            gridManager,
+            targetPosition
+        );
     }
 }

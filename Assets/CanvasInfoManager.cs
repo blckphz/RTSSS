@@ -18,13 +18,17 @@ public class CanvasInfoManager : MonoBehaviour
     private int lastHoveredAbilityIndex = -1;
     private int lastLinkIndex = -1;
 
+    private int selectedAbilityIndex = -1;
+
+    private AbilitySO selectedAbility;
+
     private readonly StringBuilder textBuilder =
         new StringBuilder();
 
 
-    // ==================================================
+    // ============================================================
     // UNITY
-    // ==================================================
+    // ============================================================
 
     private void Awake()
     {
@@ -37,9 +41,9 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // SETUP
-    // ==================================================
+    // ============================================================
 
     private void SetupReferences()
     {
@@ -64,9 +68,9 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // SHOW CHARACTER
-    // ==================================================
+    // ============================================================
 
     public void ShowCharacter(
         ICharacterHolder characterHolder)
@@ -83,8 +87,6 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
-
     public void ShowCharacter(
         CharacterSO character)
     {
@@ -97,14 +99,17 @@ public class CanvasInfoManager : MonoBehaviour
         lastHoveredAbilityIndex = -1;
         lastLinkIndex = -1;
 
+        selectedAbilityIndex = -1;
+        selectedAbility = null;
+
         ClearAbilityHighlights();
 
         textBuilder.Clear();
 
 
-        // ==================================================
+        // ========================================================
         // CHARACTER
-        // ==================================================
+        // ========================================================
 
         textBuilder.AppendLine(
             $"<b>{character.characterName}</b>\n"
@@ -119,9 +124,9 @@ public class CanvasInfoManager : MonoBehaviour
         );
 
 
-        // ==================================================
+        // ========================================================
         // ABILITIES
-        // ==================================================
+        // ========================================================
 
         List<AbilitySO> abilities =
             character.GetAbilities();
@@ -133,9 +138,11 @@ public class CanvasInfoManager : MonoBehaviour
                 "<b>Abilities</b>\n"
             );
 
-            for (int i = 0;
-                 i < abilities.Count;
-                 i++)
+            for (
+                int i = 0;
+                i < abilities.Count;
+                i++
+            )
             {
                 AbilitySO ability =
                     abilities[i];
@@ -159,9 +166,18 @@ public class CanvasInfoManager : MonoBehaviour
                     ability.GetDescription()
                 );
 
-                textBuilder.AppendLine(
-                    $"Damage: {ability.GetDamage()}"
-                );
+                if (ability is HealAbilitySO healAbility)
+                {
+                    textBuilder.AppendLine(
+                        $"Heal: {healAbility.GetHealAmount()}"
+                    );
+                }
+                else
+                {
+                    textBuilder.AppendLine(
+                        $"Damage: {ability.GetDamage()}"
+                    );
+                }
 
                 textBuilder.AppendLine(
                     $"Range: {ability.GetRange()}"
@@ -184,9 +200,9 @@ public class CanvasInfoManager : MonoBehaviour
         }
 
 
-        // ==================================================
+        // ========================================================
         // TEXT
-        // ==================================================
+        // ========================================================
 
         if (infoText != null)
         {
@@ -197,9 +213,9 @@ public class CanvasInfoManager : MonoBehaviour
         }
 
 
-        // ==================================================
+        // ========================================================
         // ICON
-        // ==================================================
+        // ========================================================
 
         if (characterIcon != null)
         {
@@ -212,9 +228,9 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
-    // ABILITY HOVER
-    // ==================================================
+    // ============================================================
+    // HOVER
+    // ============================================================
 
     private void CheckAbilityHover()
     {
@@ -238,11 +254,6 @@ public class CanvasInfoManager : MonoBehaviour
                 eventCamera
             );
 
-
-        // ==================================================
-        // NOTHING CHANGED
-        // ==================================================
-
         if (linkIndex == lastLinkIndex)
         {
             return;
@@ -251,21 +262,11 @@ public class CanvasInfoManager : MonoBehaviour
         lastLinkIndex =
             linkIndex;
 
-
-        // ==================================================
-        // MOUSE IS NO LONGER OVER A LINK
-        // ==================================================
-
         if (linkIndex == -1)
         {
             ClearAbilityHover();
             return;
         }
-
-
-        // ==================================================
-        // VALIDATE LINK
-        // ==================================================
 
         TMP_TextInfo textInfo =
             infoText.textInfo;
@@ -283,22 +284,11 @@ public class CanvasInfoManager : MonoBehaviour
         string linkId =
             link.GetLinkID();
 
-
-        // ==================================================
-        // ONLY ABILITY LINKS
-        // ==================================================
-
-        if (!linkId.StartsWith(
-                "ability_"))
+        if (!linkId.StartsWith("ability_"))
         {
             ClearAbilityHover();
             return;
         }
-
-
-        // ==================================================
-        // GET ABILITY INDEX
-        // ==================================================
 
         string indexString =
             linkId.Substring(
@@ -313,12 +303,8 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
-
-        // ==================================================
-        // SAME ABILITY
-        // ==================================================
-
-        if (abilityIndex == lastHoveredAbilityIndex)
+        if (abilityIndex ==
+            lastHoveredAbilityIndex)
         {
             return;
         }
@@ -326,10 +312,167 @@ public class CanvasInfoManager : MonoBehaviour
         lastHoveredAbilityIndex =
             abilityIndex;
 
+        ShowAbilityRange(
+            abilityIndex
+        );
+    }
 
-        // ==================================================
-        // SHOW RANGE
-        // ==================================================
+
+    // ============================================================
+    // POINTER OVER ABILITY
+    // ============================================================
+
+    public bool IsPointerOverAbilityLink()
+    {
+        if (infoText == null ||
+            !infoText.gameObject.activeInHierarchy ||
+            Mouse.current == null)
+        {
+            return false;
+        }
+
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
+
+        int linkIndex =
+            TMP_TextUtilities.FindIntersectingLink(
+                infoText,
+                mousePosition,
+                GetEventCamera()
+            );
+
+        if (linkIndex < 0)
+        {
+            return false;
+        }
+
+        TMP_TextInfo textInfo =
+            infoText.textInfo;
+
+        if (linkIndex >= textInfo.linkCount)
+        {
+            return false;
+        }
+
+        TMP_LinkInfo link =
+            textInfo.linkInfo[linkIndex];
+
+        return link.GetLinkID()
+            .StartsWith("ability_");
+    }
+
+
+    // ============================================================
+    // SELECT ABILITY UNDER MOUSE
+    // ============================================================
+
+    public bool TrySelectAbilityUnderMouse()
+    {
+        if (infoText == null ||
+            !infoText.gameObject.activeInHierarchy ||
+            Mouse.current == null)
+        {
+            return false;
+        }
+
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
+
+        int linkIndex =
+            TMP_TextUtilities.FindIntersectingLink(
+                infoText,
+                mousePosition,
+                GetEventCamera()
+            );
+
+        if (linkIndex < 0)
+        {
+            return false;
+        }
+
+        TMP_TextInfo textInfo =
+            infoText.textInfo;
+
+        if (linkIndex >= textInfo.linkCount)
+        {
+            return false;
+        }
+
+        TMP_LinkInfo link =
+            textInfo.linkInfo[linkIndex];
+
+        string linkId =
+            link.GetLinkID();
+
+        if (!linkId.StartsWith("ability_"))
+        {
+            return false;
+        }
+
+        string indexString =
+            linkId.Substring(
+                "ability_".Length
+            );
+
+        if (!int.TryParse(
+                indexString,
+                out int abilityIndex))
+        {
+            return false;
+        }
+
+        SelectAbility(
+            abilityIndex
+        );
+
+        return true;
+    }
+
+
+    // ============================================================
+    // SELECT ABILITY
+    // ============================================================
+
+    private void SelectAbility(
+        int abilityIndex)
+    {
+        if (UIManager.CurrentSelection == null)
+        {
+            return;
+        }
+
+        CharacterSO character =
+            UIManager.CurrentSelection
+                .GetCharacterData();
+
+        if (character == null)
+        {
+            return;
+        }
+
+        List<AbilitySO> abilities =
+            character.GetAbilities();
+
+        if (abilities == null ||
+            abilityIndex < 0 ||
+            abilityIndex >= abilities.Count)
+        {
+            return;
+        }
+
+        AbilitySO ability =
+            abilities[abilityIndex];
+
+        if (ability == null)
+        {
+            return;
+        }
+
+        selectedAbilityIndex =
+            abilityIndex;
+
+        selectedAbility =
+            ability;
 
         ShowAbilityRange(
             abilityIndex
@@ -337,9 +480,29 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
+    // GET SELECTED
+    // ============================================================
+
+    public AbilitySO GetSelectedAbility()
+    {
+        return selectedAbility;
+    }
+
+    public int GetSelectedAbilityIndex()
+    {
+        return selectedAbilityIndex;
+    }
+
+    public bool HasSelectedAbility()
+    {
+        return selectedAbility != null;
+    }
+
+
+    // ============================================================
     // EVENT CAMERA
-    // ==================================================
+    // ============================================================
 
     private Camera GetEventCamera()
     {
@@ -366,66 +529,24 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CLEAR HOVER
-    // ==================================================
+    // ============================================================
 
     private void ClearAbilityHover()
     {
         lastHoveredAbilityIndex = -1;
 
-        ClearAbilityHighlights();
+        if (selectedAbility == null)
+        {
+            ClearAbilityHighlights();
+        }
     }
 
 
-    // ==================================================
+    // ============================================================
     // SHOW ABILITY RANGE
-    // ==================================================
-    //
-    // This is the TARGETING RANGE preview.
-    //
-    // It intentionally uses:
-    //
-    //     GetRangeTiles()
-    //
-    // NOT:
-    //
-    //     GetHitboxTiles()
-    //
-    // Therefore FrontAttack displays its FULL BOX.
-    //
-    // Range 1:
-    //
-    // XXX
-    // XOX
-    // XXX
-    //
-    // Range 2:
-    //
-    // XXXXX
-    // XXXXX
-    // XXOXX
-    // XXXXX
-    // XXXXX
-    //
-    // Range 4:
-    //
-    // XXXXXXXXX
-    // XXXXXXXXX
-    // XXXXXXXXX
-    // XXXXXXXXX
-    // XXXXOXXXX
-    // XXXXXXXXX
-    // XXXXXXXXX
-    // XXXXXXXXX
-    // XXXXXXXXX
-    //
-    // The character's facing direction does NOT affect
-    // this preview.
-    //
-    // The actual FrontAttack hitbox is handled separately
-    // by FrontAttack.GetHitboxTiles().
-    // ==================================================
+    // ============================================================
 
     private void ShowAbilityRange(
         int abilityIndex)
@@ -435,11 +556,6 @@ public class CanvasInfoManager : MonoBehaviour
         {
             return;
         }
-
-
-        // ==================================================
-        // GET CURRENTLY SELECTED CHARACTER
-        // ==================================================
 
         if (UIManager.CurrentSelection == null)
         {
@@ -457,11 +573,6 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
-
-        // ==================================================
-        // GET ABILITIES
-        // ==================================================
-
         List<AbilitySO> abilities =
             character.GetAbilities();
 
@@ -472,11 +583,6 @@ public class CanvasInfoManager : MonoBehaviour
             ClearAbilityHighlights();
             return;
         }
-
-
-        // ==================================================
-        // GET ABILITY
-        // ==================================================
 
         AbilitySO ability =
             abilities[abilityIndex];
@@ -490,19 +596,6 @@ public class CanvasInfoManager : MonoBehaviour
             ClearAbilityHighlights();
             return;
         }
-
-
-        // ==================================================
-        // GET TARGETING RANGE
-        // ==================================================
-        //
-        // GetRangeTiles() returns the actual targeting
-        // range defined by the AbilitySO.
-        //
-        // FrontAttack overrides this and returns a FULL BOX.
-        //
-        // We do NOT call GetHitboxTiles() here.
-        // ==================================================
 
         List<Vector2Int> rangeTiles =
             ability.GetRangeTiles(
@@ -518,22 +611,24 @@ public class CanvasInfoManager : MonoBehaviour
         }
 
 
-        // ==================================================
-        // SHOW ABSOLUTE GRID POSITIONS
-        // ==================================================
-        //
-        // GetRangeTiles() already returns absolute grid
-        // positions, so there is no need to rotate or
-        // offset anything.
-        //
-        // IMPORTANT:
-        //
-        // Pass selectedObject as the USER/CASTER.
-        //
-        // GridHighlightManager needs this object to
-        // compare the caster's team against the target's
-        // team.
-        // ==================================================
+        // ========================================================
+        // HEAL ABILITY
+        // ========================================================
+
+        if (ability is HealAbilitySO)
+        {
+            highlightManager.ShowHealTiles(
+                rangeTiles,
+                selectedObject
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // NORMAL ABILITY
+        // ========================================================
 
         highlightManager.ShowAbilityTiles(
             rangeTiles,
@@ -542,9 +637,9 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CLEAR HIGHLIGHTS
-    // ==================================================
+    // ============================================================
 
     private void ClearAbilityHighlights()
     {
@@ -557,14 +652,17 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CLEAR INFO
-    // ==================================================
+    // ============================================================
 
     public void ClearInfo()
     {
         lastHoveredAbilityIndex = -1;
         lastLinkIndex = -1;
+
+        selectedAbilityIndex = -1;
+        selectedAbility = null;
 
         ClearAbilityHighlights();
 
@@ -579,5 +677,17 @@ public class CanvasInfoManager : MonoBehaviour
             characterIcon.sprite = null;
             characterIcon.enabled = false;
         }
+    }
+
+
+    public void ClearSelectedAbility()
+    {
+        selectedAbilityIndex = -1;
+        selectedAbility = null;
+
+        lastHoveredAbilityIndex = -1;
+        lastLinkIndex = -1;
+
+        ClearAbilityHighlights();
     }
 }

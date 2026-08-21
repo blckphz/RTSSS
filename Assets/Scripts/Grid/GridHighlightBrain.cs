@@ -22,11 +22,18 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void Awake()
     {
+        FindReferences();
+    }
+
+
+    private void FindReferences()
+    {
         if (gridManager == null)
         {
             gridManager =
                 GetComponent<GridManager>();
         }
+
 
         if (gridManager == null)
         {
@@ -41,6 +48,7 @@ public class GridHighlightBrain : MonoBehaviour
                 GetComponent<GridHighlightManager>();
         }
 
+
         if (highlightManager == null)
         {
             highlightManager =
@@ -48,22 +56,28 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        if (gridManager == null &&
-            enableDebugLogs)
+        if (
+            gridManager == null &&
+            enableDebugLogs
+        )
         {
             Debug.LogError(
                 "[GridHighlightBrain] " +
-                "GridManager reference is missing!"
+                "GridManager reference is missing!",
+                this
             );
         }
 
 
-        if (highlightManager == null &&
-            enableDebugLogs)
+        if (
+            highlightManager == null &&
+            enableDebugLogs
+        )
         {
             Debug.LogError(
                 "[GridHighlightBrain] " +
-                "GridHighlightManager reference is missing!"
+                "GridHighlightManager reference is missing!",
+                this
             );
         }
     }
@@ -78,10 +92,41 @@ public class GridHighlightBrain : MonoBehaviour
         int range,
         GameObject user = null)
     {
-        if (gridManager == null ||
-            highlightManager == null)
+        if (
+            gridManager == null ||
+            highlightManager == null
+        )
         {
             return;
+        }
+
+
+        if (user != null)
+        {
+            UnitMoveBrain moveBrain =
+                user.GetComponent<UnitMoveBrain>();
+
+
+            if (
+                moveBrain != null &&
+                !moveBrain.CanMoveThisTurn()
+            )
+            {
+                highlightManager.ClearMovementRange();
+
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log(
+                        $"[GridHighlightBrain] " +
+                        $"Movement range blocked for " +
+                        $"{user.name}. Movement already consumed."
+                    );
+                }
+
+
+                return;
+            }
         }
 
 
@@ -137,17 +182,14 @@ public class GridHighlightBrain : MonoBehaviour
         int width =
             gridManager.GetWidth();
 
+
         int height =
             gridManager.GetHeight();
 
 
-        for (int x = 0;
-             x < width;
-             x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int y = 0;
-                 y < height;
-                 y++)
+            for (int y = 0; y < height; y++)
             {
                 Vector2Int position =
                     new Vector2Int(
@@ -156,8 +198,7 @@ public class GridHighlightBrain : MonoBehaviour
                     );
 
 
-                if (position ==
-                    centerPosition)
+                if (position == centerPosition)
                 {
                     continue;
                 }
@@ -176,8 +217,6 @@ public class GridHighlightBrain : MonoBehaviour
                 }
 
 
-                // Occupied cells cannot be
-                // movement destinations.
                 if (gridManager.IsCellOccupied(
                         position))
                 {
@@ -195,15 +234,17 @@ public class GridHighlightBrain : MonoBehaviour
 
 
     // =============================================================
-    // ABILITY RANGE
+    // BASIC ABILITY RANGE
     // =============================================================
 
     public void ShowAbilityRange(
         Vector2Int centerPosition,
         int range)
     {
-        if (gridManager == null ||
-            highlightManager == null)
+        if (
+            gridManager == null ||
+            highlightManager == null
+        )
         {
             return;
         }
@@ -248,17 +289,14 @@ public class GridHighlightBrain : MonoBehaviour
         int width =
             gridManager.GetWidth();
 
+
         int height =
             gridManager.GetHeight();
 
 
-        for (int x = 0;
-             x < width;
-             x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int y = 0;
-                 y < height;
-                 y++)
+            for (int y = 0; y < height; y++)
             {
                 Vector2Int position =
                     new Vector2Int(
@@ -267,8 +305,7 @@ public class GridHighlightBrain : MonoBehaviour
                     );
 
 
-                if (position ==
-                    centerPosition)
+                if (position == centerPosition)
                 {
                     continue;
                 }
@@ -307,15 +344,19 @@ public class GridHighlightBrain : MonoBehaviour
         AbilitySO ability,
         GameObject user)
     {
-        if (gridManager == null ||
-            highlightManager == null)
+        if (
+            gridManager == null ||
+            highlightManager == null
+        )
         {
             return;
         }
 
 
-        if (ability == null ||
-            user == null)
+        if (
+            ability == null ||
+            user == null
+        )
         {
             highlightManager.ClearAbilityRange();
             return;
@@ -337,15 +378,87 @@ public class GridHighlightBrain : MonoBehaviour
 
 
         List<Vector2Int> validTiles =
-            FilterValidTiles(
+            FilterValidAbilityTiles(
+                ability,
+                user,
                 rangeTiles
             );
 
 
+        bool isHealAbility =
+            ability is HealAbilitySO;
+
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                $"[GridHighlightBrain] " +
+                $"Showing ability '{ability.name}'. " +
+                $"Heal: {isHealAbility}. " +
+                $"Valid tiles: {validTiles.Count}."
+            );
+        }
+
+
         highlightManager.ShowAbilityTiles(
             validTiles,
-            user
+            user,
+            isHealAbility
         );
+    }
+
+
+    private List<Vector2Int> FilterValidAbilityTiles(
+        AbilitySO ability,
+        GameObject user,
+        List<Vector2Int> positions)
+    {
+        List<Vector2Int> validTiles =
+            new List<Vector2Int>();
+
+
+        if (
+            ability == null ||
+            user == null ||
+            positions == null
+        )
+        {
+            return validTiles;
+        }
+
+
+        foreach (Vector2Int position in positions)
+        {
+            if (!gridManager.IsInsideGrid(
+                    position))
+            {
+                continue;
+            }
+
+
+            if (validTiles.Contains(
+                    position))
+            {
+                continue;
+            }
+
+
+            bool canHit =
+                ability.CanHitTile(
+                    gridManager,
+                    user,
+                    position
+                );
+
+
+            if (canHit)
+            {
+                validTiles.Add(position);
+            }
+        }
+
+
+        return validTiles;
     }
 
 
@@ -357,8 +470,10 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> positions,
         GameObject user = null)
     {
-        if (gridManager == null ||
-            highlightManager == null)
+        if (
+            gridManager == null ||
+            highlightManager == null
+        )
         {
             return;
         }
@@ -386,9 +501,11 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> offsets,
         GameObject user = null)
     {
-        if (gridManager == null ||
+        if (
+            gridManager == null ||
             highlightManager == null ||
-            offsets == null)
+            offsets == null
+        )
         {
             return;
         }
@@ -398,8 +515,10 @@ public class GridHighlightBrain : MonoBehaviour
             new List<Vector2Int>();
 
 
-        foreach (Vector2Int offset
-                 in offsets)
+        foreach (
+            Vector2Int offset
+            in offsets
+        )
         {
             Vector2Int position =
                 origin + offset;
@@ -412,7 +531,10 @@ public class GridHighlightBrain : MonoBehaviour
             }
 
 
-            cells.Add(position);
+            if (!cells.Contains(position))
+            {
+                cells.Add(position);
+            }
         }
 
 
@@ -430,8 +552,10 @@ public class GridHighlightBrain : MonoBehaviour
     public void ShowAbilityCell(
         Vector2Int position)
     {
-        if (gridManager == null ||
-            highlightManager == null)
+        if (
+            gridManager == null ||
+            highlightManager == null
+        )
         {
             return;
         }
@@ -467,8 +591,10 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        foreach (Vector2Int position
-                 in positions)
+        foreach (
+            Vector2Int position
+            in positions
+        )
         {
             if (!gridManager.IsInsideGrid(
                     position))
@@ -507,8 +633,10 @@ public class GridHighlightBrain : MonoBehaviour
             unit.GetComponent<AttackUnit>();
 
 
-        if (attackUnit != null &&
-            !attackUnit.IsDead())
+        if (
+            attackUnit != null &&
+            !attackUnit.IsDead()
+        )
         {
             if (sourceUser != null)
             {
@@ -533,8 +661,10 @@ public class GridHighlightBrain : MonoBehaviour
             unit.GetComponent<HealthManager>();
 
 
-        if (targetHealth != null &&
-            !targetHealth.IsDead())
+        if (
+            targetHealth != null &&
+            !targetHealth.IsDead()
+        )
         {
             if (sourceUser != null)
             {

@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fed2dc7bc9ea0f4ca986cdbbf4b1eef, type: 3}
   m_Name: BasicAttack
   m_EditorClassIdentifier: Assembly-CSharp::RadiusAttack
-  abilityName: grenade
+  abilityName: bomb
   description: 
   damage: 10
-  cooldown: 0
+  cooldown: 3
+  canAttackWithThisAfterMove: 0
   usesPerTurn: 1
   useDuration: 0.5
   range: 7

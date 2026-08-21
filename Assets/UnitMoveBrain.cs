@@ -21,18 +21,14 @@ public class UnitMoveBrain : MonoBehaviour
     [SerializeField, Min(1)]
     private int attackRange = 1;
 
-
     [SerializeField]
     private bool preferLowHealthEnemies = true;
-
 
     [SerializeField]
     private bool preferCloserEnemies = true;
 
-
     [SerializeField]
     private bool avoidMovingThroughEnemies = true;
-
 
     [SerializeField]
     private bool avoidMovingThroughAllies = true;
@@ -42,14 +38,11 @@ public class UnitMoveBrain : MonoBehaviour
     [SerializeField]
     private bool preferCloserAttackPosition = true;
 
-
     [SerializeField]
     private bool preferMoreOpenPositions = true;
 
-
     [SerializeField]
     private bool preferSidePositions = true;
-
 
     [SerializeField]
     private bool allowMovingAwayToGoAroundObstacles = true;
@@ -60,11 +53,8 @@ public class UnitMoveBrain : MonoBehaviour
     private bool debugMovement = true;
 
 
-    // ==================================================
-    // DATA
-    // ==================================================
-
     private bool isMoving;
+    private bool movementConsumed;
 
 
     private static readonly Vector2Int[] Directions =
@@ -76,30 +66,38 @@ public class UnitMoveBrain : MonoBehaviour
     };
 
 
-    // ==================================================
-    // DEBUG
-    // ==================================================
+    // ============================================================
+    // CACHE
+    // ============================================================
 
-    private void MoveDebug(
-        string message)
-    {
-        if (!debugMovement)
-        {
-            return;
-        }
+    private readonly List<Vector2Int>
+        pathCache =
+        new List<Vector2Int>(32);
+
+    private readonly List<Vector2Int>
+        candidatesCache =
+        new List<Vector2Int>(16);
+
+    private readonly Dictionary<Vector2Int, Vector2Int>
+        cameFromCache =
+        new Dictionary<Vector2Int, Vector2Int>(128);
+
+    private readonly Dictionary<Vector2Int, int>
+        gScoreCache =
+        new Dictionary<Vector2Int, int>(128);
+
+    private readonly HashSet<Vector2Int>
+        visitedCache =
+        new HashSet<Vector2Int>(128);
+
+    private readonly PriorityQueue<Vector2Int>
+        openSetCache =
+        new PriorityQueue<Vector2Int>();
 
 
-        Debug.Log(
-            $"[UnitMoveBrain] " +
-            $"{gameObject.name}: {message}",
-            gameObject
-        );
-    }
-
-
-    // ==================================================
+    // ============================================================
     // UNITY
-    // ==================================================
+    // ============================================================
 
     private void Awake()
     {
@@ -109,211 +107,212 @@ public class UnitMoveBrain : MonoBehaviour
                 GetComponent<AttackUnit>();
         }
 
-
         EnsureGridManager();
 
-
-        MoveDebug(
-            $"Awake. AttackUnit=" +
-            $"{(attackUnit != null ? "FOUND" : "NULL")}, " +
-            $"GridManager=" +
-            $"{(gridManager != null ? "FOUND" : "NULL")}"
-        );
+        movementConsumed = false;
+        isMoving = false;
     }
 
 
-    // ==================================================
-    // PLAYER MOVEMENT
-    // ==================================================
+    // ============================================================
+    // MOVEMENT STATE
+    // ============================================================
+
+    public bool CanUseAIMovement()
+    {
+        if (
+            attackUnit == null ||
+            attackUnit.IsDead()
+        )
+        {
+            return false;
+        }
+
+        return attackUnit.GetTeam() != Team.Player;
+    }
+
+
+    public bool CanMoveThisTurn()
+    {
+        return
+            !isMoving &&
+            !movementConsumed &&
+            CanMove();
+    }
+
+
+    public void ConsumeMovement()
+    {
+        movementConsumed = true;
+
+        if (debugMovement)
+        {
+            Debug.Log(
+                $"[MoveBrain] {gameObject.name} movement CONSUMED.",
+                gameObject
+            );
+        }
+    }
+
+
+    public void ResetMovement()
+    {
+        movementConsumed = false;
+
+        if (debugMovement)
+        {
+            Debug.Log(
+                $"[MoveBrain] {gameObject.name} movement RESET.",
+                gameObject
+            );
+        }
+    }
+
+
+    public bool HasConsumedMovement()
+    {
+        return movementConsumed;
+    }
+
+
+    // ============================================================
+    // ATTACK AFTER MOVEMENT CHECK
+    // ============================================================
+
+    public bool CanAttackAfterMoving(
+        AbilitySO ability
+    )
+    {
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+        if (ability == null)
+        {
+            return false;
+        }
+
+        if (!movementConsumed)
+        {
+            return true;
+        }
+
+        return ability.CanAttackWithThisAfterMove();
+    }
+
+
+    // ============================================================
+    // MANUAL MOVEMENT
+    // ============================================================
 
     public bool TryMoveTo(
-        Vector2Int destination)
+        Vector2Int destination
+    )
     {
-        if (isMoving)
-        {
-            MoveDebug(
-                "FAILED: Unit is already moving."
-            );
-
-            return false;
-        }
-
-
-        if (!CanMove())
+        if (
+            isMoving ||
+            !CanMoveThisTurn()
+        )
         {
             return false;
         }
-
 
         EnsureGridManager();
 
-
         if (gridManager == null)
         {
-            MoveDebug(
-                "FAILED: GridManager is NULL."
-            );
-
             return false;
         }
-
 
         Vector2Int start =
             gridManager.WorldToGridPosition(
                 transform.position
             );
 
-
-        if (start == destination)
+        if (
+            start == destination ||
+            !gridManager.IsInsideGrid(destination) ||
+            gridManager.IsCellOccupied(destination)
+        )
         {
             return false;
         }
-
-
-        if (!gridManager.IsInsideGrid(
-                destination))
-        {
-            MoveDebug(
-                $"FAILED: {destination} " +
-                "outside grid."
-            );
-
-            return false;
-        }
-
-
-        if (gridManager.IsCellOccupied(
-                destination))
-        {
-            MoveDebug(
-                $"FAILED: {destination} " +
-                "is occupied."
-            );
-
-            return false;
-        }
-
 
         int moveRange =
             GetMoveRange();
 
-
         if (moveRange <= 0)
         {
-            MoveDebug(
-                "FAILED: Move range is 0."
-            );
-
             return false;
         }
 
-
-        // ==================================================
-        // FIND ACTUAL PATH
-        // ==================================================
-
-        List<Vector2Int> path =
-            FindPath(
+        if (!FindPath(
                 start,
-                destination
-            );
-
-
-        if (path == null ||
-            path.Count < 2)
+                destination,
+                pathCache))
         {
-            MoveDebug(
-                $"FAILED: No path from " +
-                $"{start} to {destination}."
-            );
-
             return false;
         }
-
 
         int movementCost =
-            path.Count - 1;
-
+            pathCache.Count - 1;
 
         if (movementCost > moveRange)
         {
-            MoveDebug(
-                $"FAILED: Destination requires " +
-                $"{movementCost} movement, " +
-                $"but range is {moveRange}."
-            );
-
             return false;
         }
 
-
-        MoveDebug(
-            $"PLAYER MOVE: " +
-            $"{start} -> {destination}. " +
-            $"Cost={movementCost}, " +
-            $"Range={moveRange}"
-        );
-
+        ConsumeMovement();
 
         StartCoroutine(
-            MoveAlongPath(path)
+            MoveAlongPath(pathCache)
         );
-
 
         return true;
     }
 
 
-    // ==================================================
-    // PLAYER PATH MOVEMENT
-    // ==================================================
+    // ============================================================
+    // MOVE ALONG PATH
+    // ============================================================
 
     private IEnumerator MoveAlongPath(
-        List<Vector2Int> path)
+        List<Vector2Int> path
+    )
     {
-        if (path == null ||
-            path.Count < 2)
+        if (
+            path == null ||
+            path.Count < 2
+        )
         {
             yield break;
         }
 
-
         isMoving = true;
 
-
-        for (int i = 1;
-             i < path.Count;
-             i++)
+        for (
+            int i = 1;
+            i < path.Count;
+            i++
+        )
         {
             Vector2Int currentPosition =
                 gridManager.WorldToGridPosition(
                     transform.position
                 );
 
-
             Vector2Int nextPosition =
                 path[i];
 
-
-            // ==================================================
-            // SAFETY
-            // ==================================================
-
-            if (!gridManager.IsInsideGrid(
-                    nextPosition))
+            if (
+                !gridManager.IsInsideGrid(
+                    nextPosition
+                )
+            )
             {
-                MoveDebug(
-                    $"Movement stopped. " +
-                    $"{nextPosition} outside grid."
-                );
-
                 break;
             }
-
-
-            // ==================================================
-            // RESERVE NEXT CELL
-            // ==================================================
 
             bool movementStarted =
                 gridManager.StartMoveUnit(
@@ -322,41 +321,24 @@ public class UnitMoveBrain : MonoBehaviour
                     nextPosition
                 );
 
-
             if (!movementStarted)
             {
-                MoveDebug(
-                    $"Movement stopped. " +
-                    $"Could not reserve {nextPosition}."
-                );
-
                 break;
             }
 
-
-            // ==================================================
-            // WORLD POSITIONS
-            // ==================================================
-
             Vector3 startWorldPosition =
                 transform.position;
-
 
             Vector3 targetWorldPosition =
                 gridManager.GridToWorldPosition(
                     nextPosition
                 );
 
+            float elapsed = 0f;
 
-            float elapsed =
-                0f;
-
-
-            // ==================================================
-            // SMOOTH MOVEMENT
-            // ==================================================
-
-            while (elapsed < moveDuration)
+            while (
+                elapsed < moveDuration
+            )
             {
                 if (!CanMove())
                 {
@@ -366,25 +348,18 @@ public class UnitMoveBrain : MonoBehaviour
                     break;
                 }
 
-
                 elapsed +=
                     Time.deltaTime;
 
-
                 float progress =
-                    Mathf.Clamp01(
-                        elapsed /
-                        moveDuration
-                    );
-
-
-                progress =
                     Mathf.SmoothStep(
                         0f,
                         1f,
-                        progress
+                        Mathf.Clamp01(
+                            elapsed /
+                            moveDuration
+                        )
                     );
-
 
                 transform.position =
                     Vector3.Lerp(
@@ -393,136 +368,73 @@ public class UnitMoveBrain : MonoBehaviour
                         progress
                     );
 
-
                 yield return null;
             }
 
-
-            // ==================================================
-            // FINAL POSITION
-            // ==================================================
-
             transform.position =
                 targetWorldPosition;
-
 
             gridManager.FinishMoveUnit(
                 gameObject,
                 nextPosition
             );
 
-
             yield return null;
         }
 
-
         isMoving = false;
-
-
-        MoveDebug(
-            "PLAYER MOVEMENT COMPLETE."
-        );
     }
 
 
-    // ==================================================
+    // ============================================================
     // AI MOVEMENT
-    // ==================================================
+    // ============================================================
 
     public IEnumerator MoveTowardsEnemy()
     {
-        if (isMoving)
-        {
-            MoveDebug(
-                "FAILED: Unit is already moving."
-            );
-
-            yield break;
-        }
-
-
-        if (!CanMove())
+        if (
+            !CanUseAIMovement() ||
+            isMoving ||
+            !CanMoveThisTurn()
+        )
         {
             yield break;
         }
-
 
         EnsureGridManager();
 
-
         if (gridManager == null)
         {
-            MoveDebug(
-                "FAILED: GridManager is NULL."
-            );
-
             yield break;
         }
-
-
-        // ==================================================
-        // FIND BEST TARGET
-        // ==================================================
 
         AttackUnit target =
             FindBestTarget();
 
-
         if (target == null)
         {
-            MoveDebug(
-                "FAILED: No valid enemy found."
-            );
-
             yield break;
         }
-
 
         Vector2Int currentPosition =
             gridManager.WorldToGridPosition(
                 transform.position
             );
 
-
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
 
-
-        MoveDebug(
-            $"Target selected: {target.name}. " +
-            $"Current={currentPosition}, " +
-            $"Target={targetPosition}"
-        );
-
-
-        // ==================================================
-        // CHECK CURRENT RANGE
-        // ==================================================
-
-        int currentDistance =
+        if (
             gridManager.GetDistance(
                 currentPosition,
                 targetPosition
-            );
-
-
-        if (currentDistance <= attackRange)
+            ) <= attackRange
+        )
         {
-            MoveDebug(
-                $"Already in attack range. " +
-                $"Distance={currentDistance}, " +
-                $"Range={attackRange}"
-            );
-
             yield break;
         }
-
-
-        // ==================================================
-        // FIND BEST ATTACK POSITION
-        // ==================================================
 
         Vector2Int attackPosition =
             FindBestAttackPosition(
@@ -530,146 +442,66 @@ public class UnitMoveBrain : MonoBehaviour
                 targetPosition
             );
 
-
-        if (attackPosition ==
-            currentPosition)
+        if (
+            attackPosition ==
+            currentPosition
+        )
         {
-            MoveDebug(
-                "No better attack position found."
-            );
-
             yield break;
         }
 
-
-        MoveDebug(
-            $"Best attack position: " +
-            $"{attackPosition}"
-        );
-
-
-        // ==================================================
-        // FIND PATH
-        // ==================================================
-
-        List<Vector2Int> path =
-            FindPath(
+        if (
+            !FindPath(
                 currentPosition,
-                attackPosition
-            );
-
-
-        if (path == null ||
-            path.Count < 2)
+                attackPosition,
+                pathCache
+            ) ||
+            pathCache.Count < 2
+        )
         {
-            MoveDebug(
-                "FAILED: No valid path to " +
-                "attack position."
-            );
-
             yield break;
         }
-
-
-        // ==================================================
-        // FIRST STEP
-        // ==================================================
 
         Vector2Int nextPosition =
-            path[1];
+            pathCache[1];
 
-
-        MoveDebug(
-            $"Path found. " +
-            $"PathLength={path.Count - 1}, " +
-            $"NextStep={nextPosition}"
-        );
-
-
-        // ==================================================
-        // SAFETY
-        // ==================================================
-
-        if (!gridManager.IsInsideGrid(
-                nextPosition))
+        if (
+            !gridManager.IsInsideGrid(
+                nextPosition
+            ) ||
+            gridManager.IsCellOccupied(
+                nextPosition
+            )
+        )
         {
-            MoveDebug(
-                $"FAILED: {nextPosition} " +
-                "outside grid."
-            );
-
             yield break;
         }
 
-
-        if (gridManager.IsCellOccupied(
-                nextPosition))
-        {
-            MoveDebug(
-                $"FAILED: {nextPosition} " +
-                "became occupied."
-            );
-
-            yield break;
-        }
-
-
-        // ==================================================
-        // RESERVE CELL
-        // ==================================================
-
-        bool movementStarted =
-            gridManager.StartMoveUnit(
+        if (!gridManager.StartMoveUnit(
                 gameObject,
                 currentPosition,
-                nextPosition
-            );
-
-
-        if (!movementStarted)
+                nextPosition))
         {
-            MoveDebug(
-                $"FAILED: Could not reserve " +
-                $"{nextPosition}."
-            );
-
             yield break;
         }
 
+        ConsumeMovement();
 
         isMoving = true;
 
-
-        // ==================================================
-        // WORLD POSITIONS
-        // ==================================================
-
         Vector3 startWorldPosition =
             transform.position;
-
 
         Vector3 targetWorldPosition =
             gridManager.GridToWorldPosition(
                 nextPosition
             );
 
+        float elapsed = 0f;
 
-        // ==================================================
-        // MOVE
-        // ==================================================
-
-        MoveDebug(
-            $"MOVING: {currentPosition} -> " +
-            $"{nextPosition}. " +
-            $"Duration={moveDuration}s"
-        );
-
-
-        float elapsed =
-            0f;
-
-
-        while (elapsed < moveDuration)
+        while (
+            elapsed < moveDuration
+        )
         {
             if (!CanMove())
             {
@@ -679,25 +511,18 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
             }
 
-
             elapsed +=
                 Time.deltaTime;
 
-
             float progress =
-                Mathf.Clamp01(
-                    elapsed /
-                    moveDuration
-                );
-
-
-            progress =
                 Mathf.SmoothStep(
                     0f,
                     1f,
-                    progress
+                    Mathf.Clamp01(
+                        elapsed /
+                        moveDuration
+                    )
                 );
-
 
             transform.position =
                 Vector3.Lerp(
@@ -706,98 +531,51 @@ public class UnitMoveBrain : MonoBehaviour
                     progress
                 );
 
-
             yield return null;
         }
 
-
-        // ==================================================
-        // FINAL POSITION
-        // ==================================================
-
         transform.position =
             targetWorldPosition;
-
-
-        // ==================================================
-        // FINISH
-        // ==================================================
 
         gridManager.FinishMoveUnit(
             gameObject,
             nextPosition
         );
 
-
         isMoving = false;
-
-
-        MoveDebug(
-            $"MOVE COMPLETE: " +
-            $"{currentPosition} -> " +
-            $"{nextPosition}"
-        );
     }
 
 
-    // ==================================================
-    // LEGACY MOVEMENT
-    // ==================================================
-
     public bool TryMoveTowardsEnemy()
     {
-        if (isMoving)
+        if (
+            !CanUseAIMovement() ||
+            isMoving ||
+            !CanMoveThisTurn()
+        )
         {
-            MoveDebug(
-                "FAILED: Unit is already moving."
-            );
-
             return false;
         }
-
 
         StartCoroutine(
             MoveTowardsEnemy()
         );
 
-
         return true;
     }
 
 
-    // ==================================================
-    // CAN MOVE
-    // ==================================================
+    // ============================================================
+    // BASIC MOVEMENT
+    // ============================================================
 
     private bool CanMove()
     {
-        if (attackUnit == null)
-        {
-            MoveDebug(
-                "FAILED: AttackUnit is NULL."
-            );
-
-            return false;
-        }
-
-
-        if (attackUnit.IsDead())
-        {
-            MoveDebug(
-                "FAILED: Unit is dead."
-            );
-
-            return false;
-        }
-
-
-        return true;
+        return
+            attackUnit != null &&
+            !attackUnit.IsDead();
     }
 
-
-    // ==================================================
-    // MOVE RANGE
-    // ==================================================
 
     public int GetMoveRange()
     {
@@ -806,27 +584,21 @@ public class UnitMoveBrain : MonoBehaviour
             return 0;
         }
 
-
         CharacterSO characterData =
             attackUnit.GetCharacterData();
 
-
-        if (characterData == null)
-        {
-            return 0;
-        }
-
-
-        return Mathf.Max(
-            0,
-            characterData.moveRange
-        );
+        return characterData == null
+            ? 0
+            : Mathf.Max(
+                0,
+                characterData.moveRange
+            );
     }
 
 
-    // ==================================================
-    // TARGET SELECTION
-    // ==================================================
+    // ============================================================
+    // TARGET
+    // ============================================================
 
     private AttackUnit FindBestTarget()
     {
@@ -835,69 +607,53 @@ public class UnitMoveBrain : MonoBehaviour
             return null;
         }
 
-
         EnsureGridManager();
-
 
         if (gridManager == null)
         {
             return null;
         }
 
-
         AttackUnit[] allUnits =
             FindObjectsByType<AttackUnit>(
+                FindObjectsInactive.Exclude,
                 FindObjectsSortMode.None
             );
 
-
-        AttackUnit bestTarget =
-            null;
-
+        AttackUnit bestTarget = null;
 
         float bestScore =
             float.MaxValue;
-
 
         Vector2Int myPosition =
             gridManager.WorldToGridPosition(
                 transform.position
             );
 
-
-        for (int i = 0;
-             i < allUnits.Length;
-             i++)
+        for (
+            int i = 0;
+            i < allUnits.Length;
+            i++
+        )
         {
             AttackUnit other =
                 allUnits[i];
 
-
-            if (other == null ||
-                other == attackUnit)
+            if (
+                other == null ||
+                other == attackUnit ||
+                other.IsDead() ||
+                other.GetTeam() ==
+                attackUnit.GetTeam()
+            )
             {
                 continue;
             }
-
-
-            if (other.IsDead())
-            {
-                continue;
-            }
-
-
-            if (other.GetTeam() ==
-                attackUnit.GetTeam())
-            {
-                continue;
-            }
-
 
             Vector2Int enemyPosition =
                 gridManager.WorldToGridPosition(
                     other.transform.position
                 );
-
 
             int distance =
                 gridManager.GetDistance(
@@ -905,18 +661,7 @@ public class UnitMoveBrain : MonoBehaviour
                     enemyPosition
                 );
 
-
-            HealthManager enemyHealth =
-                other.GetHealthManager();
-
-
-            float score =
-                0f;
-
-
-            // ==================================================
-            // DISTANCE
-            // ==================================================
+            float score = 0f;
 
             if (preferCloserEnemies)
             {
@@ -924,131 +669,85 @@ public class UnitMoveBrain : MonoBehaviour
                     distance * 10f;
             }
 
+            HealthManager enemyHealth =
+                other.GetHealthManager();
 
-            // ==================================================
-            // LOW HEALTH
-            // ==================================================
-
-            if (preferLowHealthEnemies &&
-                enemyHealth != null)
+            if (
+                preferLowHealthEnemies &&
+                enemyHealth != null
+            )
             {
-                int health =
-                    enemyHealth.GetHealth();
-
-
-                int maxHealth =
+                float healthPercent =
+                    (float)enemyHealth.GetHealth() /
                     Mathf.Max(
                         1,
                         enemyHealth.GetMaxHealth()
                     );
 
-
-                float healthPercent =
-                    (float)health /
-                    maxHealth;
-
-
                 score +=
                     healthPercent * 20f;
             }
 
-
-            // ==================================================
-            // TARGET ALREADY IN RANGE
-            // ==================================================
-
-            if (distance <= attackRange)
+            if (
+                distance <= attackRange
+            )
             {
-                score -=
-                    100f;
+                score -= 100f;
             }
-
-
-            // ==================================================
-            // DEBUG
-            // ==================================================
-
-            MoveDebug(
-                $"Target candidate: " +
-                $"{other.name}, " +
-                $"distance={distance}, " +
-                $"score={score}"
-            );
-
 
             if (score < bestScore)
             {
                 bestScore =
                     score;
 
-
                 bestTarget =
                     other;
             }
         }
 
-
-        if (bestTarget != null)
-        {
-            MoveDebug(
-                $"BEST TARGET: " +
-                $"{bestTarget.name}, " +
-                $"score={bestScore}"
-            );
-        }
-
-
         return bestTarget;
     }
 
 
-    // ==================================================
-    // FIND BEST ATTACK POSITION
-    // ==================================================
+    // ============================================================
+    // ATTACK POSITION
+    // ============================================================
 
     private Vector2Int FindBestAttackPosition(
         Vector2Int start,
-        Vector2Int target)
+        Vector2Int target
+    )
     {
-        List<Vector2Int> candidates =
-            GetAttackPositions(
-                target
-            );
+        GetAttackPositions(
+            target,
+            candidatesCache
+        );
 
-
-        if (candidates.Count == 0)
+        if (candidatesCache.Count == 0)
         {
-            MoveDebug(
-                "No attack positions found."
-            );
-
-
             return FindBestReachableCell(
                 start,
                 target
             );
         }
 
-
         Vector2Int bestPosition =
             start;
-
 
         float bestScore =
             float.MaxValue;
 
-
         bool foundReachablePosition =
             false;
 
-
-        for (int i = 0;
-             i < candidates.Count;
-             i++)
+        for (
+            int i = 0;
+            i < candidatesCache.Count;
+            i++
+        )
         {
             Vector2Int candidate =
-                candidates[i];
-
+                candidatesCache[i];
 
             if (!gridManager.IsInsideGrid(
                     candidate))
@@ -1056,37 +755,33 @@ public class UnitMoveBrain : MonoBehaviour
                 continue;
             }
 
-
-            // Our own cell is always allowed.
-            if (candidate != start &&
+            if (
+                candidate != start &&
                 gridManager.IsCellOccupied(
-                    candidate))
-            {
-                continue;
-            }
-
-
-            List<Vector2Int> path =
-                FindPath(
-                    start,
                     candidate
-                );
-
-
-            if (path == null ||
-                path.Count < 2)
+                )
+            )
             {
                 continue;
             }
 
+            if (
+                !FindPath(
+                    start,
+                    candidate,
+                    pathCache
+                ) ||
+                pathCache.Count < 2
+            )
+            {
+                continue;
+            }
 
             foundReachablePosition =
                 true;
 
-
             int movementCost =
-                path.Count - 1;
-
+                pathCache.Count - 1;
 
             int distanceToEnemy =
                 gridManager.GetDistance(
@@ -1094,14 +789,8 @@ public class UnitMoveBrain : MonoBehaviour
                     target
                 );
 
-
             float score =
                 movementCost * 10f;
-
-
-            // ==================================================
-            // PREFER SHORTER MOVEMENT
-            // ==================================================
 
             if (preferCloserAttackPosition)
             {
@@ -1109,141 +798,87 @@ public class UnitMoveBrain : MonoBehaviour
                     distanceToEnemy * 5f;
             }
 
-
-            // ==================================================
-            // OPEN SPACE
-            // ==================================================
-
             if (preferMoreOpenPositions)
             {
-                int openNeighbours =
+                score -=
                     CountOpenNeighbours(
                         candidate
-                    );
-
-
-                score -=
-                    openNeighbours * 2f;
+                    ) * 2f;
             }
 
-
-            // ==================================================
-            // SIDE POSITIONS
-            // ==================================================
-
-            if (preferSidePositions)
+            if (
+                preferSidePositions &&
+                candidate.x != target.x &&
+                candidate.y != target.y
+            )
             {
-                if (candidate.x != target.x &&
-                    candidate.y != target.y)
-                {
-                    score +=
-                        3f;
-                }
+                score += 3f;
             }
-
-
-            MoveDebug(
-                $"Attack position candidate: " +
-                $"{candidate}, " +
-                $"movementCost={movementCost}, " +
-                $"distance={distanceToEnemy}, " +
-                $"score={score}"
-            );
-
 
             if (score < bestScore)
             {
                 bestScore =
                     score;
 
-
                 bestPosition =
                     candidate;
             }
         }
 
-
-        if (foundReachablePosition)
-        {
-            MoveDebug(
-                $"BEST ATTACK POSITION: " +
-                $"{bestPosition}, " +
-                $"score={bestScore}"
+        return foundReachablePosition
+            ? bestPosition
+            : FindBestReachableCell(
+                start,
+                target
             );
-
-
-            return bestPosition;
-        }
-
-
-        // ==================================================
-        // NO ATTACK POSITION REACHABLE
-        // ==================================================
-
-        MoveDebug(
-            "No attack position reachable. " +
-            "Searching for best reachable cell."
-        );
-
-
-        return FindBestReachableCell(
-            start,
-            target
-        );
     }
 
 
-    // ==================================================
-    // GET ATTACK POSITIONS
-    // ==================================================
+    // ============================================================
+    // ATTACK POSITIONS
+    // ============================================================
 
-    private List<Vector2Int> GetAttackPositions(
-        Vector2Int target)
+    private void GetAttackPositions(
+        Vector2Int target,
+        List<Vector2Int> results
+    )
     {
-        List<Vector2Int> positions =
-            new List<Vector2Int>();
-
-
-        // ==================================================
-        // RANGE 1
-        // ==================================================
+        results.Clear();
 
         if (attackRange == 1)
         {
-            for (int i = 0;
-                 i < Directions.Length;
-                 i++)
+            for (
+                int i = 0;
+                i < Directions.Length;
+                i++
+            )
             {
-                positions.Add(
+                results.Add(
                     target +
                     Directions[i]
                 );
             }
 
-
-            return positions;
+            return;
         }
-
-
-        // ==================================================
-        // LARGER RANGE
-        // ==================================================
 
         int width =
             gridManager.GetWidth();
 
-
         int height =
             gridManager.GetHeight();
 
-
-        for (int x = 0;
-             x < width;
-             x++)
+        for (
+            int x = 0;
+            x < width;
+            x++
+        )
         {
-            for (int y = 0;
-                 y < height;
-                 y++)
+            for (
+                int y = 0;
+                y < height;
+                y++
+            )
             {
                 Vector2Int position =
                     new Vector2Int(
@@ -1251,223 +886,232 @@ public class UnitMoveBrain : MonoBehaviour
                         y
                     );
 
-
                 if (position == target)
                 {
                     continue;
                 }
 
-
-                int distance =
+                if (
                     gridManager.GetDistance(
                         position,
                         target
-                    );
-
-
-                if (distance <= attackRange)
+                    ) <= attackRange
+                )
                 {
-                    positions.Add(
+                    results.Add(
                         position
                     );
                 }
             }
         }
-
-
-        return positions;
     }
 
 
-    // ==================================================
-    // PATHFINDING
-    // ==================================================
+    // ============================================================
+    // A*
+    // ============================================================
 
-    private List<Vector2Int> FindPath(
+    private bool FindPath(
         Vector2Int start,
-        Vector2Int destination)
+        Vector2Int destination,
+        List<Vector2Int> resultPath
+    )
     {
+        resultPath.Clear();
+
         if (start == destination)
         {
-            return new List<Vector2Int>
-            {
-                start
-            };
+            resultPath.Add(start);
+            return true;
         }
 
+        openSetCache.Clear();
+        visitedCache.Clear();
+        cameFromCache.Clear();
+        gScoreCache.Clear();
 
-        Queue<Vector2Int> queue =
-            new Queue<Vector2Int>();
+        gScoreCache[start] = 0;
 
+        openSetCache.Enqueue(
+            start,
+            ManhattanDistance(
+                start,
+                destination
+            )
+        );
 
-        Dictionary<Vector2Int, Vector2Int>
-            cameFrom =
-                new Dictionary<
-                    Vector2Int,
-                    Vector2Int
-                >();
-
-
-        HashSet<Vector2Int> visited =
-            new HashSet<Vector2Int>();
-
-
-        queue.Enqueue(start);
-
-        visited.Add(start);
-
-
-        while (queue.Count > 0)
+        while (
+            openSetCache.Count > 0
+        )
         {
             Vector2Int current =
-                queue.Dequeue();
+                openSetCache.Dequeue();
 
+            if (
+                current ==
+                destination
+            )
+            {
+                ReconstructPath(
+                    start,
+                    destination,
+                    cameFromCache,
+                    resultPath
+                );
 
-            for (int i = 0;
-                 i < Directions.Length;
-                 i++)
+                return true;
+            }
+
+            visitedCache.Add(
+                current
+            );
+
+            int currentG =
+                gScoreCache[current];
+
+            for (
+                int i = 0;
+                i < Directions.Length;
+                i++
+            )
             {
                 Vector2Int next =
                     current +
                     Directions[i];
 
-
-                if (visited.Contains(next))
+                if (
+                    visitedCache.Contains(next) ||
+                    !gridManager.IsInsideGrid(
+                        next
+                    )
+                )
                 {
                     continue;
                 }
 
-
-                if (!gridManager.IsInsideGrid(
-                        next))
+                if (
+                    next != destination &&
+                    gridManager.IsCellOccupied(
+                        next
+                    )
+                )
                 {
                     continue;
                 }
 
+                int tentativeG =
+                    currentG + 1;
 
-                // ==================================================
-                // DESTINATION
-                // ==================================================
-
-                if (next == destination)
+                if (
+                    !gScoreCache.TryGetValue(
+                        next,
+                        out int nextG
+                    ) ||
+                    tentativeG < nextG
+                )
                 {
-                    cameFrom[next] =
+                    cameFromCache[next] =
                         current;
 
+                    gScoreCache[next] =
+                        tentativeG;
 
-                    return ReconstructPath(
-                        start,
-                        destination,
-                        cameFrom
-                    );
+                    int fScore =
+                        tentativeG +
+                        ManhattanDistance(
+                            next,
+                            destination
+                        );
+
+                    if (!openSetCache.Contains(
+                            next))
+                    {
+                        openSetCache.Enqueue(
+                            next,
+                            fScore
+                        );
+                    }
                 }
-
-
-                // ==================================================
-                // OCCUPIED
-                // ==================================================
-
-                if (gridManager.IsCellOccupied(
-                        next))
-                {
-                    continue;
-                }
-
-
-                visited.Add(next);
-
-
-                cameFrom[next] =
-                    current;
-
-
-                queue.Enqueue(next);
             }
         }
 
-
-        return null;
+        return false;
     }
 
 
-    // ==================================================
-    // RECONSTRUCT PATH
-    // ==================================================
+    private static int ManhattanDistance(
+        Vector2Int a,
+        Vector2Int b
+    )
+    {
+        return
+            Mathf.Abs(a.x - b.x) +
+            Mathf.Abs(a.y - b.y);
+    }
 
-    private List<Vector2Int> ReconstructPath(
+
+    // ============================================================
+    // RECONSTRUCT
+    // ============================================================
+
+    private void ReconstructPath(
         Vector2Int start,
         Vector2Int destination,
-        Dictionary<Vector2Int, Vector2Int>
-            cameFrom)
+        Dictionary<Vector2Int, Vector2Int> cameFrom,
+        List<Vector2Int> path
+    )
     {
-        List<Vector2Int> path =
-            new List<Vector2Int>();
-
-
         Vector2Int current =
             destination;
 
+        path.Add(
+            current
+        );
 
-        path.Add(current);
-
-
-        while (current != start)
+        while (
+            current != start
+        )
         {
             if (!cameFrom.TryGetValue(
                     current,
-                    out Vector2Int previous))
+                    out Vector2Int previous
+                ))
             {
-                return null;
+                break;
             }
-
 
             current =
                 previous;
 
-
-            path.Add(current);
+            path.Add(
+                current
+            );
         }
 
-
         path.Reverse();
-
-
-        return path;
     }
 
 
-    // ==================================================
+    // ============================================================
     // BEST REACHABLE CELL
-    // ==================================================
+    // ============================================================
 
     private Vector2Int FindBestReachableCell(
         Vector2Int start,
-        Vector2Int target)
+        Vector2Int target
+    )
     {
         Queue<Vector2Int> queue =
             new Queue<Vector2Int>();
 
-
-        HashSet<Vector2Int> visited =
-            new HashSet<Vector2Int>();
-
-
-        Dictionary<Vector2Int, Vector2Int>
-            cameFrom =
-                new Dictionary<
-                    Vector2Int,
-                    Vector2Int
-                >();
-
+        visitedCache.Clear();
+        cameFromCache.Clear();
 
         queue.Enqueue(start);
-
-        visited.Add(start);
-
+        visitedCache.Add(start);
 
         Vector2Int bestCell =
             start;
-
 
         float bestScore =
             CalculateReachableCellScore(
@@ -1476,20 +1120,19 @@ public class UnitMoveBrain : MonoBehaviour
                 0
             );
 
-
-        while (queue.Count > 0)
+        while (
+            queue.Count > 0
+        )
         {
             Vector2Int current =
                 queue.Dequeue();
-
 
             int pathDistance =
                 GetPathDistance(
                     start,
                     current,
-                    cameFrom
+                    cameFromCache
                 );
-
 
             float score =
                 CalculateReachableCellScore(
@@ -1498,109 +1141,71 @@ public class UnitMoveBrain : MonoBehaviour
                     pathDistance
                 );
 
-
             if (score < bestScore)
             {
                 bestScore =
                     score;
 
-
                 bestCell =
                     current;
             }
 
-
-            for (int i = 0;
-                 i < Directions.Length;
-                 i++)
+            for (
+                int i = 0;
+                i < Directions.Length;
+                i++
+            )
             {
                 Vector2Int next =
                     current +
                     Directions[i];
 
-
-                if (visited.Contains(next))
+                if (
+                    visitedCache.Contains(next) ||
+                    !gridManager.IsInsideGrid(next) ||
+                    gridManager.IsCellOccupied(next)
+                )
                 {
                     continue;
                 }
 
+                visitedCache.Add(next);
 
-                if (!gridManager.IsInsideGrid(
-                        next))
-                {
-                    continue;
-                }
-
-
-                if (gridManager.IsCellOccupied(
-                        next))
-                {
-                    continue;
-                }
-
-
-                visited.Add(next);
-
-
-                cameFrom[next] =
+                cameFromCache[next] =
                     current;
-
 
                 queue.Enqueue(next);
             }
         }
 
-
         if (bestCell == start)
         {
-            MoveDebug(
-                "Best reachable cell " +
-                "is current cell."
-            );
-
-
             return start;
         }
 
-
-        List<Vector2Int> path =
-            ReconstructPath(
-                start,
-                bestCell,
-                cameFrom
-            );
-
-
-        if (path == null ||
-            path.Count < 2)
-        {
-            return start;
-        }
-
-
-        Vector2Int firstStep =
-            path[1];
-
-
-        MoveDebug(
-            $"Best reachable cell=" +
-            $"{bestCell}. " +
-            $"FirstStep={firstStep}"
+        ReconstructPath(
+            start,
+            bestCell,
+            cameFromCache,
+            pathCache
         );
 
-
-        return firstStep;
+        return
+            pathCache.Count >= 2
+            ? pathCache[1]
+            : start;
     }
 
 
-    // ==================================================
-    // REACHABLE CELL SCORE
-    // ==================================================
+    // ============================================================
+    // SCORE
+    // ============================================================
 
     private float CalculateReachableCellScore(
         Vector2Int position,
         Vector2Int target,
-        int movementCost)
+        int movementCost
+    )
     {
         int distance =
             gridManager.GetDistance(
@@ -1608,152 +1213,216 @@ public class UnitMoveBrain : MonoBehaviour
                 target
             );
 
-
         float score =
-            distance * 10f;
-
-
-        score +=
-            movementCost * 1f;
-
+            distance * 10f +
+            movementCost;
 
         if (preferMoreOpenPositions)
         {
-            int openNeighbours =
+            score -=
                 CountOpenNeighbours(
                     position
-                );
-
-
-            score -=
-                openNeighbours * 2f;
+                ) * 2f;
         }
-
 
         return score;
     }
 
 
-    // ==================================================
+    // ============================================================
     // PATH DISTANCE
-    // ==================================================
+    // ============================================================
 
     private int GetPathDistance(
         Vector2Int start,
         Vector2Int current,
-        Dictionary<Vector2Int, Vector2Int>
-            cameFrom)
+        Dictionary<Vector2Int, Vector2Int> cameFrom
+    )
     {
         if (current == start)
         {
             return 0;
         }
 
-
-        int distance =
-            0;
-
+        int distance = 0;
 
         Vector2Int position =
             current;
 
-
-        while (position != start)
+        while (
+            position != start
+        )
         {
             if (!cameFrom.TryGetValue(
                     position,
-                    out Vector2Int previous))
+                    out Vector2Int previous
+                ))
             {
                 break;
             }
 
-
             position =
                 previous;
 
-
             distance++;
         }
-
 
         return distance;
     }
 
 
-    // ==================================================
+    // ============================================================
     // OPEN NEIGHBOURS
-    // ==================================================
+    // ============================================================
 
     private int CountOpenNeighbours(
-        Vector2Int position)
+        Vector2Int position
+    )
     {
-        int count =
-            0;
+        int count = 0;
 
-
-        for (int i = 0;
-             i < Directions.Length;
-             i++)
+        for (
+            int i = 0;
+            i < Directions.Length;
+            i++
+        )
         {
             Vector2Int neighbour =
                 position +
                 Directions[i];
 
-
-            if (!gridManager.IsInsideGrid(
-                    neighbour))
-            {
-                continue;
-            }
-
-
-            if (!gridManager.IsCellOccupied(
-                    neighbour))
+            if (
+                gridManager.IsInsideGrid(
+                    neighbour
+                ) &&
+                !gridManager.IsCellOccupied(
+                    neighbour
+                )
+            )
             {
                 count++;
             }
         }
 
-
         return count;
     }
 
 
-    // ==================================================
+    // ============================================================
     // GRID
-    // ==================================================
+    // ============================================================
 
     private void EnsureGridManager()
     {
         if (gridManager == null)
         {
             gridManager =
-                FindFirstObjectByType<
-                    GridManager>();
+                FindFirstObjectByType<GridManager>();
         }
     }
 
 
-    // ==================================================
+    // ============================================================
     // ACCESSORS
-    // ==================================================
+    // ============================================================
 
     public AttackUnit GetAttackUnit()
     {
         return attackUnit;
     }
 
-
     public GridManager GetGridManager()
     {
         EnsureGridManager();
-
         return gridManager;
     }
-
 
     public bool IsMoving()
     {
         return isMoving;
+    }
+
+
+    // ============================================================
+    // PRIORITY QUEUE
+    // ============================================================
+
+    private class PriorityQueue<T>
+    {
+        private readonly List<KeyValuePair<T, int>>
+            elements =
+            new List<KeyValuePair<T, int>>();
+
+        public int Count =>
+            elements.Count;
+
+        public void Enqueue(
+            T item,
+            int priority
+        )
+        {
+            elements.Add(
+                new KeyValuePair<T, int>(
+                    item,
+                    priority
+                )
+            );
+        }
+
+        public T Dequeue()
+        {
+            int bestIndex = 0;
+
+            for (
+                int i = 1;
+                i < elements.Count;
+                i++
+            )
+            {
+                if (
+                    elements[i].Value <
+                    elements[bestIndex].Value
+                )
+                {
+                    bestIndex = i;
+                }
+            }
+
+            T bestItem =
+                elements[bestIndex].Key;
+
+            elements.RemoveAt(
+                bestIndex
+            );
+
+            return bestItem;
+        }
+
+        public bool Contains(T item)
+        {
+            for (
+                int i = 0;
+                i < elements.Count;
+                i++
+            )
+            {
+                if (
+                    EqualityComparer<T>.Default.Equals(
+                        elements[i].Key,
+                        item
+                    )
+                )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void Clear()
+        {
+            elements.Clear();
+        }
     }
 }

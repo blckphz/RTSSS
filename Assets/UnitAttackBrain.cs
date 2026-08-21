@@ -8,10 +8,14 @@ public class UnitAttackBrain : MonoBehaviour
     [SerializeField]
     private AttackUnit attackUnit;
 
+    [Header("Debug")]
+    [SerializeField]
+    private bool debugAttack = true;
 
-    // ==================================================
+
+    // ============================================================
     // UNITY
-    // ==================================================
+    // ============================================================
 
     private void Awake()
     {
@@ -23,9 +27,58 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
+    // MOVEMENT CHECK
+    // ============================================================
+
+    private bool CanUseAbilityAfterMovement(
+        AbilitySO ability
+    )
+    {
+        if (
+            attackUnit == null ||
+            ability == null
+        )
+        {
+            return false;
+        }
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            return true;
+        }
+
+        if (!moveBrain.HasConsumedMovement())
+        {
+            return true;
+        }
+
+        if (ability.CanAttackWithThisAfterMove())
+        {
+            return true;
+        }
+
+        if (debugAttack)
+        {
+            Debug.Log(
+                $"[AttackBrain] ATTACK BLOCKED -> " +
+                $"{attackUnit.gameObject.name} moved this turn. " +
+                $"Ability '{ability.GetAbilityName()}' " +
+                $"cannot be used after movement.",
+                attackUnit
+            );
+        }
+
+        return false;
+    }
+
+
+    // ============================================================
     // PRIMARY ABILITY
-    // ==================================================
+    // ============================================================
 
     public string GetPrimaryAbilityName()
     {
@@ -48,7 +101,8 @@ public class UnitAttackBrain : MonoBehaviour
 
             if (
                 ability != null &&
-                attackUnit.IsAbilityReady(ability)
+                attackUnit.IsAbilityReady(ability) &&
+                CanUseAbilityAfterMovement(ability)
             )
             {
                 return ability.GetAbilityName();
@@ -88,7 +142,8 @@ public class UnitAttackBrain : MonoBehaviour
 
             if (
                 ability != null &&
-                attackUnit.IsAbilityReady(ability)
+                attackUnit.IsAbilityReady(ability) &&
+                CanUseAbilityAfterMovement(ability)
             )
             {
                 return ability.GetRange();
@@ -99,99 +154,9 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // FULL TURN
-    // ==================================================
-
-    /// <summary>
-    /// Performs the complete attack/move/attack sequence.
-    ///
-    /// ORDER:
-    ///
-    /// 1. Attack with all abilities available BEFORE movement.
-    /// 2. Execute the supplied movement coroutine.
-    /// 3. Attack again AFTER movement.
-    ///
-    /// After movement, ONLY abilities with
-    /// canattackwiththisaftermove == true are allowed.
-    /// </summary>
-    public IEnumerator ExecuteAttackMoveAttackCoroutine(
-        IEnumerator movementRoutine
-    )
-    {
-        if (
-            attackUnit == null ||
-            attackUnit.IsDead()
-        )
-        {
-            yield break;
-        }
-
-
-        // ==================================================
-        // PHASE 1 - ATTACK BEFORE MOVEMENT
-        // ==================================================
-
-        yield return StartCoroutine(
-            UseAllAvailableAbilitiesCoroutine(
-                false
-            )
-        );
-
-
-        // ==================================================
-        // STOP IF DEAD
-        // ==================================================
-
-        if (
-            attackUnit == null ||
-            attackUnit.IsDead()
-        )
-        {
-            yield break;
-        }
-
-
-        // ==================================================
-        // PHASE 2 - MOVE
-        // ==================================================
-
-        if (movementRoutine != null)
-        {
-            yield return StartCoroutine(
-                movementRoutine
-            );
-        }
-
-
-        // ==================================================
-        // STOP IF DEAD
-        // ==================================================
-
-        if (
-            attackUnit == null ||
-            attackUnit.IsDead()
-        )
-        {
-            yield break;
-        }
-
-
-        // ==================================================
-        // PHASE 3 - ATTACK AFTER MOVEMENT
-        // ==================================================
-
-        yield return StartCoroutine(
-            UseAllAvailableAbilitiesCoroutine(
-                true
-            )
-        );
-    }
-
-
-    // ==================================================
-    // CAN ATTACK
-    // ==================================================
+    // ============================================================
+    // CAN ATTACK TARGET
+    // ============================================================
 
     public bool CanAttackTarget(
         GameObject target
@@ -199,6 +164,7 @@ public class UnitAttackBrain : MonoBehaviour
     {
         if (
             attackUnit == null ||
+            attackUnit.IsDead() ||
             !attackUnit.CanAttack() ||
             !attackUnit.IsValidTarget(target)
         )
@@ -206,13 +172,14 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-        return GetBestAbilityForTarget(target) != null;
+        return
+            GetBestAbilityForTarget(target) != null;
     }
 
 
-    // ==================================================
+    // ============================================================
     // SINGLE ATTACK
-    // ==================================================
+    // ============================================================
 
     public bool Attack(
         GameObject target
@@ -234,6 +201,12 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
+        if (!CanUseAbilityAfterMovement(
+                ability))
+        {
+            return false;
+        }
+
         return attackUnit.Attack(
             target,
             ability
@@ -249,9 +222,132 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
+    // ATTACK TILE
+    // ============================================================
+
+    public bool UseAbilityAtTile(
+        AbilitySO ability,
+        Vector2Int targetTile
+    )
+    {
+        if (
+            attackUnit == null ||
+            ability == null ||
+            attackUnit.IsDead()
+        )
+        {
+            return false;
+        }
+
+        if (!CanUseAbilityAfterMovement(
+                ability))
+        {
+            return false;
+        }
+
+        GridManager gridManager =
+            attackUnit.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+        if (!attackUnit.IsAbilityReady(
+                ability))
+        {
+            return false;
+        }
+
+        if (!ability.CanHitTile(
+                gridManager,
+                gameObject,
+                targetTile))
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // FIND UNIT ON TILE
+        // ========================================================
+
+        List<AttackUnit> units =
+            CombatUtility.GetAllAliveUnits();
+
+        GameObject target =
+            null;
+
+        for (
+            int i = 0;
+            i < units.Count;
+            i++
+        )
+        {
+            AttackUnit unit =
+                units[i];
+
+            if (
+                unit == null ||
+                unit == attackUnit
+            )
+            {
+                continue;
+            }
+
+            Vector2Int unitPosition =
+                gridManager.WorldToGridPosition(
+                    unit.transform.position
+                );
+
+            if (
+                unitPosition ==
+                targetTile
+            )
+            {
+                target =
+                    unit.gameObject;
+
+                break;
+            }
+        }
+
+
+        // ========================================================
+        // TARGET FOUND
+        // ========================================================
+
+        if (target != null)
+        {
+            if (!attackUnit.IsValidTarget(
+                    target))
+            {
+                return false;
+            }
+
+            return attackUnit.Attack(
+                target,
+                ability
+            );
+        }
+
+
+        // ========================================================
+        // EMPTY TILE
+        // ========================================================
+
+        return ability.UseAtTile(
+            gameObject,
+            gridManager,
+            targetTile
+        );
+    }
+
+
+    // ============================================================
     // BEST ABILITY FOR TARGET
-    // ==================================================
+    // ============================================================
 
     public AbilitySO GetBestAbilityForTarget(
         GameObject target
@@ -302,13 +398,16 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-            if (
-                !ability.CanHit(
+            if (!CanUseAbilityAfterMovement(
+                    ability))
+            {
+                continue;
+            }
+
+            if (!ability.CanHit(
                     gridManager,
                     gameObject,
-                    target
-                )
-            )
+                    target))
             {
                 continue;
             }
@@ -343,9 +442,9 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // FIND TARGET FOR ABILITY
-    // ==================================================
+    // ============================================================
+    // FIND TARGET
+    // ============================================================
 
     public GameObject FindTargetForAbility(
         AbilitySO ability
@@ -356,6 +455,12 @@ public class UnitAttackBrain : MonoBehaviour
             ability == null ||
             !attackUnit.IsAbilityReady(ability)
         )
+        {
+            return null;
+        }
+
+        if (!CanUseAbilityAfterMovement(
+                ability))
         {
             return null;
         }
@@ -402,20 +507,16 @@ public class UnitAttackBrain : MonoBehaviour
             GameObject target =
                 otherUnit.gameObject;
 
-            if (
-                !attackUnit.IsValidTarget(target)
-            )
+            if (!attackUnit.IsValidTarget(
+                    target))
             {
                 continue;
             }
 
-            if (
-                !ability.CanHit(
+            if (!ability.CanHit(
                     gridManager,
                     gameObject,
-                    target
-                )
-            )
+                    target))
             {
                 continue;
             }
@@ -431,7 +532,10 @@ public class UnitAttackBrain : MonoBehaviour
                     targetPosition
                 );
 
-            if (distance < bestDistance)
+            if (
+                distance <
+                bestDistance
+            )
             {
                 bestDistance =
                     distance;
@@ -445,39 +549,11 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // MULTI ATTACK
-    // ==================================================
+    // ============================================================
+    // USE ALL AVAILABLE ABILITIES
+    // ============================================================
 
-    /// <summary>
-    /// Attacks with every currently available ability.
-    ///
-    /// This is the BEFORE-MOVEMENT attack phase.
-    ///
-    /// All abilities are allowed.
-    /// </summary>
     public int UseAllAvailableAbilities()
-    {
-        return UseAllAvailableAbilities(
-            false
-        );
-    }
-
-
-    /// <summary>
-    /// Attacks with every currently available ability.
-    ///
-    /// afterMoving == false:
-    ///     All abilities are allowed.
-    ///
-    /// afterMoving == true:
-    ///     ONLY abilities with
-    ///     canattackwiththisaftermove == true
-    ///     are allowed.
-    /// </summary>
-    public int UseAllAvailableAbilities(
-        bool afterMoving
-    )
     {
         if (
             attackUnit == null ||
@@ -487,21 +563,27 @@ public class UnitAttackBrain : MonoBehaviour
             return 0;
         }
 
-        int attacksPerformed =
-            0;
+        int attacksPerformed = 0;
 
-        while (!attackUnit.IsDead())
+        while (
+            !attackUnit.IsDead()
+        )
         {
-            AbilitySO bestAbility =
+            AbilitySO ability =
                 FindBestAvailableAbility(
-                    afterMoving,
                     out GameObject target
                 );
 
             if (
-                bestAbility == null ||
+                ability == null ||
                 target == null
             )
+            {
+                break;
+            }
+
+            if (!CanUseAbilityAfterMovement(
+                    ability))
             {
                 break;
             }
@@ -509,7 +591,7 @@ public class UnitAttackBrain : MonoBehaviour
             bool success =
                 attackUnit.Attack(
                     target,
-                    bestAbility
+                    ability
                 );
 
             if (!success)
@@ -524,23 +606,11 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // MULTI ATTACK COROUTINE
-    // ==================================================
+    // ============================================================
+    // COROUTINE
+    // ============================================================
 
     public IEnumerator UseAllAvailableAbilitiesCoroutine()
-    {
-        yield return StartCoroutine(
-            UseAllAvailableAbilitiesCoroutine(
-                false
-            )
-        );
-    }
-
-
-    public IEnumerator UseAllAvailableAbilitiesCoroutine(
-        bool afterMoving
-    )
     {
         if (
             attackUnit == null ||
@@ -550,18 +620,25 @@ public class UnitAttackBrain : MonoBehaviour
             yield break;
         }
 
-        while (!attackUnit.IsDead())
+        while (
+            !attackUnit.IsDead()
+        )
         {
-            AbilitySO bestAbility =
+            AbilitySO ability =
                 FindBestAvailableAbility(
-                    afterMoving,
                     out GameObject target
                 );
 
             if (
-                bestAbility == null ||
+                ability == null ||
                 target == null
             )
+            {
+                break;
+            }
+
+            if (!CanUseAbilityAfterMovement(
+                    ability))
             {
                 break;
             }
@@ -569,7 +646,7 @@ public class UnitAttackBrain : MonoBehaviour
             bool success =
                 attackUnit.Attack(
                     target,
-                    bestAbility
+                    ability
                 );
 
             if (!success)
@@ -578,7 +655,7 @@ public class UnitAttackBrain : MonoBehaviour
             }
 
             float duration =
-                bestAbility.GetUseDuration();
+                ability.GetUseDuration();
 
             if (duration > 0f)
             {
@@ -594,17 +671,15 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // FIND BEST AVAILABLE ABILITY
-    // ==================================================
+    // ============================================================
 
     private AbilitySO FindBestAvailableAbility(
-        bool afterMoving,
         out GameObject bestTarget
     )
     {
-        bestTarget =
-            null;
+        bestTarget = null;
 
         if (attackUnit == null)
         {
@@ -640,23 +715,11 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
-            // ==================================================
-            // AFTER-MOVE RESTRICTION
-            // ==================================================
-
-            if (
-                afterMoving &&
-                !ability.canAttackWithThisAfterMove
-            )
+            if (!CanUseAbilityAfterMovement(
+                    ability))
             {
                 continue;
             }
-
-
-            // ==================================================
-            // FIND TARGET
-            // ==================================================
 
             GameObject target =
                 FindTargetForAbility(
@@ -667,11 +730,6 @@ public class UnitAttackBrain : MonoBehaviour
             {
                 continue;
             }
-
-
-            // ==================================================
-            // PRIORITY
-            // ==================================================
 
             int damage =
                 ability.GetDamage();
@@ -706,9 +764,9 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // TARGET SEARCH
-    // ==================================================
+    // ============================================================
 
     public bool TryAttackAnyTargetInAbilityRange()
     {
@@ -722,21 +780,11 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // HAS TARGET IN RANGE
-    // ==================================================
+    // ============================================================
+    // HAS TARGET
+    // ============================================================
 
     public bool HasAnyTargetInAbilityRange()
-    {
-        return HasAnyTargetInAbilityRange(
-            false
-        );
-    }
-
-
-    public bool HasAnyTargetInAbilityRange(
-        bool afterMoving
-    )
     {
         if (
             attackUnit == null ||
@@ -766,19 +814,11 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
-            // ==================================================
-            // AFTER-MOVE RESTRICTION
-            // ==================================================
-
-            if (
-                afterMoving &&
-                !ability.canAttackWithThisAfterMove
-            )
+            if (!CanUseAbilityAfterMovement(
+                    ability))
             {
                 continue;
             }
-
 
             if (
                 FindTargetForAbility(
@@ -794,72 +834,10 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // MAXIMUM AFTER-MOVE RANGE
-    // ==================================================
+    // ============================================================
+    // MAX RANGE
+    // ============================================================
 
-    /// <summary>
-    /// Gets the maximum range of an ability that is
-    /// allowed to be used after movement.
-    ///
-    /// This is useful for your movement AI when deciding
-    /// where the unit should move.
-    /// </summary>
-    public int GetMaximumAfterMoveAttackRange()
-    {
-        if (attackUnit == null)
-        {
-            return 0;
-        }
-
-        List<AbilitySO> abilities =
-            attackUnit.GetAbilities();
-
-        int maxRange =
-            0;
-
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
-        {
-            AbilitySO ability =
-                abilities[i];
-
-            if (
-                ability == null ||
-                !attackUnit.IsAbilityReady(ability)
-            )
-            {
-                continue;
-            }
-
-            if (
-                !ability.canAttackWithThisAfterMove
-            )
-            {
-                continue;
-            }
-
-            maxRange =
-                Mathf.Max(
-                    maxRange,
-                    ability.GetRange()
-                );
-        }
-
-        return maxRange;
-    }
-
-
-    // ==================================================
-    // MAXIMUM ATTACK RANGE
-    // ==================================================
-
-    /// <summary>
-    /// Gets the maximum range of ANY ready ability.
-    /// </summary>
     public int GetMaximumAttackRange()
     {
         if (attackUnit == null)
@@ -871,9 +849,9 @@ public class UnitAttackBrain : MonoBehaviour
     }
 
 
-    // ==================================================
-    // ACCESSORS
-    // ==================================================
+    // ============================================================
+    // ACCESSOR
+    // ============================================================
 
     public AttackUnit GetAttackUnit()
     {

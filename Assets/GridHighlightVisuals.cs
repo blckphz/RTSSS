@@ -35,6 +35,14 @@ public class GridHighlightVisuals : MonoBehaviour
     private float enemyTileAlpha = 0.85f;
 
 
+    [Header("Heal Tile")]
+    [SerializeField]
+    private Color healTileColor = Color.green;
+
+    [SerializeField, Range(0f, 1f)]
+    private float healTileAlpha = 0.85f;
+
+
     [Header("Animations")]
     [SerializeField]
     private bool pulseAbility = true;
@@ -81,20 +89,17 @@ public class GridHighlightVisuals : MonoBehaviour
     // ============================================================
 
     private GameObject tileObject;
-
     private SpriteRenderer spriteRenderer;
-
     private Transform tileTransform;
 
     private Vector3 originalScale;
-
     private Color originalColor;
 
     private bool initialized;
 
 
     // ============================================================
-    // VISUAL STATE
+    // STATE
     // ============================================================
 
     private enum VisualState
@@ -103,13 +108,12 @@ public class GridHighlightVisuals : MonoBehaviour
         Placement,
         Movement,
         Ability,
-        Enemy
+        Enemy,
+        Heal
     }
-
 
     private VisualState currentState =
         VisualState.Default;
-
 
     private Coroutine explosionCoroutine;
 
@@ -119,27 +123,24 @@ public class GridHighlightVisuals : MonoBehaviour
     // ============================================================
 
     public void Initialize(
-        GameObject tile)
+        GameObject tile
+    )
     {
         if (initialized)
         {
             return;
         }
 
-
         tileObject =
             tile != null
                 ? tile
                 : gameObject;
 
-
         tileTransform =
             tileObject.transform;
 
-
         spriteRenderer =
             tileObject.GetComponent<SpriteRenderer>();
-
 
         if (spriteRenderer == null)
         {
@@ -147,17 +148,14 @@ public class GridHighlightVisuals : MonoBehaviour
                 tileObject.GetComponentInChildren<SpriteRenderer>();
         }
 
-
         if (spriteRenderer != null)
         {
             originalColor =
                 spriteRenderer.color;
         }
 
-
         originalScale =
             tileTransform.localScale;
-
 
         initialized = true;
     }
@@ -165,10 +163,7 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void Awake()
     {
-        if (!initialized)
-        {
-            Initialize(gameObject);
-        }
+        Initialize(gameObject);
     }
 
 
@@ -183,7 +178,6 @@ public class GridHighlightVisuals : MonoBehaviour
             return;
         }
 
-
         UpdateAnimations();
     }
 
@@ -191,7 +185,6 @@ public class GridHighlightVisuals : MonoBehaviour
     private void UpdateAnimations()
     {
         UpdateScaleAnimation();
-
 
         if (currentState ==
             VisualState.Ability)
@@ -213,21 +206,17 @@ public class GridHighlightVisuals : MonoBehaviour
             return;
         }
 
-
         float pulse =
             (Mathf.Sin(
                 Time.time * pulseSpeed
             ) + 1f) * 0.5f;
 
-
         float alphaMultiplier =
             1f +
             pulse * pulseAmount;
 
-
         Color color =
             abilityRangeColor;
-
 
         color.a =
             Mathf.Clamp01(
@@ -235,14 +224,13 @@ public class GridHighlightVisuals : MonoBehaviour
                 alphaMultiplier
             );
 
-
         spriteRenderer.color =
             color;
     }
 
 
     // ============================================================
-    // SCALE ANIMATION
+    // SCALE
     // ============================================================
 
     private void UpdateScaleAnimation()
@@ -253,7 +241,6 @@ public class GridHighlightVisuals : MonoBehaviour
             return;
         }
 
-
         if (currentState ==
             VisualState.Default)
         {
@@ -261,20 +248,18 @@ public class GridHighlightVisuals : MonoBehaviour
             return;
         }
 
-
         float pulse =
             (Mathf.Sin(
                 Time.time * scaleSpeed
             ) + 1f) * 0.5f;
 
-
         float multiplier =
             1f +
             pulse * scaleAmount;
 
-
         tileTransform.localScale =
-            originalScale * multiplier;
+            originalScale *
+            multiplier;
     }
 
 
@@ -289,17 +274,15 @@ public class GridHighlightVisuals : MonoBehaviour
 
 
     // ============================================================
-    // PLACEMENT
+    // STATES
     // ============================================================
 
     public void ShowPlacement()
     {
         StopExplosionAnimation();
 
-
         currentState =
             VisualState.Placement;
-
 
         ApplyColor(
             placementColor,
@@ -308,18 +291,12 @@ public class GridHighlightVisuals : MonoBehaviour
     }
 
 
-    // ============================================================
-    // MOVEMENT
-    // ============================================================
-
     public void ShowMovement()
     {
         StopExplosionAnimation();
 
-
         currentState =
             VisualState.Movement;
-
 
         ApplyColor(
             movementRangeColor,
@@ -328,18 +305,12 @@ public class GridHighlightVisuals : MonoBehaviour
     }
 
 
-    // ============================================================
-    // ABILITY
-    // ============================================================
-
     public void ShowAbility()
     {
         StopExplosionAnimation();
 
-
         currentState =
             VisualState.Ability;
-
 
         ApplyColor(
             abilityRangeColor,
@@ -348,22 +319,30 @@ public class GridHighlightVisuals : MonoBehaviour
     }
 
 
-    // ============================================================
-    // ENEMY
-    // ============================================================
-
     public void ShowEnemy()
     {
         StopExplosionAnimation();
 
-
         currentState =
             VisualState.Enemy;
-
 
         ApplyColor(
             enemyTileColor,
             enemyTileAlpha
+        );
+    }
+
+
+    public void ShowHeal()
+    {
+        StopExplosionAnimation();
+
+        currentState =
+            VisualState.Heal;
+
+        ApplyColor(
+            healTileColor,
+            healTileAlpha
         );
     }
 
@@ -374,17 +353,16 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void ApplyColor(
         Color color,
-        float alpha)
+        float alpha
+    )
     {
         if (spriteRenderer == null)
         {
             return;
         }
 
-
         color.a =
             alpha;
-
 
         spriteRenderer.color =
             color;
@@ -399,13 +377,10 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         StopExplosionAnimation();
 
-
         currentState =
             VisualState.Default;
 
-
         ResetScale();
-
 
         if (spriteRenderer != null)
         {
@@ -426,9 +401,7 @@ public class GridHighlightVisuals : MonoBehaviour
             Initialize(gameObject);
         }
 
-
         StopExplosionAnimation();
-
 
         explosionCoroutine =
             StartCoroutine(
@@ -445,18 +418,13 @@ public class GridHighlightVisuals : MonoBehaviour
             yield break;
         }
 
-
         Color startingColor =
             spriteRenderer.color;
-
 
         Vector3 startingScale =
             originalScale;
 
-
-        float elapsed =
-            0f;
-
+        float elapsed = 0f;
 
         while (elapsed <
                explosionPulseDuration)
@@ -464,25 +432,22 @@ public class GridHighlightVisuals : MonoBehaviour
             elapsed +=
                 Time.deltaTime;
 
-
             float normalizedTime =
                 Mathf.Clamp01(
                     elapsed /
                     explosionPulseDuration
                 );
 
-
             float curveValue =
                 explosionPulseCurve.Evaluate(
                     normalizedTime
                 );
 
-
             float pulse =
                 Mathf.Sin(
-                    curveValue * Mathf.PI
+                    curveValue *
+                    Mathf.PI
                 );
-
 
             tileTransform.localScale =
                 startingScale *
@@ -492,14 +457,12 @@ public class GridHighlightVisuals : MonoBehaviour
                     explosionPulseAmount
                 );
 
-
             Color color =
                 Color.Lerp(
                     startingColor,
                     explosionColor,
                     pulse
                 );
-
 
             color.a =
                 Mathf.Lerp(
@@ -508,22 +471,17 @@ public class GridHighlightVisuals : MonoBehaviour
                     pulse
                 );
 
-
             spriteRenderer.color =
                 color;
-
 
             yield return null;
         }
 
-
         tileTransform.localScale =
             startingScale;
 
-
         spriteRenderer.color =
             startingColor;
-
 
         explosionCoroutine =
             null;
@@ -538,18 +496,16 @@ public class GridHighlightVisuals : MonoBehaviour
                 explosionCoroutine
             );
 
-
             explosionCoroutine =
                 null;
         }
-
 
         ResetScale();
     }
 
 
     // ============================================================
-    // OPTIONAL GETTERS
+    // GETTERS
     // ============================================================
 
     public Color GetPlacementColor()
@@ -557,21 +513,23 @@ public class GridHighlightVisuals : MonoBehaviour
         return placementColor;
     }
 
-
     public Color GetMovementColor()
     {
         return movementRangeColor;
     }
-
 
     public Color GetAbilityColor()
     {
         return abilityRangeColor;
     }
 
-
     public Color GetEnemyColor()
     {
         return enemyTileColor;
+    }
+
+    public Color GetHealColor()
+    {
+        return healTileColor;
     }
 }

@@ -23,10 +23,6 @@ public class RoundManager : MonoBehaviour
     }
 
 
-    // ==================================================
-    // ROUND STATE
-    // ==================================================
-
     [Header("Round State")]
     [SerializeField]
     private int currentRound = 0;
@@ -39,10 +35,6 @@ public class RoundManager : MonoBehaviour
     private bool autoBattle = false;
 
 
-    // ==================================================
-    // DEPENDENCIES
-    // ==================================================
-
     [Header("Dependencies")]
     [SerializeField]
     private CombatManager combatManager;
@@ -51,10 +43,6 @@ public class RoundManager : MonoBehaviour
     private GridManager gridManager;
 
 
-    // ==================================================
-    // UI / SETTINGS
-    // ==================================================
-
     [Header("UI & Settings")]
     [SerializeField]
     private Toggle autoBattleToggle;
@@ -62,10 +50,6 @@ public class RoundManager : MonoBehaviour
     [SerializeField]
     private float delayBetweenUnits = 0.5f;
 
-
-    // ==================================================
-    // INTERNAL
-    // ==================================================
 
     private readonly List<AbilityLogEntry>
         roundAbilityLogs =
@@ -80,17 +64,9 @@ public class RoundManager : MonoBehaviour
     private bool roundRunning;
 
 
-    // ==================================================
-    // EVENTS
-    // ==================================================
-
     public event Action<AbilityLogEntry>
         OnAbilityUsed;
 
-
-    // ==================================================
-    // UNITY
-    // ==================================================
 
     private void Awake()
     {
@@ -173,11 +149,44 @@ public class RoundManager : MonoBehaviour
 
         RefreshCachedUnits();
 
+        ResetAllUnitMovement();
+
         UpdateAllUnitCooldowns();
 
         StartCoroutine(
             RunRoundPipeline()
         );
+    }
+
+
+    // ==================================================
+    // RESET UNIT MOVEMENT
+    // ==================================================
+
+    private void ResetAllUnitMovement()
+    {
+        for (
+            int i = 0;
+            i < cachedUnits.Count;
+            i++
+        )
+        {
+            AttackUnit unit =
+                cachedUnits[i];
+
+            if (unit == null)
+            {
+                continue;
+            }
+
+            UnitMoveBrain moveBrain =
+                unit.GetComponent<UnitMoveBrain>();
+
+            if (moveBrain != null)
+            {
+                moveBrain.ResetMovement();
+            }
+        }
     }
 
 
@@ -195,10 +204,6 @@ public class RoundManager : MonoBehaviour
         EnsureEnemiesExist();
 
 
-        // ==================================================
-        // PLAYER / ALLY
-        // ==================================================
-
         currentState =
             RoundState.PlayerAndAllyTurn;
 
@@ -207,10 +212,6 @@ public class RoundManager : MonoBehaviour
         );
 
 
-        // ==================================================
-        // ENEMY
-        // ==================================================
-
         currentState =
             RoundState.EnemyTurn;
 
@@ -218,10 +219,6 @@ public class RoundManager : MonoBehaviour
             ExecuteEnemyTurn()
         );
 
-
-        // ==================================================
-        // END
-        // ==================================================
 
         currentState =
             RoundState.Setup;
@@ -264,11 +261,6 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
-
-            // ==================================================
-            // ATTACK -> MOVE -> ATTACK
-            // ==================================================
-
             yield return StartCoroutine(
                 CombatUtility.ExecuteUnitTurnCoroutine(
                     unit,
@@ -276,8 +268,6 @@ public class RoundManager : MonoBehaviour
                 )
             );
 
-
-            // Wait before the next unit.
             yield return unitDelay;
         }
     }
@@ -385,6 +375,7 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
+            // This now also resets hasMovedThisTurn.
             unit.StartNewRound();
         }
     }

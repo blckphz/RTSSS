@@ -1,3 +1,4 @@
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -5,7 +6,12 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    public static HoverInfoTrigger CurrentSelection { get; private set; }
+    public static HoverInfoTrigger CurrentSelection
+    {
+        get;
+        private set;
+    }
+
 
     [Header("Click Raycast")]
     [SerializeField]
@@ -17,31 +23,34 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     private float raycastDistance = 1000f;
 
+
     [Header("Movement")]
     [SerializeField]
     private bool allowPlayerMovement = true;
+
 
     [Header("Debug")]
     [SerializeField]
     private bool debugClick = true;
 
     [SerializeField]
-    private bool drawRay = true;
+    private bool drawRay = false;
 
 
-    // =============================================================
+    private CanvasInfoManager canvasInfoManager;
+
+
+    // ============================================================
     // UNITY
-    // =============================================================
+    // ============================================================
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (
+            Instance != null &&
+            Instance != this
+        )
         {
-            Debug.LogWarning(
-                "[UIManager] Duplicate UIManager found. Destroying duplicate.",
-                this
-            );
-
             Destroy(gameObject);
             return;
         }
@@ -50,16 +59,12 @@ public class UIManager : MonoBehaviour
 
         if (clickCamera == null)
         {
-            clickCamera = Camera.main;
+            clickCamera =
+                Camera.main;
         }
 
-        if (clickCamera == null)
-        {
-            Debug.LogError(
-                "[UIManager] NO CAMERA FOUND!",
-                this
-            );
-        }
+        canvasInfoManager =
+            FindFirstObjectByType<CanvasInfoManager>();
     }
 
 
@@ -69,9 +74,9 @@ public class UIManager : MonoBehaviour
     }
 
 
-    // =============================================================
-    // MOUSE CLICK
-    // =============================================================
+    // ============================================================
+    // CLICK
+    // ============================================================
 
     private void CheckMouseClick()
     {
@@ -93,23 +98,42 @@ public class UIManager : MonoBehaviour
         Vector2 mousePosition =
             Mouse.current.position.ReadValue();
 
+
+        // ========================================================
+        // ABILITY UI
+        // ========================================================
+
+        if (canvasInfoManager != null)
+        {
+            if (
+                canvasInfoManager
+                    .TrySelectAbilityUnderMouse()
+            )
+            {
+                return;
+            }
+        }
+
+
+        // ========================================================
+        // RAYCAST
+        // ========================================================
+
         Ray ray =
-            clickCamera.ScreenPointToRay(mousePosition);
+            clickCamera.ScreenPointToRay(
+                mousePosition
+            );
 
         if (drawRay)
         {
             Debug.DrawRay(
                 ray.origin,
-                ray.direction * raycastDistance,
+                ray.direction *
+                raycastDistance,
                 Color.green,
                 1f
             );
         }
-
-
-        // =========================================================
-        // 2D RAYCAST
-        // =========================================================
 
         RaycastHit2D hit =
             Physics2D.GetRayIntersection(
@@ -119,41 +143,71 @@ public class UIManager : MonoBehaviour
             );
 
 
-        // =========================================================
-        // TRY MOVING SELECTED UNIT
-        // =========================================================
+        // ========================================================
+        // ABILITY
+        // ========================================================
 
-        if (allowPlayerMovement &&
-            CurrentSelection != null)
+        if (HasSelectedAbility())
         {
-            if (TryMoveSelectedUnit(mousePosition))
+            if (
+                TryUseSelectedAbility(
+                    mousePosition,
+                    hit
+                )
+            )
             {
                 return;
-            }
-        }
-
-
-        // =========================================================
-        // CLICKED OBJECT
-        // =========================================================
-
-        if (hit.collider != null)
-        {
-            HoverInfoTrigger trigger =
-                hit.collider.GetComponentInParent<HoverInfoTrigger>();
-
-            if (trigger != null)
-            {
-                SelectObject(trigger);
             }
 
             return;
         }
 
 
-        // =========================================================
-        // EMPTY SPACE
-        // =========================================================
+        // ========================================================
+        // MOVEMENT
+        // ========================================================
+
+        if (
+            allowPlayerMovement &&
+            CurrentSelection != null
+        )
+        {
+            if (
+                TryMoveSelectedUnit(
+                    mousePosition
+                )
+            )
+            {
+                return;
+            }
+        }
+
+
+        // ========================================================
+        // OBJECT
+        // ========================================================
+
+        if (hit.collider != null)
+        {
+            HoverInfoTrigger trigger =
+                hit.collider
+                    .GetComponentInParent<
+                        HoverInfoTrigger>();
+
+            if (trigger != null)
+            {
+                SelectObject(
+                    trigger
+                );
+
+                return;
+            }
+        }
+
+
+        // ========================================================
+        // EMPTY
+        // ========================================================
 
         if (CurrentSelection != null)
         {
@@ -162,17 +216,91 @@ public class UIManager : MonoBehaviour
     }
 
 
-    // =============================================================
-    // PLAYER MOVEMENT
-    // =============================================================
+    // ============================================================
+    // ABILITY STATE
+    // ============================================================
 
-    private bool TryMoveSelectedUnit(
-        Vector2 mousePosition)
+    private bool HasSelectedAbility()
+    {
+        if (canvasInfoManager == null)
+        {
+            return false;
+        }
+
+        return
+            canvasInfoManager
+                .HasSelectedAbility();
+    }
+
+
+    // ============================================================
+    // PLAYER UNIT
+    // ============================================================
+
+    private bool IsPlayerControlledUnit(
+        GameObject unit
+    )
+    {
+        if (unit == null)
+        {
+            return false;
+        }
+
+        AttackUnit attackUnit =
+            unit.GetComponent<AttackUnit>();
+
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+        Team team =
+            attackUnit.GetTeam();
+
+        return
+            team == Team.Player ||
+            team == Team.Ally;
+    }
+
+
+    // ============================================================
+    // USE SELECTED ABILITY
+    // ============================================================
+
+    private bool TryUseSelectedAbility(
+        Vector2 mousePosition,
+        RaycastHit2D hit
+    )
     {
         if (CurrentSelection == null)
         {
             return false;
         }
+
+        if (!IsPlayerControlledUnit(
+                CurrentSelection.gameObject))
+        {
+            return false;
+        }
+
+        if (canvasInfoManager == null)
+        {
+            return false;
+        }
+
+        AbilitySO ability =
+            canvasInfoManager
+                .GetSelectedAbility();
+
+        if (ability == null)
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // ATTACK UNIT
+        // ========================================================
 
         AttackUnit attackUnit =
             CurrentSelection.GetAttackUnit();
@@ -182,15 +310,36 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
+
+        // ========================================================
+        // MOVEMENT BRAIN
+        // ========================================================
+
         UnitMoveBrain moveBrain =
-            attackUnit.GetComponent<UnitMoveBrain>();
+            attackUnit.GetComponent<
+                UnitMoveBrain>();
 
         if (moveBrain == null)
         {
+            return false;
+        }
+
+
+        // ========================================================
+        // MOVED THIS TURN CHECK
+        // ========================================================
+
+        if (
+            moveBrain.HasConsumedMovement() &&
+            !ability.CanAttackWithThisAfterMove()
+        )
+        {
             if (debugClick)
             {
-                Debug.LogWarning(
-                    "[UIManager] Selected unit has no UnitMoveBrain.",
+                Debug.Log(
+                    $"[UIManager] ATTACK BLOCKED -> " +
+                    $"{attackUnit.gameObject.name} already moved. " +
+                    $"'{ability.GetAbilityName()}' cannot be used after moving.",
                     attackUnit
                 );
             }
@@ -199,15 +348,9 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // =========================================================
-        // UNIT ALREADY MOVING
-        // =========================================================
-
-        if (moveBrain.IsMoving())
-        {
-            return true;
-        }
-
+        // ========================================================
+        // GRID
+        // ========================================================
 
         GridManager gridManager =
             moveBrain.GetGridManager();
@@ -218,9 +361,9 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // =========================================================
+        // ========================================================
         // SCREEN -> WORLD
-        // =========================================================
+        // ========================================================
 
         Vector3 worldPosition =
             clickCamera.ScreenToWorldPoint(
@@ -234,9 +377,306 @@ public class UIManager : MonoBehaviour
             );
 
 
-        // =========================================================
+        // ========================================================
         // WORLD -> GRID
-        // =========================================================
+        // ========================================================
+
+        Vector2Int targetTile =
+            gridManager.WorldToGridPosition(
+                worldPosition
+            );
+
+
+        // ========================================================
+        // GRID
+        // ========================================================
+
+        if (
+            !gridManager.IsInsideGrid(
+                targetTile
+            )
+        )
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // RANGE
+        // ========================================================
+
+        List<Vector2Int> rangeTiles =
+            ability.GetRangeTiles(
+                gridManager,
+                CurrentSelection.gameObject
+            );
+
+        if (
+            rangeTiles == null ||
+            !rangeTiles.Contains(
+                targetTile
+            )
+        )
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // BOMB
+        // ========================================================
+
+        BombAttack bombAttack =
+            ability as BombAttack;
+
+        if (bombAttack != null)
+        {
+            bool bombUsed =
+                bombAttack.UseAtTile(
+                    CurrentSelection.gameObject,
+                    gridManager,
+                    targetTile
+                );
+
+            if (!bombUsed)
+            {
+                return false;
+            }
+
+            if (debugClick)
+            {
+                Debug.Log(
+                    $"[UIManager] ABILITY USED -> " +
+                    $"{ability.GetAbilityName()} | " +
+                    $"Tile: {targetTile} | " +
+                    $"AfterMove: {ability.CanAttackWithThisAfterMove()}",
+                    CurrentSelection
+                );
+            }
+
+            ClearSelectedAbility();
+
+            return true;
+        }
+
+
+        // ========================================================
+        // NORMAL TARGET
+        // ========================================================
+
+        GameObject targetObject =
+            FindObjectOnTile(
+                targetTile,
+                gridManager
+            );
+
+        if (targetObject == null)
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // HIT CHECK
+        // ========================================================
+
+        if (!ability.CanHit(
+                gridManager,
+                CurrentSelection.gameObject,
+                targetObject
+            ))
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // USE
+        // ========================================================
+
+        bool used =
+            ability.Use(
+                CurrentSelection.gameObject,
+                targetObject
+            );
+
+        if (!used)
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // SUCCESS
+        // ========================================================
+
+        if (debugClick)
+        {
+            Debug.Log(
+                $"[UIManager] ABILITY USED -> " +
+                $"{ability.GetAbilityName()} | " +
+                $"Target: {targetObject.name} | " +
+                $"Tile: {targetTile} | " +
+                $"AfterMove: {ability.CanAttackWithThisAfterMove()}",
+                CurrentSelection
+            );
+        }
+
+        ClearSelectedAbility();
+
+        return true;
+    }
+
+
+    // ============================================================
+    // FIND OBJECT
+    // ============================================================
+
+    private GameObject FindObjectOnTile(
+        Vector2Int tile,
+        GridManager gridManager
+    )
+    {
+        if (gridManager == null)
+        {
+            return null;
+        }
+
+        Vector3 worldPosition =
+            GetTileWorldPosition(
+                gridManager,
+                tile
+            );
+
+        Collider2D[] colliders =
+            Physics2D.OverlapCircleAll(
+                worldPosition,
+                0.35f,
+                clickLayers
+            );
+
+        for (
+            int i = 0;
+            i < colliders.Length;
+            i++
+        )
+        {
+            if (colliders[i] == null)
+            {
+                continue;
+            }
+
+            HoverInfoTrigger trigger =
+                colliders[i]
+                    .GetComponentInParent<
+                        HoverInfoTrigger>();
+
+            if (trigger != null)
+            {
+                return trigger.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+
+    // ============================================================
+    // TILE POSITION
+    // ============================================================
+
+    private Vector3 GetTileWorldPosition(
+        GridManager gridManager,
+        Vector2Int tile
+    )
+    {
+        if (gridManager == null)
+        {
+            return Vector3.zero;
+        }
+
+        return
+            gridManager.GridToWorldPosition(
+                tile
+            );
+    }
+
+
+    // ============================================================
+    // CLEAR ABILITY
+    // ============================================================
+
+    private void ClearSelectedAbility()
+    {
+        if (canvasInfoManager == null)
+        {
+            return;
+        }
+
+        canvasInfoManager
+            .ClearSelectedAbility();
+    }
+
+
+    // ============================================================
+    // PLAYER MOVEMENT
+    // ============================================================
+
+    private bool TryMoveSelectedUnit(
+        Vector2 mousePosition
+    )
+    {
+        if (CurrentSelection == null)
+        {
+            return false;
+        }
+
+        if (!IsPlayerControlledUnit(
+                CurrentSelection.gameObject))
+        {
+            return false;
+        }
+
+        AttackUnit attackUnit =
+            CurrentSelection.GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return false;
+        }
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<
+                UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            return false;
+        }
+
+        if (moveBrain.IsMoving())
+        {
+            return true;
+        }
+
+        GridManager gridManager =
+            moveBrain.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+        Vector3 worldPosition =
+            clickCamera.ScreenToWorldPoint(
+                new Vector3(
+                    mousePosition.x,
+                    mousePosition.y,
+                    Mathf.Abs(
+                        clickCamera.transform.position.z
+                    )
+                )
+            );
 
         Vector2Int destination =
             gridManager.WorldToGridPosition(
@@ -248,30 +688,22 @@ public class UIManager : MonoBehaviour
                 attackUnit.transform.position
             );
 
-
-        // =========================================================
-        // SAME CELL
-        // =========================================================
-
-        if (destination == currentPosition)
+        if (
+            destination ==
+            currentPosition
+        )
         {
             return false;
         }
 
-
-        // =========================================================
-        // INSIDE GRID
-        // =========================================================
-
-        if (!gridManager.IsInsideGrid(destination))
+        if (
+            !gridManager.IsInsideGrid(
+                destination
+            )
+        )
         {
             return false;
         }
-
-
-        // =========================================================
-        // HIGHLIGHT MANAGER
-        // =========================================================
 
         GridHighlightManager highlightManager =
             gridManager.GetHighlightManager();
@@ -281,44 +713,21 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
-        // =========================================================
-        // ONLY ALLOW HIGHLIGHTED CELLS
-        // =========================================================
-
-        if (!highlightManager.IsMovementCell(destination))
+        if (!highlightManager.IsMovementCell(
+                destination
+            ))
         {
-            if (debugClick)
-            {
-                Debug.Log(
-                    $"[UIManager] Cell {destination} is outside the selected unit's movement range."
-                );
-            }
-
             return false;
         }
 
-
-        // =========================================================
-        // OCCUPIED
-        // =========================================================
-
-        if (gridManager.IsCellOccupied(destination))
+        if (
+            gridManager.IsCellOccupied(
+                destination
+            )
+        )
         {
-            if (debugClick)
-            {
-                Debug.Log(
-                    $"[UIManager] Cannot move to {destination}. Cell is occupied."
-                );
-            }
-
             return false;
         }
-
-
-        // =========================================================
-        // RANGE CHECK
-        // =========================================================
 
         int moveRange =
             moveBrain.GetMoveRange();
@@ -334,31 +743,26 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
-        // =========================================================
-        // ACTUAL MOVEMENT
-        // =========================================================
-
         bool started =
-            moveBrain.TryMoveTo(destination);
+            moveBrain.TryMoveTo(
+                destination
+            );
 
         if (!started)
         {
             return false;
         }
 
-
-        // =========================================================
-        // CLEAR MOVEMENT RANGE
-        // =========================================================
-
-        highlightManager.ClearMovementRange();
-
+        highlightManager
+            .ClearMovementRange();
 
         if (debugClick)
         {
             Debug.Log(
-                $"[UIManager] Player movement: {currentPosition} -> {destination}",
+                $"[UIManager] MOVE -> " +
+                $"{attackUnit.gameObject.name}: " +
+                $"{currentPosition} -> {destination} | " +
+                $"MovementConsumed: TRUE",
                 attackUnit
             );
         }
@@ -367,87 +771,60 @@ public class UIManager : MonoBehaviour
     }
 
 
-    // =============================================================
-    // SELECT OBJECT
-    // =============================================================
+    // ============================================================
+    // SELECT
+    // ============================================================
 
     public static void SelectObject(
-        HoverInfoTrigger trigger)
+        HoverInfoTrigger trigger
+    )
     {
         if (trigger == null)
         {
             return;
         }
 
-
-        // Clicking already selected object does nothing.
         if (CurrentSelection == trigger)
         {
             return;
         }
-
-
-        // =========================================================
-        // CLEAR OLD SELECTION
-        // =========================================================
 
         if (CurrentSelection != null)
         {
             ClearSelection();
         }
 
-
-        // =========================================================
-        // NEW SELECTION
-        // =========================================================
-
-        CurrentSelection = trigger;
+        CurrentSelection =
+            trigger;
 
         trigger.SetSelected(true);
 
-
-        Debug.Log(
-            $"[UIManager] SELECTED -> {trigger.gameObject.name} | Message: {trigger.HoverMessage}",
+        ShowMovementRange(
             trigger
         );
 
-
-        // =========================================================
-        // SHOW MOVEMENT RANGE
-        // =========================================================
-
-        ShowMovementRange(trigger);
-
-
-        // =========================================================
-        // UI
-        // =========================================================
-
-        if (CanvasJuiceManager.Instance != null)
+        if (
+            CanvasJuiceManager.Instance != null
+        )
         {
-            CanvasJuiceManager.Instance.ShowHoverInfo();
-        }
-        else
-        {
-            Debug.LogError(
-                "[UIManager] CanvasJuiceManager.Instance is NULL!"
-            );
+            CanvasJuiceManager.Instance
+                .ShowHoverInfo();
         }
     }
 
 
-    // =============================================================
-    // SHOW MOVEMENT RANGE
-    // =============================================================
+    // ============================================================
+    // MOVEMENT RANGE
+    // ============================================================
 
     private static void ShowMovementRange(
-        HoverInfoTrigger trigger)
+        HoverInfoTrigger trigger
+    )
     {
         if (trigger == null)
         {
             return;
         }
-
 
         AttackUnit attackUnit =
             trigger.GetAttackUnit();
@@ -457,20 +834,22 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
-        UnitMoveBrain moveBrain =
-            attackUnit.GetComponent<UnitMoveBrain>();
-
-        if (moveBrain == null)
+        if (
+            attackUnit.GetTeam() ==
+            Team.Enemy
+        )
         {
-            Debug.LogWarning(
-                "[UIManager] Selected unit has no UnitMoveBrain.",
-                attackUnit
-            );
-
             return;
         }
 
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<
+                UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            return;
+        }
 
         GridManager gridManager =
             moveBrain.GetGridManager();
@@ -480,38 +859,21 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         GridHighlightManager highlightManager =
             gridManager.GetHighlightManager();
 
         if (highlightManager == null)
         {
-            Debug.LogWarning(
-                "[UIManager] GridHighlightManager is missing.",
-                gridManager
-            );
-
             return;
         }
-
-
-        // =========================================================
-        // UNIT POSITION
-        // =========================================================
 
         Vector2Int position =
             gridManager.WorldToGridPosition(
                 trigger.transform.position
             );
 
-
-        // =========================================================
-        // MOVEMENT RANGE
-        // =========================================================
-
         int moveRange =
             moveBrain.GetMoveRange();
-
 
         highlightManager.ShowMovementRange(
             position,
@@ -521,9 +883,9 @@ public class UIManager : MonoBehaviour
     }
 
 
-    // =============================================================
+    // ============================================================
     // CLEAR SELECTION
-    // =============================================================
+    // ============================================================
 
     public static void ClearSelection()
     {
@@ -532,39 +894,50 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         HoverInfoTrigger previousSelection =
             CurrentSelection;
 
+        previousSelection.SetSelected(
+            false
+        );
 
-        previousSelection.SetSelected(false);
-
-
-        ClearMovementRange(previousSelection);
-
+        ClearMovementRange(
+            previousSelection
+        );
 
         CurrentSelection = null;
 
-
-        if (CanvasJuiceManager.Instance != null)
+        if (
+            Instance != null &&
+            Instance.canvasInfoManager != null
+        )
         {
-            CanvasJuiceManager.Instance.HideHoverInfo();
+            Instance.canvasInfoManager
+                .ClearInfo();
+        }
+
+        if (
+            CanvasJuiceManager.Instance != null
+        )
+        {
+            CanvasJuiceManager.Instance
+                .HideHoverInfo();
         }
     }
 
 
-    // =============================================================
+    // ============================================================
     // CLEAR MOVEMENT RANGE
-    // =============================================================
+    // ============================================================
 
     private static void ClearMovementRange(
-        HoverInfoTrigger trigger)
+        HoverInfoTrigger trigger
+    )
     {
         if (trigger == null)
         {
             return;
         }
-
 
         AttackUnit attackUnit =
             trigger.GetAttackUnit();
@@ -574,15 +947,14 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         UnitMoveBrain moveBrain =
-            attackUnit.GetComponent<UnitMoveBrain>();
+            attackUnit.GetComponent<
+                UnitMoveBrain>();
 
         if (moveBrain == null)
         {
             return;
         }
-
 
         GridManager gridManager =
             moveBrain.GetGridManager();
@@ -592,29 +964,29 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         GridHighlightManager highlightManager =
             gridManager.GetHighlightManager();
 
         if (highlightManager != null)
         {
-            highlightManager.ClearMovementRange();
+            highlightManager
+                .ClearMovementRange();
         }
     }
 
 
-    // =============================================================
-    // CLEAR SPECIFIC SELECTION
-    // =============================================================
+    // ============================================================
+    // CLEAR SPECIFIC
+    // ============================================================
 
     public static void ClearSelection(
-        HoverInfoTrigger trigger)
+        HoverInfoTrigger trigger
+    )
     {
         if (trigger == null)
         {
             return;
         }
-
 
         if (CurrentSelection == trigger)
         {
