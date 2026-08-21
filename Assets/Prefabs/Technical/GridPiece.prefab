@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3875156900254592791}
   - component: {fileID: 5926921351338923184}
+  - component: {fileID: 8558840810073551832}
   m_Layer: 0
   m_Name: GridPiece
   m_TagString: Untagged
@@ -90,3 +91,56 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &8558840810073551832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574674370741488442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec89a3edf6c116949b0f718e9d8ac753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridHighlightVisuals
+  placementColor: {r: 0, g: 1, b: 0, a: 1}
+  placementAlpha: 0.5
+  abilityRangeColor: {r: 0, g: 0, b: 0, a: 1}
+  abilityRangeAlpha: 0.569
+  enemyTileColor: {r: 1, g: 0, b: 0, a: 1}
+  enemyTileAlpha: 0.85
+  healTileColor: {r: 0, g: 1, b: 0, a: 1}
+  healTileAlpha: 0.85
+  pulseAbility: 1
+  pulseSpeed: 5
+  pulseAmount: 0.2
+  animateTileScale: 1
+  scaleAmount: 0.06
+  scaleSpeed: 5
+  explosionColor: {r: 1, g: 0, b: 0, a: 1}
+  explosionPulseAmount: 0.12
+  explosionPulseDuration: 0.12
+  explosionPulseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

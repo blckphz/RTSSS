@@ -4,11 +4,45 @@ using UnityEngine;
 
 public class GridHighlightManager : MonoBehaviour
 {
+    // ============================================================
+    // GRID REFERENCE
+    // ============================================================
+
     [Header("Grid Reference")]
-    [SerializeField] private GridManager gridManager;
+    [SerializeField]
+    private GridManager gridManager;
+
+
+    // ============================================================
+    // BRAIN REFERENCE
+    // ============================================================
 
     [Header("Brain Reference")]
-    [SerializeField] private GridHighlightBrain brain;
+    [SerializeField]
+    private GridHighlightBrain brain;
+
+
+    // ============================================================
+    // MOVEMENT RANGE
+    // ============================================================
+
+    [Header("Movement Range")]
+
+    [SerializeField]
+    private Color movementRangeColor = Color.cyan;
+
+    [SerializeField, Range(0f, 1f)]
+    private float movementRangeAlpha = 0.35f;
+
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    [Header("Debug")]
+
+    [SerializeField]
+    private bool debugMovementTileColor = true;
 
 
     // ============================================================
@@ -16,7 +50,9 @@ public class GridHighlightManager : MonoBehaviour
     // ============================================================
 
     [Header("Enemy Target Hover")]
-    [SerializeField] private Color enemyHoverColor = Color.red;
+
+    [SerializeField]
+    private Color enemyHoverColor = Color.red;
 
     [SerializeField]
     private bool enableEnemyHoverShader = true;
@@ -31,7 +67,9 @@ public class GridHighlightManager : MonoBehaviour
     // ============================================================
 
     [Header("Friendly Heal Target Hover")]
-    [SerializeField] private Color healHoverColor = Color.green;
+
+    [SerializeField]
+    private Color healHoverColor = Color.green;
 
     [SerializeField]
     private bool enableHealHoverShader = true;
@@ -76,42 +114,51 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly Dictionary<Vector2Int, GridHighlightVisuals>
         tileVisuals =
-        new Dictionary<Vector2Int, GridHighlightVisuals>(256);
+            new Dictionary<Vector2Int, GridHighlightVisuals>(256);
 
 
     private readonly HashSet<Vector2Int>
         abilityCells =
-        new HashSet<Vector2Int>();
+            new HashSet<Vector2Int>();
 
 
     private readonly HashSet<Vector2Int>
         movementCells =
-        new HashSet<Vector2Int>();
+            new HashSet<Vector2Int>();
 
 
     private readonly HashSet<Vector2Int>
         explosionCells =
-        new HashSet<Vector2Int>();
+            new HashSet<Vector2Int>();
+
+
+    // ============================================================
+    // MOVEMENT DEBUG CACHE
+    // ============================================================
+
+    private readonly HashSet<Vector2Int>
+        movementHighlightedTiles =
+            new HashSet<Vector2Int>();
 
 
     private readonly HashSet<SpriteRenderer>
         activeTargetHoverRenderers =
-        new HashSet<SpriteRenderer>();
+            new HashSet<SpriteRenderer>();
 
 
     private readonly Dictionary<GameObject, AttackUnit>
         unitComponentCache =
-        new Dictionary<GameObject, AttackUnit>();
+            new Dictionary<GameObject, AttackUnit>();
 
 
     private readonly List<Vector2Int>
         tempCellList =
-        new List<Vector2Int>(64);
+            new List<Vector2Int>(64);
 
 
     private readonly List<SpriteRenderer>
         tempRendererList =
-        new List<SpriteRenderer>(16);
+            new List<SpriteRenderer>(16);
 
 
     // ============================================================
@@ -120,17 +167,17 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly Dictionary<Transform, Vector3>
         targetOriginalScales =
-        new Dictionary<Transform, Vector3>(16);
+            new Dictionary<Transform, Vector3>(16);
 
 
     private readonly HashSet<Transform>
         activeTargetPulseTransforms =
-        new HashSet<Transform>();
+            new HashSet<Transform>();
 
 
     private readonly List<Transform>
         tempTargetTransformList =
-        new List<Transform>(16);
+            new List<Transform>(16);
 
 
     // ============================================================
@@ -228,17 +275,13 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-
         tileVisuals.Clear();
-
 
         int width =
             gridManager.GetWidth();
 
-
         int height =
             gridManager.GetHeight();
-
 
         for (int x = 0; x < width; x++)
         {
@@ -501,6 +544,8 @@ public class GridHighlightManager : MonoBehaviour
         {
             SetCurrentRangeUser(null);
 
+            movementHighlightedTiles.Clear();
+
             return;
         }
 
@@ -514,6 +559,8 @@ public class GridHighlightManager : MonoBehaviour
 
 
         movementCells.Clear();
+
+        movementHighlightedTiles.Clear();
 
 
         int count =
@@ -805,6 +852,10 @@ public class GridHighlightManager : MonoBehaviour
             placementPosition == position
         )
         {
+            movementHighlightedTiles.Remove(
+                position
+            );
+
             visual.ShowPlacement();
 
             return;
@@ -817,6 +868,11 @@ public class GridHighlightManager : MonoBehaviour
 
         if (abilityCells.Contains(position))
         {
+            movementHighlightedTiles.Remove(
+                position
+            );
+
+
             GameObject unit =
                 gridManager.GetUnitAt(
                     position
@@ -853,7 +909,23 @@ public class GridHighlightManager : MonoBehaviour
             movementCells.Contains(position)
         )
         {
-            visual.ShowMovement();
+            visual.ShowMovement(
+                movementRangeColor,
+                movementRangeAlpha
+            );
+
+
+            if (
+                debugMovementTileColor &&
+                movementHighlightedTiles.Add(position)
+            )
+            {
+                Debug.Log(
+                    $"[GridHighlightManager] Movement tile color changed: {position} | Color: {movementRangeColor} | Alpha: {movementRangeAlpha}",
+                    visual.gameObject
+                );
+            }
+
 
             return;
         }
@@ -862,6 +934,11 @@ public class GridHighlightManager : MonoBehaviour
         // ========================================================
         // DEFAULT
         // ========================================================
+
+        movementHighlightedTiles.Remove(
+            position
+        );
+
 
         visual.Reset();
     }
@@ -1201,10 +1278,6 @@ public class GridHighlightManager : MonoBehaviour
         }
 
 
-        // ========================================================
-        // ENABLE
-        // ========================================================
-
         if (enabled)
         {
             renderer.GetPropertyBlock(
@@ -1231,12 +1304,6 @@ public class GridHighlightManager : MonoBehaviour
                 renderer
             );
         }
-
-
-        // ========================================================
-        // DISABLE
-        // ========================================================
-
         else
         {
             renderer.enabled =
@@ -1512,10 +1579,6 @@ public class GridHighlightManager : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // Remove transforms that have returned to normal
-        // --------------------------------------------------------
-
         tempTargetTransformList.Clear();
 
 
@@ -1637,25 +1700,20 @@ public class GridHighlightManager : MonoBehaviour
     {
         ClearPlacementTile();
 
-
         ClearMovementRange();
-
 
         ClearAbilityRange();
 
-
         ClearAllTargetHovers();
-
 
         ClearAllTargetPulse();
 
-
         explosionCells.Clear();
 
+        movementHighlightedTiles.Clear();
 
         suppressMovementHighlight =
             false;
-
 
         currentAbilityIsHeal =
             false;
@@ -1686,5 +1744,17 @@ public class GridHighlightManager : MonoBehaviour
     public GridHighlightBrain GetBrain()
     {
         return brain;
+    }
+
+
+    public Color GetMovementRangeColor()
+    {
+        return movementRangeColor;
+    }
+
+
+    public float GetMovementRangeAlpha()
+    {
+        return movementRangeAlpha;
     }
 }

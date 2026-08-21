@@ -3,6 +3,10 @@ using UnityEngine;
 
 public class GridHighlightVisuals : MonoBehaviour
 {
+    // ============================================================
+    // PLACEMENT
+    // ============================================================
+
     [Header("Placement")]
     [SerializeField]
     private Color placementColor = Color.green;
@@ -11,13 +15,9 @@ public class GridHighlightVisuals : MonoBehaviour
     private float placementAlpha = 0.5f;
 
 
-    [Header("Movement Range")]
-    [SerializeField]
-    private Color movementRangeColor = Color.cyan;
-
-    [SerializeField, Range(0f, 1f)]
-    private float movementRangeAlpha = 0.35f;
-
+    // ============================================================
+    // ABILITY RANGE
+    // ============================================================
 
     [Header("Ability Range")]
     [SerializeField]
@@ -27,6 +27,10 @@ public class GridHighlightVisuals : MonoBehaviour
     private float abilityRangeAlpha = 0.35f;
 
 
+    // ============================================================
+    // ENEMY TILE
+    // ============================================================
+
     [Header("Enemy Tile")]
     [SerializeField]
     private Color enemyTileColor = Color.red;
@@ -34,6 +38,10 @@ public class GridHighlightVisuals : MonoBehaviour
     [SerializeField, Range(0f, 1f)]
     private float enemyTileAlpha = 0.85f;
 
+
+    // ============================================================
+    // HEAL TILE
+    // ============================================================
 
     [Header("Heal Tile")]
     [SerializeField]
@@ -43,7 +51,12 @@ public class GridHighlightVisuals : MonoBehaviour
     private float healTileAlpha = 0.85f;
 
 
+    // ============================================================
+    // ANIMATIONS
+    // ============================================================
+
     [Header("Animations")]
+
     [SerializeField]
     private bool pulseAbility = true;
 
@@ -64,7 +77,12 @@ public class GridHighlightVisuals : MonoBehaviour
     private float scaleSpeed = 5f;
 
 
+    // ============================================================
+    // EXPLOSION
+    // ============================================================
+
     [Header("Explosion")]
+
     [SerializeField]
     private Color explosionColor = Color.red;
 
@@ -207,13 +225,17 @@ public class GridHighlightVisuals : MonoBehaviour
         }
 
         float pulse =
-            (Mathf.Sin(
-                Time.time * pulseSpeed
-            ) + 1f) * 0.5f;
+            (
+                Mathf.Sin(
+                    Time.time *
+                    pulseSpeed
+                ) + 1f
+            ) * 0.5f;
 
         float alphaMultiplier =
             1f +
-            pulse * pulseAmount;
+            pulse *
+            pulseAmount;
 
         Color color =
             abilityRangeColor;
@@ -245,17 +267,22 @@ public class GridHighlightVisuals : MonoBehaviour
             VisualState.Default)
         {
             ResetScale();
+
             return;
         }
 
         float pulse =
-            (Mathf.Sin(
-                Time.time * scaleSpeed
-            ) + 1f) * 0.5f;
+            (
+                Mathf.Sin(
+                    Time.time *
+                    scaleSpeed
+                ) + 1f
+            ) * 0.5f;
 
         float multiplier =
             1f +
-            pulse * scaleAmount;
+            pulse *
+            scaleAmount;
 
         tileTransform.localScale =
             originalScale *
@@ -291,7 +318,13 @@ public class GridHighlightVisuals : MonoBehaviour
     }
 
 
-    public void ShowMovement()
+    // ============================================================
+    // MOVEMENT
+    // ============================================================
+
+    public void ShowMovement(
+        Color color,
+        float alpha)
     {
         StopExplosionAnimation();
 
@@ -299,11 +332,15 @@ public class GridHighlightVisuals : MonoBehaviour
             VisualState.Movement;
 
         ApplyColor(
-            movementRangeColor,
-            movementRangeAlpha
+            color,
+            alpha
         );
     }
 
+
+    // ============================================================
+    // ABILITY
+    // ============================================================
 
     public void ShowAbility()
     {
@@ -319,6 +356,10 @@ public class GridHighlightVisuals : MonoBehaviour
     }
 
 
+    // ============================================================
+    // ENEMY
+    // ============================================================
+
     public void ShowEnemy()
     {
         StopExplosionAnimation();
@@ -332,6 +373,10 @@ public class GridHighlightVisuals : MonoBehaviour
         );
     }
 
+
+    // ============================================================
+    // HEAL
+    // ============================================================
 
     public void ShowHeal()
     {
@@ -353,8 +398,7 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void ApplyColor(
         Color color,
-        float alpha
-    )
+        float alpha)
     {
         if (spriteRenderer == null)
         {
@@ -362,7 +406,7 @@ public class GridHighlightVisuals : MonoBehaviour
         }
 
         color.a =
-            alpha;
+            Mathf.Clamp01(alpha);
 
         spriteRenderer.color =
             color;
@@ -426,8 +470,10 @@ public class GridHighlightVisuals : MonoBehaviour
 
         float elapsed = 0f;
 
-        while (elapsed <
-               explosionPulseDuration)
+        while (
+            elapsed <
+            explosionPulseDuration
+        )
         {
             elapsed +=
                 Time.deltaTime;
@@ -511,11 +557,6 @@ public class GridHighlightVisuals : MonoBehaviour
     public Color GetPlacementColor()
     {
         return placementColor;
-    }
-
-    public Color GetMovementColor()
-    {
-        return movementRangeColor;
     }
 
     public Color GetAbilityColor()

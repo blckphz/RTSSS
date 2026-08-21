@@ -459,6 +459,7 @@ GameObject:
   - component: {fileID: 345656229}
   - component: {fileID: 345656228}
   - component: {fileID: 345656227}
+  - component: {fileID: 345656230}
   m_Layer: 0
   m_Name: UIManagers
   m_TagString: Untagged
@@ -538,6 +539,18 @@ MonoBehaviour:
   normalPosition: {fileID: 1124500261}
   hoverPosition: {fileID: 1194508299}
   cameraMoveDuration: 0.25
+--- !u!114 &345656230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345656225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f089c48eb1ab7b548ae05943671b6869, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
 --- !u!1 &393966090
 GameObject:
   m_ObjectHideFlags: 0
@@ -761,7 +774,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 7.3
+  orthographic size: 9.54
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -786,7 +799,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.8699999, y: 0.23999977, z: 0}
+  m_LocalPosition: {x: 0.8699999, y: 0.40999985, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1282,7 +1295,7 @@ Transform:
   m_GameObject: {fileID: 786705234}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.8699999, y: 0.23999977, z: 0}
+  m_LocalPosition: {x: 0.8699999, y: 0.40999985, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1313,7 +1326,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 7.3
+    OrthographicSize: 9.54
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -1363,7 +1376,6 @@ GameObject:
   - component: {fileID: 804482594}
   - component: {fileID: 804482593}
   - component: {fileID: 804482597}
-  - component: {fileID: 804482598}
   - component: {fileID: 804482599}
   m_Layer: 0
   m_Name: GridManager
@@ -1386,6 +1398,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 804482595}
   brain: {fileID: 804482597}
+  movementRangeColor: {r: 0, g: 1, b: 1, a: 1}
+  movementRangeAlpha: 0.624
+  debugMovementTileColor: 1
   enemyHoverColor: {r: 1, g: 0, b: 0, a: 1}
   enableEnemyHoverShader: 1
   enemyHoverObjectName: HoverShaderSprite
@@ -1460,61 +1475,6 @@ MonoBehaviour:
   gridManager: {fileID: 804482595}
   highlightManager: {fileID: 804482593}
   enableDebugLogs: 0
---- !u!114 &804482598
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 804482592}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ec89a3edf6c116949b0f718e9d8ac753, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  placementColor: {r: 0, g: 1, b: 0, a: 1}
-  placementAlpha: 0.5
-  movementRangeColor: {r: 0, g: 1, b: 1, a: 1}
-  movementRangeAlpha: 0.35
-  abilityRangeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  abilityRangeAlpha: 0.35
-  enemyTileColor: {r: 0, g: 0.12644672, b: 1, a: 1}
-  enemyTileAlpha: 0.85
-  healTileColor: {r: 0, g: 1, b: 0, a: 1}
-  healTileAlpha: 0.85
-  pulseAbility: 1
-  pulseSpeed: 5
-  pulseAmount: 0.2
-  animateTileScale: 1
-  scaleAmount: 0.06
-  scaleSpeed: 5
-  explosionColor: {r: 1, g: 0, b: 0, a: 1}
-  explosionPulseAmount: 0.12
-  explosionPulseDuration: 0.12
-  explosionPulseCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
 --- !u!114 &804482599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1931,7 +1891,7 @@ Transform:
   m_GameObject: {fileID: 1124500260}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.87, y: 0.24, z: 10}
+  m_LocalPosition: {x: 0.87, y: 0.52, z: 10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2095,7 +2055,7 @@ Transform:
   m_GameObject: {fileID: 1194508298}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -4, y: 0.06, z: 10}
+  m_LocalPosition: {x: -4, y: 0.57, z: 10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9329,7 +9289,7 @@ Transform:
   m_GameObject: {fileID: 2040856375}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.87, y: 0.24, z: 10}
+  m_LocalPosition: {x: 0.87, y: 0.41, z: 10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
