@@ -23,6 +23,8 @@ MonoBehaviour:
   range: 4
   minDistance: 2
   rangeShape: 2
+  bombPrefab: {fileID: 6696783540544688903, guid: 80f73fe7f148d51469ff390a05d7ef9d, type: 3}
+  projectileSpeed: 8
   explosionPrefab: {fileID: 2004172624130830715, guid: a5b780eea8e76804c9bf4cdf4862f345, type: 3}
   explosionDelay: 0
   explosionRadius: 1
