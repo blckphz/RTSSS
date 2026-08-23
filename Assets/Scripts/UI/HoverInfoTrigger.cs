@@ -116,6 +116,37 @@ public class HoverInfoTrigger :
 
 
     // ============================================================
+    // HOVER OUTLINE
+    // ============================================================
+
+    [Header("Hover Outline")]
+    [Tooltip(
+        "The SpriteRenderer on the child object used for the normal mouse hover outline."
+    )]
+    [SerializeField]
+    private SpriteRenderer hoverShaderSprite;
+
+    [Tooltip(
+        "Color applied to the outline when normally hovering over the unit."
+    )]
+    [SerializeField]
+    private Color hoverOutlineColor = Color.white;
+
+    [Tooltip(
+        "Name of the child GameObject containing the hover outline SpriteRenderer."
+    )]
+    [SerializeField]
+    private string hoverShaderObjectName =
+        "HoverShaderSprite";
+
+    [Tooltip(
+        "Enables the outline when the mouse is hovering over the unit or the unit is selected."
+    )]
+    [SerializeField]
+    private bool enableHoverOutline = true;
+
+
+    // ============================================================
     // SELECTED VISUAL
     // ============================================================
 
@@ -177,6 +208,18 @@ public class HoverInfoTrigger :
 
 
     // ============================================================
+    // HOVER OUTLINE STATE
+    // ============================================================
+
+    private MaterialPropertyBlock hoverPropertyBlock;
+
+    private static readonly int OutlineColorID =
+        Shader.PropertyToID(
+            "_OutlineColor"
+        );
+
+
+    // ============================================================
     // UNITY
     // ============================================================
 
@@ -203,6 +246,14 @@ public class HoverInfoTrigger :
 
         audioFXManager =
             AudioFXManager.Instance;
+
+
+        // --------------------------------------------------------
+        // HOVER OUTLINE PROPERTY BLOCK
+        // --------------------------------------------------------
+
+        hoverPropertyBlock =
+            new MaterialPropertyBlock();
 
 
         // --------------------------------------------------------
@@ -258,6 +309,13 @@ public class HoverInfoTrigger :
 
 
         // --------------------------------------------------------
+        // HOVER OUTLINE
+        // --------------------------------------------------------
+
+        SetupHoverOutline();
+
+
+        // --------------------------------------------------------
         // MANAGERS
         // --------------------------------------------------------
 
@@ -274,6 +332,102 @@ public class HoverInfoTrigger :
         CheckMouseHover();
 
         UpdateScale();
+    }
+
+
+    // ============================================================
+    // HOVER OUTLINE SETUP
+    // ============================================================
+
+    private void SetupHoverOutline()
+    {
+        if (hoverShaderSprite == null)
+        {
+            Transform hoverShader =
+                transform.Find(
+                    hoverShaderObjectName
+                );
+
+            if (hoverShader != null)
+            {
+                hoverShaderSprite =
+                    hoverShader.GetComponent<SpriteRenderer>();
+            }
+        }
+
+
+        if (hoverShaderSprite == null)
+        {
+            Debug.LogWarning(
+                $"[HoverInfoTrigger] " +
+                $"{gameObject.name} could not find " +
+                $"{hoverShaderObjectName}.",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // START DISABLED
+        // --------------------------------------------------------
+
+        hoverShaderSprite.enabled =
+            false;
+
+
+        // --------------------------------------------------------
+        // SET OUTLINE COLOR
+        // --------------------------------------------------------
+
+        hoverShaderSprite.GetPropertyBlock(
+            hoverPropertyBlock
+        );
+
+
+        hoverPropertyBlock.SetColor(
+            OutlineColorID,
+            hoverOutlineColor
+        );
+
+
+        hoverShaderSprite.SetPropertyBlock(
+            hoverPropertyBlock
+        );
+    }
+
+
+    // ============================================================
+    // HOVER OUTLINE
+    // ============================================================
+
+    private void UpdateHoverOutline()
+    {
+        if (
+            hoverShaderSprite == null ||
+            !enableHoverOutline
+        )
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // OUTLINE IS VISIBLE IF:
+        //
+        // 1. Mouse is hovering the unit
+        // OR
+        // 2. Unit is selected
+        // --------------------------------------------------------
+
+        bool shouldShowOutline =
+            isHovered ||
+            isSelected;
+
+
+        hoverShaderSprite.enabled =
+            shouldShowOutline;
     }
 
 
@@ -364,6 +518,17 @@ public class HoverInfoTrigger :
             hovered;
 
 
+        // --------------------------------------------------------
+        // HOVER OUTLINE
+        // --------------------------------------------------------
+
+        UpdateHoverOutline();
+
+
+        // --------------------------------------------------------
+        // DEBUG
+        // --------------------------------------------------------
+
         if (debugHover)
         {
             Debug.Log(
@@ -373,6 +538,10 @@ public class HoverInfoTrigger :
             );
         }
 
+
+        // --------------------------------------------------------
+        // ENTER / EXIT
+        // --------------------------------------------------------
 
         if (hovered)
         {
@@ -720,6 +889,13 @@ public class HoverInfoTrigger :
 
 
         // --------------------------------------------------------
+        // HOVER OUTLINE
+        // --------------------------------------------------------
+
+        UpdateHoverOutline();
+
+
+        // --------------------------------------------------------
         // SELECTED VISUAL
         // --------------------------------------------------------
 
@@ -784,12 +960,31 @@ public class HoverInfoTrigger :
             0f;
 
 
+        // --------------------------------------------------------
+        // SELECTED VISUAL
+        // --------------------------------------------------------
+
         if (selectedChildSprite != null)
         {
             selectedChildSprite.enabled =
                 false;
         }
 
+
+        // --------------------------------------------------------
+        // HOVER OUTLINE
+        // --------------------------------------------------------
+
+        if (hoverShaderSprite != null)
+        {
+            hoverShaderSprite.enabled =
+                false;
+        }
+
+
+        // --------------------------------------------------------
+        // UI SELECTION
+        // --------------------------------------------------------
 
         if (UIManager.CurrentSelection == this)
         {
@@ -882,8 +1077,8 @@ public class HoverInfoTrigger :
 
 
     /// <summary>
-    /// Returns true if the ability currently has
-    /// a cooldown remaining.
+    /// Returns true if the specified ability
+    /// currently has a cooldown remaining.
     /// </summary>
     public bool IsAbilityOnCooldown(
         AbilitySO ability)

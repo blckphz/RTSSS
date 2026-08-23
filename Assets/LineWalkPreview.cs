@@ -19,6 +19,9 @@ public class LineWalkPreview : MonoBehaviour
     [SerializeField]
     private Camera previewCamera;
 
+    [SerializeField]
+    private CanvasInfoManager canvasInfoManager;
+
 
     // ============================================================
     // MOVEMENT PREVIEW
@@ -43,6 +46,12 @@ public class LineWalkPreview : MonoBehaviour
     )]
     [SerializeField]
     private bool hideWhenNoMovementRemaining = true;
+
+    [Tooltip(
+        "Hide the movement path while an ability is selected."
+    )]
+    [SerializeField]
+    private bool hideWhenAbilitySelected = true;
 
     [Tooltip(
         "If the mouse is outside movement range, draw the path only up to the furthest reachable point."
@@ -153,6 +162,12 @@ public class LineWalkPreview : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
 
+        if (canvasInfoManager == null)
+        {
+            canvasInfoManager =
+                FindFirstObjectByType<CanvasInfoManager>();
+        }
+
         ConfigureLineRenderer();
 
         HideLine();
@@ -166,6 +181,30 @@ public class LineWalkPreview : MonoBehaviour
         // --------------------------------------------------------
 
         UpdateSelectedUnit();
+
+
+        // --------------------------------------------------------
+        // ABILITY SELECTED
+        // --------------------------------------------------------
+
+        if (hideWhenAbilitySelected)
+        {
+            if (canvasInfoManager == null)
+            {
+                canvasInfoManager =
+                    FindFirstObjectByType<CanvasInfoManager>();
+            }
+
+            if (
+                canvasInfoManager != null &&
+                canvasInfoManager.HasSelectedAbility()
+            )
+            {
+                HideLine();
+
+                return;
+            }
+        }
 
 
         // --------------------------------------------------------
@@ -416,6 +455,21 @@ public class LineWalkPreview : MonoBehaviour
         Vector2Int destination
     )
     {
+        // --------------------------------------------------------
+        // ABILITY SELECTED
+        // --------------------------------------------------------
+
+        if (
+            hideWhenAbilitySelected &&
+            canvasInfoManager != null &&
+            canvasInfoManager.HasSelectedAbility()
+        )
+        {
+            HideLine();
+            return;
+        }
+
+
         if (
             gridManager == null ||
             currentSelectedUnit == null
@@ -509,23 +563,6 @@ public class LineWalkPreview : MonoBehaviour
             );
 
 
-        /*
-         * Manhattan range:
-         *
-         *          X
-         *        X X X
-         *      X X U X X
-         *        X X X
-         *          X
-         *
-         * Every horizontal / vertical tile costs 1.
-         *
-         * Every diagonal tile costs 2.
-         *
-         * Therefore diagonal movement cannot turn the
-         * movement range into a square.
-         */
-
         if (
             useManhattanRange &&
             manhattanDistance > moveRange &&
@@ -609,10 +646,6 @@ public class LineWalkPreview : MonoBehaviour
             );
 
 
-            // ----------------------------------------------------
-            // DESTINATION REACHED
-            // ----------------------------------------------------
-
             if (current == destination)
             {
                 break;
@@ -672,20 +705,6 @@ public class LineWalkPreview : MonoBehaviour
             Mathf.Abs(
                 to.y - from.y
             );
-
-
-        /*
-         * Cardinal:
-         *
-         * (1,0) = 1
-         * (0,1) = 1
-         *
-         * Diagonal:
-         *
-         * (1,1) = 2
-         *
-         * This is what keeps the movement range Manhattan.
-         */
 
         if (dx == 1 && dy == 1)
         {
@@ -754,10 +773,6 @@ public class LineWalkPreview : MonoBehaviour
                     destination
                 );
 
-
-            // ----------------------------------------------------
-            // DESTINATION REACHED
-            // ----------------------------------------------------
 
             if (current == destination)
             {
@@ -937,15 +952,6 @@ public class LineWalkPreview : MonoBehaviour
                 ? value
                 : int.MaxValue;
 
-
-        /*
-         * Manhattan heuristic.
-         *
-         * This matches the movement costs:
-         *
-         * Cardinal = 1
-         * Diagonal = 2
-         */
 
         int h =
             GetManhattanDistance(

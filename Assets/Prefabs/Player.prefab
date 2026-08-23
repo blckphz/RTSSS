@@ -207,9 +207,12 @@ MonoBehaviour:
   spriteRenderer: {fileID: 0}
   flashIntensity: 1
   flashDuration: 0.15
+  enableDamageScreenShake: 1
+  damageScreenShakeMagnitude: 1
+  damageScreenShakeDuration: 0.15
+  enableDamageSound: 1
   queueDamageFlashes: 1
   minimumFlashInterval: 0.03
-  enableDebugLogs: 1
 --- !u!114 &7910321259876173858
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -252,7 +255,11 @@ MonoBehaviour:
   enableAbilityTargetScale: 1
   abilityTargetScaleAmount: 0.06
   abilityTargetScaleSmoothTime: 0.08
-  selectedChildSprite: {fileID: 0}
+  hoverShaderSprite: {fileID: 0}
+  hoverOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverShaderObjectName: HoverShaderSprite
+  enableHoverOutline: 1
+  selectedChildSprite: {fileID: 3350255872931640762}
   debugHover: 1
 --- !u!61 &6280651182369518804
 BoxCollider2D:
@@ -340,18 +347,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   attackUnit: {fileID: 7910321259876173858}
-  gridManager: {fileID: 0}
   moveDuration: 0.25
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
-  avoidMovingThroughEnemies: 1
-  avoidMovingThroughAllies: 1
   preferCloserAttackPosition: 1
   preferMoreOpenPositions: 1
   preferSidePositions: 1
-  allowMovingAwayToGoAroundObstacles: 1
-  debugMovement: 1
 --- !u!114 &9126464460582162628
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -407,7 +409,7 @@ MonoBehaviour:
     m_TrimEdge: 0.1
     m_FlipX: 0
     m_FlipY: 0
-    m_InitialTrim: 0.1
+    m_InitialTrim: 0
   m_CastingOption: 1
   m_PreviousTrimEdge: 0.1
   m_PreviousEdgeProcessing: 1

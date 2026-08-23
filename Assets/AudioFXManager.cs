@@ -35,6 +35,18 @@ public class AudioFXManager : MonoBehaviour
 
 
     // ============================================================
+    // ABILITY SELECT
+    // ============================================================
+
+    [Header("Ability Select")]
+    [SerializeField]
+    private AudioClip abilitySelectClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float abilitySelectVolume = 1f;
+
+
+    // ============================================================
     // UNIT DESELECT
     // ============================================================
 
@@ -166,6 +178,36 @@ public class AudioFXManager : MonoBehaviour
         audioSource.PlayOneShot(
             unitClickClip,
             unitClickVolume
+        );
+    }
+
+
+    // ============================================================
+    // ABILITY SELECT
+    // ============================================================
+
+    public void PlayAbilitySelect()
+    {
+        if (abilitySelectClip == null)
+        {
+            Debug.LogWarning(
+                "[AudioFXManager] " +
+                "Ability Select Clip is not assigned."
+            );
+
+            return;
+        }
+
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            abilitySelectClip,
+            abilitySelectVolume
         );
     }
 

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: HealAbility
   m_EditorClassIdentifier: Assembly-CSharp::HealAbilitySO
   abilityName: heal
-  description: 
+  description: sdsd
   damage: 10
   cooldown: 1
   canAttackWithThisAfterMove: 1

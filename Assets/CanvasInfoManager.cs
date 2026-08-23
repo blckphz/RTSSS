@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -7,1531 +8,766 @@ using UnityEngine.UI;
 
 public class CanvasInfoManager : MonoBehaviour
 {
-    [Header("UI")]
-    [SerializeField]
-    private TMP_Text infoText;
+    [Header("UI References")]
+    [SerializeField] private TMP_Text infoText;
+    [SerializeField] private Image characterIcon;
+    [SerializeField] private Image backgroundImage;
+    [SerializeField] private Graphic secondPulsingGraphic; // Secondary UI graphic to pulse & flash alongside the background
 
-    [SerializeField]
-    private Image characterIcon;
+    [Header("Background Pulse Settings")]
+    [SerializeField] private bool enablePulse = true;
+    [SerializeField] private float pulseSpeed = 2f;
+    [SerializeField] private float minPulseScale = 0.98f;
+    [SerializeField] private float maxPulseScale = 1.02f;
+    [SerializeField] private float selectionPulseMultiplier = 1.5f;
 
+    [Header("Selection Opacity Flash")]
+    [SerializeField] private float flashTargetOpacity = 0.8f;
+    [SerializeField] private float flashDuration = 0.4f;
 
-    [Header("Tooltip")]
-    [SerializeField]
-    private tooltipManager tooltipManager;
+    [Header("Selected Ability")]
+    [SerializeField] private Color selectedAbilityColor = Color.cyan;
 
+    [Header("Tooltips & Highlights")]
+    [SerializeField] private tooltipManager tooltipManager;
+    [SerializeField] private GridManager gridManager;
+    [SerializeField] private GridHighlightManager highlightManager;
 
-    [Header("Grid Highlighting")]
-    [SerializeField]
-    private GridManager gridManager;
-
-    [SerializeField]
-    private GridHighlightManager highlightManager;
-
-
+    // State Tracking
     private int lastHoveredAbilityIndex = -1;
-
     private int lastLinkIndex = -1;
 
     private int selectedAbilityIndex = -1;
-
     private AbilitySO selectedAbility;
 
+    // Helpers
+    private Camera eventCamera;
+    private Canvas cachedCanvas;
+    private readonly StringBuilder textBuilder = new StringBuilder();
 
-    private readonly StringBuilder textBuilder =
-        new StringBuilder();
+    // Background & Secondary Animation State
+    private Vector3 initialBackgroundScale = Vector3.one;
+    private Vector3 initialSecondScale = Vector3.one;
+    private float defaultOpacity = 1f;
+    private float defaultSecondOpacity = 1f;
+    private float currentPulseMultiplier = 1f;
 
+    private Coroutine flashCoroutine;
+    private Coroutine pulseLerpCoroutine;
 
     // ============================================================
-    // UNITY
+    // UNITY LIFECYCLE
     // ============================================================
 
     private void Awake()
     {
         SetupReferences();
-    }
 
+        if (backgroundImage != null)
+        {
+            initialBackgroundScale = backgroundImage.rectTransform.localScale;
+            defaultOpacity = backgroundImage.color.a;
+        }
+
+        if (secondPulsingGraphic != null)
+        {
+            initialSecondScale = secondPulsingGraphic.rectTransform.localScale;
+            defaultSecondOpacity = secondPulsingGraphic.color.a;
+        }
+    }
 
     private void OnEnable()
     {
-        AttackUnit.OnAbilityUsed +=
-            HandleAbilityUsed;
-
-        HealthManager.OnHealthChanged +=
-            HandleHealthChanged;
+        AttackUnit.OnAbilityUsed += HandleAbilityUsed;
+        HealthManager.OnHealthChanged += HandleHealthChanged;
     }
-
 
     private void OnDisable()
     {
-        AttackUnit.OnAbilityUsed -=
-            HandleAbilityUsed;
-
-        HealthManager.OnHealthChanged -=
-            HandleHealthChanged;
+        AttackUnit.OnAbilityUsed -= HandleAbilityUsed;
+        HealthManager.OnHealthChanged -= HandleHealthChanged;
     }
-
 
     private void Update()
     {
         CheckAbilityHover();
+        AnimateBackgroundPulse();
     }
 
-
     // ============================================================
-    // HEALTH CHANGED EVENT
+    // BACKGROUND & SECONDARY ANIMATION LOGIC
     // ============================================================
 
-    private void HandleHealthChanged(
-        HealthManager healthManager)
+    private void AnimateBackgroundPulse()
     {
-        if (healthManager == null)
+        if (!enablePulse) return;
+
+        // Smoothly Lerp between min and max scale using a continuous sine wave
+        float sineProgress = (Mathf.Sin(Time.time * pulseSpeed) + 1f) * 0.5f;
+        float smoothProgress = Mathf.SmoothStep(0f, 1f, sineProgress);
+
+        // Calculate base lerped scale
+        float targetScale = Mathf.Lerp(minPulseScale, maxPulseScale, smoothProgress);
+
+        // Apply active pulse scale modifier
+        float activeScaleOffset = (targetScale - 1f) * currentPulseMultiplier;
+        Vector3 scaleVector = Vector3.one * (1f + activeScaleOffset);
+
+        if (backgroundImage != null)
         {
-            return;
+            backgroundImage.rectTransform.localScale = Vector3.Scale(initialBackgroundScale, scaleVector);
         }
 
-
-        if (UIManager.CurrentSelection == null)
+        if (secondPulsingGraphic != null)
         {
-            return;
+            secondPulsingGraphic.rectTransform.localScale = Vector3.Scale(initialSecondScale, scaleVector);
         }
-
-
-        AttackUnit selectedAttackUnit =
-            UIManager.CurrentSelection.GetAttackUnit();
-
-
-        if (selectedAttackUnit == null)
-        {
-            return;
-        }
-
-
-        HealthManager selectedHealthManager =
-            selectedAttackUnit.GetComponent<HealthManager>();
-
-
-        if (selectedHealthManager != healthManager)
-        {
-            return;
-        }
-
-
-        CharacterSO character =
-            selectedAttackUnit.GetCharacterData();
-
-
-        if (character == null)
-        {
-            return;
-        }
-
-
-        RefreshCharacter(
-            character
-        );
     }
 
-
-    // ============================================================
-    // ABILITY USED EVENT
-    // ============================================================
-
-    private void HandleAbilityUsed(
-        AttackUnit attackUnit,
-        AbilitySO ability)
+    private void TriggerOpacityFlash()
     {
-        if (attackUnit == null)
+        if (backgroundImage == null && secondPulsingGraphic == null) return;
+
+        if (flashCoroutine != null)
         {
-            return;
+            StopCoroutine(flashCoroutine);
         }
 
-
-        if (UIManager.CurrentSelection == null)
-        {
-            return;
-        }
-
-
-        AttackUnit selectedAttackUnit =
-            UIManager.CurrentSelection.GetAttackUnit();
-
-
-        if (selectedAttackUnit != attackUnit)
-        {
-            return;
-        }
-
-
-        CharacterSO character =
-            attackUnit.GetCharacterData();
-
-
-        if (character == null)
-        {
-            return;
-        }
-
-
-        RefreshCharacter(
-            character
-        );
+        flashCoroutine = StartCoroutine(OpacityFlashRoutine());
     }
 
-
-    // ============================================================
-    // REFRESH CURRENT SELECTION
-    // ============================================================
-
-    public void RefreshCurrentSelection()
+    private IEnumerator OpacityFlashRoutine()
     {
-        if (UIManager.CurrentSelection == null)
+        Color bgCol = backgroundImage != null ? backgroundImage.color : Color.white;
+        Color secCol = secondPulsingGraphic != null ? secondPulsingGraphic.color : Color.white;
+
+        float halfDuration = flashDuration * 0.5f;
+        float elapsed = 0f;
+
+        // Phase 1: Lerp down to target opacity
+        while (elapsed < halfDuration)
         {
-            return;
+            elapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / halfDuration);
+            float easedProgress = Mathf.SmoothStep(0f, 1f, progress);
+
+            if (backgroundImage != null)
+            {
+                bgCol.a = Mathf.Lerp(defaultOpacity, flashTargetOpacity, easedProgress);
+                backgroundImage.color = bgCol;
+            }
+
+            if (secondPulsingGraphic != null)
+            {
+                secCol.a = Mathf.Lerp(defaultSecondOpacity, flashTargetOpacity, easedProgress);
+                secondPulsingGraphic.color = secCol;
+            }
+
+            yield return null;
         }
 
+        elapsed = 0f;
 
-        AttackUnit attackUnit =
-            UIManager.CurrentSelection.GetAttackUnit();
-
-
-        if (attackUnit == null)
+        // Phase 2: Lerp exit back to normal opacity
+        while (elapsed < halfDuration)
         {
-            return;
+            elapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / halfDuration);
+            float easedProgress = Mathf.SmoothStep(0f, 1f, progress);
+
+            if (backgroundImage != null)
+            {
+                bgCol.a = Mathf.Lerp(flashTargetOpacity, defaultOpacity, easedProgress);
+                backgroundImage.color = bgCol;
+            }
+
+            if (secondPulsingGraphic != null)
+            {
+                secCol.a = Mathf.Lerp(flashTargetOpacity, defaultSecondOpacity, easedProgress);
+                secondPulsingGraphic.color = secCol;
+            }
+
+            yield return null;
         }
 
-
-        CharacterSO character =
-            attackUnit.GetCharacterData();
-
-
-        if (character == null)
+        if (backgroundImage != null)
         {
-            return;
+            bgCol.a = defaultOpacity;
+            backgroundImage.color = bgCol;
         }
 
-
-        RefreshCharacter(
-            character
-        );
+        if (secondPulsingGraphic != null)
+        {
+            secCol.a = defaultSecondOpacity;
+            secondPulsingGraphic.color = secCol;
+        }
     }
 
+    private void TriggerPulseBurst()
+    {
+        if (pulseLerpCoroutine != null)
+        {
+            StopCoroutine(pulseLerpCoroutine);
+        }
+
+        pulseLerpCoroutine = StartCoroutine(PulseBurstRoutine());
+    }
+
+    private IEnumerator PulseBurstRoutine()
+    {
+        float halfDuration = flashDuration * 0.5f;
+        float elapsed = 0f;
+
+        // Phase 1: Lerp pulse intensity UP when selected
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / halfDuration);
+            float easedProgress = Mathf.SmoothStep(0f, 1f, progress);
+
+            currentPulseMultiplier = Mathf.Lerp(1f, selectionPulseMultiplier, easedProgress);
+            yield return null;
+        }
+
+        elapsed = 0f;
+
+        // Phase 2: Lerp exit back down to normal pulse intensity
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / halfDuration);
+            float easedProgress = Mathf.SmoothStep(0f, 1f, progress);
+
+            currentPulseMultiplier = Mathf.Lerp(selectionPulseMultiplier, 1f, easedProgress);
+            yield return null;
+        }
+
+        currentPulseMultiplier = 1f;
+    }
 
     // ============================================================
-    // SETUP
+    // EVENT HANDLERS
+    // ============================================================
+
+    private void HandleHealthChanged(HealthManager healthManager)
+    {
+        if (healthManager == null || UIManager.CurrentSelection == null) return;
+
+        AttackUnit selectedAttackUnit = UIManager.CurrentSelection.GetAttackUnit();
+        if (selectedAttackUnit == null) return;
+
+        HealthManager selectedHealthManager = selectedAttackUnit.GetComponent<HealthManager>();
+        if (selectedHealthManager != healthManager) return;
+
+        CharacterSO character = selectedAttackUnit.GetCharacterData();
+        if (character != null)
+        {
+            RefreshCharacter(character);
+        }
+    }
+
+    private void HandleAbilityUsed(AttackUnit attackUnit, AbilitySO ability)
+    {
+        if (attackUnit == null || UIManager.CurrentSelection == null) return;
+
+        AttackUnit selectedAttackUnit = UIManager.CurrentSelection.GetAttackUnit();
+        if (selectedAttackUnit != attackUnit) return;
+
+        CharacterSO character = attackUnit.GetCharacterData();
+        if (character != null)
+        {
+            RefreshCharacter(character);
+        }
+    }
+
+    // ============================================================
+    // INITIALIZATION
     // ============================================================
 
     private void SetupReferences()
     {
         if (gridManager == null)
-        {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
+            gridManager = FindFirstObjectByType<GridManager>();
 
-
-        if (
-            highlightManager == null &&
-            gridManager != null
-        )
-        {
-            highlightManager =
-                gridManager.GetHighlightManager();
-        }
-
+        if (highlightManager == null && gridManager != null)
+            highlightManager = gridManager.GetHighlightManager();
 
         if (highlightManager == null)
-        {
-            highlightManager =
-                FindFirstObjectByType<GridHighlightManager>();
-        }
-
+            highlightManager = FindFirstObjectByType<GridHighlightManager>();
 
         if (tooltipManager == null)
+            tooltipManager = FindFirstObjectByType<tooltipManager>();
+
+        if (infoText != null)
+            cachedCanvas = infoText.canvas;
+    }
+
+    // ============================================================
+    // PUBLIC CONTROLS
+    // ============================================================
+
+    public void RefreshCurrentSelection()
+    {
+        if (UIManager.CurrentSelection == null) return;
+
+        AttackUnit attackUnit = UIManager.CurrentSelection.GetAttackUnit();
+        if (attackUnit == null) return;
+
+        CharacterSO character = attackUnit.GetCharacterData();
+        if (character != null)
         {
-            tooltipManager =
-                FindFirstObjectByType<tooltipManager>();
+            RefreshCharacter(character);
         }
     }
 
-
-    // ============================================================
-    // SHOW CHARACTER
-    // ============================================================
-
-    public void ShowCharacter(
-        ICharacterHolder characterHolder)
+    public void ShowCharacter(ICharacterHolder characterHolder)
     {
-        if (characterHolder == null)
+        if (characterHolder != null)
         {
-            return;
+            ShowCharacter(characterHolder.GetCharacterData());
         }
-
-
-        ShowCharacter(
-            characterHolder.GetCharacterData()
-        );
     }
 
-
-    // ============================================================
-    // SHOW CHARACTER
-    // ============================================================
-
-    public void ShowCharacter(
-        CharacterSO character)
+    public void ShowCharacter(CharacterSO character)
     {
-        if (character == null)
-        {
-            return;
-        }
-
-
-        /*
-         * IMPORTANT:
-         *
-         * This method is used for HOVER INFORMATION.
-         *
-         * Hovering another unit must NOT cancel the currently
-         * selected ability.
-         *
-         * Therefore we intentionally DO NOT do:
-         *
-         * selectedAbilityIndex = -1;
-         * selectedAbility = null;
-         * ClearAbilityHighlights();
-         *
-         * The selected attack belongs to the currently selected
-         * AttackUnit and must remain active while hovering.
-         */
-
+        if (character == null) return;
 
         lastHoveredAbilityIndex = -1;
         lastLinkIndex = -1;
 
-
         HideStatusTooltip();
-
-
-        RefreshCharacter(
-            character
-        );
+        RefreshCharacter(character);
     }
 
-
     // ============================================================
-    // REFRESH CHARACTER
+    // REFRESH & DISPLAY
     // ============================================================
 
-    private void RefreshCharacter(
-        CharacterSO character)
+    private void RefreshCharacter(CharacterSO character)
     {
-        if (character == null)
-        {
-            return;
-        }
-
+        if (character == null) return;
 
         textBuilder.Clear();
 
+        textBuilder.AppendLine($"<b>{character.characterName}</b>\n");
+        textBuilder.AppendLine($"Team: {character.team}");
 
-        // ========================================================
-        // CHARACTER
-        // ========================================================
+        // Health
+        int currentHealth = character.maxHealth;
+        int maxHealth = character.maxHealth;
 
-        textBuilder.AppendLine(
-            $"<b>{character.characterName}</b>\n"
-        );
+        AttackUnit selectedAttackUnit = UIManager.CurrentSelection?.GetAttackUnit();
+        HealthManager healthManager = selectedAttackUnit?.GetComponent<HealthManager>();
 
-
-        textBuilder.AppendLine(
-            $"Team: {character.team}"
-        );
-
-
-        // ========================================================
-        // HEALTH
-        // ========================================================
-
-        int currentHealth =
-            character.maxHealth;
-
-        int maxHealth =
-            character.maxHealth;
-
-
-        AttackUnit selectedAttackUnit = null;
-
-
-        if (UIManager.CurrentSelection != null)
+        if (healthManager == null || selectedAttackUnit == null || selectedAttackUnit.GetCharacterData() != character)
         {
-            selectedAttackUnit =
-                UIManager.CurrentSelection.GetAttackUnit();
-        }
-
-
-        HealthManager healthManager = null;
-
-
-        if (selectedAttackUnit != null)
-        {
-            healthManager =
-                selectedAttackUnit.GetComponent<HealthManager>();
-        }
-
-
-        /*
-         * If the displayed character is not the selected unit,
-         * try to find the corresponding unit from the scene.
-         */
-
-        if (
-            healthManager == null ||
-            selectedAttackUnit == null ||
-            selectedAttackUnit.GetCharacterData() != character
-        )
-        {
-            AttackUnit[] attackUnits =
-                FindObjectsByType<AttackUnit>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None
-                );
-
-
-            for (
-                int i = 0;
-                i < attackUnits.Length;
-                i++
-            )
+            AttackUnit[] attackUnits = FindObjectsByType<AttackUnit>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (AttackUnit attackUnit in attackUnits)
             {
-                AttackUnit attackUnit =
-                    attackUnits[i];
-
-
-                if (attackUnit == null)
+                if (attackUnit != null && attackUnit.GetCharacterData() == character)
                 {
-                    continue;
+                    healthManager = attackUnit.GetComponent<HealthManager>();
+                    break;
                 }
-
-
-                CharacterSO unitCharacter =
-                    attackUnit.GetCharacterData();
-
-
-                if (unitCharacter != character)
-                {
-                    continue;
-                }
-
-
-                healthManager =
-                    attackUnit.GetComponent<HealthManager>();
-
-
-                break;
             }
         }
-
 
         if (healthManager != null)
         {
-            currentHealth =
-                healthManager.GetHealth();
-
-            maxHealth =
-                healthManager.GetMaxHealth();
+            currentHealth = healthManager.GetHealth();
+            maxHealth = healthManager.GetMaxHealth();
         }
 
+        textBuilder.AppendLine($"Health: {currentHealth}/{maxHealth}\n");
 
-        textBuilder.AppendLine(
-            $"Health: {currentHealth}/{maxHealth}\n"
-        );
+        // Abilities
+        List<AbilitySO> abilities = character.GetAbilities();
 
-
-        // ========================================================
-        // ABILITIES
-        // ========================================================
-
-        List<AbilitySO> abilities =
-            character.GetAbilities();
-
-
-        if (
-            abilities != null &&
-            abilities.Count > 0
-        )
+        if (abilities != null && abilities.Count > 0)
         {
-            textBuilder.AppendLine(
-                "<b>Abilities</b>\n"
-            );
+            textBuilder.AppendLine("<b>Abilities</b>\n");
 
+            AttackUnit activeUnit = UIManager.CurrentSelection?.GetAttackUnit();
+            bool canSelectAbilities = activeUnit != null &&
+                (activeUnit.GetTeam() == Team.Player || activeUnit.GetTeam() == Team.Ally);
 
-            AttackUnit attackUnit = null;
-
-
-            /*
-             * Ability cooldowns and uses are always taken from
-             * the actual selected AttackUnit.
-             *
-             * Hovering another unit does NOT change this.
-             */
-
-            if (UIManager.CurrentSelection != null)
+            for (int i = 0; i < abilities.Count; i++)
             {
-                attackUnit =
-                    UIManager.CurrentSelection
-                        .GetAttackUnit();
-            }
+                AbilitySO ability = abilities[i];
+                if (ability == null) continue;
 
+                string selectedText = string.Empty;
 
-            for (
-                int i = 0;
-                i < abilities.Count;
-                i++
-            )
-            {
-                AbilitySO ability =
-                    abilities[i];
-
-
-                if (ability == null)
+                if (canSelectAbilities && selectedAbilityIndex == i && selectedAbility != null && selectedAbility == ability)
                 {
-                    continue;
+                    string selectedColor = ColorUtility.ToHtmlStringRGB(selectedAbilityColor);
+                    selectedText = $" <color=#{selectedColor}><b>(Selected)</b></color>";
                 }
 
+                string abilityName = ability.GetAbilityName();
+                string abilityLink = $"<link=\"ability_{i}\"><color=yellow><u><b>{abilityName}</b></u></color></link>";
 
-                // ------------------------------------------------
-                // ABILITY NAME
-                // ------------------------------------------------
+                textBuilder.AppendLine(abilityLink + selectedText);
 
-                string abilityName =
-                    ability.GetAbilityName();
-
-
-                textBuilder.AppendLine(
-                    $"<link=\"ability_{i}\">" +
-                    $"<color=yellow>" +
-                    $"<u><b>{abilityName}</b></u>" +
-                    $"</color></link>"
-                );
-
-
-                // ------------------------------------------------
-                // DESCRIPTION
-                // ------------------------------------------------
-
-                string description =
-                    ability.GetDescription();
-
-
+                string description = ability.GetDescription();
                 if (!string.IsNullOrEmpty(description))
                 {
-                    textBuilder.AppendLine(
-                        description
-                    );
+                    textBuilder.AppendLine(description);
                 }
-
-
-                // ------------------------------------------------
-                // DAMAGE / HEAL + RANGE
-                // ------------------------------------------------
 
                 if (ability is HealAbilitySO healAbility)
                 {
-                    textBuilder.AppendLine(
-                        $"Heal: {healAbility.GetHealAmount()} | " +
-                        $"Range: {ability.GetRange()}"
-                    );
+                    textBuilder.AppendLine($"Heal: {healAbility.GetHealAmount()} | Range: {ability.GetRange()}");
                 }
                 else
                 {
-                    textBuilder.AppendLine(
-                        $"Damage: {ability.GetDamage()} | " +
-                        $"Range: {ability.GetRange()}"
-                    );
+                    textBuilder.AppendLine($"Damage: {ability.GetDamage()} | Range: {ability.GetRange()}");
                 }
 
-
-                // ------------------------------------------------
-                // COOLDOWN
-                // ------------------------------------------------
-
-                int currentCooldown =
-                    ability.GetCooldown();
-
-
-                if (attackUnit != null)
-                {
-                    currentCooldown =
-                        attackUnit.GetAbilityCooldown(
-                            ability
-                        );
-                }
-
-
-                // ------------------------------------------------
-                // USES PER TURN
-                // ------------------------------------------------
-
-                int usesPerTurn =
-                    ability.GetUsesPerTurn();
-
-
+                int currentCooldown = activeUnit != null ? activeUnit.GetAbilityCooldown(ability) : ability.GetCooldown();
+                int usesPerTurn = ability.GetUsesPerTurn();
                 string usesText;
-
 
                 if (usesPerTurn <= 0)
                 {
-                    usesText =
-                        "Unlimited";
+                    usesText = "Unlimited";
                 }
                 else
                 {
-                    int usesRemaining =
-                        usesPerTurn;
-
-
-                    if (attackUnit != null)
-                    {
-                        usesRemaining =
-                            attackUnit.GetAbilityUsesRemaining(
-                                ability
-                            );
-                    }
-
-
-                    usesText =
-                        $"{usesRemaining}/{usesPerTurn}";
+                    int remainingUses = activeUnit != null ? activeUnit.GetAbilityUsesRemaining(ability) : usesPerTurn;
+                    usesText = $"{remainingUses}/{usesPerTurn}";
                 }
 
-
-                // ------------------------------------------------
-                // COOLDOWN + USES
-                // ------------------------------------------------
-
-                textBuilder.AppendLine(
-                    $"Cooldown: {currentCooldown} | " +
-                    $"Uses: {usesText}"
-                );
-
-
-                // ------------------------------------------------
-                // SPACE BETWEEN ABILITIES
-                // ------------------------------------------------
-
-                textBuilder.AppendLine();
+                textBuilder.AppendLine($"Cooldown: {currentCooldown} | Uses: {usesText}\n");
             }
         }
         else
         {
-            textBuilder.Append(
-                "<b>No Abilities</b>"
-            );
+            textBuilder.Append("<b>No Abilities</b>");
         }
-
-
-        // ========================================================
-        // TEXT
-        // ========================================================
 
         if (infoText != null)
         {
-            infoText.text =
-                textBuilder.ToString();
-
-
+            infoText.text = textBuilder.ToString();
             infoText.ForceMeshUpdate();
-
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(
-                infoText.rectTransform
-            );
+            LayoutRebuilder.ForceRebuildLayoutImmediate(infoText.rectTransform);
         }
-
-
-        // ========================================================
-        // ICON
-        // ========================================================
 
         if (characterIcon != null)
         {
-            characterIcon.sprite =
-                character.icon;
-
-
-            characterIcon.enabled =
-                character.icon != null;
+            characterIcon.sprite = character.icon;
+            characterIcon.enabled = character.icon != null;
         }
     }
 
-
     // ============================================================
-    // HOVER
+    // HOVER & INTERACTION CHECKS
     // ============================================================
 
     private void CheckAbilityHover()
     {
-        if (
-            infoText == null ||
-            !infoText.gameObject.activeInHierarchy ||
-            Mouse.current == null
-        )
+        if (infoText == null || !infoText.gameObject.activeInHierarchy || Mouse.current == null)
         {
             HideStatusTooltip();
             return;
         }
 
-
-        Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
-
-
-        Camera eventCamera =
-            GetEventCamera();
-
-
-        int linkIndex =
-            TMP_TextUtilities.FindIntersectingLink(
-                infoText,
-                mousePosition,
-                eventCamera
-            );
-
-
-        // ========================================================
-        // NOTHING HOVERED
-        // ========================================================
+        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        int linkIndex = TMP_TextUtilities.FindIntersectingLink(infoText, mousePosition, GetEventCamera());
 
         if (linkIndex == -1)
         {
             if (lastLinkIndex != -1)
             {
                 lastLinkIndex = -1;
-
-
                 HideStatusTooltip();
-
-
                 ClearAbilityHover();
             }
-
-
             return;
         }
 
-
-        TMP_TextInfo textInfo =
-            infoText.textInfo;
-
-
-        if (
-            linkIndex < 0 ||
-            linkIndex >= textInfo.linkCount
-        )
+        TMP_TextInfo textInfo = infoText.textInfo;
+        if (linkIndex < 0 || linkIndex >= textInfo.linkCount)
         {
             HideStatusTooltip();
             return;
         }
 
-
-        TMP_LinkInfo link =
-            textInfo.linkInfo[linkIndex];
-
-
-        string linkId =
-            link.GetLinkID();
-
-
-        // ========================================================
-        // STATUS EFFECT
-        // ========================================================
+        string linkId = textInfo.linkInfo[linkIndex].GetLinkID();
 
         if (linkId.StartsWith("status_"))
         {
-            /*
-             * IMPORTANT:
-             *
-             * We DO NOT clear ability highlighting here.
-             *
-             * This means you can have a selected ability,
-             * then hover "Stun", and the ability range remains
-             * visible.
-             */
-
-
             if (linkIndex != lastLinkIndex)
             {
-                lastLinkIndex =
-                    linkIndex;
-
-
-                string statusId =
-                    linkId.Substring(
-                        "status_".Length
-                    );
-
-
-                ShowStatusTooltip(
-                    statusId
-                );
+                lastLinkIndex = linkIndex;
+                ShowStatusTooltip(linkId.Substring("status_".Length));
             }
-
-
             return;
         }
-
-
-        // ========================================================
-        // ABILITY
-        // ========================================================
 
         if (linkId.StartsWith("ability_"))
         {
             HideStatusTooltip();
 
+            if (linkIndex == lastLinkIndex) return;
 
-            if (linkIndex == lastLinkIndex)
+            lastLinkIndex = linkIndex;
+            string indexString = linkId.Substring("ability_".Length);
+
+            if (int.TryParse(indexString, out int abilityIndex))
             {
-                return;
+                if (abilityIndex != lastHoveredAbilityIndex)
+                {
+                    lastHoveredAbilityIndex = abilityIndex;
+                    ShowAbilityRange(abilityIndex);
+                }
             }
-
-
-            lastLinkIndex =
-                linkIndex;
-
-
-            string indexString =
-                linkId.Substring(
-                    "ability_".Length
-                );
-
-
-            if (!int.TryParse(
-                    indexString,
-                    out int abilityIndex))
+            else
             {
                 ClearAbilityHover();
-                return;
             }
-
-
-            if (
-                abilityIndex ==
-                lastHoveredAbilityIndex
-            )
-            {
-                return;
-            }
-
-
-            lastHoveredAbilityIndex =
-                abilityIndex;
-
-
-            ShowAbilityRange(
-                abilityIndex
-            );
-
 
             return;
         }
 
-
-        // ========================================================
-        // UNKNOWN LINK
-        // ========================================================
-
         HideStatusTooltip();
-
         ClearAbilityHover();
     }
 
+    public bool IsPointerOverAbilityLink() => CheckLinkPrefix("ability_");
+    public bool IsPointerOverStatusLink() => CheckLinkPrefix("status_");
 
-    // ============================================================
-    // SHOW STATUS TOOLTIP
-    // ============================================================
-
-    private void ShowStatusTooltip(
-        string statusId)
+    private bool CheckLinkPrefix(string prefix)
     {
-        if (tooltipManager == null)
-        {
-            return;
-        }
+        if (infoText == null || !infoText.gameObject.activeInHierarchy || Mouse.current == null)
+            return false;
 
+        int linkIndex = TMP_TextUtilities.FindIntersectingLink(infoText, Mouse.current.position.ReadValue(), GetEventCamera());
 
-        tooltipManager.ShowStatusTooltip(
-            statusId
-        );
+        if (linkIndex < 0 || linkIndex >= infoText.textInfo.linkCount)
+            return false;
+
+        return infoText.textInfo.linkInfo[linkIndex].GetLinkID().StartsWith(prefix);
     }
-
-
-    // ============================================================
-    // HIDE STATUS TOOLTIP
-    // ============================================================
-
-    private void HideStatusTooltip()
-    {
-        if (tooltipManager == null)
-        {
-            return;
-        }
-
-
-        tooltipManager.HideTooltip();
-    }
-
-
-    // ============================================================
-    // POINTER OVER ABILITY
-    // ============================================================
-
-    public bool IsPointerOverAbilityLink()
-    {
-        if (
-            infoText == null ||
-            !infoText.gameObject.activeInHierarchy ||
-            Mouse.current == null
-        )
-        {
-            return false;
-        }
-
-
-        Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
-
-
-        int linkIndex =
-            TMP_TextUtilities.FindIntersectingLink(
-                infoText,
-                mousePosition,
-                GetEventCamera()
-            );
-
-
-        if (linkIndex < 0)
-        {
-            return false;
-        }
-
-
-        TMP_TextInfo textInfo =
-            infoText.textInfo;
-
-
-        if (linkIndex >= textInfo.linkCount)
-        {
-            return false;
-        }
-
-
-        TMP_LinkInfo link =
-            textInfo.linkInfo[linkIndex];
-
-
-        return link.GetLinkID()
-            .StartsWith("ability_");
-    }
-
-
-    // ============================================================
-    // POINTER OVER STATUS
-    // ============================================================
-
-    public bool IsPointerOverStatusLink()
-    {
-        if (
-            infoText == null ||
-            !infoText.gameObject.activeInHierarchy ||
-            Mouse.current == null
-        )
-        {
-            return false;
-        }
-
-
-        Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
-
-
-        int linkIndex =
-            TMP_TextUtilities.FindIntersectingLink(
-                infoText,
-                mousePosition,
-                GetEventCamera()
-            );
-
-
-        if (linkIndex < 0)
-        {
-            return false;
-        }
-
-
-        TMP_TextInfo textInfo =
-            infoText.textInfo;
-
-
-        if (linkIndex >= textInfo.linkCount)
-        {
-            return false;
-        }
-
-
-        TMP_LinkInfo link =
-            textInfo.linkInfo[linkIndex];
-
-
-        return link.GetLinkID()
-            .StartsWith("status_");
-    }
-
-
-    // ============================================================
-    // SELECT ABILITY UNDER MOUSE
-    // ============================================================
 
     public bool TrySelectAbilityUnderMouse()
     {
-        if (
-            infoText == null ||
-            !infoText.gameObject.activeInHierarchy ||
-            Mouse.current == null
-        )
-        {
+        if (infoText == null || !infoText.gameObject.activeInHierarchy || Mouse.current == null)
             return false;
+
+        int linkIndex = TMP_TextUtilities.FindIntersectingLink(infoText, Mouse.current.position.ReadValue(), GetEventCamera());
+
+        if (linkIndex < 0 || linkIndex >= infoText.textInfo.linkCount)
+            return false;
+
+        string linkId = infoText.textInfo.linkInfo[linkIndex].GetLinkID();
+
+        if (!linkId.StartsWith("ability_")) return false;
+
+        string indexString = linkId.Substring("ability_".Length);
+
+        if (int.TryParse(indexString, out int abilityIndex))
+        {
+            SelectAbility(abilityIndex);
+            return true;
         }
 
+        return false;
+    }
 
-        Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
+    // ============================================================
+    // ABILITY SELECTION
+    // ============================================================
 
+    private bool CanSelectAbilitiesForCurrentUnit()
+    {
+        if (UIManager.CurrentSelection == null) return false;
 
-        int linkIndex =
-            TMP_TextUtilities.FindIntersectingLink(
-                infoText,
-                mousePosition,
-                GetEventCamera()
-            );
+        AttackUnit attackUnit = UIManager.CurrentSelection.GetAttackUnit();
+        if (attackUnit == null) return false;
 
+        Team team = attackUnit.GetTeam();
+        return team == Team.Player || team == Team.Ally;
+    }
 
-        if (linkIndex < 0)
-        {
-            return false;
-        }
+    private bool CanUseSelectedAbility(AbilitySO ability)
+    {
+        if (ability == null || UIManager.CurrentSelection == null) return false;
 
+        AttackUnit attackUnit = UIManager.CurrentSelection.GetAttackUnit();
+        if (attackUnit == null) return false;
 
-        TMP_TextInfo textInfo =
-            infoText.textInfo;
+        GameObject selectedObject = attackUnit.gameObject;
 
+        if (!ability.CanUseAfterMovement(selectedObject)) return false;
+        if (attackUnit.GetAbilityCooldown(ability) > 0) return false;
 
-        if (linkIndex >= textInfo.linkCount)
-        {
-            return false;
-        }
-
-
-        TMP_LinkInfo link =
-            textInfo.linkInfo[linkIndex];
-
-
-        string linkId =
-            link.GetLinkID();
-
-
-        /*
-         * Only ability links can select abilities.
-         *
-         * Status links do nothing when clicked.
-         */
-
-        if (!linkId.StartsWith("ability_"))
-        {
-            return false;
-        }
-
-
-        string indexString =
-            linkId.Substring(
-                "ability_".Length
-            );
-
-
-        if (!int.TryParse(
-                indexString,
-                out int abilityIndex))
-        {
-            return false;
-        }
-
-
-        SelectAbility(
-            abilityIndex
-        );
-
+        int usesPerTurn = ability.GetUsesPerTurn();
+        if (usesPerTurn > 0 && attackUnit.GetAbilityUsesRemaining(ability) <= 0) return false;
 
         return true;
     }
 
-
-    // ============================================================
-    // CHECK ABILITY CAN BE USED
-    // ============================================================
-
-    private bool CanUseSelectedAbility(
-        AbilitySO ability)
+    private void SelectAbility(int abilityIndex)
     {
-        if (ability == null)
-        {
-            return false;
-        }
+        if (UIManager.CurrentSelection == null) return;
+        if (!CanSelectAbilitiesForCurrentUnit()) return;
 
+        CharacterSO character = UIManager.CurrentSelection.GetCharacterData();
+        if (character == null) return;
 
-        if (UIManager.CurrentSelection == null)
-        {
-            return false;
-        }
+        List<AbilitySO> abilities = character.GetAbilities();
+        if (abilities == null || abilityIndex < 0 || abilityIndex >= abilities.Count) return;
 
+        AbilitySO ability = abilities[abilityIndex];
+        if (ability == null) return;
 
-        AttackUnit attackUnit =
-            UIManager.CurrentSelection.GetAttackUnit();
-
-
-        if (attackUnit == null)
-        {
-            return false;
-        }
-
-
-        GameObject selectedObject =
-            attackUnit.gameObject;
-
-
-        // --------------------------------------------------------
-        // MOVEMENT RESTRICTION
-        // --------------------------------------------------------
-
-        if (!ability.CanUseAfterMovement(
-                selectedObject))
-        {
-            return false;
-        }
-
-
-        // --------------------------------------------------------
-        // COOLDOWN
-        // --------------------------------------------------------
-
-        if (
-            attackUnit.GetAbilityCooldown(
-                ability
-            ) > 0
-        )
-        {
-            return false;
-        }
-
-
-        // --------------------------------------------------------
-        // USES PER TURN
-        // --------------------------------------------------------
-
-        int usesPerTurn =
-            ability.GetUsesPerTurn();
-
-
-        /*
-         * 0 means unlimited.
-         */
-
-        if (usesPerTurn > 0)
-        {
-            int usesRemaining =
-                attackUnit.GetAbilityUsesRemaining(
-                    ability
-                );
-
-
-            if (usesRemaining <= 0)
-            {
-                return false;
-            }
-        }
-
-
-        return true;
-    }
-
-
-    // ============================================================
-    // SELECT ABILITY
-    // ============================================================
-
-    private void SelectAbility(
-        int abilityIndex)
-    {
-        if (UIManager.CurrentSelection == null)
-        {
-            return;
-        }
-
-
-        CharacterSO character =
-            UIManager.CurrentSelection
-                .GetCharacterData();
-
-
-        if (character == null)
-        {
-            return;
-        }
-
-
-        List<AbilitySO> abilities =
-            character.GetAbilities();
-
-
-        if (
-            abilities == null ||
-            abilityIndex < 0 ||
-            abilityIndex >= abilities.Count
-        )
-        {
-            return;
-        }
-
-
-        AbilitySO ability =
-            abilities[abilityIndex];
-
-
-        if (ability == null)
-        {
-            return;
-        }
-
-
-        // ========================================================
-        // DO NOT SELECT AN UNUSABLE ABILITY
-        // ========================================================
-
-        if (!CanUseSelectedAbility(
-                ability))
+        if (!CanUseSelectedAbility(ability))
         {
             ClearAbilityHighlights();
             return;
         }
 
+        selectedAbilityIndex = abilityIndex;
+        selectedAbility = ability;
 
-        selectedAbilityIndex =
-            abilityIndex;
+        // Play Sound FX
+        if (AudioFXManager.Instance != null)
+        {
+            AudioFXManager.Instance.PlayAbilitySelect();
+        }
 
+        // Trigger smooth Lerp opacity flash & pulse intensity burst
+        TriggerOpacityFlash();
+        TriggerPulseBurst();
 
-        selectedAbility =
-            ability;
-
-
-        ShowAbilityRange(
-            abilityIndex
-        );
+        RefreshCurrentSelection();
+        ShowAbilityRange(abilityIndex);
     }
 
-
-    // ============================================================
-    // GET SELECTED
-    // ============================================================
-
-    public AbilitySO GetSelectedAbility()
+    private void ShowAbilityRange(int abilityIndex)
     {
-        return selectedAbility;
+        if (gridManager == null || highlightManager == null || UIManager.CurrentSelection == null)
+        {
+            ClearAbilityHighlights();
+            return;
+        }
+
+        CharacterSO character = UIManager.CurrentSelection.GetCharacterData();
+        List<AbilitySO> abilities = character?.GetAbilities();
+
+        if (abilities == null || abilityIndex < 0 || abilityIndex >= abilities.Count)
+        {
+            ClearAbilityHighlights();
+            return;
+        }
+
+        AbilitySO ability = abilities[abilityIndex];
+        GameObject selectedObject = UIManager.CurrentSelection.gameObject;
+
+        if (ability == null || selectedObject == null)
+        {
+            ClearAbilityHighlights();
+            return;
+        }
+
+        bool isPlayerControlled = CanSelectAbilitiesForCurrentUnit();
+        if (isPlayerControlled && !CanUseSelectedAbility(ability))
+        {
+            ClearAbilityHighlights();
+            return;
+        }
+
+        List<Vector2Int> rangeTiles = ability.GetRangeTiles(gridManager, selectedObject);
+        if (rangeTiles == null || rangeTiles.Count == 0)
+        {
+            ClearAbilityHighlights();
+            return;
+        }
+
+        if (ability is HealAbilitySO)
+        {
+            highlightManager.ShowHealTiles(rangeTiles, selectedObject);
+        }
+        else
+        {
+            highlightManager.ShowAbilityTiles(rangeTiles, selectedObject);
+        }
     }
-
-
-    public int GetSelectedAbilityIndex()
-    {
-        return selectedAbilityIndex;
-    }
-
-
-    public bool HasSelectedAbility()
-    {
-        return selectedAbility != null;
-    }
-
 
     // ============================================================
-    // EVENT CAMERA
+    // GETTERS & HELPERS
     // ============================================================
+
+    public AbilitySO GetSelectedAbility() => selectedAbility;
+    public int GetSelectedAbilityIndex() => selectedAbilityIndex;
+    public bool HasSelectedAbility() => selectedAbility != null;
 
     private Camera GetEventCamera()
     {
-        if (infoText == null)
-        {
+        if (infoText == null) return null;
+
+        if (cachedCanvas == null)
+            cachedCanvas = infoText.canvas;
+
+        if (cachedCanvas == null || cachedCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
             return null;
-        }
 
+        if (eventCamera == null)
+            eventCamera = cachedCanvas.worldCamera;
 
-        Canvas canvas =
-            infoText.canvas;
-
-
-        if (canvas == null)
-        {
-            return null;
-        }
-
-
-        if (
-            canvas.renderMode ==
-            RenderMode.ScreenSpaceOverlay
-        )
-        {
-            return null;
-        }
-
-
-        return canvas.worldCamera;
+        return eventCamera;
     }
 
-
-    // ============================================================
-    // CLEAR HOVER
-    // ============================================================
+    private void ShowStatusTooltip(string statusId) => tooltipManager?.ShowStatusTooltip(statusId);
+    private void HideStatusTooltip() => tooltipManager?.HideTooltip();
 
     private void ClearAbilityHover()
     {
         lastHoveredAbilityIndex = -1;
 
-
-        /*
-         * IMPORTANT:
-         *
-         * If an ability is selected, hovering away from an
-         * ability link must NOT clear its range.
-         */
-
-        if (selectedAbility == null)
+        if (selectedAbility != null && CanSelectAbilitiesForCurrentUnit())
         {
-            ClearAbilityHighlights();
+            ShowAbilityRange(selectedAbilityIndex);
         }
         else
         {
-            ShowAbilityRange(
-                selectedAbilityIndex
-            );
+            ClearAbilityHighlights();
         }
     }
 
-
-    // ============================================================
-    // SHOW ABILITY RANGE
-    // ============================================================
-
-    private void ShowAbilityRange(
-        int abilityIndex)
-    {
-        if (
-            gridManager == null ||
-            highlightManager == null
-        )
-        {
-            return;
-        }
-
-
-        if (UIManager.CurrentSelection == null)
-        {
-            ClearAbilityHighlights();
-            return;
-        }
-
-
-        CharacterSO character =
-            UIManager.CurrentSelection
-                .GetCharacterData();
-
-
-        if (character == null)
-        {
-            ClearAbilityHighlights();
-            return;
-        }
-
-
-        List<AbilitySO> abilities =
-            character.GetAbilities();
-
-
-        if (
-            abilities == null ||
-            abilityIndex < 0 ||
-            abilityIndex >= abilities.Count
-        )
-        {
-            ClearAbilityHighlights();
-            return;
-        }
-
-
-        AbilitySO ability =
-            abilities[abilityIndex];
-
-
-        GameObject selectedObject =
-            UIManager.CurrentSelection.gameObject;
-
-
-        if (
-            ability == null ||
-            selectedObject == null
-        )
-        {
-            ClearAbilityHighlights();
-            return;
-        }
-
-
-        // ========================================================
-        // ABILITY CANNOT BE USED
-        // ========================================================
-
-        if (!CanUseSelectedAbility(
-                ability))
-        {
-            ClearAbilityHighlights();
-            return;
-        }
-
-
-        // ========================================================
-        // GET RANGE
-        // ========================================================
-
-        List<Vector2Int> rangeTiles =
-            ability.GetRangeTiles(
-                gridManager,
-                selectedObject
-            );
-
-
-        if (
-            rangeTiles == null ||
-            rangeTiles.Count == 0
-        )
-        {
-            ClearAbilityHighlights();
-            return;
-        }
-
-
-        // ========================================================
-        // HEAL ABILITY
-        // ========================================================
-
-        if (ability is HealAbilitySO)
-        {
-            highlightManager.ShowHealTiles(
-                rangeTiles,
-                selectedObject
-            );
-
-
-            return;
-        }
-
-
-        // ========================================================
-        // NORMAL ABILITY
-        // ========================================================
-
-        highlightManager.ShowAbilityTiles(
-            rangeTiles,
-            selectedObject
-        );
-    }
-
-
-    // ============================================================
-    // CLEAR HIGHLIGHTS
-    // ============================================================
-
-    private void ClearAbilityHighlights()
-    {
-        if (highlightManager == null)
-        {
-            return;
-        }
-
-
-        highlightManager.ClearAbilityRange();
-    }
-
-
-    // ============================================================
-    // CLEAR INFO
-    // ============================================================
+    private void ClearAbilityHighlights() => highlightManager?.ClearAbilityRange();
 
     public void ClearInfo()
     {
         lastHoveredAbilityIndex = -1;
-
         lastLinkIndex = -1;
 
-
-        /*
-         * IMPORTANT:
-         *
-         * ClearInfo is a true reset.
-         *
-         * This DOES cancel the selected ability.
-         */
-
         selectedAbilityIndex = -1;
-
         selectedAbility = null;
 
-
         ClearAbilityHighlights();
-
-
         HideStatusTooltip();
 
-
-        if (infoText != null)
-        {
-            infoText.text =
-                string.Empty;
-        }
-
+        if (infoText != null) infoText.text = string.Empty;
 
         if (characterIcon != null)
         {
             characterIcon.sprite = null;
-
             characterIcon.enabled = false;
         }
     }
 
-
-    // ============================================================
-    // CLEAR SELECTED ABILITY
-    // ============================================================
-
     public void ClearSelectedAbility()
     {
         selectedAbilityIndex = -1;
-
         selectedAbility = null;
 
-
         lastHoveredAbilityIndex = -1;
-
         lastLinkIndex = -1;
 
-
         ClearAbilityHighlights();
-
-
         HideStatusTooltip();
+        RefreshCurrentSelection();
     }
 }

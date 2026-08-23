@@ -1,0 +1,3315 @@
+fileFormatVersion: 2
+guid: c3d249be181de0740821c4e8c067f87e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -5256388069412673141
+    second: necroo_0
+  - first:
+      213: 5182032645556586187
+    second: necroo_1
+  - first:
+      213: 8940744754701226923
+    second: necroo_2
+  - first:
+      213: 7929687447986110731
+    second: necroo_3
+  - first:
+      213: -7502486741715111632
+    second: necroo_4
+  - first:
+      213: 3599851314094581950
+    second: necroo_5
+  - first:
+      213: -2621450740678709929
+    second: necroo_6
+  - first:
+      213: -2944011355825697051
+    second: necroo_7
+  - first:
+      213: 7384139790345358727
+    second: necroo_8
+  - first:
+      213: 1599927855261951006
+    second: necroo_9
+  - first:
+      213: -1357646798906443363
+    second: necroo_10
+  - first:
+      213: 5831073748097625268
+    second: necroo_11
+  - first:
+      213: 8678317658023390260
+    second: necroo_12
+  - first:
+      213: -1857747004891304536
+    second: necroo_13
+  - first:
+      213: 4255255720746059691
+    second: necroo_14
+  - first:
+      213: 3965530124694775135
+    second: necroo_15
+  - first:
+      213: 3373893081415477528
+    second: necroo_16
+  - first:
+      213: 5062863122608370127
+    second: necroo_17
+  - first:
+      213: -8003393239890030125
+    second: necroo_18
+  - first:
+      213: -8201751649681750009
+    second: necroo_19
+  - first:
+      213: -2305023159515674224
+    second: necroo_20
+  - first:
+      213: 8802182408732928950
+    second: necroo_21
+  - first:
+      213: -7789191248278374401
+    second: necroo_22
+  - first:
+      213: -4057184818861207257
+    second: necroo_23
+  - first:
+      213: 2678934561707864348
+    second: necroo_24
+  - first:
+      213: 1821707519956723799
+    second: necroo_25
+  - first:
+      213: 654018525730757927
+    second: necroo_26
+  - first:
+      213: 8586128268667984092
+    second: necroo_27
+  - first:
+      213: 1382554964212808827
+    second: necroo_28
+  - first:
+      213: 8956485554049868976
+    second: necroo_29
+  - first:
+      213: -5156562786512372334
+    second: necroo_30
+  - first:
+      213: 3531732157305743196
+    second: necroo_31
+  - first:
+      213: -3117043621583499765
+    second: necroo_32
+  - first:
+      213: 6576389826510799775
+    second: necroo_33
+  - first:
+      213: 5062085139227661319
+    second: necroo_34
+  - first:
+      213: 6165214284573270566
+    second: necroo_35
+  - first:
+      213: 480576195708619318
+    second: necroo_36
+  - first:
+      213: 447901874634019879
+    second: necroo_37
+  - first:
+      213: -6485390167565261463
+    second: necroo_38
+  - first:
+      213: -8107168732337533246
+    second: necroo_39
+  - first:
+      213: 4143176451190908995
+    second: necroo_40
+  - first:
+      213: -8309239970692830373
+    second: necroo_41
+  - first:
+      213: 8098056135394723712
+    second: necroo_42
+  - first:
+      213: 5622853544698031545
+    second: necroo_43
+  - first:
+      213: 6361384687852107502
+    second: necroo_44
+  - first:
+      213: 2390492448898212020
+    second: necroo_45
+  - first:
+      213: 5029470131577583373
+    second: necroo_46
+  - first:
+      213: 3196668053031834484
+    second: necroo_47
+  - first:
+      213: -7111013009719369083
+    second: necroo_48
+  - first:
+      213: -6925233473389617745
+    second: necroo_49
+  - first:
+      213: 9171784361329799648
+    second: necroo_50
+  - first:
+      213: 870914027363323214
+    second: necroo_51
+  - first:
+      213: -1622311870114302462
+    second: necroo_52
+  - first:
+      213: -1008555665927026435
+    second: necroo_53
+  - first:
+      213: -4621381361911558053
+    second: necroo_54
+  - first:
+      213: 5222551501865173045
+    second: necroo_55
+  - first:
+      213: 7864238721399893897
+    second: necroo_56
+  - first:
+      213: 4681810878806282682
+    second: necroo_57
+  - first:
+      213: 4885132847863446274
+    second: necroo_58
+  - first:
+      213: -3227731003418127606
+    second: necroo_59
+  - first:
+      213: -5352858276792947950
+    second: necroo_60
+  - first:
+      213: 6716842091226560388
+    second: necroo_61
+  - first:
+      213: -155623564900364905
+    second: necroo_62
+  - first:
+      213: 7501654386974155588
+    second: necroo_63
+  - first:
+      213: -8864594414775768997
+    second: necroo_64
+  - first:
+      213: 4444820956643904228
+    second: necroo_65
+  - first:
+      213: 4102014865474371271
+    second: necroo_66
+  - first:
+      213: 7195198325697385141
+    second: necroo_67
+  - first:
+      213: 8380167460639155423
+    second: necroo_68
+  - first:
+      213: 8103129321422259706
+    second: necroo_69
+  - first:
+      213: -13615865741358292
+    second: necroo_70
+  - first:
+      213: -5245685043533077284
+    second: necroo_71
+  - first:
+      213: 8964203825988178338
+    second: necroo_72
+  - first:
+      213: -1899777162337809041
+    second: necroo_73
+  - first:
+      213: -9206319838657597088
+    second: necroo_74
+  - first:
+      213: 2085913123236082473
+    second: necroo_75
+  - first:
+      213: -1210420222310287069
+    second: necroo_76
+  - first:
+      213: -9195680059058395420
+    second: necroo_77
+  - first:
+      213: -7565358565129603170
+    second: necroo_78
+  - first:
+      213: 5719171415752651070
+    second: necroo_79
+  - first:
+      213: -7887140161711705891
+    second: necroo_80
+  - first:
+      213: 6309843069950626166
+    second: necroo_81
+  - first:
+      213: 271072499980014951
+    second: necroo_82
+  - first:
+      213: -4821511098516210260
+    second: necroo_83
+  - first:
+      213: 3459749303260051844
+    second: necroo_84
+  - first:
+      213: -1967579741301171137
+    second: necroo_85
+  - first:
+      213: 146473605211958853
+    second: necroo_86
+  - first:
+      213: 7429494235218005250
+    second: necroo_87
+  - first:
+      213: -8498906765678671530
+    second: necroo_88
+  - first:
+      213: -8841371338243139004
+    second: necroo_89
+  - first:
+      213: -109724473854499337
+    second: necroo_90
+  - first:
+      213: -3819505432538605806
+    second: necroo_91
+  - first:
+      213: -2678716745704186497
+    second: necroo_92
+  - first:
+      213: 4774664925499133055
+    second: necroo_93
+  - first:
+      213: -9000572202251506813
+    second: necroo_94
+  - first:
+      213: -2437272658667711104
+    second: necroo_95
+  - first:
+      213: -2712445260815511804
+    second: necroo_96
+  - first:
+      213: 7130457993563297427
+    second: necroo_97
+  - first:
+      213: 6102347763871821218
+    second: necroo_98
+  - first:
+      213: -4628515965534350042
+    second: necroo_99
+  - first:
+      213: -4049807925956192002
+    second: necroo_100
+  - first:
+      213: 6108753668021466342
+    second: necroo_101
+  - first:
+      213: 3020302720845164578
+    second: necroo_102
+  - first:
+      213: -2280007321186614093
+    second: necroo_103
+  - first:
+      213: 4437909142073808346
+    second: necroo_104
+  - first:
+      213: 3583216676068793007
+    second: necroo_105
+  - first:
+      213: -3023194855512515465
+    second: necroo_106
+  - first:
+      213: 7330867182120901543
+    second: necroo_107
+  - first:
+      213: -1277060728277500822
+    second: necroo_108
+  - first:
+      213: -3828783351378612381
+    second: necroo_109
+  - first:
+      213: -2414419351546940484
+    second: necroo_110
+  - first:
+      213: -1682038473396694329
+    second: necroo_111
+  - first:
+      213: -4287941458197522172
+    second: necroo_112
+  - first:
+      213: 8823262926246035908
+    second: necroo_113
+  - first:
+      213: -7863281158958216010
+    second: necroo_114
+  - first:
+      213: 1018140678597115291
+    second: necroo_115
+  - first:
+      213: 249588936753275186
+    second: necroo_116
+  - first:
+      213: 2838756182687660995
+    second: necroo_117
+  - first:
+      213: -8746194933414442171
+    second: necroo_118
+  - first:
+      213: -6099212319246625786
+    second: necroo_119
+  - first:
+      213: -6089353501030635297
+    second: necroo_120
+  - first:
+      213: -2378297266055680486
+    second: necroo_121
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 33
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: 4
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: necroo_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 951
+        width: 33
+        height: 73
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b896e0186ee8d07b0800000000000000
+      internalID: -5256388069412673141
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_1
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 1015
+        width: 31
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc6c0ec4c374ae740800000000000000
+      internalID: 5182032645556586187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_2
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 1015
+        width: 26
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba3576bfbf7e31c70800000000000000
+      internalID: 8940744754701226923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_3
+      rect:
+        serializedVersion: 2
+        x: 103
+        y: 999
+        width: 12
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b01061d78b8eb0e60800000000000000
+      internalID: 7929687447986110731
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_4
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0313efbee00d1e790800000000000000
+      internalID: -7502486741715111632
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_5
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb8a4d482bd35f130800000000000000
+      internalID: 3599851314094581950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_6
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 75d29adb07cbe9bd0800000000000000
+      internalID: -2621450740678709929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_7
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 1015
+        width: 26
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ee0b491545c427d0800000000000000
+      internalID: -2944011355825697051
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_8
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78dcc57340cb97660800000000000000
+      internalID: 7384139790345358727
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_9
+      rect:
+        serializedVersion: 2
+        x: 215
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e14242758e5143610800000000000000
+      internalID: 1599927855261951006
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_10
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 1018
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d993cb4fd6ba82de0800000000000000
+      internalID: -1357646798906443363
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_11
+      rect:
+        serializedVersion: 2
+        x: 263
+        y: 1015
+        width: 58
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4bce676fda22ce050800000000000000
+      internalID: 5831073748097625268
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_12
+      rect:
+        serializedVersion: 2
+        x: 330
+        y: 1015
+        width: 28
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43ceb762ee39f6870800000000000000
+      internalID: 8678317658023390260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_13
+      rect:
+        serializedVersion: 2
+        x: 359
+        y: 1015
+        width: 26
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ad68ea11f4f736e0800000000000000
+      internalID: -1857747004891304536
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_14
+      rect:
+        serializedVersion: 2
+        x: 391
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba7848f5884bd0b30800000000000000
+      internalID: 4255255720746059691
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_15
+      rect:
+        serializedVersion: 2
+        x: 407
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f55ea8c53a4680730800000000000000
+      internalID: 3965530124694775135
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_16
+      rect:
+        serializedVersion: 2
+        x: 423
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 819eae3c1e972de20800000000000000
+      internalID: 3373893081415477528
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_17
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 1015
+        width: 31
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc13f719f27e24640800000000000000
+      internalID: 5062863122608370127
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_18
+      rect:
+        serializedVersion: 2
+        x: 471
+        y: 1007
+        width: 66
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d1979a804c3ee090800000000000000
+      internalID: -8003393239890030125
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_19
+      rect:
+        serializedVersion: 2
+        x: 543
+        y: 999
+        width: 18
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 708ceb054568d2e80800000000000000
+      internalID: -8201751649681750009
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_20
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 099050226a9e200e0800000000000000
+      internalID: -2305023159515674224
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_21
+      rect:
+        serializedVersion: 2
+        x: 583
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6bbe7b8c342a72a70800000000000000
+      internalID: 8802182408732928950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_22
+      rect:
+        serializedVersion: 2
+        x: 599
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ff739ce14db37e390800000000000000
+      internalID: -7789191248278374401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_23
+      rect:
+        serializedVersion: 2
+        x: 633
+        y: 1015
+        width: 8
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7219ba337ebf1b7c0800000000000000
+      internalID: -4057184818861207257
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_24
+      rect:
+        serializedVersion: 2
+        x: 647
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c113d1f4acc7d2520800000000000000
+      internalID: 2678934561707864348
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_25
+      rect:
+        serializedVersion: 2
+        x: 663
+        y: 1015
+        width: 50
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 758adab6651084910800000000000000
+      internalID: 1821707519956723799
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_26
+      rect:
+        serializedVersion: 2
+        x: 719
+        y: 1015
+        width: 18
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72dd4be426a831900800000000000000
+      internalID: 654018525730757927
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_27
+      rect:
+        serializedVersion: 2
+        x: 751
+        y: 1015
+        width: 18
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd815e94b2e082770800000000000000
+      internalID: 8586128268667984092
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_28
+      rect:
+        serializedVersion: 2
+        x: 775
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7c7b543a62df2310800000000000000
+      internalID: 1382554964212808827
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_29
+      rect:
+        serializedVersion: 2
+        x: 791
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b46f0d6824db4c70800000000000000
+      internalID: 8956485554049868976
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_30
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 1013
+        width: 26
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29d7eef57753078b0800000000000000
+      internalID: -5156562786512372334
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_31
+      rect:
+        serializedVersion: 2
+        x: 834
+        y: 1015
+        width: 31
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5768066fab330130800000000000000
+      internalID: 3531732157305743196
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_32
+      rect:
+        serializedVersion: 2
+        x: 879
+        y: 1015
+        width: 34
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0e4e1a47590eb4d0800000000000000
+      internalID: -3117043621583499765
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_33
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 1015
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f934ba934b7044b50800000000000000
+      internalID: 6576389826510799775
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_34
+      rect:
+        serializedVersion: 2
+        x: 967
+        y: 959
+        width: 50
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 704d2723d93204640800000000000000
+      internalID: 5062085139227661319
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_35
+      rect:
+        serializedVersion: 2
+        x: 999
+        y: 1015
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62267242abd3f8550800000000000000
+      internalID: 6165214284573270566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_36
+      rect:
+        serializedVersion: 2
+        x: 1015
+        y: 1018
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63a88b8f0895ba600800000000000000
+      internalID: 480576195708619318
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_37
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 95
+        width: 985
+        height: 892
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 724dac3c164473600800000000000000
+      internalID: 447901874634019879
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_38
+      rect:
+        serializedVersion: 2
+        x: 431
+        y: 983
+        width: 26
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9652670f0044ff5a0800000000000000
+      internalID: -6485390167565261463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_39
+      rect:
+        serializedVersion: 2
+        x: 535
+        y: 983
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ce0ed6ddfc8d7f80800000000000000
+      internalID: -8107168732337533246
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_40
+      rect:
+        serializedVersion: 2
+        x: 591
+        y: 975
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3486ff6e7058f7930800000000000000
+      internalID: 4143176451190908995
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_41
+      rect:
+        serializedVersion: 2
+        x: 639
+        y: 965
+        width: 34
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b5b60695546afac80800000000000000
+      internalID: -8309239970692830373
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_42
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 973
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 08700695623126070800000000000000
+      internalID: 8098056135394723712
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_43
+      rect:
+        serializedVersion: 2
+        x: 903
+        y: 983
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9bda5cbf183680e40800000000000000
+      internalID: 5622853544698031545
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_44
+      rect:
+        serializedVersion: 2
+        x: 943
+        y: 967
+        width: 26
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee6b8076bad284850800000000000000
+      internalID: 6361384687852107502
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_45
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 973
+        width: 18
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b0e4d6873cbc2120800000000000000
+      internalID: 2390492448898212020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_46
+      rect:
+        serializedVersion: 2
+        x: 511
+        y: 965
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d077e19ff644cc540800000000000000
+      internalID: 5029470131577583373
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_47
+      rect:
+        serializedVersion: 2
+        x: 735
+        y: 965
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4735dc558a8dc5c20800000000000000
+      internalID: 3196668053031834484
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_48
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 965
+        width: 18
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 582ee7ae75b905d90800000000000000
+      internalID: -7111013009719369083
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_49
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 855
+        width: 17
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fad97ffe8d0a4ef90800000000000000
+      internalID: -6925233473389617745
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_50
+      rect:
+        serializedVersion: 2
+        x: 1010
+        y: 898
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0e1bb8d4849b84f70800000000000000
+      internalID: 9171784361329799648
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_51
+      rect:
+        serializedVersion: 2
+        x: 943
+        y: 890
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e4d45ee81bb161c00800000000000000
+      internalID: 870914027363323214
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_52
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 877
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 206ffe213f36c79e0800000000000000
+      internalID: -1622311870114302462
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_53
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 839
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df8463427f3e002f0800000000000000
+      internalID: -1008555665927026435
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_54
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 839
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b5096afe22e8ddfb0800000000000000
+      internalID: -4621381361911558053
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_55
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 829
+        width: 34
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5304bd1bbea3a7840800000000000000
+      internalID: 5222551501865173045
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_56
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 815
+        width: 11
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98fa9e95373632d60800000000000000
+      internalID: 7864238721399893897
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_57
+      rect:
+        serializedVersion: 2
+        x: 975
+        y: 823
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab1dec0603229f040800000000000000
+      internalID: 4681810878806282682
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_58
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 711
+        width: 17
+        height: 106
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20b3e7d417a7bc340800000000000000
+      internalID: 4885132847863446274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_59
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 751
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a035fbee0cbc433d0800000000000000
+      internalID: -3227731003418127606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_60
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 714
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21b2fb602c3d6b5b0800000000000000
+      internalID: -5352858276792947950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_61
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 685
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48773fb6b44073d50800000000000000
+      internalID: 6716842091226560388
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_62
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 690
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 79d0f67313d17ddf0800000000000000
+      internalID: -155623564900364905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_63
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 687
+        width: 18
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44368536bea3b1860800000000000000
+      internalID: 7501654386974155588
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_64
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 303
+        width: 33
+        height: 383
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b58e06da852aaf480800000000000000
+      internalID: -8864594414775768997
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_65
+      rect:
+        serializedVersion: 2
+        x: 93
+        y: 615
+        width: 20
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4eac8f24c1d2fad30800000000000000
+      internalID: 4444820956643904228
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_66
+      rect:
+        serializedVersion: 2
+        x: 959
+        y: 615
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ceb8f769c84de830800000000000000
+      internalID: 4102014865474371271
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_67
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 607
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b29da361ca7ad360800000000000000
+      internalID: 7195198325697385141
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_68
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 495
+        width: 67
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd42fa9c7e55c4470800000000000000
+      internalID: 8380167460639155423
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_69
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 543
+        width: 26
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af50d648f29147070800000000000000
+      internalID: 8103129321422259706
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_70
+      rect:
+        serializedVersion: 2
+        x: 946
+        y: 527
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c2b4d273170afcff0800000000000000
+      internalID: -13615865741358292
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_71
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 447
+        width: 36
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd4a1a8ee359337b0800000000000000
+      internalID: -5245685043533077284
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_72
+      rect:
+        serializedVersion: 2
+        x: 935
+        y: 453
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a11936a2ef376c70800000000000000
+      internalID: 8964203825988178338
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_73
+      rect:
+        serializedVersion: 2
+        x: 941
+        y: 463
+        width: 20
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6d847e7cb2a2a5e0800000000000000
+      internalID: -1899777162337809041
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_74
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 453
+        width: 26
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 061be2842e49c3080800000000000000
+      internalID: -9206319838657597088
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_75
+      rect:
+        serializedVersion: 2
+        x: 983
+        y: 407
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 923ffc61fe6a2fc10800000000000000
+      internalID: 2085913123236082473
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_76
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 389
+        width: 26
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 329fe3c8839b33fe0800000000000000
+      internalID: -1210420222310287069
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_77
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 314
+        width: 10
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e66ea305b1626080800000000000000
+      internalID: -9195680059058395420
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_78
+      rect:
+        serializedVersion: 2
+        x: 87
+        y: 325
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e97bdfec772720790800000000000000
+      internalID: -7565358565129603170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_79
+      rect:
+        serializedVersion: 2
+        x: 943
+        y: 303
+        width: 18
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e313185e9149e5f40800000000000000
+      internalID: 5719171415752651070
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_80
+      rect:
+        serializedVersion: 2
+        x: 965
+        y: 319
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd0f47f8fcf3b8290800000000000000
+      internalID: -7887140161711705891
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_81
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 309
+        width: 18
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6790ed457d0119750800000000000000
+      internalID: 6309843069950626166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_82
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 55
+        width: 17
+        height: 247
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7659fa5a00b03c300800000000000000
+      internalID: 271072499980014951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_83
+      rect:
+        serializedVersion: 2
+        x: 967
+        y: 261
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cad765c833d861db0800000000000000
+      internalID: -4821511098516210260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_84
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 247
+        width: 20
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48978b829af730030800000000000000
+      internalID: 3459749303260051844
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_85
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 239
+        width: 34
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f3c1d7466a0c1b4e0800000000000000
+      internalID: -1967579741301171137
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_86
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 229
+        width: 18
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 54e21a7c7f0680200800000000000000
+      internalID: 146473605211958853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_87
+      rect:
+        serializedVersion: 2
+        x: 975
+        y: 186
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20d4bfec4adda1760800000000000000
+      internalID: 7429494235218005250
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_88
+      rect:
+        serializedVersion: 2
+        x: 23
+        y: 178
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6590f846351dd0a80800000000000000
+      internalID: -8498906765678671530
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_89
+      rect:
+        serializedVersion: 2
+        x: 951
+        y: 167
+        width: 18
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44a92b88c932d4580800000000000000
+      internalID: -8841371338243139004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_90
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 167
+        width: 15
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f56cb02c2e2a7ef0800000000000000
+      internalID: -109724473854499337
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_91
+      rect:
+        serializedVersion: 2
+        x: 319
+        y: 125
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2179cd3bb046efac0800000000000000
+      internalID: -3819505432538605806
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_92
+      rect:
+        serializedVersion: 2
+        x: 319
+        y: 111
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7d596eef4943dad0800000000000000
+      internalID: -2678716745704186497
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_93
+      rect:
+        serializedVersion: 2
+        x: 351
+        y: 108
+        width: 52
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7c84e5d374034240800000000000000
+      internalID: 4774664925499133055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_94
+      rect:
+        serializedVersion: 2
+        x: 837
+        y: 111
+        width: 14
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 38b2b85e44b871380800000000000000
+      internalID: -9000572202251506813
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_95
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 95
+        width: 26
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 085d65f1e611d2ed0800000000000000
+      internalID: -2437272658667711104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_96
+      rect:
+        serializedVersion: 2
+        x: 247
+        y: 111
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40f466c08657b5ad0800000000000000
+      internalID: -2712445260815511804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_97
+      rect:
+        serializedVersion: 2
+        x: 279
+        y: 55
+        width: 34
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3965f2034c974f260800000000000000
+      internalID: 7130457993563297427
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_98
+      rect:
+        serializedVersion: 2
+        x: 327
+        y: 104
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2adaa79a5f4efa450800000000000000
+      internalID: 6102347763871821218
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_99
+      rect:
+        serializedVersion: 2
+        x: 431
+        y: 107
+        width: 66
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 625d915904534cfb0800000000000000
+      internalID: -4628515965534350042
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_100
+      rect:
+        serializedVersion: 2
+        x: 503
+        y: 0
+        width: 276
+        height: 115
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef8d1dce5213cc7c0800000000000000
+      internalID: -4049807925956192002
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_101
+      rect:
+        serializedVersion: 2
+        x: 527
+        y: 103
+        width: 12
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6e4b8c27817a6c450800000000000000
+      internalID: 6108753668021466342
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_102
+      rect:
+        serializedVersion: 2
+        x: 613
+        y: 111
+        width: 9
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2203f1682554ae920800000000000000
+      internalID: 3020302720845164578
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_103
+      rect:
+        serializedVersion: 2
+        x: 655
+        y: 103
+        width: 34
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b4c16fdb69cb50e0800000000000000
+      internalID: -2280007321186614093
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_104
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 0
+        width: 138
+        height: 113
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ad594c60ade969d30800000000000000
+      internalID: 4437909142073808346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_105
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 103
+        width: 20
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: faa165a05942ab130800000000000000
+      internalID: 3583216676068793007
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_106
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 95
+        width: 20
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 77c5366eb447b06d0800000000000000
+      internalID: -3023194855512515465
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_107
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 87
+        width: 36
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ab92ed8cd87cb560800000000000000
+      internalID: 7330867182120901543
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_108
+      rect:
+        serializedVersion: 2
+        x: 319
+        y: 104
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6cfa66a808f64ee0800000000000000
+      internalID: -1277060728277500822
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_109
+      rect:
+        serializedVersion: 2
+        x: 566
+        y: 98
+        width: 13
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36fe523e3dd6ddac0800000000000000
+      internalID: -3828783351378612381
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_110
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 0
+        width: 58
+        height: 94
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb3373454624e7ed0800000000000000
+      internalID: -2414419351546940484
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_111
+      rect:
+        serializedVersion: 2
+        x: 127
+        y: 79
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c256a69be238a8e0800000000000000
+      internalID: -1682038473396694329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_112
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 87
+        width: 26
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 409577656fb2e74c0800000000000000
+      internalID: -4287941458197522172
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_113
+      rect:
+        serializedVersion: 2
+        x: 783
+        y: 79
+        width: 34
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c1c4ce32e6827a70800000000000000
+      internalID: 8823262926246035908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_114
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 30
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6bc0647827300e290800000000000000
+      internalID: -7863281158958216010
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_115
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 31
+        width: 90
+        height: 50
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9df7278d89212e00800000000000000
+      internalID: 1018140678597115291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_116
+      rect:
+        serializedVersion: 2
+        x: 159
+        y: 0
+        width: 338
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 231eb0bc0d7b67300800000000000000
+      internalID: 249588936753275186
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_117
+      rect:
+        serializedVersion: 2
+        x: 290
+        y: 15
+        width: 63
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3cbba0135b9456720800000000000000
+      internalID: 2838756182687660995
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_118
+      rect:
+        serializedVersion: 2
+        x: 727
+        y: 23
+        width: 26
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 54bc2812c064f9680800000000000000
+      internalID: -8746194933414442171
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_119
+      rect:
+        serializedVersion: 2
+        x: 973
+        y: 23
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6045e9de5be3b5ba0800000000000000
+      internalID: -6099212319246625786
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_120
+      rect:
+        serializedVersion: 2
+        x: 394
+        y: 18
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd8a94be0454e7ba0800000000000000
+      internalID: -6089353501030635297
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: necroo_121
+      rect:
+        serializedVersion: 2
+        x: 967
+        y: 0
+        width: 57
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1ee77ebc379efed0800000000000000
+      internalID: -2378297266055680486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      necroo_0: -5256388069412673141
+      necroo_1: 5182032645556586187
+      necroo_10: -1357646798906443363
+      necroo_100: -4049807925956192002
+      necroo_101: 6108753668021466342
+      necroo_102: 3020302720845164578
+      necroo_103: -2280007321186614093
+      necroo_104: 4437909142073808346
+      necroo_105: 3583216676068793007
+      necroo_106: -3023194855512515465
+      necroo_107: 7330867182120901543
+      necroo_108: -1277060728277500822
+      necroo_109: -3828783351378612381
+      necroo_11: 5831073748097625268
+      necroo_110: -2414419351546940484
+      necroo_111: -1682038473396694329
+      necroo_112: -4287941458197522172
+      necroo_113: 8823262926246035908
+      necroo_114: -7863281158958216010
+      necroo_115: 1018140678597115291
+      necroo_116: 249588936753275186
+      necroo_117: 2838756182687660995
+      necroo_118: -8746194933414442171
+      necroo_119: -6099212319246625786
+      necroo_12: 8678317658023390260
+      necroo_120: -6089353501030635297
+      necroo_121: -2378297266055680486
+      necroo_13: -1857747004891304536
+      necroo_14: 4255255720746059691
+      necroo_15: 3965530124694775135
+      necroo_16: 3373893081415477528
+      necroo_17: 5062863122608370127
+      necroo_18: -8003393239890030125
+      necroo_19: -8201751649681750009
+      necroo_2: 8940744754701226923
+      necroo_20: -2305023159515674224
+      necroo_21: 8802182408732928950
+      necroo_22: -7789191248278374401
+      necroo_23: -4057184818861207257
+      necroo_24: 2678934561707864348
+      necroo_25: 1821707519956723799
+      necroo_26: 654018525730757927
+      necroo_27: 8586128268667984092
+      necroo_28: 1382554964212808827
+      necroo_29: 8956485554049868976
+      necroo_3: 7929687447986110731
+      necroo_30: -5156562786512372334
+      necroo_31: 3531732157305743196
+      necroo_32: -3117043621583499765
+      necroo_33: 6576389826510799775
+      necroo_34: 5062085139227661319
+      necroo_35: 6165214284573270566
+      necroo_36: 480576195708619318
+      necroo_37: 447901874634019879
+      necroo_38: -6485390167565261463
+      necroo_39: -8107168732337533246
+      necroo_4: -7502486741715111632
+      necroo_40: 4143176451190908995
+      necroo_41: -8309239970692830373
+      necroo_42: 8098056135394723712
+      necroo_43: 5622853544698031545
+      necroo_44: 6361384687852107502
+      necroo_45: 2390492448898212020
+      necroo_46: 5029470131577583373
+      necroo_47: 3196668053031834484
+      necroo_48: -7111013009719369083
+      necroo_49: -6925233473389617745
+      necroo_5: 3599851314094581950
+      necroo_50: 9171784361329799648
+      necroo_51: 870914027363323214
+      necroo_52: -1622311870114302462
+      necroo_53: -1008555665927026435
+      necroo_54: -4621381361911558053
+      necroo_55: 5222551501865173045
+      necroo_56: 7864238721399893897
+      necroo_57: 4681810878806282682
+      necroo_58: 4885132847863446274
+      necroo_59: -3227731003418127606
+      necroo_6: -2621450740678709929
+      necroo_60: -5352858276792947950
+      necroo_61: 6716842091226560388
+      necroo_62: -155623564900364905
+      necroo_63: 7501654386974155588
+      necroo_64: -8864594414775768997
+      necroo_65: 4444820956643904228
+      necroo_66: 4102014865474371271
+      necroo_67: 7195198325697385141
+      necroo_68: 8380167460639155423
+      necroo_69: 8103129321422259706
+      necroo_7: -2944011355825697051
+      necroo_70: -13615865741358292
+      necroo_71: -5245685043533077284
+      necroo_72: 8964203825988178338
+      necroo_73: -1899777162337809041
+      necroo_74: -9206319838657597088
+      necroo_75: 2085913123236082473
+      necroo_76: -1210420222310287069
+      necroo_77: -9195680059058395420
+      necroo_78: -7565358565129603170
+      necroo_79: 5719171415752651070
+      necroo_8: 7384139790345358727
+      necroo_80: -7887140161711705891
+      necroo_81: 6309843069950626166
+      necroo_82: 271072499980014951
+      necroo_83: -4821511098516210260
+      necroo_84: 3459749303260051844
+      necroo_85: -1967579741301171137
+      necroo_86: 146473605211958853
+      necroo_87: 7429494235218005250
+      necroo_88: -8498906765678671530
+      necroo_89: -8841371338243139004
+      necroo_9: 1599927855261951006
+      necroo_90: -109724473854499337
+      necroo_91: -3819505432538605806
+      necroo_92: -2678716745704186497
+      necroo_93: 4774664925499133055
+      necroo_94: -9000572202251506813
+      necroo_95: -2437272658667711104
+      necroo_96: -2712445260815511804
+      necroo_97: 7130457993563297427
+      necroo_98: 6102347763871821218
+      necroo_99: -4628515965534350042
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
