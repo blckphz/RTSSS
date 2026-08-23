@@ -203,16 +203,6 @@ public class UnitAttackBrain : MonoBehaviour
          */
         if (!attackUnit.IsAbilityReady(ability))
         {
-            if (debugAttack)
-            {
-                Debug.Log(
-                    $"[AttackBrain] Ability " +
-                    $"'{ability.GetAbilityName()}' " +
-                    $"not ready. Reason: " +
-                    $"{attackUnit.GetAbilityReadyFailureReason(ability)}",
-                    attackUnit
-                );
-            }
 
             return false;
         }

@@ -9,8 +9,7 @@ public class AttackUnit : MonoBehaviour
     // STATIC EVENTS
     // ==================================================
 
-    public static event Action<AttackUnit, AbilitySO>
-        OnAbilityUsed;
+    public static event Action<AttackUnit, AbilitySO> OnAbilityUsed;
 
 
     // ==================================================
@@ -28,8 +27,7 @@ public class AttackUnit : MonoBehaviour
 
     [Header("Abilities")]
     [SerializeField]
-    private List<AbilitySO> abilities =
-        new List<AbilitySO>();
+    private List<AbilitySO> abilities = new();
 
 
     // ==================================================
@@ -40,18 +38,16 @@ public class AttackUnit : MonoBehaviour
     [SerializeField]
     private HealthManager healthManager;
 
+    private UnitMoveBrain moveBrain;
+    private IAttackAnimation attackAnimation;
+
 
     // ==================================================
     // ABILITY STATE
     // ==================================================
 
-    private readonly Dictionary<AbilitySO, int>
-        abilityCooldowns =
-        new Dictionary<AbilitySO, int>();
-
-    private readonly Dictionary<AbilitySO, int>
-        abilityUsesRemaining =
-        new Dictionary<AbilitySO, int>();
+    private readonly Dictionary<AbilitySO, int> abilityCooldowns = new();
+    private readonly Dictionary<AbilitySO, int> abilityUsesRemaining = new();
 
 
     // ==================================================
@@ -69,9 +65,11 @@ public class AttackUnit : MonoBehaviour
     {
         if (healthManager == null)
         {
-            healthManager =
-                GetComponent<HealthManager>();
+            healthManager = GetComponent<HealthManager>();
         }
+
+        moveBrain = GetComponent<UnitMoveBrain>();
+        attackAnimation = GetComponent<IAttackAnimation>();
 
         if (characterData != null)
         {
@@ -88,40 +86,32 @@ public class AttackUnit : MonoBehaviour
     // INITIALIZE
     // ==================================================
 
-    public void Initialize(
-        CharacterSO data)
+    public void Initialize(CharacterSO data)
     {
         if (data == null)
         {
             return;
         }
 
-        characterData =
-            data;
+        characterData = data;
 
         abilities.Clear();
 
-        List<AbilitySO> characterAbilities =
-            data.GetAbilities();
+        List<AbilitySO> characterAbilities = data.GetAbilities();
 
-        if (characterAbilities != null)
+        if (characterAbilities == null)
         {
-            for (
-                int i = 0;
-                i < characterAbilities.Count;
-                i++
-            )
-            {
-                AbilitySO ability =
-                    characterAbilities[i];
+            InitializeCooldowns();
+            return;
+        }
 
-                if (
-                    ability != null &&
-                    !abilities.Contains(ability)
-                )
-                {
-                    abilities.Add(ability);
-                }
+        for (int i = 0; i < characterAbilities.Count; i++)
+        {
+            AbilitySO ability = characterAbilities[i];
+
+            if (ability != null && !abilities.Contains(ability))
+            {
+                abilities.Add(ability);
             }
         }
 
@@ -138,14 +128,9 @@ public class AttackUnit : MonoBehaviour
         abilityCooldowns.Clear();
         abilityUsesRemaining.Clear();
 
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
+        for (int i = 0; i < abilities.Count; i++)
         {
-            AbilitySO ability =
-                abilities[i];
+            AbilitySO ability = abilities[i];
 
             if (ability == null)
             {
@@ -153,13 +138,6 @@ public class AttackUnit : MonoBehaviour
             }
 
             abilityCooldowns[ability] = 0;
-
-            /*
-             * 0 = unlimited uses.
-             *
-             * Otherwise this is the number
-             * of uses available this turn.
-             */
             abilityUsesRemaining[ability] =
                 ability.GetUsesPerTurn();
         }
@@ -170,26 +148,9 @@ public class AttackUnit : MonoBehaviour
     // ENSURE ABILITY STATE
     // ==================================================
 
-    private bool EnsureAbilityState(
-        AbilitySO ability)
+    private bool EnsureAbilityState(AbilitySO ability)
     {
-        if (ability == null)
-        {
-            return false;
-        }
-
-        /*
-         * Do NOT automatically add the ability.
-         *
-         * Ability registration is controlled by:
-         *
-         * - Initialize()
-         * - AddAbility()
-         *
-         * This method only initializes state for
-         * an already registered ability.
-         */
-        if (!abilities.Contains(ability))
+        if (ability == null || !abilities.Contains(ability))
         {
             return false;
         }
@@ -215,26 +176,13 @@ public class AttackUnit : MonoBehaviour
 
     public bool HasMovedThisTurn()
     {
-        UnitMoveBrain moveBrain =
-            GetComponent<UnitMoveBrain>();
-
-        if (moveBrain == null)
-        {
-            return false;
-        }
-
-        return moveBrain.HasConsumedMovement();
+        return moveBrain != null &&
+               moveBrain.HasConsumedMovement();
     }
 
-
-    public void SetHasMovedThisTurn(
-        bool value)
+    public void SetHasMovedThisTurn(bool value)
     {
-        /*
-         * Intentionally unused.
-         *
-         * UnitMoveBrain owns movement state.
-         */
+        // Movement state is owned by UnitMoveBrain.
     }
 
 
@@ -242,14 +190,8 @@ public class AttackUnit : MonoBehaviour
     // COOLDOWN
     // ==================================================
 
-    public int GetAbilityCooldown(
-        AbilitySO ability)
+    public int GetAbilityCooldown(AbilitySO ability)
     {
-        if (ability == null)
-        {
-            return -1;
-        }
-
         if (!EnsureAbilityState(ability))
         {
             return -1;
@@ -263,12 +205,9 @@ public class AttackUnit : MonoBehaviour
             : 0;
     }
 
-
-    public bool IsAbilityOnCooldown(
-        AbilitySO ability)
+    public bool IsAbilityOnCooldown(AbilitySO ability)
     {
-        return
-            GetAbilityCooldown(ability) > 0;
+        return GetAbilityCooldown(ability) > 0;
     }
 
 
@@ -276,18 +215,17 @@ public class AttackUnit : MonoBehaviour
     // USES PER TURN
     // ==================================================
 
-    public int GetAbilityUsesRemaining(
-        AbilitySO ability)
+    public int GetAbilityUsesRemaining(AbilitySO ability)
     {
         if (ability == null)
         {
             return -1;
         }
 
-        /*
-         * 0 = unlimited.
-         */
-        if (ability.GetUsesPerTurn() <= 0)
+        int usesPerTurn = ability.GetUsesPerTurn();
+
+        // 0 = unlimited.
+        if (usesPerTurn <= 0)
         {
             return 0;
         }
@@ -302,28 +240,23 @@ public class AttackUnit : MonoBehaviour
             out int uses
         )
             ? uses
-            : ability.GetUsesPerTurn();
+            : usesPerTurn;
     }
 
-
-    public bool HasAbilityUsesRemaining(
-        AbilitySO ability)
+    public bool HasAbilityUsesRemaining(AbilitySO ability)
     {
         if (ability == null)
         {
             return false;
         }
 
-        /*
-         * 0 = unlimited.
-         */
+        // 0 = unlimited.
         if (ability.GetUsesPerTurn() <= 0)
         {
             return true;
         }
 
-        return
-            GetAbilityUsesRemaining(ability) > 0;
+        return GetAbilityUsesRemaining(ability) > 0;
     }
 
 
@@ -331,22 +264,17 @@ public class AttackUnit : MonoBehaviour
     // CONSUME ABILITY USE
     // ==================================================
 
-    private bool ConsumeAbilityUse(
-        AbilitySO ability)
+    private bool ConsumeAbilityUse(AbilitySO ability)
     {
         if (ability == null)
         {
             return false;
         }
 
-        /*
-         * 0 = unlimited.
-         *
-         * Unlimited-use abilities do not have a
-         * use limit, so the cooldown starts after
-         * every successful attack.
-         */
-        if (ability.GetUsesPerTurn() <= 0)
+        int usesPerTurn = ability.GetUsesPerTurn();
+
+        // Unlimited-use ability.
+        if (usesPerTurn <= 0)
         {
             return true;
         }
@@ -362,12 +290,7 @@ public class AttackUnit : MonoBehaviour
                 abilityUsesRemaining[ability] - 1
             );
 
-        /*
-         * TRUE means the ability has now consumed
-         * its final allowed use for this turn.
-         */
-        return
-            abilityUsesRemaining[ability] <= 0;
+        return abilityUsesRemaining[ability] <= 0;
     }
 
 
@@ -375,40 +298,26 @@ public class AttackUnit : MonoBehaviour
     // MOVEMENT / ABILITY RESTRICTION
     // ==================================================
 
-    private bool CanUseAbilityAfterMovement(
-        AbilitySO ability)
+    private bool CanUseAbilityAfterMovement(AbilitySO ability)
     {
         if (ability == null)
         {
             return false;
         }
 
-        UnitMoveBrain moveBrain =
-            GetComponent<UnitMoveBrain>();
-
-        /*
-         * No movement brain means there is
-         * nothing to restrict.
-         */
+        // No movement brain means there is no movement restriction.
         if (moveBrain == null)
         {
             return true;
         }
 
-        /*
-         * Unit has not moved.
-         */
+        // Unit has not moved.
         if (!moveBrain.HasConsumedMovement())
         {
             return true;
         }
 
-        /*
-         * Unit moved, so the ability itself decides
-         * whether it can be used after movement.
-         */
-        return
-            ability.CanAttackWithThisAfterMove();
+        return ability.CanAttackWithThisAfterMove();
     }
 
 
@@ -416,123 +325,24 @@ public class AttackUnit : MonoBehaviour
     // READY
     // ==================================================
 
-    public bool IsAbilityReady(
-        AbilitySO ability)
+    public bool IsAbilityReady(AbilitySO ability)
     {
-        if (ability == null)
-        {
-            return false;
-        }
-
-        if (!abilities.Contains(ability))
-        {
-            return false;
-        }
-
         if (!EnsureAbilityState(ability))
         {
             return false;
         }
 
-        /*
-         * Cooldown blocks the ability.
-         */
         if (GetAbilityCooldown(ability) > 0)
         {
             return false;
         }
 
-        /*
-         * Uses per turn block the ability only
-         * after all allowed uses have been consumed.
-         */
         if (!HasAbilityUsesRemaining(ability))
         {
             return false;
         }
 
-        /*
-         * Movement restriction.
-         */
-        if (!CanUseAbilityAfterMovement(ability))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-
-    // ==================================================
-    // DEBUG READY STATE
-    // ==================================================
-
-    public string GetAbilityReadyFailureReason(
-        AbilitySO ability)
-    {
-        if (ability == null)
-        {
-            return "Ability is null.";
-        }
-
-        if (!abilities.Contains(ability))
-        {
-            return
-                "Ability is not registered on this AttackUnit.";
-        }
-
-        if (!EnsureAbilityState(ability))
-        {
-            return
-                "Ability state could not be initialized.";
-        }
-
-        int cooldown =
-            GetAbilityCooldown(ability);
-
-        if (cooldown > 0)
-        {
-            return
-                "Ability is on cooldown: " +
-                cooldown;
-        }
-
-        int usesRemaining =
-            GetAbilityUsesRemaining(ability);
-
-        /*
-         * 0 uses per turn means unlimited.
-         */
-        if (
-            ability.GetUsesPerTurn() > 0 &&
-            usesRemaining <= 0
-        )
-        {
-            return
-                "No uses remaining. Uses remaining: " +
-                usesRemaining;
-        }
-
-        UnitMoveBrain moveBrain =
-            GetComponent<UnitMoveBrain>();
-
-        if (moveBrain != null)
-        {
-            bool moved =
-                moveBrain.HasConsumedMovement();
-
-            if (
-                moved &&
-                !ability.CanAttackWithThisAfterMove()
-            )
-            {
-                return
-                    "Unit has moved and this ability " +
-                    "cannot be used after movement.";
-            }
-        }
-
-        return "Ability is ready.";
+        return CanUseAbilityAfterMovement(ability);
     }
 
 
@@ -540,8 +350,7 @@ public class AttackUnit : MonoBehaviour
     // PUBLIC ABILITY CHECK
     // ==================================================
 
-    public bool CanUseAbility(
-        AbilitySO ability)
+    public bool CanUseAbility(AbilitySO ability)
     {
         return IsAbilityReady(ability);
     }
@@ -553,14 +362,9 @@ public class AttackUnit : MonoBehaviour
 
     public void StartNewRound()
     {
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
+        for (int i = 0; i < abilities.Count; i++)
         {
-            AbilitySO ability =
-                abilities[i];
+            AbilitySO ability = abilities[i];
 
             if (ability == null)
             {
@@ -569,9 +373,6 @@ public class AttackUnit : MonoBehaviour
 
             EnsureAbilityState(ability);
 
-            /*
-             * Reduce cooldown by one round.
-             */
             int currentCooldown =
                 abilityCooldowns[ability];
 
@@ -584,11 +385,6 @@ public class AttackUnit : MonoBehaviour
                     );
             }
 
-            /*
-             * Reset uses per turn.
-             *
-             * 0 = unlimited.
-             */
             abilityUsesRemaining[ability] =
                 ability.GetUsesPerTurn();
         }
@@ -599,14 +395,8 @@ public class AttackUnit : MonoBehaviour
     // COOLDOWN START
     // ==================================================
 
-    private void StartAbilityCooldown(
-        AbilitySO ability)
+    private void StartAbilityCooldown(AbilitySO ability)
     {
-        if (ability == null)
-        {
-            return;
-        }
-
         if (!EnsureAbilityState(ability))
         {
             return;
@@ -628,68 +418,17 @@ public class AttackUnit : MonoBehaviour
         GameObject target,
         AbilitySO selectedAbility)
     {
-        if (!CanAttack())
-        {
-            return false;
-        }
-
-        if (target == null)
-        {
-            return false;
-        }
-
-        if (selectedAbility == null)
-        {
-            return false;
-        }
-
-        if (!abilities.Contains(selectedAbility))
+        if (!CanAttack() ||
+            target == null ||
+            selectedAbility == null)
         {
             return false;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
-            Debug.Log(
-                "[AttackUnit] Ability '" +
-                selectedAbility.GetAbilityName() +
-                "' is not ready.\n" +
-                "Reason: " +
-                GetAbilityReadyFailureReason(
-                    selectedAbility
-                ) +
-                "\nUses remaining: " +
-                GetAbilityUsesRemaining(
-                    selectedAbility
-                ) +
-                "\nCooldown: " +
-                GetAbilityCooldown(
-                    selectedAbility
-                ),
-                this
-            );
-
             return false;
         }
-
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT call IsValidTarget() here.
-         *
-         * IsValidTarget() assumes a traditional
-         * hostile attack and rejects same-team targets.
-         *
-         * That would prevent:
-         *
-         * - Healing allies
-         * - Buffing allies
-         * - Supporting allies
-         * - Other friendly-target abilities
-         *
-         * AbilitySO is responsible for deciding
-         * whether this specific target is valid.
-         */
 
         EnsureGridManager();
 
@@ -698,65 +437,22 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        /*
-         * Ability-specific target validation.
-         */
-        bool canHit =
-            selectedAbility.CanHit(
+        if (!selectedAbility.CanHit(
                 cachedGridManager,
                 gameObject,
-                target
-            );
-
-        if (!canHit)
+                target))
         {
             return false;
         }
 
-        /*
-         * Execute ability.
-         */
-        bool success =
-            selectedAbility.Use(
+        if (!selectedAbility.Use(
                 gameObject,
-                target
-            );
-
-        if (!success)
+                target))
         {
             return false;
         }
 
-        // ==================================================
-        // CONSUME ONE USE
-        // ==================================================
-
-        bool usesExhausted =
-            ConsumeAbilityUse(
-                selectedAbility
-            );
-
-
-        // ==================================================
-        // START COOLDOWN
-        // ==================================================
-
-        if (usesExhausted)
-        {
-            StartAbilityCooldown(
-                selectedAbility
-            );
-        }
-
-
-        // ==================================================
-        // EVENT
-        // ==================================================
-
-        OnAbilityUsed?.Invoke(
-            this,
-            selectedAbility
-        );
+        CompleteAbilityUse(selectedAbility);
 
         return true;
     }
@@ -770,42 +466,14 @@ public class AttackUnit : MonoBehaviour
         Vector2Int targetTile,
         AbilitySO selectedAbility)
     {
-        if (!CanAttack())
-        {
-            return false;
-        }
-
-        if (selectedAbility == null)
-        {
-            return false;
-        }
-
-        if (!abilities.Contains(selectedAbility))
+        if (!CanAttack() ||
+            selectedAbility == null)
         {
             return false;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
-            Debug.Log(
-                "[AttackUnit] Ability '" +
-                selectedAbility.GetAbilityName() +
-                "' is not ready.\n" +
-                "Reason: " +
-                GetAbilityReadyFailureReason(
-                    selectedAbility
-                ) +
-                "\nUses remaining: " +
-                GetAbilityUsesRemaining(
-                    selectedAbility
-                ) +
-                "\nCooldown: " +
-                GetAbilityCooldown(
-                    selectedAbility
-                ),
-                this
-            );
-
             return false;
         }
 
@@ -816,74 +484,51 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!cachedGridManager.IsInsideGrid(
+        if (!cachedGridManager.IsInsideGrid(targetTile))
+        {
+            return false;
+        }
+
+        if (!selectedAbility.CanHitTile(
+                cachedGridManager,
+                gameObject,
                 targetTile))
         {
             return false;
         }
 
-        /*
-         * Tile abilities are also controlled by AbilitySO.
-         */
-        bool canHit =
-            selectedAbility.CanHitTile(
-                cachedGridManager,
+        if (!selectedAbility.UseAtTile(
                 gameObject,
-                targetTile
-            );
-
-        if (!canHit)
+                cachedGridManager,
+                targetTile))
         {
             return false;
         }
 
-        /*
-         * Execute tile ability.
-         */
-        bool success =
-            selectedAbility.UseAtTile(
-                gameObject,
-                cachedGridManager,
-                targetTile
-            );
+        CompleteAbilityUse(selectedAbility);
 
-        if (!success)
-        {
-            return false;
-        }
+        return true;
+    }
 
-        // ==================================================
-        // CONSUME ONE USE
-        // ==================================================
 
+    // ==================================================
+    // COMPLETE ABILITY USE
+    // ==================================================
+
+    private void CompleteAbilityUse(AbilitySO ability)
+    {
         bool usesExhausted =
-            ConsumeAbilityUse(
-                selectedAbility
-            );
-
-
-        // ==================================================
-        // START COOLDOWN
-        // ==================================================
+            ConsumeAbilityUse(ability);
 
         if (usesExhausted)
         {
-            StartAbilityCooldown(
-                selectedAbility
-            );
+            StartAbilityCooldown(ability);
         }
-
-
-        // ==================================================
-        // EVENT
-        // ==================================================
 
         OnAbilityUsed?.Invoke(
             this,
-            selectedAbility
+            ability
         );
-
-        return true;
     }
 
 
@@ -895,53 +540,17 @@ public class AttackUnit : MonoBehaviour
         GameObject target,
         AbilitySO selectedAbility)
     {
-        if (!CanAttack())
-        {
-            yield break;
-        }
-
-        if (target == null)
-        {
-            yield break;
-        }
-
-        if (selectedAbility == null)
-        {
-            yield break;
-        }
-
-        if (!abilities.Contains(selectedAbility))
+        if (!CanAttack() ||
+            target == null ||
+            selectedAbility == null)
         {
             yield break;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
-            Debug.Log(
-                "[AttackUnit] Ability '" +
-                selectedAbility.GetAbilityName() +
-                "' is not ready. Reason: " +
-                GetAbilityReadyFailureReason(
-                    selectedAbility
-                ),
-                this
-            );
-
             yield break;
         }
-
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT use IsValidTarget() here.
-         *
-         * AbilitySO.CanHit() determines whether
-         * this particular ability can affect the target.
-         *
-         * This allows healing abilities to target
-         * allies while offensive abilities can still
-         * reject allies.
-         */
 
         EnsureGridManager();
 
@@ -950,70 +559,22 @@ public class AttackUnit : MonoBehaviour
             yield break;
         }
 
-        bool canHit =
-            selectedAbility.CanHit(
+        if (!selectedAbility.CanHit(
                 cachedGridManager,
                 gameObject,
-                target
-            );
-
-        if (!canHit)
+                target))
         {
             yield break;
         }
 
-        /*
-         * Execute ability.
-         */
-        bool success =
-            selectedAbility.Use(
+        if (!selectedAbility.Use(
                 gameObject,
-                target
-            );
-
-        if (!success)
+                target))
         {
             yield break;
         }
 
-        // ==================================================
-        // CONSUME ONE USE
-        // ==================================================
-
-        bool usesExhausted =
-            ConsumeAbilityUse(
-                selectedAbility
-            );
-
-
-        // ==================================================
-        // START COOLDOWN
-        // ==================================================
-
-        if (usesExhausted)
-        {
-            StartAbilityCooldown(
-                selectedAbility
-            );
-        }
-
-
-        // ==================================================
-        // EVENT
-        // ==================================================
-
-        OnAbilityUsed?.Invoke(
-            this,
-            selectedAbility
-        );
-
-
-        // ==================================================
-        // ATTACK ANIMATION
-        // ==================================================
-
-        IAttackAnimation attackAnimation =
-            GetComponent<IAttackAnimation>();
+        CompleteAbilityUse(selectedAbility);
 
         if (attackAnimation == null)
         {
@@ -1032,39 +593,10 @@ public class AttackUnit : MonoBehaviour
     // GENERIC TARGET CHECK
     // ==================================================
 
-    /*
-     * This method is intentionally kept for other systems
-     * that need to ask:
-     *
-     * "Is this a normal hostile attack target?"
-     *
-     * It is NOT used by Attack() or AttackRoutine().
-     *
-     * Therefore healing/support abilities can still target
-     * friendly units through AbilitySO.CanHit().
-     */
-    public bool IsValidTarget(
-        GameObject target)
+    public bool IsValidTarget(GameObject target)
     {
-        if (target == null)
-        {
-            return false;
-        }
-
-        if (target == gameObject)
-        {
-            return false;
-        }
-
-        HealthManager targetHealth =
-            target.GetComponent<HealthManager>();
-
-        if (targetHealth == null)
-        {
-            return false;
-        }
-
-        if (targetHealth.IsDead())
+        if (target == null ||
+            target == gameObject)
         {
             return false;
         }
@@ -1074,15 +606,17 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (
-            targetHealth.GetTeam() ==
-            healthManager.GetTeam()
-        )
+        HealthManager targetHealth =
+            target.GetComponent<HealthManager>();
+
+        if (targetHealth == null ||
+            targetHealth.IsDead())
         {
             return false;
         }
 
-        return true;
+        return targetHealth.GetTeam() !=
+               healthManager.GetTeam();
     }
 
 
@@ -1100,11 +634,7 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
+        for (int i = 0; i < abilities.Count; i++)
         {
             if (abilities[i] != null)
             {
@@ -1122,9 +652,8 @@ public class AttackUnit : MonoBehaviour
 
     public bool IsDead()
     {
-        return
-            healthManager == null ||
-            healthManager.IsDead();
+        return healthManager == null ||
+               healthManager.IsDead();
     }
 
 
@@ -1135,10 +664,8 @@ public class AttackUnit : MonoBehaviour
     public GridManager GetGridManager()
     {
         EnsureGridManager();
-
         return cachedGridManager;
     }
-
 
     private void EnsureGridManager()
     {
@@ -1158,14 +685,9 @@ public class AttackUnit : MonoBehaviour
     {
         int maxRange = 0;
 
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
+        for (int i = 0; i < abilities.Count; i++)
         {
-            AbilitySO ability =
-                abilities[i];
+            AbilitySO ability = abilities[i];
 
             if (
                 ability != null &&
@@ -1183,19 +705,13 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
-
     public int GetMaximumAttackRange()
     {
         int maxRange = 0;
 
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
+        for (int i = 0; i < abilities.Count; i++)
         {
-            AbilitySO ability =
-                abilities[i];
+            AbilitySO ability = abilities[i];
 
             if (ability != null)
             {
@@ -1220,15 +736,12 @@ public class AttackUnit : MonoBehaviour
         return abilities;
     }
 
-
     public int GetAbilityCount()
     {
         return abilities.Count;
     }
 
-
-    public void AddAbility(
-        AbilitySO ability)
+    public void AddAbility(AbilitySO ability)
     {
         if (ability == null)
         {
@@ -1246,9 +759,7 @@ public class AttackUnit : MonoBehaviour
             ability.GetUsesPerTurn();
     }
 
-
-    public void RemoveAbility(
-        AbilitySO ability)
+    public void RemoveAbility(AbilitySO ability)
     {
         if (ability == null)
         {
@@ -1256,9 +767,7 @@ public class AttackUnit : MonoBehaviour
         }
 
         abilities.Remove(ability);
-
         abilityCooldowns.Remove(ability);
-
         abilityUsesRemaining.Remove(ability);
     }
 
@@ -1274,12 +783,10 @@ public class AttackUnit : MonoBehaviour
             : healthManager.GetTeam();
     }
 
-
     public HealthManager GetHealthManager()
     {
         return healthManager;
     }
-
 
     public CharacterSO GetCharacterData()
     {

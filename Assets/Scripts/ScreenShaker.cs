@@ -177,14 +177,6 @@ public class ScreenShaker : MonoBehaviour
                     }
                 }
             }
-
-
-            Debug.Log(
-                "[ScreenShaker] SHAKE REQUESTED " +
-                $"| Intensity: {intensity} " +
-                $"| Duration: {duration} " +
-                $"| From: {caller}"
-            );
         }
 
 

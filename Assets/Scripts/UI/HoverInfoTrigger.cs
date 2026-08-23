@@ -1,19 +1,18 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Collider2D))]
-public class HoverInfoTrigger :
-    MonoBehaviour,
-    ICharacterHolder
+public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 {
+    // ============================================================
+    // TOOLTIP CONTENT
+    // ============================================================
+
     [Header("Tooltip Content")]
     [TextArea]
     [SerializeField]
-    private string hoverMessage =
-        "Default Prefab Info";
+    private string hoverMessage = "Default Prefab Info";
 
-    public string HoverMessage =>
-        hoverMessage;
+    public string HoverMessage => hoverMessage;
 
 
     // ============================================================
@@ -48,21 +47,12 @@ public class HoverInfoTrigger :
     // ============================================================
 
     [Header("Hover Screen Shake")]
-    [Tooltip(
-        "Enables a small screen shake when the mouse first enters the unit."
-    )]
     [SerializeField]
     private bool enableHoverScreenShake = true;
 
-    [Tooltip(
-        "Duration of the small screen shake when hovering over the unit."
-    )]
     [SerializeField]
     private float hoverScreenShakeDuration = 0.05f;
 
-    [Tooltip(
-        "Intensity of the small screen shake when hovering over the unit."
-    )]
     [SerializeField]
     private float hoverScreenShakeMagnitude = 0.08f;
 
@@ -72,21 +62,12 @@ public class HoverInfoTrigger :
     // ============================================================
 
     [Header("Normal Hover Scale")]
-    [Tooltip(
-        "Enables the small scale increase while the mouse is hovering over the unit."
-    )]
     [SerializeField]
     private bool enableHoverScale = true;
 
-    [Tooltip(
-        "Additional scale applied while the mouse is hovering over the unit."
-    )]
     [SerializeField, Range(0f, 0.2f)]
     private float hoverScaleAmount = 0.05f;
 
-    [Tooltip(
-        "How quickly the normal hover scale turns on and off."
-    )]
     [SerializeField, Min(0.01f)]
     private float hoverScaleSmoothTime = 0.08f;
 
@@ -96,21 +77,12 @@ public class HoverInfoTrigger :
     // ============================================================
 
     [Header("Ability Target Scale")]
-    [Tooltip(
-        "Enables the slightly larger scale when this unit is a valid target of the selected ability."
-    )]
     [SerializeField]
     private bool enableAbilityTargetScale = true;
 
-    [Tooltip(
-        "Additional scale applied to a valid ability target."
-    )]
     [SerializeField, Range(0f, 0.25f)]
     private float abilityTargetScaleAmount = 0.06f;
 
-    [Tooltip(
-        "How quickly the ability target scale turns on and off."
-    )]
     [SerializeField, Min(0.01f)]
     private float abilityTargetScaleSmoothTime = 0.08f;
 
@@ -120,28 +92,15 @@ public class HoverInfoTrigger :
     // ============================================================
 
     [Header("Hover Outline")]
-    [Tooltip(
-        "The SpriteRenderer on the child object used for the normal mouse hover outline."
-    )]
     [SerializeField]
     private SpriteRenderer hoverShaderSprite;
 
-    [Tooltip(
-        "Color applied to the outline when normally hovering over the unit."
-    )]
     [SerializeField]
     private Color hoverOutlineColor = Color.white;
 
-    [Tooltip(
-        "Name of the child GameObject containing the hover outline SpriteRenderer."
-    )]
     [SerializeField]
-    private string hoverShaderObjectName =
-        "HoverShaderSprite";
+    private string hoverShaderObjectName = "HoverShaderSprite";
 
-    [Tooltip(
-        "Enables the outline when the mouse is hovering over the unit or the unit is selected."
-    )]
     [SerializeField]
     private bool enableHoverOutline = true;
 
@@ -151,20 +110,8 @@ public class HoverInfoTrigger :
     // ============================================================
 
     [Header("Selected Visual")]
-    [Tooltip(
-        "SpriteRenderer on the child object that appears when selected."
-    )]
     [SerializeField]
     private SpriteRenderer selectedChildSprite;
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-    [SerializeField]
-    private bool debugHover = true;
 
 
     // ============================================================
@@ -174,23 +121,13 @@ public class HoverInfoTrigger :
     private Vector3 originalScale;
 
     private bool isSelected;
-
     private bool isHovered;
-
     private bool isAbilityTargetHovered;
-
-    private SpriteRenderer spriteRenderer;
-
-    private Collider2D collider2D;
 
     private AttackUnit attackUnit;
 
     private CanvasInfoManager canvasInfoManager;
-
     private GridHighlightManager gridHighlightManager;
-
-    private Camera hoverCamera;
-
     private AudioFXManager audioFXManager;
 
 
@@ -199,11 +136,9 @@ public class HoverInfoTrigger :
     // ============================================================
 
     private float currentHoverScale;
-
     private float hoverScaleVelocity;
 
     private float currentAbilityTargetScale;
-
     private float abilityTargetScaleVelocity;
 
 
@@ -214,9 +149,7 @@ public class HoverInfoTrigger :
     private MaterialPropertyBlock hoverPropertyBlock;
 
     private static readonly int OutlineColorID =
-        Shader.PropertyToID(
-            "_OutlineColor"
-        );
+        Shader.PropertyToID("_OutlineColor");
 
 
     // ============================================================
@@ -225,99 +158,23 @@ public class HoverInfoTrigger :
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // REFERENCES
-        // --------------------------------------------------------
-
-        collider2D =
-            GetComponent<Collider2D>();
-
-        spriteRenderer =
-            GetComponent<SpriteRenderer>();
-
-        attackUnit =
-            GetComponent<AttackUnit>();
+        attackUnit = GetComponent<AttackUnit>();
 
         originalScale =
             transform.localScale;
 
-        hoverCamera =
-            Camera.main;
-
         audioFXManager =
             AudioFXManager.Instance;
-
-
-        // --------------------------------------------------------
-        // HOVER OUTLINE PROPERTY BLOCK
-        // --------------------------------------------------------
 
         hoverPropertyBlock =
             new MaterialPropertyBlock();
 
-
-        // --------------------------------------------------------
-        // VALIDATION
-        // --------------------------------------------------------
-
-        if (collider2D == null)
-        {
-            Debug.LogError(
-                $"[HoverInfoTrigger] " +
-                $"{gameObject.name} is missing Collider2D!",
-                this
-            );
-        }
-
-        if (attackUnit == null)
-        {
-            Debug.LogError(
-                $"[HoverInfoTrigger] " +
-                $"{gameObject.name} is missing AttackUnit!",
-                this
-            );
-        }
-
-        if (hoverCamera == null)
-        {
-            Debug.LogWarning(
-                $"[HoverInfoTrigger] " +
-                $"{gameObject.name} could not find Camera.main.",
-                this
-            );
-        }
-
-        if (audioFXManager == null)
-        {
-            Debug.LogWarning(
-                $"[HoverInfoTrigger] " +
-                $"{gameObject.name} could not find AudioFXManager.",
-                this
-            );
-        }
-
-
-        // --------------------------------------------------------
-        // SELECTED VISUAL
-        // --------------------------------------------------------
-
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled =
-                false;
+            selectedChildSprite.enabled = false;
         }
 
-
-        // --------------------------------------------------------
-        // HOVER OUTLINE
-        // --------------------------------------------------------
-
         SetupHoverOutline();
-
-
-        // --------------------------------------------------------
-        // MANAGERS
-        // --------------------------------------------------------
 
         canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
@@ -329,8 +186,6 @@ public class HoverInfoTrigger :
 
     private void Update()
     {
-        CheckMouseHover();
-
         UpdateScale();
     }
 
@@ -344,9 +199,7 @@ public class HoverInfoTrigger :
         if (hoverShaderSprite == null)
         {
             Transform hoverShader =
-                transform.Find(
-                    hoverShaderObjectName
-                );
+                transform.Find(hoverShaderObjectName);
 
             if (hoverShader != null)
             {
@@ -355,42 +208,21 @@ public class HoverInfoTrigger :
             }
         }
 
-
         if (hoverShaderSprite == null)
         {
-            Debug.LogWarning(
-                $"[HoverInfoTrigger] " +
-                $"{gameObject.name} could not find " +
-                $"{hoverShaderObjectName}.",
-                this
-            );
-
             return;
         }
 
-
-        // --------------------------------------------------------
-        // START DISABLED
-        // --------------------------------------------------------
-
-        hoverShaderSprite.enabled =
-            false;
-
-
-        // --------------------------------------------------------
-        // SET OUTLINE COLOR
-        // --------------------------------------------------------
+        hoverShaderSprite.enabled = false;
 
         hoverShaderSprite.GetPropertyBlock(
             hoverPropertyBlock
         );
 
-
         hoverPropertyBlock.SetColor(
             OutlineColorID,
             hoverOutlineColor
         );
-
 
         hoverShaderSprite.SetPropertyBlock(
             hoverPropertyBlock
@@ -412,136 +244,25 @@ public class HoverInfoTrigger :
             return;
         }
 
-
-        // --------------------------------------------------------
-        // OUTLINE IS VISIBLE IF:
-        //
-        // 1. Mouse is hovering the unit
-        // OR
-        // 2. Unit is selected
-        // --------------------------------------------------------
-
-        bool shouldShowOutline =
-            isHovered ||
-            isSelected;
-
-
         hoverShaderSprite.enabled =
-            shouldShowOutline;
+            isHovered || isSelected;
     }
 
 
     // ============================================================
-    // NEW INPUT SYSTEM HOVER
+    // HOVER MANAGER CALLBACK
     // ============================================================
 
-    private void CheckMouseHover()
+    public void SetHoveredFromManager(bool hovered)
     {
-        if (Mouse.current == null)
-        {
-            if (isHovered)
-            {
-                SetHovered(false);
-            }
-
-            return;
-        }
-
-
-        if (hoverCamera == null)
-        {
-            hoverCamera =
-                Camera.main;
-        }
-
-
-        if (hoverCamera == null)
+        if (isHovered == hovered)
         {
             return;
         }
 
-
-        Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
-
-
-        Ray ray =
-            hoverCamera.ScreenPointToRay(
-                mousePosition
-            );
-
-
-        RaycastHit2D hit =
-            Physics2D.GetRayIntersection(
-                ray,
-                Mathf.Infinity
-            );
-
-
-        bool mouseIsOverThisUnit =
-            false;
-
-
-        if (hit.collider != null)
-        {
-            HoverInfoTrigger trigger =
-                hit.collider.GetComponentInParent<
-                    HoverInfoTrigger
-                >();
-
-
-            if (trigger == this)
-            {
-                mouseIsOverThisUnit =
-                    true;
-            }
-        }
-
-
-        if (mouseIsOverThisUnit != isHovered)
-        {
-            SetHovered(
-                mouseIsOverThisUnit
-            );
-        }
-    }
-
-
-    // ============================================================
-    // SET HOVERED
-    // ============================================================
-
-    private void SetHovered(
-        bool hovered)
-    {
-        isHovered =
-            hovered;
-
-
-        // --------------------------------------------------------
-        // HOVER OUTLINE
-        // --------------------------------------------------------
+        isHovered = hovered;
 
         UpdateHoverOutline();
-
-
-        // --------------------------------------------------------
-        // DEBUG
-        // --------------------------------------------------------
-
-        if (debugHover)
-        {
-            Debug.Log(
-                $"[HoverInfoTrigger] " +
-                $"{gameObject.name} hover = {hovered}",
-                this
-            );
-        }
-
-
-        // --------------------------------------------------------
-        // ENTER / EXIT
-        // --------------------------------------------------------
 
         if (hovered)
         {
@@ -560,26 +281,16 @@ public class HoverInfoTrigger :
 
     private void OnHoverEnter()
     {
-        // --------------------------------------------------------
-        // HOVER SOUND
-        // --------------------------------------------------------
-
         if (audioFXManager == null)
         {
             audioFXManager =
                 AudioFXManager.Instance;
         }
 
-
         if (audioFXManager != null)
         {
             audioFXManager.PlayUnitHover();
         }
-
-
-        // --------------------------------------------------------
-        // HOVER SCREEN SHAKE
-        // --------------------------------------------------------
 
         if (
             enableHoverScreenShake &&
@@ -592,22 +303,10 @@ public class HoverInfoTrigger :
             );
         }
 
-
-        // --------------------------------------------------------
-        // CHARACTER INFO
-        // --------------------------------------------------------
-
         if (canvasInfoManager != null)
         {
-            canvasInfoManager.ShowCharacter(
-                this
-            );
+            canvasInfoManager.ShowCharacter(this);
         }
-
-
-        // --------------------------------------------------------
-        // ABILITY TARGET
-        // --------------------------------------------------------
 
         UpdateAbilityTargetHover();
     }
@@ -619,9 +318,7 @@ public class HoverInfoTrigger :
 
     private void OnHoverExit()
     {
-        isAbilityTargetHovered =
-            false;
-
+        isAbilityTargetHovered = false;
 
         if (UIManager.CurrentSelection != null)
         {
@@ -634,7 +331,6 @@ public class HoverInfoTrigger :
 
             return;
         }
-
 
         if (
             !isSelected &&
@@ -652,33 +348,15 @@ public class HoverInfoTrigger :
 
     private void UpdateScale()
     {
-        // --------------------------------------------------------
-        // SELECTED SCALE
-        // --------------------------------------------------------
-
         float baseScale =
             isSelected
                 ? selectedScale
                 : 1f;
 
-
-        // --------------------------------------------------------
-        // NORMAL HOVER SCALE
-        // --------------------------------------------------------
-
         float targetHoverScale =
-            0f;
-
-
-        if (
-            isHovered &&
-            enableHoverScale
-        )
-        {
-            targetHoverScale =
-                hoverScaleAmount;
-        }
-
+            isHovered && enableHoverScale
+                ? hoverScaleAmount
+                : 0f;
 
         currentHoverScale =
             Mathf.SmoothDamp(
@@ -688,24 +366,11 @@ public class HoverInfoTrigger :
                 hoverScaleSmoothTime
             );
 
-
-        // --------------------------------------------------------
-        // ABILITY TARGET SCALE
-        // --------------------------------------------------------
-
         float targetAbilityScale =
-            0f;
-
-
-        if (
             isAbilityTargetHovered &&
             enableAbilityTargetScale
-        )
-        {
-            targetAbilityScale =
-                abilityTargetScaleAmount;
-        }
-
+                ? abilityTargetScaleAmount
+                : 0f;
 
         currentAbilityTargetScale =
             Mathf.SmoothDamp(
@@ -715,28 +380,19 @@ public class HoverInfoTrigger :
                 abilityTargetScaleSmoothTime
             );
 
-
-        // --------------------------------------------------------
-        // FINAL SCALE
-        // --------------------------------------------------------
-
         float finalScale =
             baseScale +
             currentHoverScale +
             currentAbilityTargetScale;
 
-
         Vector3 targetScale =
-            originalScale *
-            finalScale;
-
+            originalScale * finalScale;
 
         transform.localScale =
             Vector3.Lerp(
                 transform.localScale,
                 targetScale,
-                Time.deltaTime *
-                scaleSpeed
+                Time.deltaTime * scaleSpeed
             );
     }
 
@@ -747,52 +403,38 @@ public class HoverInfoTrigger :
 
     private void UpdateAbilityTargetHover()
     {
-        isAbilityTargetHovered =
-            false;
-
+        isAbilityTargetHovered = false;
 
         if (!enableAbilityTargetScale)
         {
             return;
         }
 
-
         if (canvasInfoManager == null)
         {
             return;
         }
-
 
         if (!canvasInfoManager.HasSelectedAbility())
         {
             return;
         }
 
-
         if (gridHighlightManager == null)
         {
             gridHighlightManager =
-                FindFirstObjectByType<
-                    GridHighlightManager>();
+                FindFirstObjectByType<GridHighlightManager>();
         }
-
 
         if (gridHighlightManager == null)
         {
             return;
         }
 
-
-        if (
-            gridHighlightManager
-                .IsValidCurrentAbilityTarget(
-                    gameObject
-                )
-        )
-        {
-            isAbilityTargetHovered =
-                true;
-        }
+        isAbilityTargetHovered =
+            gridHighlightManager.IsValidCurrentAbilityTarget(
+                gameObject
+            );
     }
 
 
@@ -806,117 +448,58 @@ public class HoverInfoTrigger :
     }
 
 
-    public void SetSelected(
-        bool selected)
+    public void SetSelected(bool selected)
     {
-        // --------------------------------------------------------
-        // CHECK SELECTION STATE CHANGES
-        // --------------------------------------------------------
-
         bool becomingSelected =
             selected && !isSelected;
 
         bool becomingDeselected =
             !selected && isSelected;
 
-
-        // --------------------------------------------------------
-        // GET AUDIO MANAGER
-        // --------------------------------------------------------
-
         if (
             audioFXManager == null &&
-            (
-                becomingSelected ||
-                becomingDeselected
-            )
+            (becomingSelected || becomingDeselected)
         )
         {
             audioFXManager =
                 AudioFXManager.Instance;
         }
 
-
-        // --------------------------------------------------------
-        // SELECT SOUND
-        // --------------------------------------------------------
-
         if (becomingSelected)
         {
-            if (audioFXManager != null)
+            audioFXManager?.PlayUnitClick();
+
+            if (
+                enableScreenShake &&
+                ScreenShaker.Instance != null
+            )
             {
-                audioFXManager.PlayUnitClick();
+                ScreenShaker.Instance.Shake(
+                    screenShakeMagnitude,
+                    screenShakeDuration
+                );
             }
         }
-
-
-        // --------------------------------------------------------
-        // DESELECT SOUND
-        // --------------------------------------------------------
 
         if (becomingDeselected)
         {
-            if (audioFXManager != null)
-            {
-                audioFXManager.PlayUnitDeselect();
-            }
+            audioFXManager?.PlayUnitDeselect();
         }
 
-
-        // --------------------------------------------------------
-        // SCREEN SHAKE
-        // --------------------------------------------------------
-
-        if (
-            becomingSelected &&
-            enableScreenShake &&
-            ScreenShaker.Instance != null
-        )
-        {
-            ScreenShaker.Instance.Shake(
-                screenShakeMagnitude,
-                screenShakeDuration
-            );
-        }
-
-
-        // --------------------------------------------------------
-        // SET STATE
-        // --------------------------------------------------------
-
-        isSelected =
-            selected;
-
-
-        // --------------------------------------------------------
-        // HOVER OUTLINE
-        // --------------------------------------------------------
+        isSelected = selected;
 
         UpdateHoverOutline();
 
-
-        // --------------------------------------------------------
-        // SELECTED VISUAL
-        // --------------------------------------------------------
-
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled =
-                selected;
+            selectedChildSprite.enabled = selected;
         }
-
-
-        // --------------------------------------------------------
-        // CHARACTER INFO
-        // --------------------------------------------------------
 
         if (canvasInfoManager != null)
         {
             if (selected)
             {
-                canvasInfoManager.ShowCharacter(
-                    this
-                );
+                canvasInfoManager.ShowCharacter(this);
             }
             else
             {
@@ -932,65 +515,29 @@ public class HoverInfoTrigger :
 
     private void OnDisable()
     {
-        isSelected =
-            false;
+        isSelected = false;
+        isHovered = false;
+        isAbilityTargetHovered = false;
 
+        currentHoverScale = 0f;
+        hoverScaleVelocity = 0f;
 
-        isHovered =
-            false;
-
-
-        isAbilityTargetHovered =
-            false;
-
-
-        currentHoverScale =
-            0f;
-
-
-        hoverScaleVelocity =
-            0f;
-
-
-        currentAbilityTargetScale =
-            0f;
-
-
-        abilityTargetScaleVelocity =
-            0f;
-
-
-        // --------------------------------------------------------
-        // SELECTED VISUAL
-        // --------------------------------------------------------
+        currentAbilityTargetScale = 0f;
+        abilityTargetScaleVelocity = 0f;
 
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled =
-                false;
+            selectedChildSprite.enabled = false;
         }
-
-
-        // --------------------------------------------------------
-        // HOVER OUTLINE
-        // --------------------------------------------------------
 
         if (hoverShaderSprite != null)
         {
-            hoverShaderSprite.enabled =
-                false;
+            hoverShaderSprite.enabled = false;
         }
-
-
-        // --------------------------------------------------------
-        // UI SELECTION
-        // --------------------------------------------------------
 
         if (UIManager.CurrentSelection == this)
         {
-            UIManager.ClearSelection(
-                this
-            );
+            UIManager.ClearSelection(this);
         }
     }
 
@@ -1003,9 +550,7 @@ public class HoverInfoTrigger :
     {
         if (UIManager.CurrentSelection == this)
         {
-            UIManager.ClearSelection(
-                this
-            );
+            UIManager.ClearSelection(this);
         }
     }
 
@@ -1016,28 +561,9 @@ public class HoverInfoTrigger :
 
     public CharacterSO GetCharacterData()
     {
-        if (attackUnit == null)
-        {
-            return null;
-        }
-
-
-        CharacterSO characterData =
-            attackUnit.GetCharacterData();
-
-
-        if (characterData == null)
-        {
-            Debug.LogError(
-                $"[HoverInfoTrigger] " +
-                $"AttackUnit on {gameObject.name} " +
-                "has no CharacterSO assigned!",
-                this
-            );
-        }
-
-
-        return characterData;
+        return attackUnit != null
+            ? attackUnit.GetCharacterData()
+            : null;
     }
 
 
@@ -1055,83 +581,32 @@ public class HoverInfoTrigger :
     // ABILITIES
     // ============================================================
 
-    /// <summary>
-    /// Returns the current cooldown of the specified ability.
-    ///
-    /// 0 = ready.
-    /// Greater than 0 = cooldown turns remaining.
-    /// </summary>
-    public int GetAbilityCooldown(
-        AbilitySO ability)
+    public int GetAbilityCooldown(AbilitySO ability)
     {
-        if (attackUnit == null)
-        {
-            return -1;
-        }
-
-
-        return attackUnit.GetAbilityCooldown(
-            ability
-        );
+        return attackUnit != null
+            ? attackUnit.GetAbilityCooldown(ability)
+            : -1;
     }
 
 
-    /// <summary>
-    /// Returns true if the specified ability
-    /// currently has a cooldown remaining.
-    /// </summary>
-    public bool IsAbilityOnCooldown(
-        AbilitySO ability)
+    public bool IsAbilityOnCooldown(AbilitySO ability)
     {
-        if (attackUnit == null)
-        {
-            return false;
-        }
-
-
-        return attackUnit.IsAbilityOnCooldown(
-            ability
-        );
+        return attackUnit != null &&
+               attackUnit.IsAbilityOnCooldown(ability);
     }
 
 
-    /// <summary>
-    /// Returns the number of uses remaining
-    /// for this turn.
-    ///
-    /// For unlimited abilities:
-    /// returns 0.
-    /// </summary>
-    public int GetAbilityUsesRemaining(
-        AbilitySO ability)
+    public int GetAbilityUsesRemaining(AbilitySO ability)
     {
-        if (attackUnit == null)
-        {
-            return -1;
-        }
-
-
-        return attackUnit.GetAbilityUsesRemaining(
-            ability
-        );
+        return attackUnit != null
+            ? attackUnit.GetAbilityUsesRemaining(ability)
+            : -1;
     }
 
 
-    /// <summary>
-    /// Returns true if this ability can currently
-    /// be used by this unit.
-    /// </summary>
-    public bool IsAbilityReady(
-        AbilitySO ability)
+    public bool IsAbilityReady(AbilitySO ability)
     {
-        if (attackUnit == null)
-        {
-            return false;
-        }
-
-
-        return attackUnit.IsAbilityReady(
-            ability
-        );
+        return attackUnit != null &&
+               attackUnit.IsAbilityReady(ability);
     }
 }

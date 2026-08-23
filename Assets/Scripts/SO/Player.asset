@@ -21,7 +21,7 @@ MonoBehaviour:
   canwalkdiagonally: 1
   abilities:
   - {fileID: 11400000, guid: 700548be2ef013645be511273ce187fd, type: 2}
-  - {fileID: 11400000, guid: 4bdb62c5ac1d87a48a401c847a5ae8dd, type: 2}
+  - {fileID: 11400000, guid: 10a3d323965d847439150b2decd37e21, type: 2}
   - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
   - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
   RangedAttacker: 0

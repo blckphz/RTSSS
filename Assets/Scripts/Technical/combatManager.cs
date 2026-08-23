@@ -14,12 +14,14 @@ public class CombatManager : MonoBehaviour
     [SerializeField]
     private CharacterSO enemyCharacter;
 
+
     [Header("Enemy Spawning")]
     [SerializeField]
     private int minEnemiesToSpawn = 1;
 
     [SerializeField]
     private int maxEnemiesToSpawn = 3;
+
 
     [Header("Enemy Turn")]
     [SerializeField]
@@ -28,39 +30,10 @@ public class CombatManager : MonoBehaviour
     [SerializeField]
     private bool enemiesAttackAfterMoving = true;
 
+
     [Header("Testing")]
     [SerializeField]
     private bool spawnEnemiesAutomatically = true;
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void DebugLog(string message)
-    {
-        Debug.Log(
-            $"<color=orange>[CombatManager]</color> " +
-            $"[Time: {Time.time:F3}s] " +
-            $"[Real: {Time.realtimeSinceStartup:F3}s] " +
-            $"[Frame: {Time.frameCount}] " +
-            $"{message}",
-            this
-        );
-    }
-
-
-    private void EnemyDebug(string message)
-    {
-        Debug.Log(
-            $"<color=red>[ENEMY]</color> " +
-            $"[Time: {Time.time:F3}s] " +
-            $"[Real: {Time.realtimeSinceStartup:F3}s] " +
-            $"[Frame: {Time.frameCount}] " +
-            $"{message}",
-            this
-        );
-    }
 
 
     // ============================================================
@@ -69,48 +42,20 @@ public class CombatManager : MonoBehaviour
 
     private void Awake()
     {
-        DebugLog("==========================================");
-        DebugLog("Awake()");
-
         if (gridManager == null)
         {
             gridManager =
-                FindObjectOfType<GridManager>();
-
-            DebugLog(
-                $"GridManager found automatically: " +
-                $"{gridManager != null}"
-            );
+                FindFirstObjectByType<GridManager>();
         }
-
-        DebugLog(
-            $"Awake() COMPLETE"
-        );
-
-        DebugLog("==========================================");
     }
 
 
     private void Start()
     {
-        DebugLog("==========================================");
-        DebugLog("Start()");
-
-        DebugLog(
-            $"spawnEnemiesAutomatically = " +
-            $"{spawnEnemiesAutomatically}"
-        );
-
         if (spawnEnemiesAutomatically)
         {
             CheckForEnemies();
         }
-
-        DebugLog(
-            $"Start() COMPLETE"
-        );
-
-        DebugLog("==========================================");
     }
 
 
@@ -120,182 +65,24 @@ public class CombatManager : MonoBehaviour
 
     public IEnumerator RunEnemyRound()
     {
-        EnemyDebug(
-            ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        );
-
-        EnemyDebug(
-            "RUN ENEMY ROUND COROUTINE STARTED"
-        );
-
-        EnemyDebug(
-            $"Coroutine start Time.time = " +
-            $"{Time.time:F3}s"
-        );
-
-        EnemyDebug(
-            $"Coroutine start RealtimeSinceStartup = " +
-            $"{Time.realtimeSinceStartup:F3}s"
-        );
-
-        EnemyDebug(
-            $"Coroutine start Frame = " +
-            $"{Time.frameCount}"
-        );
-
-        EnemyDebug(
-            "=========================================="
-        );
-
-        EnemyDebug(
-            "========== ENEMY ROUND START =========="
-        );
-
-        EnemyDebug(
-            "=========================================="
-        );
-
         List<AttackUnit> enemies =
             CombatUtility.GetUnitsByTeam(
                 Team.Enemy
             );
 
-        EnemyDebug(
-            $"Enemy list created. Count = {enemies.Count}"
-        );
-
-        for (
-            int i = 0;
-            i < enemies.Count;
-            i++
-        )
+        for (int i = 0; i < enemies.Count; i++)
         {
-            AttackUnit enemy =
-                enemies[i];
-
-            // ----------------------------------------------------
-            // NULL CHECK
-            // ----------------------------------------------------
+            AttackUnit enemy = enemies[i];
 
             if (enemy == null)
             {
-                EnemyDebug(
-                    $"Enemy [{i}] is NULL. Skipping."
-                );
-
                 continue;
             }
 
-            // ----------------------------------------------------
-            // BASIC ENEMY INFO
-            // ----------------------------------------------------
-
-            EnemyDebug(
-                "------------------------------------------"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] FOUND: {enemy.name}"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] GameObject Active = " +
-                $"{enemy.gameObject.activeSelf}"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Active In Hierarchy = " +
-                $"{enemy.gameObject.activeInHierarchy}"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] World Position = " +
-                $"{enemy.transform.position}"
-            );
-
-            // ----------------------------------------------------
-            // ALIVE CHECK
-            // ----------------------------------------------------
-
-            bool isAlive =
-                CombatUtility.IsAlive(enemy);
-
-            EnemyDebug(
-                $"Enemy [{i}] Alive = {isAlive}"
-            );
-
-            if (!isAlive)
+            if (!CombatUtility.IsAlive(enemy))
             {
-                EnemyDebug(
-                    $"Enemy [{i}] {enemy.name} is DEAD. " +
-                    $"Skipping turn."
-                );
-
                 continue;
             }
-
-            // ----------------------------------------------------
-            // TURN START
-            // ----------------------------------------------------
-
-            EnemyDebug(
-                "=========================================="
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] {enemy.name} TURN START"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Position BEFORE TURN = " +
-                $"{enemy.transform.position}"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Move After Round = " +
-                $"{enemiesMoveAfterRound}"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Attack After Moving = " +
-                $"{enemiesAttackAfterMoving}"
-            );
-
-            float startTime =
-                Time.time;
-
-            float startRealtime =
-                Time.realtimeSinceStartup;
-
-            int startFrame =
-                Time.frameCount;
-
-            EnemyDebug(
-                $"Enemy [{i}] Turn start Time.time = " +
-                $"{startTime:F3}s"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Turn start Realtime = " +
-                $"{startRealtime:F3}s"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Turn start Frame = " +
-                $"{startFrame}"
-            );
-
-            // ----------------------------------------------------
-            // EXECUTE ENEMY TURN
-            // ----------------------------------------------------
-
-            EnemyDebug(
-                $"Enemy [{i}] START ExecuteEnemyTurn()"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Calling CombatUtility.ExecuteEnemyTurn..."
-            );
 
             yield return StartCoroutine(
                 CombatUtility.ExecuteEnemyTurn(
@@ -305,199 +92,15 @@ public class CombatManager : MonoBehaviour
                 )
             );
 
-            // ----------------------------------------------------
-            // TURN COMPLETE
-            // ----------------------------------------------------
-
-            float duration =
-                Time.time - startTime;
-
-            float realtimeDuration =
-                Time.realtimeSinceStartup -
-                startRealtime;
-
-            int frameDuration =
-                Time.frameCount -
-                startFrame;
-
-            EnemyDebug(
-                $"Enemy [{i}] FINISHED ExecuteEnemyTurn()"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Turn Duration Game Time = " +
-                $"{duration:F3}s"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Turn Duration Real Time = " +
-                $"{realtimeDuration:F3}s"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Turn Duration Frames = " +
-                $"{frameDuration}"
-            );
-
-            // ----------------------------------------------------
-            // CHECK ENEMY AFTER TURN
-            // ----------------------------------------------------
-
-            if (enemy == null)
-            {
-                EnemyDebug(
-                    $"Enemy [{i}] WAS DESTROYED during its turn."
-                );
-            }
-            else
-            {
-                EnemyDebug(
-                    $"Enemy [{i}] Position AFTER TURN = " +
-                    $"{enemy.transform.position}"
-                );
-
-                bool aliveAfterTurn =
-                    CombatUtility.IsAlive(enemy);
-
-                EnemyDebug(
-                    $"Enemy [{i}] Alive AFTER TURN = " +
-                    $"{aliveAfterTurn}"
-                );
-            }
-
-            // ----------------------------------------------------
-            // ONE FRAME DELAY
-            // ----------------------------------------------------
-
-            EnemyDebug(
-                $"Enemy [{i}] yielding one frame..."
-            );
-
-            int yieldFrame =
-                Time.frameCount;
-
-            float yieldRealtime =
-                Time.realtimeSinceStartup;
-
             yield return null;
-
-            EnemyDebug(
-                $"Enemy [{i}] resumed after yield."
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Yield lasted " +
-                $"{Time.realtimeSinceStartup - yieldRealtime:F3}s"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] Yield frame transition: " +
-                $"{yieldFrame} -> {Time.frameCount}"
-            );
-
-            EnemyDebug(
-                $"Enemy [{i}] TURN END"
-            );
-
-            EnemyDebug(
-                "=========================================="
-            );
         }
-
-        // --------------------------------------------------------
-        // ENEMY ROUND END
-        // --------------------------------------------------------
-
-        EnemyDebug(
-            "=========================================="
-        );
-
-        EnemyDebug(
-            "========== ENEMY ROUND END =========="
-        );
-
-        EnemyDebug(
-            $"Remaining enemy count = {GetEnemyCount()}"
-        );
-
-        EnemyDebug(
-            $"Round end Time.time = " +
-            $"{Time.time:F3}s"
-        );
-
-        EnemyDebug(
-            $"Round end RealtimeSinceStartup = " +
-            $"{Time.realtimeSinceStartup:F3}s"
-        );
-
-        EnemyDebug(
-            $"Round end Frame = " +
-            $"{Time.frameCount}"
-        );
-
-        EnemyDebug(
-            "=========================================="
-        );
-
-        EnemyDebug(
-            "RUN ENEMY ROUND COROUTINE FINISHED"
-        );
-
-        EnemyDebug(
-            "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        );
     }
 
 
     public void StartEnemyRound()
     {
-        EnemyDebug(
-            ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        );
-
-        EnemyDebug(
-            "BUTTON PRESSED / StartEnemyRound() CALLED"
-        );
-
-        EnemyDebug(
-            $"Time.time = " +
-            $"{Time.time:F3}s"
-        );
-
-        EnemyDebug(
-            $"RealtimeSinceStartup = " +
-            $"{Time.realtimeSinceStartup:F3}s"
-        );
-
-        EnemyDebug(
-            $"Frame = " +
-            $"{Time.frameCount}"
-        );
-
-        EnemyDebug(
-            $"Current enemy count = " +
-            $"{GetEnemyCount()}"
-        );
-
-        EnemyDebug(
-            $"Time.timeScale = " +
-            $"{Time.timeScale}"
-        );
-
-        EnemyDebug(
-            $"Starting RunEnemyRound coroutine..."
-        );
-
         StartCoroutine(
             RunEnemyRound()
-        );
-
-        EnemyDebug(
-            $"RunEnemyRound coroutine STARTED"
-        );
-
-        EnemyDebug(
-            "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         );
     }
 
@@ -508,72 +111,26 @@ public class CombatManager : MonoBehaviour
 
     public void CheckForEnemies()
     {
-        EnemyDebug(
-            "=========================================="
-        );
-
-        EnemyDebug(
-            "CheckForEnemies() CALLED"
-        );
-
-        int currentEnemyCount =
-            GetEnemyCount();
-
-        EnemyDebug(
-            $"Current enemy count = {currentEnemyCount}"
-        );
-
-        if (currentEnemyCount == 0)
+        if (GetEnemyCount() == 0)
         {
-            EnemyDebug(
-                "No enemies found. " +
-                "Spawning test enemies."
-            );
-
             SpawnTestEnemies();
         }
-        else
-        {
-            EnemyDebug(
-                $"Enemies already exist. " +
-                $"Count = {currentEnemyCount}. " +
-                $"No spawning required."
-            );
-        }
-
-        EnemyDebug(
-            "CheckForEnemies() COMPLETE"
-        );
-
-        EnemyDebug(
-            "=========================================="
-        );
     }
 
 
     public int GetEnemyCount()
     {
-        int count =
-            CombatUtility.GetUnitCount(
-                Team.Enemy
-            );
-
-        return count;
+        return CombatUtility.GetUnitCount(
+            Team.Enemy
+        );
     }
 
 
     public List<GameObject> GetAllEnemies()
     {
-        List<GameObject> enemies =
-            CombatUtility.GetObjectsByTeam(
-                Team.Enemy
-            );
-
-        EnemyDebug(
-            $"GetAllEnemies() - Count = {enemies.Count}"
+        return CombatUtility.GetObjectsByTeam(
+            Team.Enemy
         );
-
-        return enemies;
     }
 
 
@@ -586,56 +143,17 @@ public class CombatManager : MonoBehaviour
 
 
     // ============================================================
-    // SPAWN
+    // SPAWNING
     // ============================================================
 
     private void SpawnTestEnemies()
     {
-        EnemyDebug(
-            "=========================================="
-        );
-
-        EnemyDebug(
-            "SpawnTestEnemies() START"
-        );
-
-        EnemyDebug(
-            $"Spawn start Time = " +
-            $"{Time.time:F3}s"
-        );
-
-        EnemyDebug(
-            $"Spawn start Real Time = " +
-            $"{Time.realtimeSinceStartup:F3}s"
-        );
-
-        EnemyDebug(
-            $"Spawn start Frame = " +
-            $"{Time.frameCount}"
-        );
-
         if (
             gridManager == null ||
             enemyPrefab == null ||
             enemyCharacter == null
         )
         {
-            EnemyDebug(
-                "Spawn aborted because a reference is missing."
-            );
-
-            EnemyDebug(
-                $"GridManager = {gridManager != null}"
-            );
-
-            EnemyDebug(
-                $"EnemyPrefab = {enemyPrefab != null}"
-            );
-
-            EnemyDebug(
-                $"EnemyCharacter = {enemyCharacter != null}"
-            );
-
             return;
         }
 
@@ -645,23 +163,11 @@ public class CombatManager : MonoBehaviour
                 maxEnemiesToSpawn + 1
             );
 
-        EnemyDebug(
-            $"Attempting to spawn {amount} enemies."
-        );
-
         List<Vector2Int> availableCells =
             GetAvailableCells();
 
-        EnemyDebug(
-            $"Available cells = {availableCells.Count}"
-        );
-
         if (availableCells.Count == 0)
         {
-            EnemyDebug(
-                "No available cells. Spawn aborted."
-            );
-
             return;
         }
 
@@ -671,15 +177,7 @@ public class CombatManager : MonoBehaviour
                 availableCells.Count
             );
 
-        EnemyDebug(
-            $"Final enemy spawn amount = {amount}"
-        );
-
-        for (
-            int i = 0;
-            i < amount;
-            i++
-        )
+        for (int i = 0; i < amount; i++)
         {
             int randomIndex =
                 Random.Range(
@@ -694,42 +192,8 @@ public class CombatManager : MonoBehaviour
                 randomIndex
             );
 
-            EnemyDebug(
-                $"Spawning enemy {i + 1}/{amount} " +
-                $"at grid position {position}"
-            );
-
-            bool spawned =
-                SpawnEnemy(position);
-
-            EnemyDebug(
-                $"Spawn result for enemy {i + 1} = {spawned}"
-            );
+            SpawnEnemy(position);
         }
-
-        EnemyDebug(
-            $"SpawnTestEnemies() COMPLETE. " +
-            $"Current enemy count = {GetEnemyCount()}"
-        );
-
-        EnemyDebug(
-            $"Spawn end Time = " +
-            $"{Time.time:F3}s"
-        );
-
-        EnemyDebug(
-            $"Spawn end Real Time = " +
-            $"{Time.realtimeSinceStartup:F3}s"
-        );
-
-        EnemyDebug(
-            $"Spawn end Frame = " +
-            $"{Time.frameCount}"
-        );
-
-        EnemyDebug(
-            "=========================================="
-        );
     }
 
 
@@ -737,81 +201,40 @@ public class CombatManager : MonoBehaviour
         Vector2Int gridPosition
     )
     {
-        EnemyDebug(
-            "------------------------------------------"
-        );
-
-        EnemyDebug(
-            $"SpawnEnemy({gridPosition}) START"
-        );
-
         if (gridManager == null)
         {
-            EnemyDebug(
-                "SpawnEnemy FAILED: gridManager is null."
-            );
-
             return false;
         }
 
-        if (!gridManager.IsInsideGrid(
-                gridPosition))
+        if (!gridManager.IsInsideGrid(gridPosition))
         {
-            EnemyDebug(
-                $"SpawnEnemy FAILED: {gridPosition} " +
-                $"is outside grid."
-            );
-
             return false;
         }
 
-        if (gridManager.IsCellOccupied(
-                gridPosition))
+        if (gridManager.IsCellOccupied(gridPosition))
         {
-            EnemyDebug(
-                $"SpawnEnemy FAILED: {gridPosition} " +
-                $"is occupied."
-            );
-
             return false;
         }
+
 
         // --------------------------------------------------------
         // CREATE ENEMY
         // --------------------------------------------------------
-
-        EnemyDebug(
-            $"Instantiating enemy prefab."
-        );
 
         GameObject enemy =
             Instantiate(enemyPrefab);
 
         if (enemy == null)
         {
-            EnemyDebug(
-                "SpawnEnemy FAILED: " +
-                "Instantiate returned null."
-            );
-
             return false;
         }
 
         enemy.name =
-            $"{enemyCharacter.name}_Enemy_" +
-            $"{Random.Range(1000, 9999)}";
+            $"{enemyCharacter.name}_Enemy";
 
-        EnemyDebug(
-            $"Created enemy object: {enemy.name}"
-        );
-
-        EnemyDebug(
-            $"Enemy initial world position = " +
-            $"{enemy.transform.position}"
-        );
 
         // --------------------------------------------------------
-        // COMPONENT CHECK
+        // COMPONENTS
         // --------------------------------------------------------
 
         HealthManager health =
@@ -820,120 +243,40 @@ public class CombatManager : MonoBehaviour
         AttackUnit attackUnit =
             enemy.GetComponent<AttackUnit>();
 
-        EnemyDebug(
-            $"{enemy.name} HealthManager found = " +
-            $"{health != null}"
-        );
-
-        EnemyDebug(
-            $"{enemy.name} AttackUnit found = " +
-            $"{attackUnit != null}"
-        );
-
         if (
             health == null ||
             attackUnit == null
         )
         {
-            EnemyDebug(
-                $"Spawn FAILED: {enemy.name} " +
-                $"is missing required component."
-            );
-
             Destroy(enemy);
-
             return false;
         }
+
 
         // --------------------------------------------------------
         // PLACE ON GRID
         // --------------------------------------------------------
 
-        EnemyDebug(
-            $"{enemy.name} attempting PlaceUnit() " +
-            $"at {gridPosition}"
-        );
-
         if (!gridManager.PlaceUnit(
                 enemy,
-                gridPosition))
+                gridPosition
+            ))
         {
-            EnemyDebug(
-                $"{enemy.name} Spawn FAILED: " +
-                $"PlaceUnit() returned false."
-            );
-
             Destroy(enemy);
-
             return false;
         }
 
-        EnemyDebug(
-            $"{enemy.name} successfully placed on grid " +
-            $"at {gridPosition}"
-        );
-
-        EnemyDebug(
-            $"{enemy.name} world position after placement = " +
-            $"{enemy.transform.position}"
-        );
 
         // --------------------------------------------------------
-        // HEALTH INITIALIZATION
+        // INITIALIZE
         // --------------------------------------------------------
-
-        EnemyDebug(
-            $"{enemy.name} initializing HealthManager."
-        );
 
         health.Initialize(
             enemyCharacter
         );
 
-        EnemyDebug(
-            $"{enemy.name} HealthManager initialized."
-        );
-
-        // --------------------------------------------------------
-        // ATTACK UNIT INITIALIZATION
-        // --------------------------------------------------------
-
-        EnemyDebug(
-            $"{enemy.name} initializing AttackUnit."
-        );
-
         attackUnit.Initialize(
             enemyCharacter
-        );
-
-        EnemyDebug(
-            $"{enemy.name} AttackUnit initialized."
-        );
-
-        // --------------------------------------------------------
-        // SPAWN COMPLETE
-        // --------------------------------------------------------
-
-        EnemyDebug(
-            $"{enemy.name} SPAWN COMPLETE."
-        );
-
-        EnemyDebug(
-            $"{enemy.name} final world position = " +
-            $"{enemy.transform.position}"
-        );
-
-        EnemyDebug(
-            $"Current total enemy count = " +
-            $"{GetEnemyCount()}"
-        );
-
-        EnemyDebug(
-            $"SpawnEnemy({gridPosition}) COMPLETE"
-        );
-
-        EnemyDebug(
-            "------------------------------------------"
         );
 
         return true;
@@ -951,11 +294,6 @@ public class CombatManager : MonoBehaviour
 
         if (gridManager == null)
         {
-            EnemyDebug(
-                "GetAvailableCells() failed: " +
-                "gridManager is null."
-            );
-
             return cells;
         }
 
@@ -965,41 +303,19 @@ public class CombatManager : MonoBehaviour
         int height =
             gridManager.GetHeight();
 
-        EnemyDebug(
-            $"Checking available cells. " +
-            $"Grid size = {width} x {height}"
-        );
-
-        for (
-            int x = 0;
-            x < width;
-            x++
-        )
+        for (int x = 0; x < width; x++)
         {
-            for (
-                int y = 0;
-                y < height;
-                y++
-            )
+            for (int y = 0; y < height; y++)
             {
                 Vector2Int position =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                    new Vector2Int(x, y);
 
-                if (!gridManager.IsCellOccupied(
-                        position))
+                if (!gridManager.IsCellOccupied(position))
                 {
                     cells.Add(position);
                 }
             }
         }
-
-        EnemyDebug(
-            $"GetAvailableCells() found " +
-            $"{cells.Count} available cells."
-        );
 
         return cells;
     }

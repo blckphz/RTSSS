@@ -479,24 +479,6 @@ public class UIManager : MonoBehaviour
 
         if (!attackUnit.IsAbilityReady(ability))
         {
-            if (debugClick)
-            {
-                Debug.Log(
-                    $"[UIManager] Ability " +
-                    $"'{ability.GetAbilityName()}' is NOT ready.\n" +
-                    $"Reason: " +
-                    $"{attackUnit.GetAbilityReadyFailureReason(ability)}\n" +
-                    $"Uses remaining: " +
-                    $"{attackUnit.GetAbilityUsesRemaining(ability)}\n" +
-                    $"Cooldown: " +
-                    $"{attackUnit.GetAbilityCooldown(ability)}\n" +
-                    $"Moved this turn: " +
-                    $"{attackUnit.HasMovedThisTurn()}",
-                    attackUnit
-                );
-            }
-
-
             return false;
         }
 
