@@ -8,16 +8,37 @@ using UnityEngine;
 )]
 public class ChainLightning : AbilitySO
 {
+    // ============================================================
+    // CHAIN LIGHTNING
+    // ============================================================
+
     [Header("Chain Lightning")]
 
     [SerializeField, Min(1)]
     private int maxJumps = 5;
 
     [SerializeField, Min(0f)]
-    private float jumpDelay = 0.15f;
+    private float jumpDelay = 0.1f;
 
     [SerializeField, Min(0f)]
     private float maxJumpDistance = 4f;
+
+
+    // ============================================================
+    // PROJECTILE
+    // ============================================================
+
+    [Header("Projectile")]
+
+    [SerializeField]
+    private GameObject projectilePrefab;
+
+    [SerializeField, Min(0.01f)]
+    private float projectileSpeed = 12f;
+
+    [SerializeField]
+    private string abilitySpawnPointName =
+        "AbilitySpawnPoint";
 
 
     // ============================================================
@@ -28,31 +49,58 @@ public class ChainLightning : AbilitySO
         GameObject user,
         GameObject target)
     {
-        if (user == null || target == null)
+        if (
+            user == null ||
+            target == null
+        )
         {
             return false;
         }
+
+
+        // --------------------------------------------------------
+        // MOVEMENT CHECK
+        // --------------------------------------------------------
 
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // TARGET UNIT
+        // --------------------------------------------------------
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
+
 
         if (targetUnit == null)
         {
             return false;
         }
 
-        if (!CanTargetObject(user, target))
+
+        // --------------------------------------------------------
+        // TARGET VALIDATION
+        // --------------------------------------------------------
+
+        if (!CanTargetObject(
+                user,
+                target))
         {
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // GRID
+        // --------------------------------------------------------
+
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
+
 
         if (gridManager == null)
         {
@@ -63,105 +111,181 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-        MonoBehaviour runner =
-            user.GetComponent<MonoBehaviour>();
 
-        if (runner == null)
+        // --------------------------------------------------------
+        // PROJECTILE PREFAB
+        // --------------------------------------------------------
+
+        if (projectilePrefab == null)
+        {
+            Debug.LogError(
+                "[ChainLightning] Projectile Prefab " +
+                "has not been assigned!"
+            );
+
+            return false;
+        }
+
+
+        // --------------------------------------------------------
+        // GET COMPLETE CHAIN
+        // --------------------------------------------------------
+
+        List<GameObject> chain =
+            GetChainPreview(
+                user,
+                target,
+                gridManager
+            );
+
+
+        if (
+            chain == null ||
+            chain.Count == 0
+        )
         {
             return false;
         }
 
-        runner.StartCoroutine(
-            ChainRoutine(
-                user,
-                target,
-                gridManager
-            )
+
+        // --------------------------------------------------------
+        // FIND ABILITY SPAWN POINT
+        // --------------------------------------------------------
+
+        Transform spawnPoint =
+            FindAbilitySpawnPoint(
+                user
+            );
+
+
+        Vector3 spawnPosition;
+
+
+        if (spawnPoint != null)
+        {
+            spawnPosition =
+                spawnPoint.position;
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[ChainLightning] Could not find '" +
+                abilitySpawnPointName +
+                "' on " +
+                user.name +
+                ". Using unit position."
+            );
+
+            spawnPosition =
+                user.transform.position;
+        }
+
+
+        // --------------------------------------------------------
+        // SPAWN PROJECTILE
+        // --------------------------------------------------------
+
+        GameObject projectile =
+            Instantiate(
+                projectilePrefab,
+                spawnPosition,
+                Quaternion.identity
+            );
+
+
+        if (projectile == null)
+        {
+            return false;
+        }
+
+
+        // --------------------------------------------------------
+        // GET PROJECTILE COMPONENT
+        // --------------------------------------------------------
+
+        ChainLightningProjectile projectileComponent =
+            projectile.GetComponent<
+                ChainLightningProjectile
+            >();
+
+
+        if (projectileComponent == null)
+        {
+            Debug.LogError(
+                "[ChainLightning] The projectile prefab " +
+                "does not contain a " +
+                "ChainLightningProjectile component!"
+            );
+
+            Destroy(projectile);
+
+            return false;
+        }
+
+
+        // --------------------------------------------------------
+        // INITIALIZE PROJECTILE
+        // --------------------------------------------------------
+
+        projectileComponent.Initialize(
+            user,
+            chain,
+            projectileSpeed,
+            jumpDelay,
+            GetDamage()
         );
+
 
         return true;
     }
 
 
     // ============================================================
-    // CHAIN ROUTINE
+    // FIND ABILITY SPAWN POINT
     // ============================================================
 
-    private IEnumerator ChainRoutine(
-        GameObject user,
-        GameObject firstTarget,
-        GridManager gridManager)
+    private Transform FindAbilitySpawnPoint(
+        GameObject user)
     {
-        GameObject currentTarget =
-            firstTarget;
-
-        HashSet<GameObject> hitTargets =
-            new HashSet<GameObject>();
-
-        int jumps = 0;
-
-
-        while (
-            currentTarget != null &&
-            jumps < maxJumps
-        )
+        if (user == null)
         {
-            // ----------------------------------------------------
-            // MAKE SURE TARGET IS STILL VALID
-            // ----------------------------------------------------
-
-            if (!IsValidChainTarget(
-                    user,
-                    currentTarget,
-                    hitTargets))
-            {
-                yield break;
-            }
+            return null;
+        }
 
 
-            // ----------------------------------------------------
-            // REMEMBER TARGET
-            // ----------------------------------------------------
-
-            hitTargets.Add(currentTarget);
-
-
-            // ----------------------------------------------------
-            // DEAL DAMAGE
-            // ----------------------------------------------------
-
-            DealDamage(
-                currentTarget
+        Transform[] children =
+            user.GetComponentsInChildren<Transform>(
+                true
             );
 
 
-            jumps++;
+        for (
+            int i = 0;
+            i < children.Length;
+            i++
+        )
+        {
+            Transform child =
+                children[i];
 
 
-            // ----------------------------------------------------
-            // WAIT FOR THE HIT
-            // ----------------------------------------------------
-
-            if (jumpDelay > 0f)
+            if (child == null)
             {
-                yield return new WaitForSeconds(
-                    jumpDelay
-                );
+                continue;
             }
 
 
-            // ----------------------------------------------------
-            // FIND NEXT TARGET
-            // ----------------------------------------------------
-
-            currentTarget =
-                FindClosestEnemy(
-                    user,
-                    currentTarget,
-                    gridManager,
-                    hitTargets
-                );
+            if (
+                child.name ==
+                abilitySpawnPointName
+            )
+            {
+                return child;
+            }
         }
+
+
+        return null;
     }
 
 
@@ -173,8 +297,22 @@ public class ChainLightning : AbilitySO
      * Returns the exact chain of enemies that Chain Lightning
      * would currently hit if it started on firstTarget.
      *
-     * This uses the same FindClosestEnemy() logic as the
-     * actual ability, so the preview and attack stay synchronized.
+     * The projectile uses this same list.
+     *
+     * Example:
+     *
+     * AbilitySpawnPoint
+     *        |
+     *        v
+     *     Enemy 1
+     *        |
+     *        v
+     *     Enemy 2
+     *        |
+     *        v
+     *     Enemy 3
+     *
+     * No arc is involved.
      */
 
     public List<GameObject> GetChainPreview(
@@ -184,6 +322,7 @@ public class ChainLightning : AbilitySO
     {
         List<GameObject> chain =
             new List<GameObject>();
+
 
         if (
             user == null ||
@@ -198,11 +337,17 @@ public class ChainLightning : AbilitySO
         HashSet<GameObject> hitTargets =
             new HashSet<GameObject>();
 
+
         GameObject currentTarget =
             firstTarget;
 
+
         int jumps = 0;
 
+
+        // --------------------------------------------------------
+        // BUILD CHAIN
+        // --------------------------------------------------------
 
         while (
             currentTarget != null &&
@@ -210,7 +355,7 @@ public class ChainLightning : AbilitySO
         )
         {
             // ----------------------------------------------------
-            // MAKE SURE TARGET IS VALID
+            // VALID TARGET
             // ----------------------------------------------------
 
             if (!IsValidChainTarget(
@@ -232,7 +377,7 @@ public class ChainLightning : AbilitySO
 
 
             // ----------------------------------------------------
-            // ADD TO PREVIEW
+            // ADD TARGET
             // ----------------------------------------------------
 
             chain.Add(
@@ -281,13 +426,19 @@ public class ChainLightning : AbilitySO
         }
 
 
+        // --------------------------------------------------------
+        // CURRENT GRID POSITION
+        // --------------------------------------------------------
+
         Vector2Int origin =
             gridManager.GetUnitGridPosition(
                 currentTarget
             );
 
 
-        GameObject closestEnemy = null;
+        GameObject closestEnemy =
+            null;
+
 
         int closestDistance =
             int.MaxValue;
@@ -332,14 +483,18 @@ public class ChainLightning : AbilitySO
                 // DON'T HIT SAME UNIT TWICE
                 // ------------------------------------------------
 
-                if (hitTargets.Contains(candidate))
+                if (
+                    hitTargets.Contains(
+                        candidate
+                    )
+                )
                 {
                     continue;
                 }
 
 
                 // ------------------------------------------------
-                // MUST BE A VALID ENEMY
+                // MUST BE VALID ENEMY
                 // ------------------------------------------------
 
                 if (!CanTargetObject(
@@ -351,7 +506,7 @@ public class ChainLightning : AbilitySO
 
 
                 // ------------------------------------------------
-                // DISTANCE
+                // GRID DISTANCE
                 // ------------------------------------------------
 
                 int distance =
@@ -360,6 +515,10 @@ public class ChainLightning : AbilitySO
                         position
                     );
 
+
+                // ------------------------------------------------
+                // MAX JUMP DISTANCE
+                // ------------------------------------------------
 
                 if (
                     maxJumpDistance > 0f &&
@@ -371,10 +530,13 @@ public class ChainLightning : AbilitySO
 
 
                 // ------------------------------------------------
-                // CLOSEST
+                // CLOSEST TARGET
                 // ------------------------------------------------
 
-                if (distance < closestDistance)
+                if (
+                    distance <
+                    closestDistance
+                )
                 {
                     closestDistance =
                         distance;
@@ -391,7 +553,7 @@ public class ChainLightning : AbilitySO
 
 
     // ============================================================
-    // VALID TARGET
+    // VALID CHAIN TARGET
     // ============================================================
 
     private bool IsValidChainTarget(
@@ -408,11 +570,23 @@ public class ChainLightning : AbilitySO
         }
 
 
-        if (hitTargets.Contains(target))
+        // --------------------------------------------------------
+        // ALREADY HIT
+        // --------------------------------------------------------
+
+        if (
+            hitTargets.Contains(
+                target
+            )
+        )
         {
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // INACTIVE
+        // --------------------------------------------------------
 
         if (!target.activeInHierarchy)
         {
@@ -420,42 +594,13 @@ public class ChainLightning : AbilitySO
         }
 
 
+        // --------------------------------------------------------
+        // TARGET VALIDATION
+        // --------------------------------------------------------
+
         return CanTargetObject(
             user,
             target
-        );
-    }
-
-
-    // ============================================================
-    // DAMAGE
-    // ============================================================
-
-    private void DealDamage(
-        GameObject target)
-    {
-        if (target == null)
-        {
-            return;
-        }
-
-
-        HealthManager health =
-            target.GetComponent<HealthManager>();
-
-
-        if (health == null)
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // CHANGE THIS IF YOUR HEALTHMANAGER USES A DIFFERENT API
-        // --------------------------------------------------------
-
-        health.TakeDamage(
-            GetDamage()
         );
     }
 }

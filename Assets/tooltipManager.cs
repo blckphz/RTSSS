@@ -33,11 +33,6 @@ public class tooltipManager : MonoBehaviour
     private float overshootScale = 1.08f;
 
 
-    [Header("Debug")]
-    [SerializeField]
-    private bool enableDebugLogs = true;
-
-
     private RectTransform tooltipRect;
 
     private RectTransform canvasRect;
@@ -53,18 +48,11 @@ public class tooltipManager : MonoBehaviour
 
     private void Awake()
     {
-        DebugLog(
-            "TooltipManager Awake."
-        );
-
-
         // --------------------------------------------------------
         // GET CANVAS
         // --------------------------------------------------------
 
-        canvas =
-            GetComponent<Canvas>();
-
+        canvas = GetComponent<Canvas>();
 
         if (canvas == null)
         {
@@ -77,19 +65,12 @@ public class tooltipManager : MonoBehaviour
         }
 
 
-        DebugLog(
-            "Canvas found: " +
-            canvas.name
-        );
-
-
         // --------------------------------------------------------
         // GET CANVAS RECT
         // --------------------------------------------------------
 
         canvasRect =
             canvas.GetComponent<RectTransform>();
-
 
         if (canvasRect == null)
         {
@@ -120,12 +101,6 @@ public class tooltipManager : MonoBehaviour
                 "Tooltip GameObject needs a RectTransform!"
             );
         }
-        else
-        {
-            DebugLog(
-                "Tooltip RectTransform found."
-            );
-        }
 
 
         // --------------------------------------------------------
@@ -144,12 +119,6 @@ public class tooltipManager : MonoBehaviour
             Debug.LogWarning(
                 "[TooltipManager] " +
                 "Tooltip GameObject does not have a CanvasGroup!"
-            );
-        }
-        else
-        {
-            DebugLog(
-                "Tooltip CanvasGroup found."
             );
         }
 
@@ -198,15 +167,8 @@ public class tooltipManager : MonoBehaviour
     // SHOW STATUS TOOLTIP
     // ============================================================
 
-    public void ShowStatusTooltip(
-        string statusId)
+    public void ShowStatusTooltip(string statusId)
     {
-        DebugLog(
-            "ShowStatusTooltip: " +
-            statusId
-        );
-
-
         if (tooltipObject == null)
         {
             Debug.LogError(
@@ -304,10 +266,7 @@ public class tooltipManager : MonoBehaviour
 
         if (tooltipAnimation != null)
         {
-            StopCoroutine(
-                tooltipAnimation
-            );
-
+            StopCoroutine(tooltipAnimation);
             tooltipAnimation = null;
         }
 
@@ -381,21 +340,13 @@ public class tooltipManager : MonoBehaviour
         }
 
 
-        DebugLog(
-            "Tooltip hiding."
-        );
-
-
         // --------------------------------------------------------
         // STOP CURRENT ANIMATION
         // --------------------------------------------------------
 
         if (tooltipAnimation != null)
         {
-            StopCoroutine(
-                tooltipAnimation
-            );
-
+            StopCoroutine(tooltipAnimation);
             tooltipAnimation = null;
         }
 
@@ -451,8 +402,7 @@ public class tooltipManager : MonoBehaviour
 
         while (elapsed < animationDuration)
         {
-            elapsed +=
-                Time.unscaledDeltaTime;
+            elapsed += Time.unscaledDeltaTime;
 
 
             float t =
@@ -481,12 +431,6 @@ public class tooltipManager : MonoBehaviour
 
             // ====================================================
             // POP
-            //
-            // 0.75
-            //   ↓
-            // 1.08
-            //   ↓
-            // 1.00
             // ====================================================
 
             if (tooltipRect != null)
@@ -496,11 +440,6 @@ public class tooltipManager : MonoBehaviour
 
                 if (t < 0.7f)
                 {
-                    // --------------------------------------------
-                    // FIRST PART
-                    // Start small and grow past 1.0
-                    // --------------------------------------------
-
                     float popT =
                         Mathf.SmoothStep(
                             0f,
@@ -518,11 +457,6 @@ public class tooltipManager : MonoBehaviour
                 }
                 else
                 {
-                    // --------------------------------------------
-                    // SECOND PART
-                    // Overshoot back to normal size
-                    // --------------------------------------------
-
                     float settleT =
                         Mathf.SmoothStep(
                             0f,
@@ -567,11 +501,6 @@ public class tooltipManager : MonoBehaviour
 
 
         tooltipAnimation = null;
-
-
-        DebugLog(
-            "Tooltip pop-in complete."
-        );
     }
 
 
@@ -672,13 +601,7 @@ public class tooltipManager : MonoBehaviour
 
         tooltipObject.SetActive(false);
 
-
         tooltipAnimation = null;
-
-
-        DebugLog(
-            "Tooltip pop-out complete."
-        );
     }
 
 
@@ -754,13 +677,10 @@ public class tooltipManager : MonoBehaviour
             }
 
 
-            localPosition +=
-                mouseOffset;
-
+            localPosition += mouseOffset;
 
             tooltipRect.localPosition =
                 localPosition;
-
 
             return;
         }
@@ -794,13 +714,10 @@ public class tooltipManager : MonoBehaviour
             }
 
 
-            localPosition +=
-                mouseOffset;
-
+            localPosition += mouseOffset;
 
             tooltipRect.localPosition =
                 localPosition;
-
 
             return;
         }
@@ -821,8 +738,7 @@ public class tooltipManager : MonoBehaviour
 
             if (cam == null)
             {
-                cam =
-                    Camera.main;
+                cam = Camera.main;
             }
 
 
@@ -851,32 +767,10 @@ public class tooltipManager : MonoBehaviour
             }
 
 
-            localPosition +=
-                mouseOffset;
-
+            localPosition += mouseOffset;
 
             tooltipRect.localPosition =
                 localPosition;
         }
-    }
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void DebugLog(
-        string message)
-    {
-        if (!enableDebugLogs)
-        {
-            return;
-        }
-
-
-        Debug.Log(
-            "[TooltipManager] " +
-            message
-        );
     }
 }

@@ -1670,7 +1670,6 @@ MonoBehaviour:
   animationDuration: 0.15
   startScale: 0.75
   overshootScale: 1.08
-  enableDebugLogs: 1
 --- !u!225 &733581653
 CanvasGroup:
   m_ObjectHideFlags: 0
