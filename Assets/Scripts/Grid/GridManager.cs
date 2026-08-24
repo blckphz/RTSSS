@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
@@ -23,10 +23,19 @@ public class GridManager : MonoBehaviour
 
     [Header("Grid Size")]
     [SerializeField, Min(1)]
-    private int width = 8;
+    private int width = 11;
 
     [SerializeField, Min(1)]
-    private int height = 8;
+    private int height = 11;
+
+
+    // ==================================================
+    // GRID CENTERING
+    // ==================================================
+
+    [Header("Grid Centering")]
+    [SerializeField]
+    private bool centerGridAtWorldOrigin = true;
 
 
     // ==================================================
@@ -46,14 +55,18 @@ public class GridManager : MonoBehaviour
     [SerializeField]
     private bool showGridGizmos = true;
 
+    [SerializeField]
+    private bool showCenterGizmo = true;
+
 
     // ==================================================
-    // CORE DATA
+    // DATA
     // ==================================================
 
     private GameObject[,] occupiedCells;
-
     private GameObject[,] floorTiles;
+
+    private bool initialized;
 
 
     // ==================================================
@@ -77,7 +90,6 @@ public class GridManager : MonoBehaviour
             grid = GetComponent<Grid>();
         }
 
-
         if (grid == null)
         {
             Debug.LogError(
@@ -88,20 +100,36 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+        if (width < 1 || height < 1)
+        {
+            Debug.LogError(
+                "[GridManager] Width and Height must be at least 1!",
+                this
+            );
+
+            return;
+        }
+
+        if (width % 2 == 0 || height % 2 == 0)
+        {
+            Debug.LogWarning(
+                "[GridManager] Odd dimensions are recommended because " +
+                "they provide a single logical center cell.\n" +
+                $"Current Size: {width} x {height}",
+                this
+            );
+        }
 
         occupiedCells =
             new GameObject[width, height];
 
-
         floorTiles =
             new GameObject[width, height];
-
 
         if (floorParent == null)
         {
             floorParent = transform;
         }
-
 
         if (highlightManager == null)
         {
@@ -109,58 +137,261 @@ public class GridManager : MonoBehaviour
                 GetComponent<GridHighlightManager>();
         }
 
+        CenterGrid();
 
         CreateFloor();
+
+        initialized = true;
+
+        Debug.Log(
+            "[GridManager] INITIALIZED\n" +
+            "========================================\n" +
+            $"Grid Size: {width} x {height}\n" +
+            $"Logical X: {GetMinX()} -> {GetMaxX()}\n" +
+            $"Logical Y: {GetMinY()} -> {GetMaxY()}\n" +
+            $"(0,0) World Position: {GridToWorldPosition(Vector2Int.zero)}\n" +
+            "========================================",
+            this
+        );
     }
 
 
     // ==================================================
-    // FLOOR CREATION
+    // CENTER GRID
     // ==================================================
 
-    private void CreateFloor()
+    private void CenterGrid()
     {
-        if (floorTilePrefab == null)
+        if (!centerGridAtWorldOrigin)
         {
-            Debug.LogWarning(
-                "[GridManager] Floor Tile Prefab is not assigned!",
-                this
-            );
-
             return;
         }
 
+        /*
+         * IMPORTANT
+         *
+         * We calculate the center in WORLD space and move the
+         * Grid transform using WORLD position.
+         *
+         * This avoids subtracting a world-space vector from a
+         * local-space transform when the Grid is under a rotated
+         * Board.
+         */
 
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                Vector2Int position =
-                    new Vector2Int(x, y);
+        Vector3 centerWorld =
+            grid.GetCellCenterWorld(
+                new Vector3Int(
+                    width / 2,
+                    height / 2,
+                    0
+                )
+            );
 
+        Transform gridTransform =
+            grid.transform;
 
-                GameObject tile =
-                    Instantiate(
-                        floorTilePrefab,
-                        GridToWorldPosition(position),
-                        Quaternion.identity,
-                        floorParent
-                    );
+        gridTransform.position -= centerWorld;
 
-
-                tile.name =
-                    $"Floor_{x}_{y}";
-
-
-                floorTiles[x, y] =
-                    tile;
-            }
-        }
+        Debug.Log(
+            "[GridManager] GRID CENTERED\n" +
+            $"Grid Size: {width} x {height}\n" +
+            $"Logical Center: (0,0)\n" +
+            $"World Position of (0,0): {GridToWorldPosition(Vector2Int.zero)}",
+            this
+        );
     }
 
 
     // ==================================================
-    // POSITION CONVERSION
+    // LOGICAL RANGE
+    // ==================================================
+
+    public int GetMinX()
+    {
+        return -(width / 2);
+    }
+
+    public int GetMaxX()
+    {
+        return GetMinX() + width - 1;
+    }
+
+    public int GetMinY()
+    {
+        return -(height / 2);
+    }
+
+    public int GetMaxY()
+    {
+        return GetMinY() + height - 1;
+    }
+
+
+    // ==================================================
+    // LOGICAL <-> ARRAY
+    // ==================================================
+
+    private Vector2Int LogicalToArrayPosition(
+        Vector2Int logicalPosition)
+    {
+        return new Vector2Int(
+            logicalPosition.x - GetMinX(),
+            logicalPosition.y - GetMinY()
+        );
+    }
+
+
+    private Vector2Int ArrayToLogicalPosition(
+        Vector2Int arrayPosition)
+    {
+        return new Vector2Int(
+            arrayPosition.x + GetMinX(),
+            arrayPosition.y + GetMinY()
+        );
+    }
+
+
+    // ==================================================
+    // LOGICAL <-> UNITY CELL
+    // ==================================================
+
+    private Vector3Int LogicalToUnityCell(
+        Vector2Int logicalPosition)
+    {
+        return new Vector3Int(
+            logicalPosition.x + width / 2,
+            logicalPosition.y + height / 2,
+            0
+        );
+    }
+
+
+    private Vector2Int UnityCellToLogical(
+        Vector3Int unityCell)
+    {
+        return new Vector2Int(
+            unityCell.x - width / 2,
+            unityCell.y - height / 2
+        );
+    }
+
+
+    // ==================================================
+    // BOARD RELATIONSHIP
+    // ==================================================
+
+    private bool IsGridControlledByBoard()
+    {
+        if (BoardViewController.Instance == null)
+        {
+            return false;
+        }
+
+        Transform board =
+            BoardViewController.Instance.GetBoardTransform();
+
+        if (board == null)
+        {
+            return false;
+        }
+
+        return grid.transform.IsChildOf(board);
+    }
+
+
+    // ==================================================
+    // WORLD -> ORIGINAL GRID SPACE
+    // ==================================================
+
+    private Vector3 ConvertWorldToGridSpace(
+        Vector3 worldPosition)
+    {
+        if (BoardViewController.Instance == null)
+        {
+            return worldPosition;
+        }
+
+        /*
+         * If the Grid is physically underneath the Board,
+         * WorldToCell already uses the rotated Grid transform.
+         */
+
+        if (IsGridControlledByBoard())
+        {
+            return worldPosition;
+        }
+
+        Vector3 center =
+            BoardViewController.Instance
+                .GetRotationCenter();
+
+        int rotation =
+            BoardViewController.Instance
+                .GetCurrentRotation();
+
+        Quaternion inverseRotation =
+            Quaternion.AngleAxis(
+                -rotation,
+                Vector3.forward
+            );
+
+        Vector3 offset =
+            worldPosition - center;
+
+        offset =
+            inverseRotation * offset;
+
+        return center + offset;
+    }
+
+
+    // ==================================================
+    // ORIGINAL GRID SPACE -> WORLD
+    // ==================================================
+
+    private Vector3 ConvertGridToWorldSpace(
+        Vector3 gridWorldPosition)
+    {
+        if (BoardViewController.Instance == null)
+        {
+            return gridWorldPosition;
+        }
+
+        /*
+         * Child of board = Unity already applies board rotation.
+         */
+
+        if (IsGridControlledByBoard())
+        {
+            return gridWorldPosition;
+        }
+
+        Vector3 center =
+            BoardViewController.Instance
+                .GetRotationCenter();
+
+        int rotation =
+            BoardViewController.Instance
+                .GetCurrentRotation();
+
+        Quaternion rotationQuaternion =
+            Quaternion.AngleAxis(
+                rotation,
+                Vector3.forward
+            );
+
+        Vector3 offset =
+            gridWorldPosition - center;
+
+        offset =
+            rotationQuaternion * offset;
+
+        return center + offset;
+    }
+
+
+    // ==================================================
+    // WORLD -> GRID
     // ==================================================
 
     public Vector2Int WorldToGridPosition(
@@ -168,20 +399,33 @@ public class GridManager : MonoBehaviour
     {
         if (grid == null)
         {
+            Debug.LogError(
+                "[GridManager] Grid is missing.",
+                this
+            );
+
             return Vector2Int.zero;
         }
 
+        Vector3 gridSpace =
+            ConvertWorldToGridSpace(
+                worldPosition
+            );
 
-        Vector3Int cell =
-            grid.WorldToCell(worldPosition);
+        Vector3Int unityCell =
+            grid.WorldToCell(
+                gridSpace
+            );
 
-
-        return new Vector2Int(
-            cell.x,
-            cell.y
+        return UnityCellToLogical(
+            unityCell
         );
     }
 
+
+    // ==================================================
+    // GRID -> WORLD
+    // ==================================================
 
     public Vector3 GridToWorldPosition(
         Vector2Int gridPosition)
@@ -191,16 +435,19 @@ public class GridManager : MonoBehaviour
             return Vector3.zero;
         }
 
-
-        Vector3Int cell =
-            new Vector3Int(
-                gridPosition.x,
-                gridPosition.y,
-                0
+        Vector3Int unityCell =
+            LogicalToUnityCell(
+                gridPosition
             );
 
+        Vector3 unrotatedWorld =
+            grid.GetCellCenterWorld(
+                unityCell
+            );
 
-        return grid.GetCellCenterWorld(cell);
+        return ConvertGridToWorldSpace(
+            unrotatedWorld
+        );
     }
 
 
@@ -212,15 +459,73 @@ public class GridManager : MonoBehaviour
         Vector2Int position)
     {
         return
-            position.x >= 0 &&
-            position.x < width &&
-            position.y >= 0 &&
-            position.y < height;
+            position.x >= GetMinX() &&
+            position.x <= GetMaxX() &&
+            position.y >= GetMinY() &&
+            position.y <= GetMaxY();
     }
 
 
     // ==================================================
     // FLOOR
+    // ==================================================
+
+    private void CreateFloor()
+    {
+        if (floorTilePrefab == null)
+        {
+            Debug.LogWarning(
+                "[GridManager] Floor Tile Prefab is not assigned.",
+                this
+            );
+
+            return;
+        }
+
+        for (int x = GetMinX(); x <= GetMaxX(); x++)
+        {
+            for (int y = GetMinY(); y <= GetMaxY(); y++)
+            {
+                Vector2Int logicalPosition =
+                    new Vector2Int(x, y);
+
+                Vector3 worldPosition =
+                    GridToWorldPosition(
+                        logicalPosition
+                    );
+
+                GameObject tile =
+                    Instantiate(
+                        floorTilePrefab,
+                        worldPosition,
+                        Quaternion.identity,
+                        floorParent
+                    );
+
+                tile.name =
+                    $"Floor_{x}_{y}";
+
+                Vector2Int arrayPosition =
+                    LogicalToArrayPosition(
+                        logicalPosition
+                    );
+
+                floorTiles[
+                    arrayPosition.x,
+                    arrayPosition.y
+                ] = tile;
+            }
+        }
+
+        Debug.Log(
+            $"[GridManager] Created {width * height} floor tiles.",
+            this
+        );
+    }
+
+
+    // ==================================================
+    // FLOOR ACCESS
     // ==================================================
 
     public GameObject GetFloorTile(
@@ -231,16 +536,20 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
 
         return floorTiles[
-            position.x,
-            position.y
+            array.x,
+            array.y
         ];
     }
 
 
     // ==================================================
-    // UNIT VALIDATION
+    // OCCUPANT VALIDATION
     // ==================================================
 
     private bool IsOccupantValid(
@@ -252,35 +561,20 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         if (!occupant.activeInHierarchy)
         {
-            occupiedCells[
-                position.x,
-                position.y
-            ] = null;
-
+            RemoveUnit(position);
             return false;
         }
-
 
         HealthManager health =
             occupant.GetComponent<HealthManager>();
 
-
-        if (
-            health != null &&
-            health.IsDead()
-        )
+        if (health != null && health.IsDead())
         {
-            occupiedCells[
-                position.x,
-                position.y
-            ] = null;
-
+            RemoveUnit(position);
             return false;
         }
-
 
         return true;
     }
@@ -298,16 +592,13 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
-        GameObject occupant =
-            occupiedCells[
-                position.x,
-                position.y
-            ];
-
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
 
         return IsOccupantValid(
-            occupant,
+            occupiedCells[array.x, array.y],
             position
         );
     }
@@ -321,26 +612,25 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
 
-        GameObject occupant =
+        GameObject unit =
             occupiedCells[
-                position.x,
-                position.y
+                array.x,
+                array.y
             ];
 
-
         return IsOccupantValid(
-            occupant,
+            unit,
             position
         )
-            ? occupant
+            ? unit
             : null;
     }
 
-
-    // ==================================================
-    // GET UNIT GRID POSITION
-    // ==================================================
 
     public Vector2Int GetUnitGridPosition(
         GameObject unit)
@@ -350,7 +640,6 @@ public class GridManager : MonoBehaviour
             return Vector2Int.zero;
         }
 
-
         return WorldToGridPosition(
             unit.transform.position
         );
@@ -358,7 +647,7 @@ public class GridManager : MonoBehaviour
 
 
     // ==================================================
-    // CHECK MOVEMENT
+    // MOVEMENT VALIDATION
     // ==================================================
 
     public bool CanMoveToCell(
@@ -370,32 +659,20 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         if (!IsInsideGrid(position))
         {
             return false;
         }
 
-
         GameObject occupant =
             GetUnitAt(position);
 
-
-        if (
-            occupant != null &&
-            occupant != unit
-        )
-        {
-            return false;
-        }
-
-
-        return true;
+        return occupant == null || occupant == unit;
     }
 
 
     // ==================================================
-    // UNIT MANAGEMENT
+    // PLACE UNIT
     // ==================================================
 
     public bool PlaceUnit(
@@ -408,39 +685,43 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         if (!IsInsideGrid(position))
         {
             return false;
         }
-
 
         if (IsCellOccupied(position))
         {
             return false;
         }
 
-
-        // --------------------------------------------------
-        // REGISTER UNIT
-        // --------------------------------------------------
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
 
         occupiedCells[
-            position.x,
-            position.y
+            array.x,
+            array.y
         ] = unit;
 
-
-        // --------------------------------------------------
-        // MOVE UNIT TO GRID POSITION
-        // --------------------------------------------------
-
         unit.transform.position =
-            GridToWorldPosition(position);
+            GridToWorldPosition(
+                position
+            );
+
+        Debug.Log(
+            $"[GridManager] UNIT PLACED: {unit.name} at {position}",
+            unit
+        );
 
         return true;
     }
 
+
+    // ==================================================
+    // REMOVE BY POSITION
+    // ==================================================
 
     public void RemoveUnit(
         Vector2Int position)
@@ -450,13 +731,21 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
 
         occupiedCells[
-            position.x,
-            position.y
+            array.x,
+            array.y
         ] = null;
     }
 
+
+    // ==================================================
+    // REMOVE BY OBJECT
+    // ==================================================
 
     public void RemoveUnit(
         GameObject unit)
@@ -466,7 +755,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -474,13 +762,15 @@ public class GridManager : MonoBehaviour
                 if (occupiedCells[x, y] == unit)
                 {
                     occupiedCells[x, y] = null;
-
-                    return;
                 }
             }
         }
     }
 
+
+    // ==================================================
+    // CLEANUP
+    // ==================================================
 
     public void CleanupDeadUnits()
     {
@@ -491,21 +781,27 @@ public class GridManager : MonoBehaviour
                 GameObject unit =
                     occupiedCells[x, y];
 
-
-                if (unit != null)
+                if (unit == null)
                 {
-                    IsOccupantValid(
-                        unit,
+                    continue;
+                }
+
+                Vector2Int logical =
+                    ArrayToLogicalPosition(
                         new Vector2Int(x, y)
                     );
-                }
+
+                IsOccupantValid(
+                    unit,
+                    logical
+                );
             }
         }
     }
 
 
     // ==================================================
-    // START MOVEMENT
+    // START MOVE
     // ==================================================
 
     public bool StartMoveUnit(
@@ -518,7 +814,6 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         if (
             !IsInsideGrid(oldPosition) ||
             !IsInsideGrid(newPosition)
@@ -527,56 +822,52 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         if (oldPosition == newPosition)
         {
             return false;
         }
 
+        Vector2Int oldArray =
+            LogicalToArrayPosition(
+                oldPosition
+            );
+
+        Vector2Int newArray =
+            LogicalToArrayPosition(
+                newPosition
+            );
 
         if (
             occupiedCells[
-                oldPosition.x,
-                oldPosition.y
+                oldArray.x,
+                oldArray.y
             ] != unit
         )
         {
             return false;
         }
 
-
         if (IsCellOccupied(newPosition))
         {
             return false;
         }
 
-
-        // --------------------------------------------------
-        // REMOVE OLD CELL
-        // --------------------------------------------------
-
         occupiedCells[
-            oldPosition.x,
-            oldPosition.y
+            oldArray.x,
+            oldArray.y
         ] = null;
 
-
-        // --------------------------------------------------
-        // RESERVE DESTINATION
-        // --------------------------------------------------
-
         occupiedCells[
-            newPosition.x,
-            newPosition.y
+            newArray.x,
+            newArray.y
         ] = unit;
-
 
         return true;
     }
 
 
     // ==================================================
-    // FINISH MOVEMENT
+    // FINISH MOVE
     // ==================================================
 
     public void FinishMoveUnit(
@@ -588,31 +879,35 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         if (!IsInsideGrid(position))
         {
             return;
         }
 
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
 
         if (
             occupiedCells[
-                position.x,
-                position.y
+                array.x,
+                array.y
             ] != unit
         )
         {
             return;
         }
 
-
         unit.transform.position =
-            GridToWorldPosition(position);
+            GridToWorldPosition(
+                position
+            );
     }
 
 
     // ==================================================
-    // INSTANT MOVEMENT
+    // INSTANT MOVE
     // ==================================================
 
     public bool MoveUnit(
@@ -620,53 +915,18 @@ public class GridManager : MonoBehaviour
         Vector2Int oldPosition,
         Vector2Int newPosition)
     {
-        if (unit == null)
+        if (!StartMoveUnit(
+            unit,
+            oldPosition,
+            newPosition))
         {
             return false;
         }
 
-
-        if (
-            !IsInsideGrid(oldPosition) ||
-            !IsInsideGrid(newPosition)
-        )
-        {
-            return false;
-        }
-
-
-        if (
-            occupiedCells[
-                oldPosition.x,
-                oldPosition.y
-            ] != unit
-        )
-        {
-            return false;
-        }
-
-
-        if (IsCellOccupied(newPosition))
-        {
-            return false;
-        }
-
-
-        occupiedCells[
-            oldPosition.x,
-            oldPosition.y
-        ] = null;
-
-
-        occupiedCells[
-            newPosition.x,
-            newPosition.y
-        ] = unit;
-
-
-        unit.transform.position =
-            GridToWorldPosition(newPosition);
-
+        FinishMoveUnit(
+            unit,
+            newPosition
+        );
 
         return true;
     }
@@ -695,22 +955,63 @@ public class GridManager : MonoBehaviour
         return width;
     }
 
-
     public int GetHeight()
     {
         return height;
     }
-
 
     public Grid GetGrid()
     {
         return grid;
     }
 
-
     public GridHighlightManager GetHighlightManager()
     {
         return highlightManager;
+    }
+
+
+    // ==================================================
+    // DEBUG CENTER
+    // ==================================================
+
+    [ContextMenu("Debug Grid Center")]
+    public void DebugGridCenter()
+    {
+        if (grid == null)
+        {
+            return;
+        }
+
+        Vector3 center =
+            GridToWorldPosition(
+                Vector2Int.zero
+            );
+
+        int rotation = 0;
+
+        if (BoardViewController.Instance != null)
+        {
+            rotation =
+                BoardViewController.Instance
+                    .GetCurrentRotation();
+        }
+
+        Debug.Log(
+            "========================================\n" +
+            "[GridManager] CENTER DEBUG\n" +
+            "========================================\n" +
+            $"Grid Size: {width} x {height}\n" +
+            $"X Range: {GetMinX()} -> {GetMaxX()}\n" +
+            $"Y Range: {GetMinY()} -> {GetMaxY()}\n" +
+            $"Logical Center: (0,0)\n" +
+            $"World Center: {center}\n" +
+            $"Board Rotation: {rotation}\n" +
+            $"Grid Controlled By Board: {IsGridControlledByBoard()}\n" +
+            $"Distance From Origin: {Vector3.Distance(center, Vector3.zero)}\n" +
+            "========================================",
+            this
+        );
     }
 
 
@@ -725,96 +1026,118 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         if (grid == null)
         {
             grid = GetComponent<Grid>();
-
-
-            if (grid == null)
-            {
-                return;
-            }
         }
 
+        if (grid == null)
+        {
+            return;
+        }
 
-        Gizmos.color =
-            Color.gray;
+        Gizmos.color = Color.gray;
 
-
-        for (int x = 0; x <= width; x++)
+        for (
+            int x = GetMinX();
+            x <= GetMaxX() + 1;
+            x++
+        )
         {
             Gizmos.DrawLine(
-                GetGridCorner(x, 0),
-                GetGridCorner(x, height)
+                GetLogicalGridCorner(x, GetMinY()),
+                GetLogicalGridCorner(x, GetMaxY() + 1)
             );
         }
 
-
-        for (int y = 0; y <= height; y++)
+        for (
+            int y = GetMinY();
+            y <= GetMaxY() + 1;
+            y++
+        )
         {
             Gizmos.DrawLine(
-                GetGridCorner(0, y),
-                GetGridCorner(width, y)
+                GetLogicalGridCorner(GetMinX(), y),
+                GetLogicalGridCorner(GetMaxX() + 1, y)
             );
         }
 
-
-        Gizmos.color =
-            Color.white;
-
+        Gizmos.color = Color.white;
 
         Vector3 bottomLeft =
-            GetGridCorner(0, 0);
-
+            GetLogicalGridCorner(
+                GetMinX(),
+                GetMinY()
+            );
 
         Vector3 bottomRight =
-            GetGridCorner(width, 0);
-
+            GetLogicalGridCorner(
+                GetMaxX() + 1,
+                GetMinY()
+            );
 
         Vector3 topLeft =
-            GetGridCorner(0, height);
-
+            GetLogicalGridCorner(
+                GetMinX(),
+                GetMaxY() + 1
+            );
 
         Vector3 topRight =
-            GetGridCorner(width, height);
+            GetLogicalGridCorner(
+                GetMaxX() + 1,
+                GetMaxY() + 1
+            );
 
+        Gizmos.DrawLine(bottomLeft, bottomRight);
+        Gizmos.DrawLine(bottomRight, topRight);
+        Gizmos.DrawLine(topRight, topLeft);
+        Gizmos.DrawLine(topLeft, bottomLeft);
 
-        Gizmos.DrawLine(
-            bottomLeft,
-            bottomRight
-        );
+        if (showCenterGizmo)
+        {
+            Gizmos.color = Color.yellow;
 
+            Vector3 center =
+                GridToWorldPosition(
+                    Vector2Int.zero
+                );
 
-        Gizmos.DrawLine(
-            bottomRight,
-            topRight
-        );
+            Gizmos.DrawSphere(
+                center,
+                0.15f
+            );
 
+            Gizmos.DrawLine(
+                center + Vector3.left * 0.5f,
+                center + Vector3.right * 0.5f
+            );
 
-        Gizmos.DrawLine(
-            topRight,
-            topLeft
-        );
-
-
-        Gizmos.DrawLine(
-            topLeft,
-            bottomLeft
-        );
+            Gizmos.DrawLine(
+                center + Vector3.down * 0.5f,
+                center + Vector3.up * 0.5f
+            );
+        }
     }
 
 
-    private Vector3 GetGridCorner(
+    // ==================================================
+    // GRID CORNER
+    // ==================================================
+
+    private Vector3 GetLogicalGridCorner(
         int x,
         int y)
     {
-        return grid.CellToWorld(
+        Vector3Int cell =
             new Vector3Int(
-                x,
-                y,
+                x + width / 2,
+                y + height / 2,
                 0
-            )
-        );
+            );
+
+        Vector3 world =
+            grid.CellToWorld(cell);
+
+        return ConvertGridToWorldSpace(world);
     }
 }

@@ -21,7 +21,6 @@ public class UIManager : MonoBehaviour
 
     private CanvasInfoManager canvasInfoManager;
 
-
     // ============================================================
     // UNITY
     // ============================================================
@@ -51,7 +50,6 @@ public class UIManager : MonoBehaviour
         CheckMouseClick();
         UpdateChainLightningPreview();
     }
-
 
     // ============================================================
     // INPUT
@@ -133,7 +131,6 @@ public class UIManager : MonoBehaviour
         return hit.collider.GetComponentInParent<HoverInfoTrigger>();
     }
 
-
     // ============================================================
     // CHAIN LIGHTNING PREVIEW
     // ============================================================
@@ -187,7 +184,6 @@ public class UIManager : MonoBehaviour
         );
     }
 
-
     // ============================================================
     // ABILITY STATE
     // ============================================================
@@ -206,7 +202,6 @@ public class UIManager : MonoBehaviour
         if (canvasInfoManager != null)
             canvasInfoManager.ClearSelectedAbility();
     }
-
 
     // ============================================================
     // ABILITY TARGETING
@@ -339,7 +334,6 @@ public class UIManager : MonoBehaviour
         return true;
     }
 
-
     // ============================================================
     // GRID / SCREEN CONVERSION
     // ============================================================
@@ -392,7 +386,6 @@ public class UIManager : MonoBehaviour
         return null;
     }
 
-
     // ============================================================
     // UNIT CONTROL
     // ============================================================
@@ -413,7 +406,6 @@ public class UIManager : MonoBehaviour
         return team == Team.Player ||
                team == Team.Ally;
     }
-
 
     // ============================================================
     // MOVEMENT
@@ -501,7 +493,6 @@ public class UIManager : MonoBehaviour
         return true;
     }
 
-
     // ============================================================
     // SELECTION
     // ============================================================
@@ -564,7 +555,6 @@ public class UIManager : MonoBehaviour
         if (CurrentSelection == trigger)
             ClearSelection();
     }
-
 
     // ============================================================
     // MOVEMENT RANGE

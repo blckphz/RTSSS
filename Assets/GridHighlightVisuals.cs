@@ -16,6 +16,18 @@ public class GridHighlightVisuals : MonoBehaviour
 
 
     // ============================================================
+    // MOVEMENT
+    // ============================================================
+
+    [Header("Movement")]
+    [SerializeField]
+    private Color movementColor = Color.cyan;
+
+    [SerializeField, Range(0f, 1f)]
+    private float movementAlpha = 0.35f;
+
+
+    // ============================================================
     // ABILITY RANGE
     // ============================================================
 
@@ -107,10 +119,13 @@ public class GridHighlightVisuals : MonoBehaviour
     // ============================================================
 
     private GameObject tileObject;
+
     private SpriteRenderer spriteRenderer;
+
     private Transform tileTransform;
 
     private Vector3 originalScale;
+
     private Color originalColor;
 
     private bool initialized;
@@ -133,6 +148,7 @@ public class GridHighlightVisuals : MonoBehaviour
     private VisualState currentState =
         VisualState.Default;
 
+
     private Coroutine explosionCoroutine;
 
 
@@ -146,34 +162,59 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         if (initialized)
         {
+            /*
+             * The board can be rotated or rebuilt.
+             * Make sure references are still valid.
+             */
+
+            if (spriteRenderer == null)
+            {
+                FindRenderer();
+            }
+
+            if (tileTransform == null)
+            {
+                tileTransform =
+                    tileObject != null
+                        ? tileObject.transform
+                        : transform;
+            }
+
             return;
         }
+
 
         tileObject =
             tile != null
                 ? tile
                 : gameObject;
 
+
         tileTransform =
             tileObject.transform;
 
-        spriteRenderer =
-            tileObject.GetComponent<SpriteRenderer>();
 
-        if (spriteRenderer == null)
+        FindRenderer();
+
+
+        if (tileTransform != null)
         {
-            spriteRenderer =
-                tileObject.GetComponentInChildren<SpriteRenderer>();
+            originalScale =
+                tileTransform.localScale;
         }
+
 
         if (spriteRenderer != null)
         {
             originalColor =
                 spriteRenderer.color;
         }
+        else
+        {
+            originalColor =
+                Color.white;
+        }
 
-        originalScale =
-            tileTransform.localScale;
 
         initialized = true;
     }
@@ -186,6 +227,92 @@ public class GridHighlightVisuals : MonoBehaviour
 
 
     // ============================================================
+    // FIND RENDERER
+    // ============================================================
+
+    private void FindRenderer()
+    {
+        if (tileObject == null)
+        {
+            tileObject = gameObject;
+        }
+
+
+        /*
+         * First try the tile itself.
+         */
+
+        spriteRenderer =
+            tileObject.GetComponent<SpriteRenderer>();
+
+
+        if (spriteRenderer != null)
+        {
+            return;
+        }
+
+
+        /*
+         * Then search children, including inactive children.
+         */
+
+        SpriteRenderer[] renderers =
+            tileObject.GetComponentsInChildren<SpriteRenderer>(
+                true
+            );
+
+
+        if (
+            renderers == null ||
+            renderers.Length == 0
+        )
+        {
+            spriteRenderer = null;
+
+            return;
+        }
+
+
+        /*
+         * Prefer a child named Highlight.
+         */
+
+        for (
+            int i = 0;
+            i < renderers.Length;
+            i++
+        )
+        {
+            if (
+                renderers[i] != null &&
+                (
+                    renderers[i].name.Contains(
+                        "Highlight"
+                    ) ||
+                    renderers[i].name.Contains(
+                        "highlight"
+                    )
+                )
+            )
+            {
+                spriteRenderer =
+                    renderers[i];
+
+                return;
+            }
+        }
+
+
+        /*
+         * Otherwise use the first SpriteRenderer.
+         */
+
+        spriteRenderer =
+            renderers[0];
+    }
+
+
+    // ============================================================
     // UPDATE
     // ============================================================
 
@@ -193,19 +320,33 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         if (!initialized)
         {
+            Initialize(gameObject);
+        }
+
+
+        if (!initialized)
+        {
             return;
         }
+
 
         UpdateAnimations();
     }
 
 
+    // ============================================================
+    // ANIMATIONS
+    // ============================================================
+
     private void UpdateAnimations()
     {
         UpdateScaleAnimation();
 
-        if (currentState ==
-            VisualState.Ability)
+
+        if (
+            currentState ==
+            VisualState.Ability
+        )
         {
             UpdateAbilityPulse();
         }
@@ -218,33 +359,42 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void UpdateAbilityPulse()
     {
-        if (!pulseAbility ||
-            spriteRenderer == null)
+        if (
+            !pulseAbility ||
+            spriteRenderer == null
+        )
         {
             return;
         }
+
 
         float pulse =
             (
                 Mathf.Sin(
                     Time.time *
                     pulseSpeed
-                ) + 1f
-            ) * 0.5f;
+                ) +
+                1f
+            ) *
+            0.5f;
+
 
         float alphaMultiplier =
             1f +
             pulse *
             pulseAmount;
 
+
         Color color =
             abilityRangeColor;
+
 
         color.a =
             Mathf.Clamp01(
                 abilityRangeAlpha *
                 alphaMultiplier
             );
+
 
         spriteRenderer.color =
             color;
@@ -257,32 +407,42 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void UpdateScaleAnimation()
     {
-        if (!animateTileScale ||
-            tileTransform == null)
+        if (
+            !animateTileScale ||
+            tileTransform == null
+        )
         {
             return;
         }
 
-        if (currentState ==
-            VisualState.Default)
+
+        if (
+            currentState ==
+            VisualState.Default
+        )
         {
             ResetScale();
 
             return;
         }
 
+
         float pulse =
             (
                 Mathf.Sin(
                     Time.time *
                     scaleSpeed
-                ) + 1f
-            ) * 0.5f;
+                ) +
+                1f
+            ) *
+            0.5f;
+
 
         float multiplier =
             1f +
             pulse *
             scaleAmount;
+
 
         tileTransform.localScale =
             originalScale *
@@ -301,15 +461,17 @@ public class GridHighlightVisuals : MonoBehaviour
 
 
     // ============================================================
-    // STATES
+    // PLACEMENT
     // ============================================================
 
     public void ShowPlacement()
     {
         StopExplosionAnimation();
 
+
         currentState =
             VisualState.Placement;
+
 
         ApplyColor(
             placementColor,
@@ -322,14 +484,26 @@ public class GridHighlightVisuals : MonoBehaviour
     // MOVEMENT
     // ============================================================
 
+    public void ShowMovement()
+    {
+        ShowMovement(
+            movementColor,
+            movementAlpha
+        );
+    }
+
+
     public void ShowMovement(
         Color color,
-        float alpha)
+        float alpha
+    )
     {
         StopExplosionAnimation();
 
+
         currentState =
             VisualState.Movement;
+
 
         ApplyColor(
             color,
@@ -346,8 +520,10 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         StopExplosionAnimation();
 
+
         currentState =
             VisualState.Ability;
+
 
         ApplyColor(
             abilityRangeColor,
@@ -364,8 +540,10 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         StopExplosionAnimation();
 
+
         currentState =
             VisualState.Enemy;
+
 
         ApplyColor(
             enemyTileColor,
@@ -382,8 +560,10 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         StopExplosionAnimation();
 
+
         currentState =
             VisualState.Heal;
+
 
         ApplyColor(
             healTileColor,
@@ -398,15 +578,32 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void ApplyColor(
         Color color,
-        float alpha)
+        float alpha
+    )
     {
+        if (spriteRenderer == null)
+        {
+            FindRenderer();
+        }
+
+
         if (spriteRenderer == null)
         {
             return;
         }
 
+
+        /*
+         * Every highlight state explicitly enables
+         * the renderer.
+         */
+
+        spriteRenderer.enabled = true;
+
+
         color.a =
             Mathf.Clamp01(alpha);
+
 
         spriteRenderer.color =
             color;
@@ -421,15 +618,32 @@ public class GridHighlightVisuals : MonoBehaviour
     {
         StopExplosionAnimation();
 
+
         currentState =
             VisualState.Default;
 
+
         ResetScale();
+
+
+        if (spriteRenderer == null)
+        {
+            FindRenderer();
+        }
+
 
         if (spriteRenderer != null)
         {
             spriteRenderer.color =
                 originalColor;
+
+
+            /*
+             * Do not disable the renderer.
+             * Resetting the color is enough.
+             */
+
+            spriteRenderer.enabled = true;
         }
     }
 
@@ -445,7 +659,9 @@ public class GridHighlightVisuals : MonoBehaviour
             Initialize(gameObject);
         }
 
+
         StopExplosionAnimation();
+
 
         explosionCoroutine =
             StartCoroutine(
@@ -456,19 +672,28 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private IEnumerator ExplosionRoutine()
     {
-        if (spriteRenderer == null ||
-            tileTransform == null)
+        if (
+            spriteRenderer == null ||
+            tileTransform == null
+        )
         {
             yield break;
         }
 
+
+        spriteRenderer.enabled = true;
+
+
         Color startingColor =
             spriteRenderer.color;
+
 
         Vector3 startingScale =
             originalScale;
 
+
         float elapsed = 0f;
+
 
         while (
             elapsed <
@@ -478,22 +703,26 @@ public class GridHighlightVisuals : MonoBehaviour
             elapsed +=
                 Time.deltaTime;
 
+
             float normalizedTime =
                 Mathf.Clamp01(
                     elapsed /
                     explosionPulseDuration
                 );
 
+
             float curveValue =
                 explosionPulseCurve.Evaluate(
                     normalizedTime
                 );
+
 
             float pulse =
                 Mathf.Sin(
                     curveValue *
                     Mathf.PI
                 );
+
 
             tileTransform.localScale =
                 startingScale *
@@ -503,12 +732,14 @@ public class GridHighlightVisuals : MonoBehaviour
                     explosionPulseAmount
                 );
 
+
             Color color =
                 Color.Lerp(
                     startingColor,
                     explosionColor,
                     pulse
                 );
+
 
             color.a =
                 Mathf.Lerp(
@@ -517,17 +748,22 @@ public class GridHighlightVisuals : MonoBehaviour
                     pulse
                 );
 
+
             spriteRenderer.color =
                 color;
+
 
             yield return null;
         }
 
+
         tileTransform.localScale =
             startingScale;
 
+
         spriteRenderer.color =
             startingColor;
+
 
         explosionCoroutine =
             null;
@@ -536,15 +772,19 @@ public class GridHighlightVisuals : MonoBehaviour
 
     private void StopExplosionAnimation()
     {
-        if (explosionCoroutine != null)
+        if (
+            explosionCoroutine != null
+        )
         {
             StopCoroutine(
                 explosionCoroutine
             );
 
+
             explosionCoroutine =
                 null;
         }
+
 
         ResetScale();
     }
@@ -559,18 +799,57 @@ public class GridHighlightVisuals : MonoBehaviour
         return placementColor;
     }
 
+
+    public Color GetMovementColor()
+    {
+        return movementColor;
+    }
+
+
     public Color GetAbilityColor()
     {
         return abilityRangeColor;
     }
+
 
     public Color GetEnemyColor()
     {
         return enemyTileColor;
     }
 
+
     public Color GetHealColor()
     {
         return healTileColor;
+    }
+
+
+    public bool IsInitialized()
+    {
+        return initialized;
+    }
+
+
+    public SpriteRenderer GetSpriteRenderer()
+    {
+        if (spriteRenderer == null)
+        {
+            FindRenderer();
+        }
+
+
+        return spriteRenderer;
+    }
+
+
+    public Transform GetTileTransform()
+    {
+        return tileTransform;
+    }
+
+
+    public string GetCurrentState()
+    {
+        return currentState.ToString();
     }
 }

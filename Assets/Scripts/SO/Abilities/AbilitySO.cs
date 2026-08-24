@@ -151,11 +151,49 @@ public abstract class AbilitySO : ScriptableObject
 
 
     // ============================================================
+    // GET USER TILE
+    // ============================================================
+
+    protected Vector2Int GetUserGridPosition(
+        GridManager gridManager,
+        GameObject user
+    )
+    {
+        if (
+            gridManager == null ||
+            user == null
+        )
+        {
+            return Vector2Int.zero;
+        }
+
+
+        UnitTilePin pin =
+            user.GetComponent<UnitTilePin>();
+
+
+        if (
+            pin != null &&
+            pin.HasTile()
+        )
+        {
+            return pin.GetTile();
+        }
+
+
+        return gridManager.WorldToGridPosition(
+            user.transform.position
+        );
+    }
+
+
+    // ============================================================
     // MOVEMENT RESTRICTION
     // ============================================================
 
     public bool CanUseAfterMovement(
-        GameObject user)
+        GameObject user
+    )
     {
         if (user == null)
         {
@@ -165,20 +203,16 @@ public abstract class AbilitySO : ScriptableObject
         UnitMoveBrain moveBrain =
             user.GetComponent<UnitMoveBrain>();
 
-        // If there is no movement brain,
-        // do not block the ability here.
         if (moveBrain == null)
         {
             return true;
         }
 
-        // Unit has not consumed movement yet.
         if (moveBrain.CanMoveThisTurn())
         {
             return true;
         }
 
-        // Unit already moved.
         return canAttackWithThisAfterMove;
     }
 
@@ -195,6 +229,7 @@ public abstract class AbilitySO : ScriptableObject
         List<Vector2Int> tiles =
             new List<Vector2Int>();
 
+
         if (
             gridManager == null ||
             user == null
@@ -203,10 +238,13 @@ public abstract class AbilitySO : ScriptableObject
             return tiles;
         }
 
+
         Vector2Int origin =
-            gridManager.WorldToGridPosition(
-                user.transform.position
+            GetUserGridPosition(
+                gridManager,
+                user
             );
+
 
         int abilityRange =
             Mathf.Max(
@@ -214,12 +252,14 @@ public abstract class AbilitySO : ScriptableObject
                 range
             );
 
+
         int minimumDistance =
             Mathf.Clamp(
                 minDistance,
                 0,
                 abilityRange
             );
+
 
         switch (rangeShape)
         {
@@ -245,9 +285,11 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
+
                         int distance =
                             Mathf.Abs(x) +
                             Mathf.Abs(y);
+
 
                         if (
                             distance >
@@ -257,6 +299,7 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
+
                         if (
                             distance <
                             minimumDistance
@@ -264,6 +307,7 @@ public abstract class AbilitySO : ScriptableObject
                         {
                             continue;
                         }
+
 
                         AddValidTile(
                             gridManager,
@@ -302,11 +346,13 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
+
                         int distance =
                             Mathf.Max(
                                 Mathf.Abs(x),
                                 Mathf.Abs(y)
                             );
+
 
                         if (
                             distance >
@@ -316,6 +362,7 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
+
                         if (
                             distance <
                             minimumDistance
@@ -323,6 +370,7 @@ public abstract class AbilitySO : ScriptableObject
                         {
                             continue;
                         }
+
 
                         AddValidTile(
                             gridManager,
@@ -355,12 +403,14 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
+
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
                         Vector2Int.up * i
                     );
+
 
                     AddValidTile(
                         gridManager,
@@ -369,12 +419,14 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.down * i
                     );
 
+
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
                         Vector2Int.left * i
                     );
+
 
                     AddValidTile(
                         gridManager,
@@ -403,6 +455,7 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
+
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -412,6 +465,7 @@ public abstract class AbilitySO : ScriptableObject
                             i
                         )
                     );
+
 
                     AddValidTile(
                         gridManager,
@@ -423,6 +477,7 @@ public abstract class AbilitySO : ScriptableObject
                         )
                     );
 
+
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -432,6 +487,7 @@ public abstract class AbilitySO : ScriptableObject
                             -i
                         )
                     );
+
 
                     AddValidTile(
                         gridManager,
@@ -446,6 +502,7 @@ public abstract class AbilitySO : ScriptableObject
 
                 break;
         }
+
 
         return tiles;
     }
@@ -483,6 +540,7 @@ public abstract class AbilitySO : ScriptableObject
             return;
         }
 
+
         if (
             !gridManager.IsInsideGrid(
                 position
@@ -491,6 +549,7 @@ public abstract class AbilitySO : ScriptableObject
         {
             return;
         }
+
 
         if (
             !tiles.Contains(
@@ -522,10 +581,12 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
+
 
         if (
             !CanTargetObject(
@@ -537,10 +598,12 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
+
 
         return CanHitTile(
             gridManager,
@@ -567,11 +630,13 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         AttackUnit userUnit =
             user.GetComponent<AttackUnit>();
 
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
+
 
         if (
             userUnit == null ||
@@ -580,6 +645,7 @@ public abstract class AbilitySO : ScriptableObject
         {
             return false;
         }
+
 
         Team userTeam =
             userUnit.GetTeam();
@@ -601,6 +667,7 @@ public abstract class AbilitySO : ScriptableObject
                 return targetTeam == Team.Enemy;
             }
 
+
             if (
                 userTeam ==
                 Team.Enemy
@@ -610,6 +677,7 @@ public abstract class AbilitySO : ScriptableObject
                     targetTeam == Team.Player ||
                     targetTeam == Team.Ally;
             }
+
 
             return false;
         }
@@ -630,6 +698,7 @@ public abstract class AbilitySO : ScriptableObject
                     targetTeam == Team.Ally;
             }
 
+
             if (
                 userTeam ==
                 Team.Enemy
@@ -637,6 +706,7 @@ public abstract class AbilitySO : ScriptableObject
             {
                 return targetTeam == Team.Enemy;
             }
+
 
             return false;
         }
@@ -649,6 +719,7 @@ public abstract class AbilitySO : ScriptableObject
         {
             return true;
         }
+
 
         return false;
     }
@@ -672,10 +743,12 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
+
 
         if (
             !gridManager.IsInsideGrid(
@@ -686,16 +759,19 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         List<Vector2Int> rangeTiles =
             GetRangeTiles(
                 gridManager,
                 user
             );
 
+
         if (rangeTiles == null)
         {
             return false;
         }
+
 
         return rangeTiles.Contains(
             targetPosition
@@ -720,10 +796,12 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
+
 
         return true;
     }
@@ -747,10 +825,12 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
+
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
+
 
         if (
             !CanHitTile(
@@ -762,6 +842,7 @@ public abstract class AbilitySO : ScriptableObject
         {
             return false;
         }
+
 
         return true;
     }

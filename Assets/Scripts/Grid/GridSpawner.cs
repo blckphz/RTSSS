@@ -10,10 +10,6 @@ public class GridSpawner : MonoBehaviour
 
     private Transform mainCameraTransform;
 
-    // ==================================================
-    // UNITY
-    // ==================================================
-
     private void Awake()
     {
         if (mainCamera == null)
@@ -27,73 +23,121 @@ public class GridSpawner : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[GridSpawner] Main Camera could not be found!");
+            Debug.LogError(
+                "[GridSpawner] Main Camera could not be found!"
+            );
         }
 
         if (gridManager == null)
         {
-            gridManager = FindFirstObjectByType<GridManager>();
+            gridManager =
+                FindFirstObjectByType<GridManager>();
 
             if (gridManager == null)
             {
-                Debug.LogError("[GridSpawner] GridManager could not be found!");
+                Debug.LogError(
+                    "[GridSpawner] GridManager could not be found!"
+                );
             }
         }
 
         if (prefab == null)
         {
-            Debug.LogError("[GridSpawner] No prefab assigned!");
+            Debug.LogError(
+                "[GridSpawner] No prefab assigned!"
+            );
         }
     }
 
     private void Update()
     {
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (Keyboard.current != null &&
+            Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             SpawnAtMouse();
         }
     }
 
-    // ==================================================
-    // SPAWNING
-    // ==================================================
-
     private void SpawnAtMouse()
     {
-        if (prefab == null || gridManager == null || mainCamera == null)
+        if (prefab == null ||
+            gridManager == null ||
+            mainCamera == null)
         {
             return;
         }
 
-        // ----------------------------------------------
-        // SCREEN -> WORLD -> GRID
-        // ----------------------------------------------
+        Vector2 mouseScreenPosition =
+            Mouse.current.position.ReadValue();
 
-        Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
+        // ========================================================
+        // RAYCAST TO BOARD
+        // ========================================================
 
-        Vector3 mouseWorldPosition = mainCamera.ScreenToWorldPoint(
-            new Vector3(
-                mouseScreenPosition.x,
-                mouseScreenPosition.y,
-                Mathf.Abs(mainCameraTransform.position.z)
-            )
-        );
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                mouseScreenPosition
+            );
 
-        Vector2Int gridPosition = gridManager.WorldToGridPosition(mouseWorldPosition);
+        Vector3 boardNormal =
+            gridManager.transform.forward;
 
-        // ----------------------------------------------
-        // VALIDATION & PLACEMENT
-        // ----------------------------------------------
+        Plane boardPlane =
+            new Plane(
+                boardNormal,
+                gridManager.transform.position
+            );
 
-        if (!gridManager.IsInsideGrid(gridPosition) || gridManager.IsCellOccupied(gridPosition))
+        if (!boardPlane.Raycast(
+                ray,
+                out float enterDistance))
         {
             return;
         }
 
-        GameObject unit = Instantiate(prefab);
-        unit.name = $"{prefab.name}_{gridPosition.x}_{gridPosition.y}";
+        Vector3 mouseWorldPosition =
+            ray.GetPoint(enterDistance);
 
-        if (!gridManager.PlaceUnit(unit, gridPosition))
+
+        // ========================================================
+        // WORLD -> LOGICAL GRID
+        // ========================================================
+
+        Vector2Int gridPosition =
+            gridManager.WorldToGridPosition(
+                mouseWorldPosition
+            );
+
+
+        // ========================================================
+        // VALIDATION
+        // ========================================================
+
+        if (!gridManager.IsInsideGrid(gridPosition))
+        {
+            return;
+        }
+
+        if (gridManager.IsCellOccupied(gridPosition))
+        {
+            return;
+        }
+
+
+        // ========================================================
+        // SPAWN
+        // ========================================================
+
+        GameObject unit =
+            Instantiate(prefab);
+
+        unit.name =
+            $"{prefab.name}_{gridPosition.x}_{gridPosition.y}";
+
+
+        if (!gridManager.PlaceUnit(
+                unit,
+                gridPosition))
         {
             Destroy(unit);
         }

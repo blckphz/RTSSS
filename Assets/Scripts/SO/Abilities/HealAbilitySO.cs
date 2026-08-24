@@ -11,9 +11,9 @@ public class HealAbilitySO : AbilitySO
     private int healAmount = 10;
 
 
-    // ============================================================
-    // GETTERS
-    // ============================================================
+    // ==================================================
+    // GETTER
+    // ==================================================
 
     public int GetHealAmount()
     {
@@ -21,50 +21,65 @@ public class HealAbilitySO : AbilitySO
     }
 
 
-    // ============================================================
-    // TARGETING
-    // ============================================================
+    // ==================================================
+    // CAN HIT
+    // ==================================================
 
     public override bool CanHit(
         GridManager gridManager,
         GameObject user,
-        GameObject target)
+        GameObject target
+    )
     {
-        if (gridManager == null ||
+        if (
+            gridManager == null ||
             user == null ||
-            target == null)
+            target == null
+        )
         {
             return false;
         }
+
 
         AttackUnit userUnit =
             user.GetComponent<AttackUnit>();
 
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
-        if (userUnit == null ||
-            targetUnit == null)
+
+        if (
+            userUnit == null ||
+            targetUnit == null
+        )
         {
             return false;
         }
+
 
         if (targetUnit.IsDead())
         {
             return false;
         }
 
-        if (!IsFriendlyTarget(
+
+        if (
+            !IsFriendlyTarget(
                 userUnit,
-                targetUnit))
+                targetUnit
+            )
+        )
         {
             return false;
         }
+
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
+
 
         return CanHitTile(
             gridManager,
@@ -74,139 +89,130 @@ public class HealAbilitySO : AbilitySO
     }
 
 
-    // ============================================================
+    // ==================================================
     // CAN HIT TILE
-    // ============================================================
+    // ==================================================
 
     public override bool CanHitTile(
         GridManager gridManager,
         GameObject user,
-        Vector2Int targetPosition)
+        Vector2Int targetPosition
+    )
     {
-        if (gridManager == null ||
-            user == null)
+        if (
+            gridManager == null ||
+            user == null
+        )
         {
             return false;
         }
 
-        if (!gridManager.IsInsideGrid(
-                targetPosition))
+
+        if (
+            !gridManager.IsInsideGrid(
+                targetPosition
+            )
+        )
         {
             return false;
         }
+
 
         GameObject target =
             gridManager.GetUnitAt(
                 targetPosition
             );
 
+
         if (target == null)
         {
             return false;
         }
 
+
         AttackUnit userUnit =
             user.GetComponent<AttackUnit>();
+
 
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
-        if (userUnit == null ||
-            targetUnit == null)
+
+        if (
+            userUnit == null ||
+            targetUnit == null
+        )
         {
             return false;
         }
+
 
         if (targetUnit.IsDead())
         {
             return false;
         }
 
-        if (!IsFriendlyTarget(
+
+        if (
+            !IsFriendlyTarget(
                 userUnit,
-                targetUnit))
+                targetUnit
+            )
+        )
         {
             return false;
         }
 
 
-        // IMPORTANT:
-        // Check the actual ability range here.
-        //
-        // We intentionally do NOT call base.CanHitTile()
-        // because this class has its own target validation.
-
-        return IsInAbilityRange(
+        return GetRangeTiles(
             gridManager,
-            user,
+            user
+        ).Contains(
             targetPosition
         );
     }
 
 
-    // ============================================================
-    // RANGE CHECK
-    // ============================================================
-
-    private bool IsInAbilityRange(
-        GridManager gridManager,
-        GameObject user,
-        Vector2Int targetPosition)
-    {
-        var rangeTiles =
-            GetRangeTiles(
-                gridManager,
-                user
-            );
-
-        if (rangeTiles == null)
-        {
-            return false;
-        }
-
-        return rangeTiles.Contains(
-            targetPosition
-        );
-    }
-
-
-    // ============================================================
+    // ==================================================
     // FRIENDLY TARGET
-    // ============================================================
+    // ==================================================
 
     private bool IsFriendlyTarget(
         AttackUnit healer,
-        AttackUnit target)
+        AttackUnit target
+    )
     {
-        if (healer == null ||
-            target == null)
+        if (
+            healer == null ||
+            target == null
+        )
         {
             return false;
         }
 
+
         Team healerTeam =
             healer.GetTeam();
+
 
         Team targetTeam =
             target.GetTeam();
 
 
-        // ========================================================
-        // ENEMY HEALS ENEMY
-        // ========================================================
-
-        if (healerTeam == Team.Enemy)
+        if (
+            healerTeam ==
+            Team.Enemy
+        )
         {
-            return targetTeam == Team.Enemy;
+            return targetTeam ==
+                Team.Enemy;
         }
 
 
-        // ========================================================
-        // PLAYER / ALLY HEALS PLAYER / ALLY
-        // ========================================================
-
-        if (healerTeam == Team.Player ||
-            healerTeam == Team.Ally)
+        if (
+            healerTeam == Team.Player ||
+            healerTeam == Team.Ally
+        )
         {
             return
                 targetTeam == Team.Player ||
@@ -214,107 +220,140 @@ public class HealAbilitySO : AbilitySO
         }
 
 
-        return healerTeam == targetTeam;
+        return healerTeam ==
+            targetTeam;
     }
 
 
-    // ============================================================
+    // ==================================================
     // USE
-    // ============================================================
+    // ==================================================
 
     public override bool Use(
         GameObject user,
-        GameObject target)
+        GameObject target
+    )
     {
-        if (user == null ||
-            target == null)
+        if (
+            user == null ||
+            target == null
+        )
         {
             return false;
         }
+
 
         AttackUnit healer =
             user.GetComponent<AttackUnit>();
 
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
-        if (healer == null ||
-            targetUnit == null)
+
+        if (
+            healer == null ||
+            targetUnit == null
+        )
         {
             return false;
         }
+
 
         if (targetUnit.IsDead())
         {
             return false;
         }
 
-        if (!IsFriendlyTarget(
+
+        if (
+            !IsFriendlyTarget(
                 healer,
-                targetUnit))
+                targetUnit
+            )
+        )
         {
             return false;
         }
 
+
         HealthManager health =
             target.GetComponent<HealthManager>();
+
 
         if (health == null)
         {
             return false;
         }
 
+
         if (health.IsDead())
         {
             return false;
         }
 
+
         health.Heal(
             healAmount
         );
+
 
         return true;
     }
 
 
-    // ============================================================
+    // ==================================================
     // USE AT TILE
-    // ============================================================
+    // ==================================================
 
     public override bool UseAtTile(
         GameObject user,
         GridManager gridManager,
-        Vector2Int targetTile)
+        Vector2Int targetTile
+    )
     {
-        if (user == null ||
-            gridManager == null)
+        if (
+            user == null ||
+            gridManager == null
+        )
         {
             return false;
         }
 
-        if (!gridManager.IsInsideGrid(
-                targetTile))
+
+        if (
+            !gridManager.IsInsideGrid(
+                targetTile
+            )
+        )
         {
             return false;
         }
+
 
         GameObject target =
             gridManager.GetUnitAt(
                 targetTile
             );
 
+
         if (target == null)
         {
             return false;
         }
 
-        if (!CanHit(
+
+        if (
+            !CanHit(
                 gridManager,
                 user,
-                target))
+                target
+            )
+        )
         {
             return false;
         }
+
 
         return Use(
             user,

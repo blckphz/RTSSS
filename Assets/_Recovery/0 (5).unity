@@ -2162,9 +2162,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 804482595}
   brain: {fileID: 804482597}
-  enableDebugLogs: 0
-  enableWarningLogs: 1
-  enableErrorLogs: 1
   refreshGridOnEnable: 1
   movementRangeColor: {r: 0, g: 1, b: 1, a: 1}
   movementRangeAlpha: 0.624
@@ -2245,7 +2242,6 @@ MonoBehaviour:
   highlightManager: {fileID: 804482593}
   boardRotationTransform: {fileID: 0}
   compensateForBoardRotation: 1
-  rotationSettleDelay: 0.08
   enableDebugLogs: 1
 --- !u!114 &804482599
 MonoBehaviour:
@@ -3384,7 +3380,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   boardTransform: {fileID: 1477803518}
-  gridManager: {fileID: 804482595}
+  gridManager: {fileID: 0}
   gridWidth: 11
   gridHeight: 11
   cellSize: 0
@@ -3394,7 +3390,6 @@ MonoBehaviour:
   blockInputDuringRotation: 1
   rotateUnits: 1
   startingRotation: 0
-  deselectUnitWhenRotating: 1
   debugLogs: 1
 --- !u!1 &1482268827
 GameObject:

@@ -46,8 +46,11 @@ public class AttackUnit : MonoBehaviour
     // ABILITY STATE
     // ==================================================
 
-    private readonly Dictionary<AbilitySO, int> abilityCooldowns = new();
-    private readonly Dictionary<AbilitySO, int> abilityUsesRemaining = new();
+    private readonly Dictionary<AbilitySO, int> abilityCooldowns =
+        new();
+
+    private readonly Dictionary<AbilitySO, int> abilityUsesRemaining =
+        new();
 
 
     // ==================================================
@@ -55,6 +58,31 @@ public class AttackUnit : MonoBehaviour
     // ==================================================
 
     private GridManager cachedGridManager;
+
+    /*
+     * IMPORTANT:
+     *
+     * This is the UNIT'S LOGICAL GRID POSITION.
+     *
+     * It must NOT be recalculated from transform.position
+     * after the board visually rotates.
+     *
+     * Example:
+     *
+     * Logical position:
+     * (-2, 1)
+     *
+     * Board rotates 90 degrees.
+     *
+     * The unit may move in WORLD SPACE to another position,
+     * but its logical grid position is STILL:
+     *
+     * (-2, 1)
+     */
+    [SerializeField]
+    private Vector2Int logicalGridPosition;
+
+    private bool hasLogicalGridPosition;
 
 
     // ==================================================
@@ -65,11 +93,32 @@ public class AttackUnit : MonoBehaviour
     {
         if (healthManager == null)
         {
-            healthManager = GetComponent<HealthManager>();
+            healthManager =
+                GetComponent<HealthManager>();
         }
 
-        moveBrain = GetComponent<UnitMoveBrain>();
-        attackAnimation = GetComponent<IAttackAnimation>();
+        moveBrain =
+            GetComponent<UnitMoveBrain>();
+
+        attackAnimation =
+            GetComponent<IAttackAnimation>();
+
+        EnsureGridManager();
+
+        /*
+         * Do not immediately overwrite an already assigned
+         * logical position.
+         */
+        if (!hasLogicalGridPosition &&
+            cachedGridManager != null)
+        {
+            logicalGridPosition =
+                cachedGridManager.WorldToGridPosition(
+                    transform.position
+                );
+
+            hasLogicalGridPosition = true;
+        }
 
         if (characterData != null)
         {
@@ -93,11 +142,13 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        characterData = data;
+        characterData =
+            data;
 
         abilities.Clear();
 
-        List<AbilitySO> characterAbilities = data.GetAbilities();
+        List<AbilitySO> characterAbilities =
+            data.GetAbilities();
 
         if (characterAbilities == null)
         {
@@ -105,11 +156,19 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        for (int i = 0; i < characterAbilities.Count; i++)
+        for (
+            int i = 0;
+            i < characterAbilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = characterAbilities[i];
+            AbilitySO ability =
+                characterAbilities[i];
 
-            if (ability != null && !abilities.Contains(ability))
+            if (
+                ability != null &&
+                !abilities.Contains(ability)
+            )
             {
                 abilities.Add(ability);
             }
@@ -128,16 +187,23 @@ public class AttackUnit : MonoBehaviour
         abilityCooldowns.Clear();
         abilityUsesRemaining.Clear();
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
             if (ability == null)
             {
                 continue;
             }
 
-            abilityCooldowns[ability] = 0;
+            abilityCooldowns[ability] =
+                0;
+
             abilityUsesRemaining[ability] =
                 ability.GetUsesPerTurn();
         }
@@ -148,16 +214,21 @@ public class AttackUnit : MonoBehaviour
     // ENSURE ABILITY STATE
     // ==================================================
 
-    private bool EnsureAbilityState(AbilitySO ability)
+    private bool EnsureAbilityState(
+        AbilitySO ability)
     {
-        if (ability == null || !abilities.Contains(ability))
+        if (
+            ability == null ||
+            !abilities.Contains(ability)
+        )
         {
             return false;
         }
 
         if (!abilityCooldowns.ContainsKey(ability))
         {
-            abilityCooldowns[ability] = 0;
+            abilityCooldowns[ability] =
+                0;
         }
 
         if (!abilityUsesRemaining.ContainsKey(ability))
@@ -171,16 +242,80 @@ public class AttackUnit : MonoBehaviour
 
 
     // ==================================================
+    // LOGICAL GRID POSITION
+    // ==================================================
+
+    public void SetLogicalGridPosition(
+        Vector2Int position)
+    {
+        logicalGridPosition =
+            position;
+
+        hasLogicalGridPosition =
+            true;
+
+        if (cachedGridManager == null)
+        {
+            EnsureGridManager();
+        }
+
+        if (cachedGridManager != null)
+        {
+            Debug.Log(
+                "[AttackUnit] LOGICAL GRID POSITION SET\n" +
+                "Unit: " +
+                gameObject.name +
+                "\n" +
+                "Logical Position: " +
+                logicalGridPosition,
+                this
+            );
+        }
+    }
+
+
+    public Vector2Int GetLogicalGridPosition()
+    {
+        if (!hasLogicalGridPosition)
+        {
+            EnsureGridManager();
+
+            if (cachedGridManager != null)
+            {
+                logicalGridPosition =
+                    cachedGridManager.WorldToGridPosition(
+                        transform.position
+                    );
+
+                hasLogicalGridPosition =
+                    true;
+            }
+        }
+
+        return logicalGridPosition;
+    }
+
+
+    public bool HasLogicalGridPosition()
+    {
+        return hasLogicalGridPosition;
+    }
+
+
+    // ==================================================
     // MOVEMENT STATE
     // ==================================================
 
     public bool HasMovedThisTurn()
     {
-        return moveBrain != null &&
-               moveBrain.HasConsumedMovement();
+        return
+            moveBrain != null &&
+            moveBrain.HasConsumedMovement();
     }
 
-    public void SetHasMovedThisTurn(bool value)
+
+    public void SetHasMovedThisTurn(
+        bool value)
     {
         // Movement state is owned by UnitMoveBrain.
     }
@@ -190,7 +325,8 @@ public class AttackUnit : MonoBehaviour
     // COOLDOWN
     // ==================================================
 
-    public int GetAbilityCooldown(AbilitySO ability)
+    public int GetAbilityCooldown(
+        AbilitySO ability)
     {
         if (!EnsureAbilityState(ability))
         {
@@ -205,9 +341,12 @@ public class AttackUnit : MonoBehaviour
             : 0;
     }
 
-    public bool IsAbilityOnCooldown(AbilitySO ability)
+
+    public bool IsAbilityOnCooldown(
+        AbilitySO ability)
     {
-        return GetAbilityCooldown(ability) > 0;
+        return
+            GetAbilityCooldown(ability) > 0;
     }
 
 
@@ -215,14 +354,16 @@ public class AttackUnit : MonoBehaviour
     // USES PER TURN
     // ==================================================
 
-    public int GetAbilityUsesRemaining(AbilitySO ability)
+    public int GetAbilityUsesRemaining(
+        AbilitySO ability)
     {
         if (ability == null)
         {
             return -1;
         }
 
-        int usesPerTurn = ability.GetUsesPerTurn();
+        int usesPerTurn =
+            ability.GetUsesPerTurn();
 
         // 0 = unlimited.
         if (usesPerTurn <= 0)
@@ -243,7 +384,9 @@ public class AttackUnit : MonoBehaviour
             : usesPerTurn;
     }
 
-    public bool HasAbilityUsesRemaining(AbilitySO ability)
+
+    public bool HasAbilityUsesRemaining(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -256,7 +399,8 @@ public class AttackUnit : MonoBehaviour
             return true;
         }
 
-        return GetAbilityUsesRemaining(ability) > 0;
+        return
+            GetAbilityUsesRemaining(ability) > 0;
     }
 
 
@@ -264,19 +408,21 @@ public class AttackUnit : MonoBehaviour
     // CONSUME ABILITY USE
     // ==================================================
 
-    private bool ConsumeAbilityUse(AbilitySO ability)
+    private bool ConsumeAbilityUse(
+        AbilitySO ability)
     {
         if (ability == null)
         {
             return false;
         }
 
-        int usesPerTurn = ability.GetUsesPerTurn();
+        int usesPerTurn =
+            ability.GetUsesPerTurn();
 
         // Unlimited-use ability.
         if (usesPerTurn <= 0)
         {
-            return true;
+            return false;
         }
 
         if (!EnsureAbilityState(ability))
@@ -290,7 +436,8 @@ public class AttackUnit : MonoBehaviour
                 abilityUsesRemaining[ability] - 1
             );
 
-        return abilityUsesRemaining[ability] <= 0;
+        return
+            abilityUsesRemaining[ability] <= 0;
     }
 
 
@@ -298,26 +445,26 @@ public class AttackUnit : MonoBehaviour
     // MOVEMENT / ABILITY RESTRICTION
     // ==================================================
 
-    private bool CanUseAbilityAfterMovement(AbilitySO ability)
+    private bool CanUseAbilityAfterMovement(
+        AbilitySO ability)
     {
         if (ability == null)
         {
             return false;
         }
 
-        // No movement brain means there is no movement restriction.
         if (moveBrain == null)
         {
             return true;
         }
 
-        // Unit has not moved.
         if (!moveBrain.HasConsumedMovement())
         {
             return true;
         }
 
-        return ability.CanAttackWithThisAfterMove();
+        return
+            ability.CanAttackWithThisAfterMove();
     }
 
 
@@ -325,7 +472,8 @@ public class AttackUnit : MonoBehaviour
     // READY
     // ==================================================
 
-    public bool IsAbilityReady(AbilitySO ability)
+    public bool IsAbilityReady(
+        AbilitySO ability)
     {
         if (!EnsureAbilityState(ability))
         {
@@ -342,7 +490,10 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        return CanUseAbilityAfterMovement(ability);
+        return
+            CanUseAbilityAfterMovement(
+                ability
+            );
     }
 
 
@@ -350,9 +501,11 @@ public class AttackUnit : MonoBehaviour
     // PUBLIC ABILITY CHECK
     // ==================================================
 
-    public bool CanUseAbility(AbilitySO ability)
+    public bool CanUseAbility(
+        AbilitySO ability)
     {
-        return IsAbilityReady(ability);
+        return
+            IsAbilityReady(ability);
     }
 
 
@@ -362,9 +515,14 @@ public class AttackUnit : MonoBehaviour
 
     public void StartNewRound()
     {
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
             if (ability == null)
             {
@@ -395,7 +553,8 @@ public class AttackUnit : MonoBehaviour
     // COOLDOWN START
     // ==================================================
 
-    private void StartAbilityCooldown(AbilitySO ability)
+    private void StartAbilityCooldown(
+        AbilitySO ability)
     {
         if (!EnsureAbilityState(ability))
         {
@@ -418,9 +577,11 @@ public class AttackUnit : MonoBehaviour
         GameObject target,
         AbilitySO selectedAbility)
     {
-        if (!CanAttack() ||
+        if (
+            !CanAttack() ||
             target == null ||
-            selectedAbility == null)
+            selectedAbility == null
+        )
         {
             return false;
         }
@@ -452,7 +613,9 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        CompleteAbilityUse(selectedAbility);
+        CompleteAbilityUse(
+            selectedAbility
+        );
 
         return true;
     }
@@ -466,8 +629,10 @@ public class AttackUnit : MonoBehaviour
         Vector2Int targetTile,
         AbilitySO selectedAbility)
     {
-        if (!CanAttack() ||
-            selectedAbility == null)
+        if (
+            !CanAttack() ||
+            selectedAbility == null
+        )
         {
             return false;
         }
@@ -484,7 +649,8 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!cachedGridManager.IsInsideGrid(targetTile))
+        if (!cachedGridManager.IsInsideGrid(
+                targetTile))
         {
             return false;
         }
@@ -505,7 +671,9 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        CompleteAbilityUse(selectedAbility);
+        CompleteAbilityUse(
+            selectedAbility
+        );
 
         return true;
     }
@@ -515,7 +683,8 @@ public class AttackUnit : MonoBehaviour
     // COMPLETE ABILITY USE
     // ==================================================
 
-    private void CompleteAbilityUse(AbilitySO ability)
+    private void CompleteAbilityUse(
+        AbilitySO ability)
     {
         bool usesExhausted =
             ConsumeAbilityUse(ability);
@@ -540,9 +709,11 @@ public class AttackUnit : MonoBehaviour
         GameObject target,
         AbilitySO selectedAbility)
     {
-        if (!CanAttack() ||
+        if (
+            !CanAttack() ||
             target == null ||
-            selectedAbility == null)
+            selectedAbility == null
+        )
         {
             yield break;
         }
@@ -574,7 +745,9 @@ public class AttackUnit : MonoBehaviour
             yield break;
         }
 
-        CompleteAbilityUse(selectedAbility);
+        CompleteAbilityUse(
+            selectedAbility
+        );
 
         if (attackAnimation == null)
         {
@@ -593,10 +766,13 @@ public class AttackUnit : MonoBehaviour
     // GENERIC TARGET CHECK
     // ==================================================
 
-    public bool IsValidTarget(GameObject target)
+    public bool IsValidTarget(
+        GameObject target)
     {
-        if (target == null ||
-            target == gameObject)
+        if (
+            target == null ||
+            target == gameObject
+        )
         {
             return false;
         }
@@ -609,14 +785,17 @@ public class AttackUnit : MonoBehaviour
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
-        if (targetHealth == null ||
-            targetHealth.IsDead())
+        if (
+            targetHealth == null ||
+            targetHealth.IsDead()
+        )
         {
             return false;
         }
 
-        return targetHealth.GetTeam() !=
-               healthManager.GetTeam();
+        return
+            targetHealth.GetTeam() !=
+            healthManager.GetTeam();
     }
 
 
@@ -634,7 +813,11 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
             if (abilities[i] != null)
             {
@@ -652,28 +835,352 @@ public class AttackUnit : MonoBehaviour
 
     public bool IsDead()
     {
-        return healthManager == null ||
-               healthManager.IsDead();
+        return
+            healthManager == null ||
+            healthManager.IsDead();
     }
 
 
     // ==================================================
-    // GRID
+    // GRID MANAGER
     // ==================================================
 
     public GridManager GetGridManager()
     {
         EnsureGridManager();
+
         return cachedGridManager;
     }
 
+
     private void EnsureGridManager()
     {
+        if (cachedGridManager != null)
+        {
+            return;
+        }
+
+        cachedGridManager =
+            FindFirstObjectByType<GridManager>();
+
         if (cachedGridManager == null)
         {
-            cachedGridManager =
-                FindFirstObjectByType<GridManager>();
+            Debug.LogError(
+                "[AttackUnit] GridManager NOT FOUND!\n" +
+                "Unit: " +
+                gameObject.name,
+                this
+            );
+
+            return;
         }
+
+        Debug.Log(
+            "[AttackUnit] GridManager FOUND.\n" +
+            "Unit: " +
+            gameObject.name +
+            "\n" +
+            "GridManager: " +
+            cachedGridManager.gameObject.name +
+            "\n" +
+            "Grid Size: " +
+            cachedGridManager.GetWidth() +
+            " x " +
+            cachedGridManager.GetHeight(),
+            this
+        );
+    }
+
+
+    // ==================================================
+    // GRID POSITION DEBUG
+    // ==================================================
+
+    [ContextMenu("Debug Grid Position")]
+    public void DebugGridPosition()
+    {
+        EnsureGridManager();
+
+        if (cachedGridManager == null)
+        {
+            Debug.LogError(
+                "[AttackUnit] Cannot debug grid position.\n" +
+                "GridManager is missing.\n" +
+                "Unit: " +
+                gameObject.name,
+                this
+            );
+
+            return;
+        }
+
+        Vector3 worldPosition =
+            transform.position;
+
+        Vector2Int logicalPosition =
+            GetLogicalGridPosition();
+
+        Vector2Int worldDetectedPosition =
+            cachedGridManager.WorldToGridPosition(
+                worldPosition
+            );
+
+        bool insideGrid =
+            cachedGridManager.IsInsideGrid(
+                logicalPosition
+            );
+
+        Vector3 expectedWorldPosition =
+            cachedGridManager.GridToWorldPosition(
+                logicalPosition
+            );
+
+        float distanceFromLogicalTile =
+            Vector3.Distance(
+                worldPosition,
+                expectedWorldPosition
+            );
+
+        GameObject registeredUnit =
+            cachedGridManager.GetUnitAt(
+                logicalPosition
+            );
+
+        bool isRegisteredHere =
+            registeredUnit == gameObject;
+
+        Debug.Log(
+            "========================================\n" +
+            "[AttackUnit] GRID POSITION DEBUG\n" +
+            "========================================\n\n" +
+
+            "UNIT\n" +
+            "Name: " +
+            gameObject.name +
+            "\n\n" +
+
+            "WORLD POSITION\n" +
+            worldPosition +
+            "\n\n" +
+
+            "CACHED LOGICAL GRID POSITION\n" +
+            logicalPosition +
+            "\n\n" +
+
+            "WORLD -> GRID DETECTED POSITION\n" +
+            worldDetectedPosition +
+            "\n\n" +
+
+            "POSITION MATCHES\n" +
+            (
+                logicalPosition ==
+                worldDetectedPosition
+            ) +
+            "\n\n" +
+
+            "INSIDE GRID\n" +
+            insideGrid +
+            "\n\n" +
+
+            "EXPECTED LOGICAL TILE CENTER\n" +
+            expectedWorldPosition +
+            "\n\n" +
+
+            "DISTANCE FROM LOGICAL TILE CENTER\n" +
+            distanceFromLogicalTile +
+            "\n\n" +
+
+            "REGISTERED UNIT AT LOGICAL TILE\n" +
+            (
+                registeredUnit == null
+                    ? "NONE"
+                    : registeredUnit.name
+            ) +
+            "\n\n" +
+
+            "IS THIS UNIT REGISTERED HERE\n" +
+            isRegisteredHere +
+            "\n\n" +
+
+            "GRID SIZE\n" +
+            cachedGridManager.GetWidth() +
+            " x " +
+            cachedGridManager.GetHeight() +
+            "\n\n" +
+
+            "GRID X RANGE\n" +
+            cachedGridManager.GetMinX() +
+            " -> " +
+            cachedGridManager.GetMaxX() +
+            "\n\n" +
+
+            "GRID Y RANGE\n" +
+            cachedGridManager.GetMinY() +
+            " -> " +
+            cachedGridManager.GetMaxY() +
+            "\n\n" +
+
+            "========================================",
+            this
+        );
+    }
+
+
+    // ==================================================
+    // SNAP TO GRID
+    // ==================================================
+
+    [ContextMenu("Snap To Grid")]
+    public void SnapToGrid()
+    {
+        EnsureGridManager();
+
+        if (cachedGridManager == null)
+        {
+            return;
+        }
+
+        Vector3 beforePosition =
+            transform.position;
+
+        /*
+         * IMPORTANT:
+         *
+         * Snap uses the logical grid position.
+         *
+         * It does NOT redefine the logical position from the
+         * rotated world position.
+         */
+        Vector2Int gridPosition =
+            GetLogicalGridPosition();
+
+        Debug.Log(
+            "[AttackUnit] SNAP START\n" +
+            "Unit: " +
+            gameObject.name +
+            "\n" +
+            "World Position Before: " +
+            beforePosition +
+            "\n" +
+            "Logical Grid Position: " +
+            gridPosition,
+            this
+        );
+
+        if (!cachedGridManager.IsInsideGrid(
+                gridPosition))
+        {
+            Debug.LogWarning(
+                "[AttackUnit] SNAP CANCELLED.\n" +
+                "Logical position is OUTSIDE grid.\n" +
+                "Unit: " +
+                gameObject.name +
+                "\n" +
+                "Grid Position: " +
+                gridPosition +
+                "\n" +
+                "Valid X: " +
+                cachedGridManager.GetMinX() +
+                " -> " +
+                cachedGridManager.GetMaxX() +
+                "\n" +
+                "Valid Y: " +
+                cachedGridManager.GetMinY() +
+                " -> " +
+                cachedGridManager.GetMaxY(),
+                this
+            );
+
+            return;
+        }
+
+        Vector3 targetPosition =
+            cachedGridManager.GridToWorldPosition(
+                gridPosition
+            );
+
+        transform.position =
+            targetPosition;
+
+        Vector3 afterPosition =
+            transform.position;
+
+        Debug.Log(
+            "[AttackUnit] SNAP COMPLETE\n" +
+            "========================================\n" +
+            "Unit: " +
+            gameObject.name +
+            "\n\n" +
+
+            "Logical Grid Position:\n" +
+            gridPosition +
+            "\n\n" +
+
+            "Before:\n" +
+            beforePosition +
+            "\n\n" +
+
+            "After:\n" +
+            afterPosition +
+            "\n\n" +
+
+            "Expected Tile Center:\n" +
+            targetPosition +
+            "\n\n" +
+
+            "Distance From Expected Center:\n" +
+            Vector3.Distance(
+                afterPosition,
+                targetPosition
+            ) +
+            "\n\n" +
+
+            "========================================",
+            this
+        );
+    }
+
+
+    // ==================================================
+    // CURRENT GRID POSITION
+    // ==================================================
+
+    public Vector2Int GetCurrentGridPosition()
+    {
+        /*
+         * DO NOT DO THIS:
+         *
+         * WorldToGridPosition(transform.position)
+         *
+         * after board rotation.
+         *
+         * The transform has been visually rotated/moved while
+         * the logical board coordinate remains unchanged.
+         */
+        Vector2Int position =
+            GetLogicalGridPosition();
+
+        return position;
+    }
+
+
+    // ==================================================
+    // CURRENT WORLD-DETECTED POSITION
+    // ==================================================
+
+    public Vector2Int GetWorldDetectedGridPosition()
+    {
+        EnsureGridManager();
+
+        if (cachedGridManager == null)
+        {
+            return Vector2Int.zero;
+        }
+
+        return
+            cachedGridManager.WorldToGridPosition(
+                transform.position
+            );
     }
 
 
@@ -685,9 +1192,14 @@ public class AttackUnit : MonoBehaviour
     {
         int maxRange = 0;
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
             if (
                 ability != null &&
@@ -705,13 +1217,19 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
+
     public int GetMaximumAttackRange()
     {
         int maxRange = 0;
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilitySO ability = abilities[i];
+            AbilitySO ability =
+                abilities[i];
 
             if (ability != null)
             {
@@ -736,12 +1254,15 @@ public class AttackUnit : MonoBehaviour
         return abilities;
     }
 
+
     public int GetAbilityCount()
     {
         return abilities.Count;
     }
 
-    public void AddAbility(AbilitySO ability)
+
+    public void AddAbility(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -753,13 +1274,16 @@ public class AttackUnit : MonoBehaviour
             abilities.Add(ability);
         }
 
-        abilityCooldowns[ability] = 0;
+        abilityCooldowns[ability] =
+            0;
 
         abilityUsesRemaining[ability] =
             ability.GetUsesPerTurn();
     }
 
-    public void RemoveAbility(AbilitySO ability)
+
+    public void RemoveAbility(
+        AbilitySO ability)
     {
         if (ability == null)
         {
@@ -767,8 +1291,14 @@ public class AttackUnit : MonoBehaviour
         }
 
         abilities.Remove(ability);
-        abilityCooldowns.Remove(ability);
-        abilityUsesRemaining.Remove(ability);
+
+        abilityCooldowns.Remove(
+            ability
+        );
+
+        abilityUsesRemaining.Remove(
+            ability
+        );
     }
 
 
@@ -778,15 +1308,18 @@ public class AttackUnit : MonoBehaviour
 
     public Team GetTeam()
     {
-        return healthManager == null
-            ? Team.Ally
-            : healthManager.GetTeam();
+        return
+            healthManager == null
+                ? Team.Ally
+                : healthManager.GetTeam();
     }
+
 
     public HealthManager GetHealthManager()
     {
         return healthManager;
     }
+
 
     public CharacterSO GetCharacterData()
     {

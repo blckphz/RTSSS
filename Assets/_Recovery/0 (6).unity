@@ -2162,9 +2162,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 804482595}
   brain: {fileID: 804482597}
-  enableDebugLogs: 0
-  enableWarningLogs: 1
-  enableErrorLogs: 1
   refreshGridOnEnable: 1
   movementRangeColor: {r: 0, g: 1, b: 1, a: 1}
   movementRangeAlpha: 0.624
