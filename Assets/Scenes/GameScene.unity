@@ -2141,6 +2141,7 @@ GameObject:
   - component: {fileID: 804482600}
   - component: {fileID: 804482601}
   - component: {fileID: 804482602}
+  - component: {fileID: 804482603}
   m_Layer: 0
   m_Name: GridManager
   m_TagString: Untagged
@@ -2210,6 +2211,7 @@ MonoBehaviour:
   floorParent: {fileID: 341319201}
   width: 11
   height: 11
+  gridShape: 1
   centerGridAtWorldOrigin: 1
   highlightManager: {fileID: 804482593}
   showGridGizmos: 1
@@ -2303,6 +2305,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94ffe643f4372f743b5dc682427bba6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+--- !u!114 &804482603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 804482592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0e087264f561bd4c819849a2fd29fbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  gridManager: {fileID: 804482595}
+  highlightBrain: {fileID: 804482597}
+  boxKey: 26
+  manhattanKey: 38
+  pyramidKey: 43
+  donutKey: 44
+  resizeStep: 1
+  expandKey: 14
+  shrinkKey: 13
+  minRadius: 2
+  maxRadius: 5
 --- !u!1 &813319353
 GameObject:
   m_ObjectHideFlags: 0
