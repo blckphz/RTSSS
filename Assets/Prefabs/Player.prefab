@@ -109,7 +109,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: fb4133cde8645db47bd19b13ff0590fb, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -292,7 +292,6 @@ MonoBehaviour:
   hoverShaderObjectName: HoverShaderSprite
   enableHoverOutline: 1
   selectedChildSprite: {fileID: 3350255872931640762}
-  debugHover: 1
 --- !u!61 &6280651182369518804
 BoxCollider2D:
   m_ObjectHideFlags: 0

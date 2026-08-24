@@ -26,3 +26,6 @@ MonoBehaviour:
   maxJumps: 3
   jumpDelay: 0.15
   maxJumpDistance: 8
+  projectilePrefab: {fileID: 1253008432403029687, guid: 450c971267a451f40bb389db9cf5bd0e, type: 3}
+  projectileSpeed: 12
+  abilitySpawnPointName: AbilitySpawnPoint

@@ -217,7 +217,20 @@ public class RoundManager : MonoBehaviour
             gridManager.CleanupDeadUnits();
         }
 
-        EnsureEnemiesExist();
+
+        // --------------------------------------------------------
+        // ENEMY SPAWN
+        // --------------------------------------------------------
+
+        bool enemiesWereSpawned =
+            EnsureEnemiesExist();
+
+        if (enemiesWereSpawned)
+        {
+            RoundTiming(
+                "ENEMIES WERE SPAWNED THIS ROUND"
+            );
+        }
 
 
         // --------------------------------------------------------
@@ -254,19 +267,35 @@ public class RoundManager : MonoBehaviour
         currentState =
             RoundState.EnemyTurn;
 
-        float enemyPhaseStart =
-            Time.realtimeSinceStartup;
+        if (enemiesWereSpawned)
+        {
+            // ----------------------------------------------------
+            // IMPORTANT:
+            //
+            // Enemies spawned this round do NOT get an enemy turn.
+            // They will get their first turn next round.
+            // ----------------------------------------------------
 
-        RoundTiming("ENEMY TURN START");
+            RoundTiming(
+                "ENEMIES SPAWNED THIS ROUND — SKIPPING ENEMY TURN"
+            );
+        }
+        else
+        {
+            float enemyPhaseStart =
+                Time.realtimeSinceStartup;
 
-        yield return StartCoroutine(
-            ExecuteEnemyTurn()
-        );
+            RoundTiming("ENEMY TURN START");
 
-        RoundTiming(
-            $"ENEMY TURN END " +
-            $"duration={Time.realtimeSinceStartup - enemyPhaseStart:F3}s"
-        );
+            yield return StartCoroutine(
+                ExecuteEnemyTurn()
+            );
+
+            RoundTiming(
+                $"ENEMY TURN END " +
+                $"duration={Time.realtimeSinceStartup - enemyPhaseStart:F3}s"
+            );
+        }
 
 
         // --------------------------------------------------------
@@ -411,10 +440,12 @@ public class RoundManager : MonoBehaviour
     // ENEMIES
     // ============================================================
 
-    private void EnsureEnemiesExist()
+    private bool EnsureEnemiesExist()
     {
         if (combatManager == null)
-            return;
+        {
+            return false;
+        }
 
         if (
             CombatUtility.GetUnitCount(
@@ -422,8 +453,20 @@ public class RoundManager : MonoBehaviour
             ) == 0
         )
         {
+            RoundTiming(
+                "NO ENEMIES FOUND — SPAWNING ENEMIES"
+            );
+
             combatManager.CheckForEnemies();
+
+            RoundTiming(
+                "ENEMY SPAWN COMPLETE — NEW ENEMIES WILL NOT ACT THIS ROUND"
+            );
+
+            return true;
         }
+
+        return false;
     }
 
 
