@@ -2,53 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[DisallowMultipleComponent]
 public class UnitMoveBrainManager : MonoBehaviour
 {
     public static UnitMoveBrainManager Instance { get; private set; }
 
-
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("References")]
-    [SerializeField]
-    private GridManager gridManager;
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-    [SerializeField]
-    private bool enableDebugLogs = true;
-
-    [SerializeField]
-    private bool logGridBounds = true;
-
-    [SerializeField]
-    private bool logWorldToGrid = true;
-
-    [SerializeField]
-    private bool logTargetSelection = true;
-
-    [SerializeField]
-    private bool logAttackPositions = true;
-
-    [SerializeField]
-    private bool logPathfinding = true;
-
-    [SerializeField]
-    private bool logOccupiedCells = false;
-
-    [SerializeField]
-    private bool logDiagonalChecks = false;
-
-
-    // ============================================================
-    // DIRECTIONS
-    // ============================================================
+    [SerializeField] private GridManager gridManager;
 
     private static readonly Vector2Int[] Directions =
     {
@@ -56,7 +16,6 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int.down,
         Vector2Int.left,
         Vector2Int.right,
-
         new Vector2Int(1, 1),
         new Vector2Int(1, -1),
         new Vector2Int(-1, 1),
@@ -65,542 +24,188 @@ public class UnitMoveBrainManager : MonoBehaviour
 
     private const int CardinalDirectionCount = 4;
 
+    // ============================================================
+    // REUSABLE CACHES & BUFFERS
+    // ============================================================
+
+    private readonly List<Vector2Int> pathCache = new List<Vector2Int>(32);
+    private readonly List<Vector2Int> candidatesCache = new List<Vector2Int>(64);
+    private readonly Dictionary<Vector2Int, Vector2Int> cameFromCache = new Dictionary<Vector2Int, Vector2Int>(256);
+    private readonly Dictionary<Vector2Int, int> gScoreCache = new Dictionary<Vector2Int, int>(256);
+    private readonly Dictionary<Vector2Int, int> distanceCache = new Dictionary<Vector2Int, int>(256);
+    private readonly HashSet<Vector2Int> visitedCache = new HashSet<Vector2Int>(256);
+    private readonly Queue<Vector2Int> bfsQueueCache = new Queue<Vector2Int>(256);
+    private readonly BinaryMinHeap<Vector2Int> openSetCache = new BinaryMinHeap<Vector2Int>(256);
+    private readonly List<AttackUnit> targetUnitBuffer = new List<AttackUnit>(64);
 
     // ============================================================
-    // CACHES
-    // ============================================================
-
-    private readonly List<Vector2Int> pathCache =
-        new List<Vector2Int>(32);
-
-    private readonly List<Vector2Int> candidatesCache =
-        new List<Vector2Int>(64);
-
-    private readonly Dictionary<Vector2Int, Vector2Int> cameFromCache =
-        new Dictionary<Vector2Int, Vector2Int>(128);
-
-    private readonly Dictionary<Vector2Int, int> gScoreCache =
-        new Dictionary<Vector2Int, int>(128);
-
-    private readonly HashSet<Vector2Int> visitedCache =
-        new HashSet<Vector2Int>(128);
-
-    private readonly BinaryMinHeap<Vector2Int> openSetCache =
-        new BinaryMinHeap<Vector2Int>(128);
-
-    private readonly Queue<Vector2Int> bfsQueueCache =
-        new Queue<Vector2Int>(128);
-
-
-    // ============================================================
-    // UNITY
+    // UNITY LIFECYCLE
     // ============================================================
 
     private void Awake()
     {
-        if (
-            Instance != null &&
-            Instance != this
-        )
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
 
         Instance = this;
-
         EnsureGridManager();
-
-        if (enableDebugLogs)
-        {
-            Debug.Log(
-                "[UnitMoveBrainManager] Awake completed.",
-                this
-            );
-        }
-
-        DebugGridInformation();
     }
 
-
     // ============================================================
-    // GRID
+    // GRID API
     // ============================================================
 
     public GridManager GetGridManager()
     {
         EnsureGridManager();
-
         return gridManager;
     }
-
 
     private void EnsureGridManager()
     {
         if (gridManager == null)
         {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
-
-        if (gridManager == null)
-        {
-            Debug.LogError(
-                "[UnitMoveBrainManager] GridManager is NULL.",
-                this
-            );
+            gridManager = FindFirstObjectByType<GridManager>();
         }
     }
 
-
     // ============================================================
-    // DEBUG GRID
+    // DIRECTIONS & DISTANCE
     // ============================================================
 
-    [ContextMenu("Debug Grid Information")]
-    public void DebugGridInformation()
+    public int GetDirectionCount(bool canWalkDiagonally)
     {
-        if (
-            !enableDebugLogs &&
-            !logGridBounds
-        )
-        {
-            return;
-        }
-
-        EnsureGridManager();
-
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        Debug.Log(
-            "[UnitMoveBrainManager] GRID INFORMATION\n" +
-            "Min X: " +
-            gridManager.GetMinX() +
-            "\n" +
-            "Max X: " +
-            gridManager.GetMaxX() +
-            "\n" +
-            "Min Y: " +
-            gridManager.GetMinY() +
-            "\n" +
-            "Max Y: " +
-            gridManager.GetMaxY() +
-            "\n" +
-            "Width: " +
-            gridManager.GetWidth() +
-            "\n" +
-            "Height: " +
-            gridManager.GetHeight(),
-            this
-        );
+        return canWalkDiagonally ? Directions.Length : CardinalDirectionCount;
     }
 
+    public bool IsDiagonalDirection(Vector2Int direction)
+    {
+        return direction.x != 0 && direction.y != 0;
+    }
+
+    public int GetMovementDistance(Vector2Int a, Vector2Int b, bool canWalkDiagonally)
+    {
+        int dx = Mathf.Abs(a.x - b.x);
+        int dy = Mathf.Abs(a.y - b.y);
+
+        return canWalkDiagonally ? (dx > dy ? dx : dy) : dx + dy;
+    }
 
     // ============================================================
-    // WORLD -> GRID DEBUG
+    // REACHABLE CELLS
     // ============================================================
 
-    public Vector2Int DebugWorldToGrid(
-        GameObject unit)
+    public void GetReachableCells(Vector2Int start, int moveRange, bool canWalkDiagonally, List<Vector2Int> results, GameObject movingUnit = null)
     {
         EnsureGridManager();
 
-        if (
-            gridManager == null ||
-            unit == null
-        )
-        {
-            return Vector2Int.zero;
-        }
-
-        Vector2Int result =
-            gridManager.WorldToGridPosition(
-                unit.transform.position
-            );
-
-        Debug.Log(
-            "[UnitMoveBrainManager] WORLD -> GRID\n" +
-            "Unit: " +
-            unit.name +
-            "\nWorld: " +
-            unit.transform.position +
-            "\nGrid: " +
-            result +
-            "\nInside: " +
-            gridManager.IsInsideGrid(result),
-            unit
-        );
-
-        return result;
-    }
-
-
-    // ============================================================
-    // DIRECTIONS
-    // ============================================================
-
-    public int GetDirectionCount(
-        bool canWalkDiagonally)
-    {
-        return canWalkDiagonally
-            ? Directions.Length
-            : CardinalDirectionCount;
-    }
-
-
-    public bool IsDiagonalDirection(
-        Vector2Int direction)
-    {
-        return
-            direction.x != 0 &&
-            direction.y != 0;
-    }
-
-
-    // ============================================================
-    // MOVEMENT DISTANCE
-    // ============================================================
-
-    public int GetMovementDistance(
-        Vector2Int a,
-        Vector2Int b,
-        bool canWalkDiagonally)
-    {
-        int dx =
-            Mathf.Abs(
-                a.x - b.x
-            );
-
-        int dy =
-            Mathf.Abs(
-                a.y - b.y
-            );
-
-        if (canWalkDiagonally)
-        {
-            return Mathf.Max(
-                dx,
-                dy
-            );
-        }
-
-        return dx + dy;
-    }
-
-
-    // ============================================================
-    // GET ALL REACHABLE CELLS
-    // ============================================================
-
-    public void GetReachableCells(
-        Vector2Int start,
-        int moveRange,
-        bool canWalkDiagonally,
-        List<Vector2Int> results,
-        GameObject movingUnit = null)
-    {
-        EnsureGridManager();
-
-        if (
-            gridManager == null ||
-            results == null
-        )
-        {
+        if (gridManager == null || results == null)
             return;
-        }
 
         results.Clear();
 
-        if (
-            moveRange <= 0 ||
-            !gridManager.IsInsideGrid(start)
-        )
-        {
+        if (moveRange <= 0 || !gridManager.IsInsideGrid(start))
             return;
-        }
 
         bfsQueueCache.Clear();
         visitedCache.Clear();
-
-        Dictionary<Vector2Int, int> distances =
-            new Dictionary<Vector2Int, int>();
+        distanceCache.Clear();
 
         bfsQueueCache.Enqueue(start);
         visitedCache.Add(start);
-        distances[start] = 0;
+        distanceCache[start] = 0;
 
-        int directionCount =
-            GetDirectionCount(
-                canWalkDiagonally
-            );
+        int directionCount = canWalkDiagonally ? Directions.Length : CardinalDirectionCount;
 
-        while (
-            bfsQueueCache.Count > 0
-        )
+        while (bfsQueueCache.Count > 0)
         {
-            Vector2Int current =
-                bfsQueueCache.Dequeue();
+            Vector2Int current = bfsQueueCache.Dequeue();
+            int currentDistance = distanceCache[current];
 
-            int currentDistance =
-                distances[current];
-
-            if (
-                currentDistance >=
-                moveRange
-            )
-            {
+            if (currentDistance >= moveRange)
                 continue;
-            }
 
-            for (
-                int i = 0;
-                i < directionCount;
-                i++
-            )
+            int nextDistance = currentDistance + 1;
+
+            for (int i = 0; i < directionCount; i++)
             {
-                Vector2Int direction =
-                    Directions[i];
+                Vector2Int direction = Directions[i];
+                Vector2Int next = current + direction;
 
-                Vector2Int next =
-                    current + direction;
-
-                if (
-                    visitedCache.Contains(next)
-                )
-                {
+                if (visitedCache.Contains(next) || !gridManager.IsInsideGrid(next))
                     continue;
-                }
 
-                if (
-                    !gridManager.IsInsideGrid(next)
-                )
-                {
+                if (!CanEnterCell(current, next, direction, movingUnit))
                     continue;
-                }
-
-                if (
-                    !CanEnterCell(
-                        current,
-                        next,
-                        direction,
-                        canWalkDiagonally,
-                        movingUnit
-                    )
-                )
-                {
-                    continue;
-                }
-
-                int nextDistance =
-                    currentDistance + 1;
-
-                if (
-                    nextDistance >
-                    moveRange
-                )
-                {
-                    continue;
-                }
 
                 visitedCache.Add(next);
-
-                distances[next] =
-                    nextDistance;
-
+                distanceCache[next] = nextDistance;
                 bfsQueueCache.Enqueue(next);
 
-                // IMPORTANT:
-                // Only actual movement destinations are returned.
-                // The start tile is NOT added.
                 results.Add(next);
             }
         }
-
-        if (enableDebugLogs)
-        {
-            Debug.Log(
-                "[UnitMoveBrainManager] REACHABLE CELLS\n" +
-                "Start: " +
-                start +
-                "\n" +
-                "Move Range: " +
-                moveRange +
-                "\n" +
-                "Diagonal: " +
-                canWalkDiagonally +
-                "\n" +
-                "Reachable Count: " +
-                results.Count,
-                this
-            );
-        }
     }
 
-
     // ============================================================
-    // CELL ENTRY VALIDATION
+    // CELL ENTRY & OCCUPANCY
     // ============================================================
 
-    private bool CanEnterCell(
-        Vector2Int current,
-        Vector2Int next,
-        Vector2Int direction,
-        bool canWalkDiagonally,
-        GameObject movingUnit)
+    private bool CanEnterCell(Vector2Int current, Vector2Int next, Vector2Int direction, GameObject movingUnit)
     {
-        if (
-            !gridManager.IsInsideGrid(next)
-        )
-        {
+        if (!gridManager.IsInsideGrid(next))
             return false;
-        }
 
-        if (
-            IsDiagonalDirection(direction)
-        )
+        if (IsDiagonalDirection(direction))
         {
-            Vector2Int horizontal =
-                current +
-                new Vector2Int(
-                    direction.x,
-                    0
-                );
+            Vector2Int horizontal = new Vector2Int(current.x + direction.x, current.y);
+            Vector2Int vertical = new Vector2Int(current.x, current.y + direction.y);
 
-            Vector2Int vertical =
-                current +
-                new Vector2Int(
-                    0,
-                    direction.y
-                );
-
-            GameObject horizontalUnit =
-                gridManager.GetUnitAt(
-                    horizontal
-                );
-
-            GameObject verticalUnit =
-                gridManager.GetUnitAt(
-                    vertical
-                );
-
-            if (
-                horizontalUnit != null &&
-                horizontalUnit != movingUnit
-            )
-            {
+            if (IsBlocked(horizontal, movingUnit) || IsBlocked(vertical, movingUnit))
                 return false;
-            }
-
-            if (
-                verticalUnit != null &&
-                verticalUnit != movingUnit
-            )
-            {
-                return false;
-            }
         }
 
-        GameObject occupant =
-            gridManager.GetUnitAt(next);
-
-        if (
-            occupant != null &&
-            occupant != movingUnit
-        )
-        {
-            return false;
-        }
-
-        return true;
+        return !IsBlocked(next, movingUnit);
     }
 
+    private bool IsBlocked(Vector2Int position, GameObject movingUnit)
+    {
+        GameObject occupant = gridManager.GetUnitAt(position);
+        return occupant != null && occupant != movingUnit;
+    }
 
     // ============================================================
     // OPEN NEIGHBOURS
     // ============================================================
 
-    public int CountOpenNeighbours(
-        Vector2Int position,
-        bool canWalkDiagonally)
+    public int CountOpenNeighbours(Vector2Int position, bool canWalkDiagonally)
     {
         EnsureGridManager();
 
         if (gridManager == null)
-        {
             return 0;
-        }
 
         int count = 0;
+        int directionCount = canWalkDiagonally ? Directions.Length : CardinalDirectionCount;
 
-        int directionCount =
-            GetDirectionCount(
-                canWalkDiagonally
-            );
-
-        for (
-            int i = 0;
-            i < directionCount;
-            i++
-        )
+        for (int i = 0; i < directionCount; i++)
         {
-            Vector2Int direction =
-                Directions[i];
+            Vector2Int direction = Directions[i];
+            Vector2Int neighbour = position + direction;
 
-            Vector2Int neighbour =
-                position + direction;
-
-            if (
-                !gridManager.IsInsideGrid(
-                    neighbour
-                )
-            )
-            {
+            if (!gridManager.IsInsideGrid(neighbour) || IsBlocked(neighbour, null))
                 continue;
-            }
 
-            if (
-                gridManager.IsCellOccupied(
-                    neighbour
-                )
-            )
+            if (IsDiagonalDirection(direction))
             {
-                continue;
-            }
+                Vector2Int horizontal = new Vector2Int(position.x + direction.x, position.y);
+                Vector2Int vertical = new Vector2Int(position.x, position.y + direction.y);
 
-            if (
-                IsDiagonalDirection(
-                    direction
-                )
-            )
-            {
-                Vector2Int horizontal =
-                    position +
-                    new Vector2Int(
-                        direction.x,
-                        0
-                    );
-
-                Vector2Int vertical =
-                    position +
-                    new Vector2Int(
-                        0,
-                        direction.y
-                    );
-
-                if (
-                    gridManager.IsCellOccupied(
-                        horizontal
-                    ) ||
-                    gridManager.IsCellOccupied(
-                        vertical
-                    )
-                )
-                {
+                if (IsBlocked(horizontal, null) || IsBlocked(vertical, null))
                     continue;
-                }
             }
 
             count++;
@@ -609,386 +214,183 @@ public class UnitMoveBrainManager : MonoBehaviour
         return count;
     }
 
-
     // ============================================================
     // TARGET SELECTION
     // ============================================================
 
-    public AttackUnit FindBestTarget(
-        AttackUnit currentUnit,
-        bool preferCloserEnemies,
-        bool preferLowHealthEnemies,
-        int attackRange,
-        bool canWalkDiagonally)
+    public AttackUnit FindBestTarget(AttackUnit currentUnit, bool preferCloserEnemies, bool preferLowHealthEnemies, int attackRange, bool canWalkDiagonally)
     {
         EnsureGridManager();
 
-        if (
-            gridManager == null ||
-            currentUnit == null
-        )
-        {
+        if (gridManager == null || currentUnit == null)
             return null;
-        }
 
-        AttackUnit[] allUnits =
-            FindObjectsByType<AttackUnit>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None
-            );
+        targetUnitBuffer.Clear();
+        targetUnitBuffer.AddRange(FindObjectsByType<AttackUnit>(FindObjectsInactive.Exclude, FindObjectsSortMode.None));
 
         AttackUnit bestTarget = null;
+        float bestScore = float.MaxValue;
 
-        float bestScore =
-            float.MaxValue;
+        Vector2Int myPosition = gridManager.WorldToGridPosition(currentUnit.transform.position);
+        int targetCount = targetUnitBuffer.Count;
 
-        Vector2Int myPosition =
-            gridManager.WorldToGridPosition(
-                currentUnit.transform.position
-            );
-
-        for (
-            int i = 0;
-            i < allUnits.Length;
-            i++
-        )
+        for (int i = 0; i < targetCount; i++)
         {
-            AttackUnit other =
-                allUnits[i];
+            AttackUnit other = targetUnitBuffer[i];
 
-            if (
-                other == null ||
-                other == currentUnit ||
-                other.IsDead() ||
-                other.GetTeam() ==
-                currentUnit.GetTeam()
-            )
-            {
+            if (other == null || other == currentUnit || other.IsDead() || other.GetTeam() == currentUnit.GetTeam())
                 continue;
-            }
 
-            Vector2Int enemyPosition =
-                gridManager.WorldToGridPosition(
-                    other.transform.position
-                );
-
-            int distance =
-                GetMovementDistance(
-                    myPosition,
-                    enemyPosition,
-                    canWalkDiagonally
-                );
+            Vector2Int enemyPosition = gridManager.WorldToGridPosition(other.transform.position);
+            int distance = GetMovementDistance(myPosition, enemyPosition, canWalkDiagonally);
 
             float score = 0f;
 
             if (preferCloserEnemies)
             {
-                score +=
-                    distance * 10f;
+                score += distance * 10f;
             }
 
-            HealthManager health =
-                other.GetHealthManager();
-
-            if (
-                preferLowHealthEnemies &&
-                health != null
-            )
+            if (preferLowHealthEnemies)
             {
-                float healthPercent =
-                    (float)
-                    health.GetHealth() /
-                    Mathf.Max(
-                        1,
-                        health.GetMaxHealth()
-                    );
-
-                score +=
-                    healthPercent * 20f;
+                HealthManager health = other.GetHealthManager();
+                if (health != null)
+                {
+                    int maxHp = health.GetMaxHealth();
+                    float healthPercent = (float)health.GetHealth() / (maxHp > 0 ? maxHp : 1);
+                    score += healthPercent * 20f;
+                }
             }
 
-            if (
-                distance <= attackRange
-            )
+            if (distance <= attackRange)
             {
                 score -= 100f;
             }
 
-            if (
-                score < bestScore
-            )
+            if (score < bestScore)
             {
-                bestScore =
-                    score;
-
-                bestTarget =
-                    other;
+                bestScore = score;
+                bestTarget = other;
             }
         }
 
+        targetUnitBuffer.Clear();
         return bestTarget;
     }
-
 
     // ============================================================
     // BEST ATTACK POSITION
     // ============================================================
 
-    public Vector2Int FindBestAttackPosition(
-        Vector2Int start,
-        Vector2Int target,
-        int attackRange,
-        bool canWalkDiagonally,
-        bool preferCloserAttackPosition,
-        bool preferMoreOpenPositions,
-        bool preferSidePositions)
+    public Vector2Int FindBestAttackPosition(Vector2Int start, Vector2Int target, int attackRange, bool canWalkDiagonally, bool preferCloserAttackPosition, bool preferMoreOpenPositions, bool preferSidePositions)
     {
         EnsureGridManager();
 
         if (gridManager == null)
-        {
             return start;
-        }
 
-        GetAttackPositions(
-            target,
-            attackRange,
-            canWalkDiagonally,
-            candidatesCache
-        );
+        GetAttackPositions(target, attackRange, canWalkDiagonally, candidatesCache);
 
-        Vector2Int bestPosition =
-            start;
+        Vector2Int bestPosition = start;
+        float bestScore = float.MaxValue;
+        bool found = false;
 
-        float bestScore =
-            float.MaxValue;
-
-        bool found =
-            false;
-
-        for (
-            int i = 0;
-            i < candidatesCache.Count;
-            i++
-        )
+        int candidateCount = candidatesCache.Count;
+        for (int i = 0; i < candidateCount; i++)
         {
-            Vector2Int candidate =
-                candidatesCache[i];
+            Vector2Int candidate = candidatesCache[i];
 
-            if (
-                candidate != start &&
-                gridManager.IsCellOccupied(
-                    candidate
-                )
-            )
-            {
+            if (candidate != start && gridManager.IsCellOccupied(candidate))
                 continue;
-            }
 
-            if (
-                !FindPath(
-                    start,
-                    candidate,
-                    canWalkDiagonally,
-                    pathCache
-                )
-            )
-            {
+            if (!FindPath(start, candidate, canWalkDiagonally, pathCache))
                 continue;
-            }
 
-            if (
-                pathCache.Count < 2
-            )
-            {
+            if (pathCache.Count < 2)
                 continue;
-            }
 
-            int movementCost =
-                pathCache.Count - 1;
+            int movementCost = pathCache.Count - 1;
+            int distanceToEnemy = GetMovementDistance(candidate, target, canWalkDiagonally);
 
-            int distanceToEnemy =
-                GetMovementDistance(
-                    candidate,
-                    target,
-                    canWalkDiagonally
-                );
-
-            float score =
-                movementCost * 10f;
+            float score = movementCost * 10f;
 
             if (preferCloserAttackPosition)
             {
-                score +=
-                    distanceToEnemy * 5f;
+                score += distanceToEnemy * 5f;
             }
 
             if (preferMoreOpenPositions)
             {
-                score -=
-                    CountOpenNeighbours(
-                        candidate,
-                        canWalkDiagonally
-                    ) * 2f;
+                score -= CountOpenNeighbours(candidate, canWalkDiagonally) * 2f;
             }
 
-            if (
-                preferSidePositions &&
-                candidate.x != target.x &&
-                candidate.y != target.y
-            )
+            if (preferSidePositions && candidate.x != target.x && candidate.y != target.y)
             {
                 score += 3f;
             }
 
-            if (
-                !found ||
-                score < bestScore
-            )
+            if (!found || score < bestScore)
             {
                 found = true;
-
-                bestScore =
-                    score;
-
-                bestPosition =
-                    candidate;
+                bestScore = score;
+                bestPosition = candidate;
             }
         }
 
         if (found)
-        {
             return bestPosition;
-        }
 
-        return
-            FindBestReachableCell(
-                start,
-                target,
-                canWalkDiagonally,
-                preferMoreOpenPositions
-            );
+        return FindBestReachableCell(start, target, canWalkDiagonally, preferMoreOpenPositions);
     }
 
-
     // ============================================================
-    // ATTACK POSITIONS
+    // ATTACK POSITIONS CALCULATOR
     // ============================================================
 
-    private void GetAttackPositions(
-        Vector2Int target,
-        int attackRange,
-        bool canWalkDiagonally,
-        List<Vector2Int> results)
+    private void GetAttackPositions(Vector2Int target, int attackRange, bool canWalkDiagonally, List<Vector2Int> results)
     {
         results.Clear();
 
-        if (
-            gridManager == null ||
-            attackRange <= 0
-        )
-        {
+        if (gridManager == null || attackRange <= 0)
             return;
-        }
 
-        int minX =
-            Mathf.Max(
-                gridManager.GetMinX(),
-                target.x - attackRange
-            );
+        int minX = Mathf.Max(gridManager.GetMinX(), target.x - attackRange);
+        int maxX = Mathf.Min(gridManager.GetMaxX(), target.x + attackRange);
+        int minY = Mathf.Max(gridManager.GetMinY(), target.y - attackRange);
+        int maxY = Mathf.Min(gridManager.GetMaxY(), target.y + attackRange);
 
-        int maxX =
-            Mathf.Min(
-                gridManager.GetMaxX(),
-                target.x + attackRange
-            );
-
-        int minY =
-            Mathf.Max(
-                gridManager.GetMinY(),
-                target.y - attackRange
-            );
-
-        int maxY =
-            Mathf.Min(
-                gridManager.GetMaxY(),
-                target.y + attackRange
-            );
-
-        for (
-            int x = minX;
-            x <= maxX;
-            x++
-        )
+        for (int x = minX; x <= maxX; x++)
         {
-            for (
-                int y = minY;
-                y <= maxY;
-                y++
-            )
+            for (int y = minY; y <= maxY; y++)
             {
-                Vector2Int position =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
-
-                if (position == target)
-                {
+                if (x == target.x && y == target.y)
                     continue;
-                }
 
-                int distance =
-                    GetMovementDistance(
-                        position,
-                        target,
-                        canWalkDiagonally
-                    );
+                Vector2Int position = new Vector2Int(x, y);
 
-                if (
-                    distance >
-                    attackRange
-                )
+                if (GetMovementDistance(position, target, canWalkDiagonally) <= attackRange)
                 {
-                    continue;
+                    results.Add(position);
                 }
-
-                results.Add(position);
             }
         }
     }
 
-
     // ============================================================
-    // PATHFINDING
+    // PATHFINDING (A*)
     // ============================================================
 
-    public bool FindPath(
-        Vector2Int start,
-        Vector2Int destination,
-        bool canWalkDiagonally,
-        List<Vector2Int> resultPath,
-        GameObject movingUnit = null)
+    public bool FindPath(Vector2Int start, Vector2Int destination, bool canWalkDiagonally, List<Vector2Int> resultPath, GameObject movingUnit = null)
     {
         EnsureGridManager();
 
-        if (
-            gridManager == null ||
-            resultPath == null
-        )
-        {
+        if (gridManager == null || resultPath == null)
             return false;
-        }
 
         resultPath.Clear();
 
-        if (
-            !gridManager.IsInsideGrid(start) ||
-            !gridManager.IsInsideGrid(destination)
-        )
-        {
+        if (!gridManager.IsInsideGrid(start) || !gridManager.IsInsideGrid(destination))
             return false;
-        }
 
         if (start == destination)
         {
@@ -1002,476 +404,174 @@ public class UnitMoveBrainManager : MonoBehaviour
         gScoreCache.Clear();
 
         gScoreCache[start] = 0;
+        openSetCache.Enqueue(start, GetMovementDistance(start, destination, canWalkDiagonally));
 
-        openSetCache.Enqueue(
-            start,
-            GetMovementDistance(
-                start,
-                destination,
-                canWalkDiagonally
-            )
-        );
+        int directionCount = canWalkDiagonally ? Directions.Length : CardinalDirectionCount;
 
-        int directionCount =
-            GetDirectionCount(
-                canWalkDiagonally
-            );
-
-        while (
-            openSetCache.Count > 0
-        )
+        while (openSetCache.Count > 0)
         {
-            Vector2Int current =
-                openSetCache.Dequeue();
+            Vector2Int current = openSetCache.Dequeue();
 
-            if (
-                visitedCache.Contains(
-                    current
-                )
-            )
-            {
+            if (visitedCache.Contains(current))
                 continue;
-            }
 
-            if (
-                current == destination
-            )
+            if (current == destination)
             {
-                ReconstructPath(
-                    start,
-                    destination,
-                    cameFromCache,
-                    resultPath
-                );
-
-                return
-                    resultPath.Count > 0;
+                ReconstructPath(start, destination, cameFromCache, resultPath);
+                return resultPath.Count > 0;
             }
 
             visitedCache.Add(current);
+            int currentG = gScoreCache[current];
 
-            int currentG =
-                gScoreCache[current];
-
-            for (
-                int i = 0;
-                i < directionCount;
-                i++
-            )
+            for (int i = 0; i < directionCount; i++)
             {
-                Vector2Int direction =
-                    Directions[i];
+                Vector2Int direction = Directions[i];
+                Vector2Int next = current + direction;
 
-                Vector2Int next =
-                    current + direction;
-
-                if (
-                    visitedCache.Contains(
-                        next
-                    )
-                )
-                {
+                if (visitedCache.Contains(next) || !gridManager.IsInsideGrid(next))
                     continue;
-                }
 
-                if (
-                    !gridManager.IsInsideGrid(
-                        next
-                    )
-                )
-                {
+                if (!CanEnterPathCell(current, next, direction, destination, movingUnit))
                     continue;
-                }
 
-                if (
-                    IsDiagonalDirection(
-                        direction
-                    )
-                )
-                {
-                    Vector2Int horizontal =
-                        current +
-                        new Vector2Int(
-                            direction.x,
-                            0
-                        );
+                int tentativeG = currentG + 1;
 
-                    Vector2Int vertical =
-                        current +
-                        new Vector2Int(
-                            0,
-                            direction.y
-                        );
+                if (gScoreCache.TryGetValue(next, out int oldG) && tentativeG >= oldG)
+                    continue;
 
-                    GameObject horizontalUnit =
-                        gridManager.GetUnitAt(
-                            horizontal
-                        );
+                cameFromCache[next] = current;
+                gScoreCache[next] = tentativeG;
 
-                    GameObject verticalUnit =
-                        gridManager.GetUnitAt(
-                            vertical
-                        );
-
-                    if (
-                        horizontalUnit != null &&
-                        horizontalUnit != movingUnit
-                    )
-                    {
-                        continue;
-                    }
-
-                    if (
-                        verticalUnit != null &&
-                        verticalUnit != movingUnit
-                    )
-                    {
-                        continue;
-                    }
-                }
-
-                GameObject occupant =
-                    gridManager.GetUnitAt(
-                        next
-                    );
-
-                if (
-                    occupant != null &&
-                    occupant != movingUnit
-                )
-                {
-                    if (
-                        next != destination
-                    )
-                    {
-                        continue;
-                    }
-                }
-
-                int tentativeG =
-                    currentG + 1;
-
-                if (
-                    !gScoreCache.TryGetValue(
-                        next,
-                        out int oldG
-                    ) ||
-                    tentativeG < oldG
-                )
-                {
-                    cameFromCache[next] =
-                        current;
-
-                    gScoreCache[next] =
-                        tentativeG;
-
-                    int fScore =
-                        tentativeG +
-                        GetMovementDistance(
-                            next,
-                            destination,
-                            canWalkDiagonally
-                        );
-
-                    openSetCache.EnqueueOrUpdate(
-                        next,
-                        fScore
-                    );
-                }
+                int heuristic = GetMovementDistance(next, destination, canWalkDiagonally);
+                openSetCache.EnqueueOrUpdate(next, tentativeG + heuristic);
             }
         }
 
         return false;
     }
 
+    private bool CanEnterPathCell(Vector2Int current, Vector2Int next, Vector2Int direction, Vector2Int destination, GameObject movingUnit)
+    {
+        if (IsDiagonalDirection(direction))
+        {
+            Vector2Int horizontal = new Vector2Int(current.x + direction.x, current.y);
+            Vector2Int vertical = new Vector2Int(current.x, current.y + direction.y);
+
+            if (IsBlocked(horizontal, movingUnit) || IsBlocked(vertical, movingUnit))
+                return false;
+        }
+
+        GameObject occupant = gridManager.GetUnitAt(next);
+        if (occupant != null && occupant != movingUnit && next != destination)
+        {
+            return false;
+        }
+
+        return true;
+    }
 
     // ============================================================
-    // FALLBACK
+    // FALLBACK PATHFINDING (BFS)
     // ============================================================
 
-    private Vector2Int FindBestReachableCell(
-        Vector2Int start,
-        Vector2Int target,
-        bool canWalkDiagonally,
-        bool preferMoreOpenPositions)
+    private Vector2Int FindBestReachableCell(Vector2Int start, Vector2Int target, bool canWalkDiagonally, bool preferMoreOpenPositions)
     {
         bfsQueueCache.Clear();
         visitedCache.Clear();
         cameFromCache.Clear();
+        distanceCache.Clear();
 
         bfsQueueCache.Enqueue(start);
         visitedCache.Add(start);
+        distanceCache[start] = 0;
 
-        Vector2Int bestCell =
-            start;
+        Vector2Int bestCell = start;
+        float bestScore = CalculateReachableCellScore(start, target, 0, canWalkDiagonally, preferMoreOpenPositions);
 
-        float bestScore =
-            CalculateReachableCellScore(
-                start,
-                target,
-                0,
-                canWalkDiagonally,
-                preferMoreOpenPositions
-            );
+        int directionCount = canWalkDiagonally ? Directions.Length : CardinalDirectionCount;
 
-        int directionCount =
-            GetDirectionCount(
-                canWalkDiagonally
-            );
-
-        Dictionary<Vector2Int, int> distances =
-            new Dictionary<Vector2Int, int>();
-
-        distances[start] = 0;
-
-        while (
-            bfsQueueCache.Count > 0
-        )
+        while (bfsQueueCache.Count > 0)
         {
-            Vector2Int current =
-                bfsQueueCache.Dequeue();
+            Vector2Int current = bfsQueueCache.Dequeue();
+            int pathDistance = distanceCache[current];
 
-            int pathDistance =
-                distances[current];
+            float score = CalculateReachableCellScore(current, target, pathDistance, canWalkDiagonally, preferMoreOpenPositions);
 
-            float score =
-                CalculateReachableCellScore(
-                    current,
-                    target,
-                    pathDistance,
-                    canWalkDiagonally,
-                    preferMoreOpenPositions
-                );
-
-            if (
-                score < bestScore
-            )
+            if (score < bestScore)
             {
-                bestScore =
-                    score;
-
-                bestCell =
-                    current;
+                bestScore = score;
+                bestCell = current;
             }
 
-            for (
-                int i = 0;
-                i < directionCount;
-                i++
-            )
+            for (int i = 0; i < directionCount; i++)
             {
-                Vector2Int direction =
-                    Directions[i];
+                Vector2Int direction = Directions[i];
+                Vector2Int next = current + direction;
 
-                Vector2Int next =
-                    current + direction;
-
-                if (
-                    visitedCache.Contains(next)
-                )
-                {
+                if (visitedCache.Contains(next) || !gridManager.IsInsideGrid(next))
                     continue;
-                }
 
-                if (
-                    !gridManager.IsInsideGrid(next)
-                )
-                {
+                if (!CanEnterCell(current, next, direction, null))
                     continue;
-                }
-
-                if (
-                    gridManager.IsCellOccupied(
-                        next
-                    )
-                )
-                {
-                    continue;
-                }
-
-                if (
-                    IsDiagonalDirection(
-                        direction
-                    )
-                )
-                {
-                    Vector2Int horizontal =
-                        current +
-                        new Vector2Int(
-                            direction.x,
-                            0
-                        );
-
-                    Vector2Int vertical =
-                        current +
-                        new Vector2Int(
-                            0,
-                            direction.y
-                        );
-
-                    if (
-                        gridManager.IsCellOccupied(
-                            horizontal
-                        ) ||
-                        gridManager.IsCellOccupied(
-                            vertical
-                        )
-                    )
-                    {
-                        continue;
-                    }
-                }
 
                 visitedCache.Add(next);
-
-                cameFromCache[next] =
-                    current;
-
-                distances[next] =
-                    pathDistance + 1;
+                cameFromCache[next] = current;
+                distanceCache[next] = pathDistance + 1;
 
                 bfsQueueCache.Enqueue(next);
             }
         }
 
         if (bestCell == start)
-        {
             return start;
-        }
 
-        ReconstructPath(
-            start,
-            bestCell,
-            cameFromCache,
-            pathCache
-        );
+        ReconstructPath(start, bestCell, cameFromCache, pathCache);
 
-        if (pathCache.Count >= 2)
-        {
-            return pathCache[1];
-        }
-
-        return start;
+        return pathCache.Count >= 2 ? pathCache[1] : start;
     }
 
-
-    // ============================================================
-    // REACHABLE CELL SCORE
-    // ============================================================
-
-    private float CalculateReachableCellScore(
-        Vector2Int position,
-        Vector2Int target,
-        int movementCost,
-        bool canWalkDiagonally,
-        bool preferMoreOpenPositions)
+    private float CalculateReachableCellScore(Vector2Int position, Vector2Int target, int movementCost, bool canWalkDiagonally, bool preferMoreOpenPositions)
     {
-        int distance =
-            GetMovementDistance(
-                position,
-                target,
-                canWalkDiagonally
-            );
-
-        float score =
-            distance * 10f +
-            movementCost;
+        int distance = GetMovementDistance(position, target, canWalkDiagonally);
+        float score = distance * 10f + movementCost;
 
         if (preferMoreOpenPositions)
         {
-            score -=
-                CountOpenNeighbours(
-                    position,
-                    canWalkDiagonally
-                ) * 2f;
+            score -= CountOpenNeighbours(position, canWalkDiagonally) * 2f;
         }
 
         return score;
     }
 
-
     // ============================================================
-    // RECONSTRUCT PATH
+    // PATH RECONSTRUCTION
     // ============================================================
 
-    private void ReconstructPath(
-        Vector2Int start,
-        Vector2Int destination,
-        Dictionary<Vector2Int, Vector2Int> cameFrom,
-        List<Vector2Int> path)
+    private void ReconstructPath(Vector2Int start, Vector2Int destination, Dictionary<Vector2Int, Vector2Int> cameFrom, List<Vector2Int> path)
     {
         path.Clear();
 
-        Vector2Int current =
-            destination;
-
+        Vector2Int current = destination;
         path.Add(current);
 
-        while (
-            current != start
-        )
+        while (current != start)
         {
-            if (
-                !cameFrom.TryGetValue(
-                    current,
-                    out Vector2Int previous
-                )
-            )
+            if (!cameFrom.TryGetValue(current, out Vector2Int previous))
             {
                 path.Clear();
                 return;
             }
 
-            current =
-                previous;
-
+            current = previous;
             path.Add(current);
         }
 
         path.Reverse();
     }
 
-
     // ============================================================
-    // PATH FORMAT
-    // ============================================================
-
-    private string FormatPath(
-        List<Vector2Int> path)
-    {
-        if (
-            path == null ||
-            path.Count == 0
-        )
-        {
-            return "EMPTY";
-        }
-
-        System.Text.StringBuilder builder =
-            new System.Text.StringBuilder();
-
-        for (
-            int i = 0;
-            i < path.Count;
-            i++
-        )
-        {
-            if (i > 0)
-            {
-                builder.Append(" -> ");
-            }
-
-            builder.Append(
-                path[i]
-            );
-        }
-
-        return builder.ToString();
-    }
-
-
-    // ============================================================
-    // BINARY MIN HEAP
+    // BINARY MIN HEAP DATA STRUCTURE
     // ============================================================
 
     private class BinaryMinHeap<T>
@@ -1481,9 +581,7 @@ public class UnitMoveBrainManager : MonoBehaviour
             public T Item;
             public int Priority;
 
-            public HeapNode(
-                T item,
-                int priority)
+            public HeapNode(T item, int priority)
             {
                 Item = item;
                 Priority = priority;
@@ -1491,36 +589,15 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
 
         private HeapNode[] nodes;
+        private readonly Dictionary<T, int> itemIndices;
 
-        private readonly Dictionary<T, int>
-            itemIndices;
+        public int Count { get; private set; }
 
-        public int Count
+        public BinaryMinHeap(int capacity = 64)
         {
-            get;
-            private set;
+            nodes = new HeapNode[capacity];
+            itemIndices = new Dictionary<T, int>(capacity);
         }
-
-
-        public BinaryMinHeap(
-            int capacity = 64)
-        {
-            nodes =
-                new HeapNode[
-                    Mathf.Max(
-                        1,
-                        capacity
-                    )
-                ];
-
-            itemIndices =
-                new Dictionary<T, int>(
-                    capacity
-                );
-
-            Count = 0;
-        }
-
 
         public void Clear()
         {
@@ -1528,203 +605,108 @@ public class UnitMoveBrainManager : MonoBehaviour
             itemIndices.Clear();
         }
 
-
-        public void EnqueueOrUpdate(
-            T item,
-            int priority)
+        public void Enqueue(T item, int priority)
         {
-            if (
-                itemIndices.TryGetValue(
-                    item,
-                    out int existingIndex
-                )
-            )
+            if (itemIndices.ContainsKey(item))
             {
-                if (
-                    priority <
-                    nodes[
-                        existingIndex
-                    ].Priority
-                )
-                {
-                    nodes[
-                        existingIndex
-                    ].Priority =
-                        priority;
-
-                    BubbleUp(
-                        existingIndex
-                    );
-                }
-
+                EnqueueOrUpdate(item, priority);
                 return;
             }
 
-            Enqueue(
-                item,
-                priority
-            );
+            EnsureCapacity();
+
+            int index = Count++;
+            nodes[index] = new HeapNode(item, priority);
+            itemIndices[item] = index;
+
+            BubbleUp(index);
         }
 
-
-        public void Enqueue(
-            T item,
-            int priority)
+        public void EnqueueOrUpdate(T item, int priority)
         {
-            if (
-                Count >=
-                nodes.Length
-            )
+            if (itemIndices.TryGetValue(item, out int index))
             {
-                Array.Resize(
-                    ref nodes,
-                    nodes.Length * 2
-                );
+                if (priority >= nodes[index].Priority)
+                    return;
+
+                nodes[index].Priority = priority;
+                BubbleUp(index);
+                return;
             }
 
-            nodes[Count] =
-                new HeapNode(
-                    item,
-                    priority
-                );
-
-            itemIndices[item] =
-                Count;
-
-            BubbleUp(Count);
-
-            Count++;
+            Enqueue(item, priority);
         }
-
 
         public T Dequeue()
         {
-            T result =
-                nodes[0].Item;
+            if (Count == 0)
+                return default;
 
-            itemIndices.Remove(
-                result
-            );
+            T result = nodes[0].Item;
+            itemIndices.Remove(result);
 
             Count--;
+            if (Count == 0)
+                return result;
 
-            if (Count > 0)
-            {
-                nodes[0] =
-                    nodes[Count];
+            nodes[0] = nodes[Count];
+            itemIndices[nodes[0].Item] = 0;
 
-                itemIndices[
-                    nodes[0].Item
-                ] = 0;
-
-                BubbleDown(0);
-            }
+            BubbleDown(0);
 
             return result;
         }
 
-
-        private void BubbleUp(
-            int index)
+        private void EnsureCapacity()
         {
-            while (
-                index > 0
-            )
+            if (Count < nodes.Length)
+                return;
+
+            int newCapacity = Mathf.Max(nodes.Length * 2, 4);
+            Array.Resize(ref nodes, newCapacity);
+        }
+
+        private void BubbleUp(int index)
+        {
+            while (index > 0)
             {
-                int parent =
-                    (index - 1) / 2;
+                int parent = (index - 1) >> 1;
 
-                if (
-                    nodes[index].Priority >=
-                    nodes[parent].Priority
-                )
-                {
+                if (nodes[parent].Priority <= nodes[index].Priority)
                     break;
-                }
 
-                Swap(
-                    index,
-                    parent
-                );
-
-                index =
-                    parent;
+                Swap(parent, index);
+                index = parent;
             }
         }
 
-
-        private void BubbleDown(
-            int index)
+        private void BubbleDown(int index)
         {
             while (true)
             {
-                int smallest =
-                    index;
-
-                int left =
-                    index * 2 + 1;
-
-                int right =
-                    index * 2 + 2;
-
-                if (
-                    left < Count &&
-                    nodes[left].Priority <
-                    nodes[smallest].Priority
-                )
-                {
-                    smallest =
-                        left;
-                }
-
-                if (
-                    right < Count &&
-                    nodes[right].Priority <
-                    nodes[smallest].Priority
-                )
-                {
-                    smallest =
-                        right;
-                }
-
-                if (
-                    smallest == index
-                )
-                {
+                int left = (index << 1) + 1;
+                if (left >= Count)
                     break;
-                }
 
-                Swap(
-                    index,
-                    smallest
-                );
+                int right = left + 1;
+                int smallest = (right < Count && nodes[right].Priority < nodes[left].Priority) ? right : left;
 
-                index =
-                    smallest;
+                if (nodes[index].Priority <= nodes[smallest].Priority)
+                    break;
+
+                Swap(index, smallest);
+                index = smallest;
             }
         }
 
-
-        private void Swap(
-            int a,
-            int b)
+        private void Swap(int a, int b)
         {
-            HeapNode temp =
-                nodes[a];
+            HeapNode temp = nodes[a];
+            nodes[a] = nodes[b];
+            nodes[b] = temp;
 
-            nodes[a] =
-                nodes[b];
-
-            nodes[b] =
-                temp;
-
-            itemIndices[
-                nodes[a].Item
-            ] = a;
-
-            itemIndices[
-                nodes[b].Item
-            ] = b;
+            itemIndices[nodes[a].Item] = a;
+            itemIndices[nodes[b].Item] = b;
         }
     }
 }

@@ -2246,7 +2246,6 @@ MonoBehaviour:
   boardRotationTransform: {fileID: 0}
   compensateForBoardRotation: 1
   rotationSettleDelay: 0.08
-  enableDebugLogs: 1
 --- !u!114 &804482599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2275,14 +2274,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::unitmovebrainManager
   gridManager: {fileID: 0}
-  enableDebugLogs: 1
-  logGridBounds: 1
-  logWorldToGrid: 1
-  logTargetSelection: 1
-  logAttackPositions: 1
-  logPathfinding: 1
-  logOccupiedCells: 0
-  logDiagonalChecks: 0
 --- !u!114 &804482601
 MonoBehaviour:
   m_ObjectHideFlags: 0

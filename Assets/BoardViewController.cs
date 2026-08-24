@@ -106,6 +106,21 @@ public class BoardViewController : MonoBehaviour
     private Vector3 rotationCenter;
 
 
+    // ------------------------------------------------------------
+    // IMPORTANT:
+    //
+    // We remember whether an ability was selected before rotation.
+    //
+    // The visual ability range is cleared during rotation, but the
+    // actual ability selection inside CanvasInfoManager remains.
+    //
+    // After rotation finishes we rebuild the ability range using
+    // the newly rotated grid.
+    // ------------------------------------------------------------
+
+    private bool restoreAbilityHighlightAfterRotation;
+
+
     private readonly List<Transform>
         externalUnits =
         new List<Transform>();
@@ -352,13 +367,28 @@ public class BoardViewController : MonoBehaviour
 
 
         // --------------------------------------------------------
+        // REMEMBER ABILITY STATE BEFORE ROTATION
+        //
+        // The ability itself is still selected inside the
+        // CanvasInfoManager.
+        //
+        // We only need to remember that it was selected so that
+        // its grid range can be rebuilt after the board rotates.
+        // --------------------------------------------------------
+
+        CaptureAbilityStateBeforeRotation();
+
+
+        // --------------------------------------------------------
         // DESELECT BEFORE ROTATION
         //
-        // This happens BEFORE the rotation coroutine begins.
+        // This clears the visual highlights while the board is
+        // physically rotating.
         //
-        // Clearing the highlights here prevents the selected unit's
-        // movement/ability range from being rendered while the
-        // board and units are physically rotating.
+        // IMPORTANT:
+        //
+        // ClearAllHighlights() does NOT clear the selected ability
+        // from CanvasInfoManager, so the ability remains selected.
         // --------------------------------------------------------
 
         if (deselectUnitWhenRotating)
@@ -381,6 +411,104 @@ public class BoardViewController : MonoBehaviour
                     targetRotation
                 )
             );
+    }
+
+
+    // ============================================================
+    // ABILITY STATE BEFORE ROTATION
+    // ============================================================
+
+    private void CaptureAbilityStateBeforeRotation()
+    {
+        restoreAbilityHighlightAfterRotation = false;
+
+
+        CanvasInfoManager canvasInfoManager =
+            FindFirstObjectByType<CanvasInfoManager>();
+
+
+        if (canvasInfoManager == null)
+        {
+            if (debugLogs)
+            {
+                Debug.Log(
+                    "[BoardViewController] " +
+                    "CanvasInfoManager not found while capturing " +
+                    "ability state before rotation.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        if (!canvasInfoManager.HasSelectedAbility())
+        {
+            if (debugLogs)
+            {
+                Debug.Log(
+                    "[BoardViewController] " +
+                    "No ability selected before rotation.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        if (UIManager.CurrentSelection == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Ability is selected, but no unit is currently selected. " +
+                    "Ability grid will not be restored.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        AbilitySO ability =
+            canvasInfoManager.GetSelectedAbility();
+
+
+        if (ability == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "CanvasInfoManager reports a selected ability, " +
+                    "but GetSelectedAbility() returned NULL.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        restoreAbilityHighlightAfterRotation = true;
+
+
+        if (debugLogs)
+        {
+            Debug.Log(
+                "[BoardViewController] " +
+                "Ability highlight marked for restoration after rotation.\n" +
+                "Ability: " +
+                ability.name +
+                "\nUnit: " +
+                UIManager.CurrentSelection.name,
+                this
+            );
+        }
     }
 
 
@@ -420,6 +548,14 @@ public class BoardViewController : MonoBehaviour
          * - Placement highlight
          * - Current range user
          * - Current ability
+         *
+         * IMPORTANT:
+         *
+         * The actual selected ability inside CanvasInfoManager
+         * is NOT cleared here.
+         *
+         * The BoardViewController remembers that ability and
+         * restores its grid highlight after rotation.
          */
 
         highlightManager.ClearAllHighlights();
@@ -429,7 +565,7 @@ public class BoardViewController : MonoBehaviour
         {
             Debug.Log(
                 "[BoardViewController] " +
-                "Unit deselected before board rotation.",
+                "Unit highlights cleared before board rotation.",
                 this
             );
         }
@@ -612,12 +748,30 @@ public class BoardViewController : MonoBehaviour
         // REFRESH HIGHLIGHTS AFTER ROTATION
         // --------------------------------------------------------
         //
-        // Normally this will simply rebuild the grid with no
-        // selection/range active because we cleared it at the
-        // beginning of rotation.
+        // This first rebuilds the GridHighlightManager's tile cache.
         //
+        // If an ability was selected before rotation, the ability
+        // range is then rebuilt using the NEW rotated grid.
+        // --------------------------------------------------------
 
         RefreshHighlightsAfterRotation();
+
+
+        // --------------------------------------------------------
+        // RESTORE ABILITY GRID
+        // --------------------------------------------------------
+
+        if (restoreAbilityHighlightAfterRotation)
+        {
+            yield return null;
+
+            yield return new WaitForEndOfFrame();
+
+            RestoreAbilityHighlightAfterRotation();
+        }
+
+
+        restoreAbilityHighlightAfterRotation = false;
     }
 
 
@@ -660,6 +814,238 @@ public class BoardViewController : MonoBehaviour
         StartCoroutine(
             highlightManager.RefreshAfterBoardRotation()
         );
+    }
+
+
+    // ============================================================
+    // RESTORE ABILITY HIGHLIGHT
+    // ============================================================
+
+    private void RestoreAbilityHighlightAfterRotation()
+    {
+        GridHighlightManager highlightManager =
+            FindFirstObjectByType<GridHighlightManager>();
+
+
+        if (highlightManager == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Cannot restore ability highlight because " +
+                    "GridHighlightManager was not found.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        if (UIManager.CurrentSelection == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Cannot restore ability highlight because " +
+                    "there is no selected unit.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        CanvasInfoManager canvasInfoManager =
+            FindFirstObjectByType<CanvasInfoManager>();
+
+
+        if (canvasInfoManager == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Cannot restore ability highlight because " +
+                    "CanvasInfoManager was not found.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        if (!canvasInfoManager.HasSelectedAbility())
+        {
+            if (debugLogs)
+            {
+                Debug.Log(
+                    "[BoardViewController] " +
+                    "Ability is no longer selected. " +
+                    "Skipping ability highlight restoration.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        AbilitySO ability =
+            canvasInfoManager.GetSelectedAbility();
+
+
+        if (ability == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Selected ability is NULL. " +
+                    "Cannot restore ability highlight.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        GameObject selectedUnit =
+            UIManager.CurrentSelection.gameObject;
+
+
+        if (selectedUnit == null)
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // GET THE CURRENTLY ROTATED GRID
+        // --------------------------------------------------------
+
+        GridManager currentGridManager =
+            gridManager;
+
+
+        if (currentGridManager == null)
+        {
+            currentGridManager =
+                FindFirstObjectByType<GridManager>();
+        }
+
+
+        if (currentGridManager == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Cannot restore ability highlight because " +
+                    "GridManager was not found.",
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // CALCULATE THE ABILITY RANGE AGAIN
+        //
+        // This is important.
+        //
+        // We do NOT reuse the old highlighted cells.
+        //
+        // The board has rotated, so the ability range is calculated
+        // again from the selected unit's NEW grid position.
+        // --------------------------------------------------------
+
+        List<Vector2Int> abilityTiles =
+            ability.GetRangeTiles(
+                currentGridManager,
+                selectedUnit
+            );
+
+
+        if (abilityTiles == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Ability returned NULL range tiles.\n" +
+                    "Ability: " +
+                    ability.name,
+                    this
+                );
+            }
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // SET CURRENT ABILITY
+        //
+        // GridHighlightManager needs to know which ability is
+        // active so it can correctly determine Enemy / Ally / Any
+        // target highlighting.
+        // --------------------------------------------------------
+
+        highlightManager.SetCurrentAbility(
+            ability
+        );
+
+
+        // --------------------------------------------------------
+        // SHOW ABILITY RANGE
+        //
+        // This turns the grid highlight back on after rotation.
+        // --------------------------------------------------------
+
+        highlightManager.ShowAbilityTiles(
+            abilityTiles,
+            selectedUnit,
+            false
+        );
+
+
+        // --------------------------------------------------------
+        // RESTORE THE CURRENT ABILITY ONCE MORE
+        //
+        // ShowAbilityTiles() handles the visual cells, while
+        // SetCurrentAbility() tells GridHighlightManager which
+        // target rules to use.
+        // --------------------------------------------------------
+
+        highlightManager.SetCurrentAbility(
+            ability
+        );
+
+
+        if (debugLogs)
+        {
+            Debug.Log(
+                "[BoardViewController] " +
+                "ABILITY GRID RESTORED AFTER ROTATION.\n" +
+                "Ability: " +
+                ability.name +
+                "\nSelected Unit: " +
+                selectedUnit.name +
+                "\nAbility Tiles: " +
+                abilityTiles.Count +
+                "\nRotation: " +
+                currentRotation,
+                this
+            );
+        }
     }
 
 
@@ -1033,7 +1419,9 @@ public class BoardViewController : MonoBehaviour
             "\nCenter: " +
             rotationCenter +
             "\nExternal Units: " +
-            externalUnits.Count,
+            externalUnits.Count +
+            "\nRestore Ability Highlight: " +
+            restoreAbilityHighlightAfterRotation,
             this
         );
     }
