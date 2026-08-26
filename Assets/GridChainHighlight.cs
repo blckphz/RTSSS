@@ -9,6 +9,7 @@ public class GridChainHighlight : MonoBehaviour
     // ============================================================
 
     [Header("References")]
+
     [SerializeField]
     private Camera mainCamera;
 
@@ -16,18 +17,32 @@ public class GridChainHighlight : MonoBehaviour
     private LineRenderer lineRenderer;
 
     [SerializeField]
-    private string abilitySpawnPointName = "AbilitySpawnPoint";
+    private string abilitySpawnPointName =
+        "AbilitySpawnPoint";
+
 
     // ============================================================
-    // VISUAL SETTINGS
+    // VISUAL
     // ============================================================
 
     [Header("Visual")]
+
     [SerializeField]
     private float lineHeight = 0.15f;
 
     [SerializeField]
     private float lineWidth = 0.08f;
+
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    [Header("Debug")]
+
+    [SerializeField]
+    private bool enableDebugLogs = false;
+
 
     // ============================================================
     // STATE
@@ -35,8 +50,11 @@ public class GridChainHighlight : MonoBehaviour
 
     private GameObject user;
     private ChainLightning chainLightning;
+
     private GridManager gridManager;
+
     private Transform abilitySpawnPoint;
+
 
     // ============================================================
     // UNITY
@@ -46,33 +64,45 @@ public class GridChainHighlight : MonoBehaviour
     {
         if (mainCamera == null)
         {
-            mainCamera = Camera.main;
+            mainCamera =
+                Camera.main;
         }
 
         if (lineRenderer == null)
         {
-            lineRenderer = GetComponent<LineRenderer>();
+            lineRenderer =
+                GetComponent<LineRenderer>();
         }
 
         if (lineRenderer != null)
         {
             lineRenderer.positionCount = 0;
-            lineRenderer.startWidth = lineWidth;
-            lineRenderer.endWidth = lineWidth;
-            lineRenderer.useWorldSpace = true;
-            lineRenderer.enabled = false;
+
+            lineRenderer.startWidth =
+                lineWidth;
+
+            lineRenderer.endWidth =
+                lineWidth;
+
+            lineRenderer.useWorldSpace =
+                true;
+
+            lineRenderer.enabled =
+                false;
         }
 
-        gridManager = FindFirstObjectByType<GridManager>();
+        RefreshGridManager();
     }
+
 
     private void Update()
     {
         UpdatePreview();
     }
 
+
     // ============================================================
-    // BEGIN PREVIEW
+    // BEGIN
     // ============================================================
 
     public void BeginPreview(
@@ -82,18 +112,31 @@ public class GridChainHighlight : MonoBehaviour
         this.user = user;
         this.chainLightning = ability;
 
+        RefreshGridManager();
         FindAbilitySpawnPoint();
 
-        if (gridManager == null)
-        {
-            gridManager = FindFirstObjectByType<GridManager>();
-        }
-
         UpdatePreview();
+
+        DebugLog("Preview started.");
     }
 
+
     // ============================================================
-    // FIND ABILITY SPAWN POINT
+    // GRID MANAGER
+    // ============================================================
+
+    private void RefreshGridManager()
+    {
+        if (gridManager == null)
+        {
+            gridManager =
+                FindFirstObjectByType<GridManager>();
+        }
+    }
+
+
+    // ============================================================
+    // SPAWN POINT
     // ============================================================
 
     private void FindAbilitySpawnPoint()
@@ -105,27 +148,37 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        Transform[] children = user.GetComponentsInChildren<Transform>(true);
+        Transform[] children =
+            user.GetComponentsInChildren<Transform>(
+                true
+            );
 
         for (int i = 0; i < children.Length; i++)
         {
-            Transform child = children[i];
+            Transform child =
+                children[i];
 
             if (child == null)
             {
                 continue;
             }
 
-            if (child.name == abilitySpawnPointName)
+            if (
+                child.name ==
+                abilitySpawnPointName
+            )
             {
-                abilitySpawnPoint = child;
+                abilitySpawnPoint =
+                    child;
+
                 return;
             }
         }
     }
 
+
     // ============================================================
-    // END PREVIEW
+    // END
     // ============================================================
 
     public void EndPreview()
@@ -135,7 +188,10 @@ public class GridChainHighlight : MonoBehaviour
         abilitySpawnPoint = null;
 
         Hide();
+
+        DebugLog("Preview ended.");
     }
+
 
     // ============================================================
     // UPDATE PREVIEW
@@ -143,7 +199,10 @@ public class GridChainHighlight : MonoBehaviour
 
     private void UpdatePreview()
     {
-        if (user == null || chainLightning == null)
+        if (
+            user == null ||
+            chainLightning == null
+        )
         {
             Hide();
             return;
@@ -156,15 +215,16 @@ public class GridChainHighlight : MonoBehaviour
 
         if (mainCamera == null)
         {
-            mainCamera = Camera.main;
+            mainCamera =
+                Camera.main;
         }
 
-        if (gridManager == null)
-        {
-            gridManager = FindFirstObjectByType<GridManager>();
-        }
+        RefreshGridManager();
 
-        if (mainCamera == null || gridManager == null)
+        if (
+            mainCamera == null ||
+            gridManager == null
+        )
         {
             Hide();
             return;
@@ -176,13 +236,19 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-        Ray ray = mainCamera.ScreenPointToRay(mousePosition);
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
 
-        RaycastHit2D hit = Physics2D.GetRayIntersection(
-            ray,
-            Mathf.Infinity
-        );
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                mousePosition
+            );
+
+        RaycastHit2D hit =
+            Physics2D.GetRayIntersection(
+                ray,
+                Mathf.Infinity
+            );
 
         if (hit.collider == null)
         {
@@ -190,7 +256,10 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        HoverInfoTrigger trigger = hit.collider.GetComponentInParent<HoverInfoTrigger>();
+        HoverInfoTrigger trigger =
+            hit.collider.GetComponentInParent<
+                HoverInfoTrigger
+            >();
 
         if (trigger == null)
         {
@@ -198,7 +267,8 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        AttackUnit targetUnit = trigger.GetAttackUnit();
+        AttackUnit targetUnit =
+            trigger.GetAttackUnit();
 
         if (targetUnit == null)
         {
@@ -206,15 +276,20 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        GameObject target = targetUnit.gameObject;
+        GameObject target =
+            targetUnit.gameObject;
 
-        if (target == user)
+        if (
+            target == null ||
+            target == user
+        )
         {
             Hide();
             return;
         }
 
-        AttackUnit userUnit = user.GetComponent<AttackUnit>();
+        AttackUnit userUnit =
+            user.GetComponent<AttackUnit>();
 
         if (userUnit == null)
         {
@@ -222,19 +297,39 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        if (targetUnit.GetTeam() == userUnit.GetTeam())
+        if (
+            targetUnit.GetTeam() ==
+            userUnit.GetTeam()
+        )
         {
             Hide();
             return;
         }
 
-        List<GameObject> chain = chainLightning.GetChainPreview(
-            user,
-            target,
-            gridManager
-        );
+        if (targetUnit.IsDead())
+        {
+            Hide();
+            return;
+        }
 
-        if (chain == null || chain.Count == 0)
+        // ========================================================
+        // IMPORTANT
+        //
+        // The preview asks ChainLightning to calculate the chain.
+        // This guarantees preview == actual ability.
+        // ========================================================
+
+        List<GameObject> chain =
+            chainLightning.GetChainPreview(
+                user,
+                target,
+                gridManager
+            );
+
+        if (
+            chain == null ||
+            chain.Count == 0
+        )
         {
             Hide();
             return;
@@ -243,18 +338,24 @@ public class GridChainHighlight : MonoBehaviour
         DrawChain(chain);
     }
 
+
     // ============================================================
-    // DRAW CHAIN
+    // DRAW
     // ============================================================
 
-    private void DrawChain(List<GameObject> chain)
+    private void DrawChain(
+        List<GameObject> chain)
     {
         if (lineRenderer == null)
         {
             return;
         }
 
-        if (user == null || chain == null || chain.Count == 0)
+        if (
+            user == null ||
+            chain == null ||
+            chain.Count == 0
+        )
         {
             Hide();
             return;
@@ -271,30 +372,63 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        lineRenderer.positionCount = chain.Count + 1;
+        lineRenderer.positionCount =
+            chain.Count + 1;
 
-        Vector3 spawnPosition = abilitySpawnPoint.position;
-        spawnPosition.y += lineHeight;
+        Vector3 spawnPosition =
+            abilitySpawnPoint.position;
 
-        lineRenderer.SetPosition(0, spawnPosition);
+        spawnPosition.y +=
+            lineHeight;
 
-        for (int i = 0; i < chain.Count; i++)
+        lineRenderer.SetPosition(
+            0,
+            spawnPosition
+        );
+
+        int validPointCount = 1;
+
+        for (
+            int i = 0;
+            i < chain.Count;
+            i++
+        )
         {
-            GameObject target = chain[i];
+            GameObject target =
+                chain[i];
 
             if (target == null)
             {
                 continue;
             }
 
-            Vector3 position = target.transform.position;
-            position.y += lineHeight;
+            Vector3 position =
+                target.transform.position;
 
-            lineRenderer.SetPosition(i + 1, position);
+            position.y +=
+                lineHeight;
+
+            lineRenderer.SetPosition(
+                validPointCount,
+                position
+            );
+
+            validPointCount++;
         }
 
-        lineRenderer.enabled = true;
+        if (validPointCount <= 1)
+        {
+            Hide();
+            return;
+        }
+
+        lineRenderer.positionCount =
+            validPointCount;
+
+        lineRenderer.enabled =
+            true;
     }
+
 
     // ============================================================
     // HIDE
@@ -307,7 +441,28 @@ public class GridChainHighlight : MonoBehaviour
             return;
         }
 
-        lineRenderer.positionCount = 0;
-        lineRenderer.enabled = false;
+        lineRenderer.positionCount =
+            0;
+
+        lineRenderer.enabled =
+            false;
+    }
+
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    private void DebugLog(
+        string message)
+    {
+        if (!enableDebugLogs)
+        {
+            return;
+        }
+
+        Debug.Log(
+            $"[GridChainHighlight] {message}"
+        );
     }
 }
