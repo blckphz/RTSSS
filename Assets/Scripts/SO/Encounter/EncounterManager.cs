@@ -5,6 +5,14 @@ using UnityEngine;
 public class EncounterManager : MonoBehaviour
 {
     // ============================================================
+    // EVENTS
+    // ============================================================
+
+    public static event Action<EncounterDefinition>
+        OnEncounterVictory;
+
+
+    // ============================================================
     // ENCOUNTER STATE
     // ============================================================
 
@@ -74,6 +82,7 @@ public class EncounterManager : MonoBehaviour
     private VictoryCondition victoryCondition =
         VictoryCondition.DefeatAllEnemies;
 
+
     [Header("Specific Enemy Target")]
     [Tooltip(
         "EncounterUnit ID that must be killed when using " +
@@ -96,8 +105,10 @@ public class EncounterManager : MonoBehaviour
     [SerializeField, Min(0f)]
     private float gridSpawnDelay = 0.1f;
 
+
     [SerializeField, Min(0f)]
     private float unitSpawnDelay = 0.1f;
+
 
     [SerializeField, Min(0f)]
     private float combatStartDelay = 0.25f;
@@ -110,7 +121,9 @@ public class EncounterManager : MonoBehaviour
     private EncounterState currentState =
         EncounterState.None;
 
+
     private bool encounterRunning;
+
 
     private bool firstRoundStarted;
 
@@ -360,9 +373,11 @@ public class EncounterManager : MonoBehaviour
         {
             encounterRunning = false;
 
+
             SetEncounterState(
                 EncounterState.None
             );
+
 
             yield break;
         }
@@ -1025,8 +1040,7 @@ public class EncounterManager : MonoBehaviour
 
     /// <summary>
     /// Called by HealthManager BEFORE the unit is disabled.
-    ///
-    /// This is the important part for specific-target missions.
+    /// This is important for specific-target missions.
     /// </summary>
     public void HandleUnitKilled(
         HealthManager killedUnit,
@@ -1217,7 +1231,7 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // DO NOT TRY TO DETERMINE SPECIFIC TARGET HERE.
+        // DO NOT DETERMINE SPECIFIC TARGET HERE.
         //
         // Die() calls HandleUnitKilled() with the actual ID.
         // --------------------------------------------------------
@@ -1294,8 +1308,10 @@ public class EncounterManager : MonoBehaviour
                 unit.GetComponent<HealthManager>();
 
 
-            if (health != null &&
-                health.IsAlive())
+            if (
+                health != null &&
+                health.IsAlive()
+            )
             {
                 return;
             }
@@ -1331,6 +1347,13 @@ public class EncounterManager : MonoBehaviour
         {
             return false;
         }
+
+
+        Debug.Log(
+            "[EncounterManager] Checking victory after round " +
+            roundManager.GetCurrentRound(),
+            this
+        );
 
 
         // ========================================================
@@ -1406,11 +1429,6 @@ public class EncounterManager : MonoBehaviour
 
         // ========================================================
         // DEFEAT SPECIFIC ENEMY
-        //
-        // This normally gets completed directly by
-        // HandleUnitKilled().
-        //
-        // We also check here in case the target was already dead.
         // ========================================================
 
         if (
@@ -1529,8 +1547,10 @@ public class EncounterManager : MonoBehaviour
                 unit.GetComponent<HealthManager>();
 
 
-            if (health != null &&
-                health.IsAlive())
+            if (
+                health != null &&
+                health.IsAlive()
+            )
             {
                 return false;
             }
@@ -1548,15 +1568,8 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // IMPORTANT:
-        //
-        // The target may already have been disabled by HealthManager
+        // Target may already have been disabled by HealthManager
         // after HandleUnitKilled() was called.
-        //
-        // Therefore, absence of the target here can mean it was killed.
-        //
-        // Do NOT use this function alone to validate a target that
-        // has never spawned.
         // --------------------------------------------------------
 
         return false;
@@ -1777,13 +1790,6 @@ public class EncounterManager : MonoBehaviour
         StopAllCoroutines();
 
 
-        if (roundManager != null)
-        {
-            // RoundManager will refuse to start another round
-            // because the encounter is now finished.
-        }
-
-
         SetEncounterState(
             EncounterState.Victory
         );
@@ -1855,6 +1861,15 @@ public class EncounterManager : MonoBehaviour
             "[EncounterManager] VICTORY: " +
             encounterName,
             this
+        );
+
+
+        // --------------------------------------------------------
+        // NOTIFY LEVEL MAP
+        // --------------------------------------------------------
+
+        OnEncounterVictory?.Invoke(
+            currentEncounter
         );
 
 
