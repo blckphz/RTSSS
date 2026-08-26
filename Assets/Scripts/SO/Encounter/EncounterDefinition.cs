@@ -2,6 +2,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+// ============================================================
+// ENCOUNTER DEFINITION
+// ============================================================
+
 [CreateAssetMenu(
     fileName = "EncounterDefinition",
     menuName = "Game/Encounter Definition"
@@ -17,6 +22,18 @@ public class EncounterDefinition : ScriptableObject
 
     [TextArea(2, 5)]
     public string description;
+
+
+    // ============================================================
+    // MAP NODE ICON
+    // ============================================================
+
+    [Header("Map Node")]
+    [Tooltip(
+        "The Sprite used for this encounter on the level map. " +
+        "Leave empty to use the default icon from LevelMapManager."
+    )]
+    public Sprite mapNodeIcon;
 
 
     // ============================================================
@@ -54,8 +71,10 @@ public class EncounterDefinition : ScriptableObject
     public EncounterManager.VictoryCondition victoryCondition =
         EncounterManager.VictoryCondition.DefeatAllEnemies;
 
+
     [Header("Specific Target")]
     public string targetEnemyId;
+
 
     [Header("Survival")]
     [Min(1)]

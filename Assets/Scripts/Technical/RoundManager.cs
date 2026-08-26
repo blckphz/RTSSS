@@ -86,22 +86,6 @@ public class RoundManager : MonoBehaviour
     public event Action<AbilityLogEntry> OnAbilityUsed;
 
 
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void RoundTiming(string message)
-    {
-        Debug.Log(
-            $"<color=yellow>[ROUND]</color> " +
-            $"[T:{Time.time:F3}] " +
-            $"[F:{Time.frameCount}] " +
-            $"[R:{currentRound}] " +
-            message,
-            this
-        );
-    }
-
 
     // ============================================================
     // UNITY
@@ -202,9 +186,6 @@ public class RoundManager : MonoBehaviour
             encounterManager.IsFinished()
         )
         {
-            RoundTiming(
-                "StartRound blocked — encounter is finished."
-            );
 
             return;
         }
@@ -219,9 +200,6 @@ public class RoundManager : MonoBehaviour
         roundRunning = true;
 
 
-        RoundTiming(
-            "ROUND START"
-        );
 
 
         RefreshCachedUnits();
@@ -229,13 +207,6 @@ public class RoundManager : MonoBehaviour
         ResetAllUnitMovement();
 
         UpdateAllUnitCooldowns();
-
-
-        RoundTiming(
-            $"SETUP COMPLETE " +
-            $"duration=" +
-            $"{Time.realtimeSinceStartup - startTime:F3}s"
-        );
 
 
         StartCoroutine(
@@ -284,9 +255,6 @@ public class RoundManager : MonoBehaviour
             Time.realtimeSinceStartup;
 
 
-        RoundTiming(
-            "PIPELINE START"
-        );
 
 
         if (gridManager != null)
@@ -303,13 +271,6 @@ public class RoundManager : MonoBehaviour
             EnsureEnemiesExist();
 
 
-        if (enemiesWereSpawned)
-        {
-            RoundTiming(
-                "ENEMIES WERE SPAWNED THIS ROUND"
-            );
-        }
-
 
         // --------------------------------------------------------
         // PLAYER / ALLY
@@ -325,9 +286,6 @@ public class RoundManager : MonoBehaviour
         }
 
 
-        RoundTiming(
-            "PLAYER/ALLY TURN START"
-        );
 
 
         yield return StartCoroutine(
@@ -360,26 +318,19 @@ public class RoundManager : MonoBehaviour
 
         if (enemiesWereSpawned)
         {
-            RoundTiming(
+            Debug.Log(
                 "ENEMIES SPAWNED THIS ROUND — " +
                 "SKIPPING ENEMY TURN"
             );
         }
         else
         {
-            RoundTiming(
-                "ENEMY TURN START"
-            );
-
 
             yield return StartCoroutine(
                 ExecuteEnemyTurn()
             );
 
 
-            RoundTiming(
-                "ENEMY TURN END"
-            );
         }
 
 
@@ -390,11 +341,6 @@ public class RoundManager : MonoBehaviour
         EndRound();
 
 
-        RoundTiming(
-            $"ROUND END " +
-            $"total=" +
-            $"{Time.realtimeSinceStartup - roundStart:F3}s"
-        );
     }
 
 
@@ -404,10 +350,6 @@ public class RoundManager : MonoBehaviour
 
     private void EndRound()
     {
-        RoundTiming(
-            "ROUND COMPLETE — CHECKING VICTORY CONDITIONS"
-        );
-
 
         // ========================================================
         // IMPORTANT
@@ -437,10 +379,6 @@ public class RoundManager : MonoBehaviour
             {
                 roundRunning = false;
 
-                RoundTiming(
-                    "ROUND ENDED — ENCOUNTER FINISHED"
-                );
-
                 return;
             }
         }
@@ -457,9 +395,6 @@ public class RoundManager : MonoBehaviour
         roundRunning = false;
 
 
-        RoundTiming(
-            "ROUND READY FOR NEXT INPUT"
-        );
     }
 
 
@@ -497,21 +432,12 @@ public class RoundManager : MonoBehaviour
             }
 
 
-            RoundTiming(
-                $"UNIT START: {unit.name}"
-            );
-
 
             yield return StartCoroutine(
                 CombatUtility.ExecuteUnitTurnCoroutine(
                     unit,
                     gridManager
                 )
-            );
-
-
-            RoundTiming(
-                $"UNIT END: {unit.name}"
             );
 
 
@@ -611,13 +537,6 @@ public class RoundManager : MonoBehaviour
                     Team.Enemy
                 ) == 0
             )
-            {
-                RoundTiming(
-                    "No enemies remain. " +
-                    "EncounterManager will evaluate victory."
-                );
-            }
-
 
             return false;
         }
@@ -639,11 +558,6 @@ public class RoundManager : MonoBehaviour
             ) == 0
         )
         {
-            RoundTiming(
-                "NO ENEMIES FOUND — SPAWNING TEST ENEMIES"
-            );
-
-
             combatManager.CheckForEnemies();
 
 

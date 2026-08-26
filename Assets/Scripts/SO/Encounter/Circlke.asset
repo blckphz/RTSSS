@@ -10,21 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30fe61f87735d1b41bb599b4993ad9e4, type: 3}
-  m_Name: BoxLevel
+  m_Name: Circlke
   m_EditorClassIdentifier: Assembly-CSharp::EncounterDefinition
-  encounterName: New Encounter
+  encounterName: Circle
   description: 
-  mapNodeIcon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
-  width: 11
-  height: 11
-  shape: 0
+  mapNodeIcon: {fileID: 21300000, guid: 0061ef85d36f17441b5b709109a3b4ae, type: 3}
+  width: 15
+  height: 15
+  shape: 1
   minRadius: 2
   maxRadius: 5
-  victoryCondition: 3
-  targetEnemyId: penis
-  roundsToSurvive: 5
+  victoryCondition: 1
+  targetEnemyId: 
+  roundsToSurvive: 10
   enemies:
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
-    enemyId: penis
+    enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     enemyId: 

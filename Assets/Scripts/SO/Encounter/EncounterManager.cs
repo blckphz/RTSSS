@@ -105,10 +105,8 @@ public class EncounterManager : MonoBehaviour
     [SerializeField, Min(0f)]
     private float gridSpawnDelay = 0.1f;
 
-
     [SerializeField, Min(0f)]
     private float unitSpawnDelay = 0.1f;
-
 
     [SerializeField, Min(0f)]
     private float combatStartDelay = 0.25f;
@@ -121,9 +119,7 @@ public class EncounterManager : MonoBehaviour
     private EncounterState currentState =
         EncounterState.None;
 
-
     private bool encounterRunning;
-
 
     private bool firstRoundStarted;
 
@@ -135,18 +131,14 @@ public class EncounterManager : MonoBehaviour
     public EncounterState CurrentState =>
         currentState;
 
-
     public EncounterDefinition CurrentEncounter =>
         currentEncounter;
-
 
     public VictoryCondition CurrentVictoryCondition =>
         victoryCondition;
 
-
     public string TargetEnemyId =>
         targetEnemyId;
-
 
     public int RoundsToSurvive =>
         roundsToSurvive;
@@ -188,13 +180,11 @@ public class EncounterManager : MonoBehaviour
                 FindFirstObjectByType<GameStateManager>();
         }
 
-
         if (gridManager == null)
         {
             gridManager =
                 FindFirstObjectByType<GridManager>();
         }
-
 
         if (encounterSpawner == null)
         {
@@ -202,13 +192,11 @@ public class EncounterManager : MonoBehaviour
                 FindFirstObjectByType<EncounterSpawner>();
         }
 
-
         if (roundManager == null)
         {
             roundManager =
                 FindFirstObjectByType<RoundManager>();
         }
-
 
         if (combatManager == null)
         {
@@ -227,31 +215,26 @@ public class EncounterManager : MonoBehaviour
         if (encounterRunning)
         {
             Debug.LogWarning(
-                "[EncounterManager] Encounter is already running.",
+                "[EncounterManager] StartEncounter ignored. " +
+                "Encounter is already running.",
                 this
             );
 
             return;
         }
-
 
         if (currentEncounter == null)
         {
             Debug.LogError(
-                "[EncounterManager] No EncounterDefinition assigned!",
+                "[EncounterManager] Cannot start encounter. " +
+                "No EncounterDefinition is assigned.",
                 this
             );
 
             return;
         }
 
-
-        // --------------------------------------------------------
-        // LOAD MISSION SETTINGS FROM DEFINITION
-        // --------------------------------------------------------
-
         LoadMissionFromDefinition();
-
 
         StartCoroutine(
             StartEncounterRoutine()
@@ -270,14 +253,11 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         victoryCondition =
             currentEncounter.victoryCondition;
 
-
         targetEnemyId =
             currentEncounter.targetEnemyId;
-
 
         roundsToSurvive =
             Mathf.Max(
@@ -285,15 +265,15 @@ public class EncounterManager : MonoBehaviour
                 currentEncounter.roundsToSurvive
             );
 
-
         Debug.Log(
-            "[EncounterManager] Mission loaded from definition.\n" +
-            "Condition=" +
+            "[EncounterManager] Mission loaded: " +
+            currentEncounter.encounterName +
+            " | Condition=" +
             victoryCondition +
-            "\nTargetEnemyId=" +
-            targetEnemyId +
-            "\nRoundsToSurvive=" +
-            roundsToSurvive,
+            " | SurvivalRounds=" +
+            roundsToSurvive +
+            " | Target=" +
+            targetEnemyId,
             this
         );
     }
@@ -309,86 +289,27 @@ public class EncounterManager : MonoBehaviour
 
         firstRoundStarted = false;
 
-
-        // --------------------------------------------------------
-        // PREPARING
-        // --------------------------------------------------------
-
         SetEncounterState(
             EncounterState.Preparing
         );
 
-
         Debug.Log(
-            "[EncounterManager] ========================================",
+            "[EncounterManager] Encounter preparation started.",
             this
         );
-
-
-        Debug.Log(
-            "[EncounterManager] STARTING ENCOUNTER",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] Encounter: " +
-            currentEncounter.encounterName,
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] Victory Condition: " +
-            victoryCondition,
-            this
-        );
-
-
-        if (UsesSpecificEnemyTarget())
-        {
-            Debug.Log(
-                "[EncounterManager] Target Enemy ID: " +
-                targetEnemyId,
-                this
-            );
-        }
-
-
-        if (UsesSurvival())
-        {
-            Debug.Log(
-                "[EncounterManager] Rounds to survive: " +
-                roundsToSurvive,
-                this
-            );
-        }
-
-
-        // --------------------------------------------------------
-        // VALIDATE
-        // --------------------------------------------------------
 
         if (!ValidateDependencies())
         {
             encounterRunning = false;
 
-
             SetEncounterState(
                 EncounterState.None
             );
 
-
             yield break;
         }
 
-
-        // --------------------------------------------------------
-        // CLEAR OLD ENCOUNTER
-        // --------------------------------------------------------
-
         ClearPreviousEncounter();
-
 
         yield return null;
 
@@ -401,9 +322,7 @@ public class EncounterManager : MonoBehaviour
             EncounterState.CreatingGrid
         );
 
-
         SetupGrid();
-
 
         if (gridSpawnDelay > 0f)
         {
@@ -421,31 +340,25 @@ public class EncounterManager : MonoBehaviour
             EncounterState.SpawningUnits
         );
 
-
         if (encounterSpawner == null)
         {
             Debug.LogError(
-                "[EncounterManager] EncounterSpawner is missing!",
+                "[EncounterManager] EncounterSpawner is missing.",
                 this
             );
 
-
             encounterRunning = false;
-
 
             SetEncounterState(
                 EncounterState.None
             );
 
-
             yield break;
         }
-
 
         encounterSpawner.SpawnEncounter(
             currentEncounter
         );
-
 
         if (unitSpawnDelay > 0f)
         {
@@ -463,33 +376,9 @@ public class EncounterManager : MonoBehaviour
             EncounterState.Preparing
         );
 
-
         Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] PREPARATION COMPLETE",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] Player may now be placed manually.",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] Waiting for NEXT ROUND button.",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
+            "[EncounterManager] Encounter ready. " +
+            "Waiting for first round.",
             this
         );
     }
@@ -503,39 +392,35 @@ public class EncounterManager : MonoBehaviour
     {
         bool valid = true;
 
-
         if (gridManager == null)
         {
             Debug.LogError(
-                "[EncounterManager] GridManager is missing!",
+                "[EncounterManager] GridManager is missing.",
                 this
             );
 
             valid = false;
         }
-
 
         if (encounterSpawner == null)
         {
             Debug.LogError(
-                "[EncounterManager] EncounterSpawner is missing!",
+                "[EncounterManager] EncounterSpawner is missing.",
                 this
             );
 
             valid = false;
         }
-
 
         if (roundManager == null)
         {
             Debug.LogError(
-                "[EncounterManager] RoundManager is missing!",
+                "[EncounterManager] RoundManager is missing.",
                 this
             );
 
             valid = false;
         }
-
 
         if (gameStateManager == null)
         {
@@ -545,7 +430,6 @@ public class EncounterManager : MonoBehaviour
             );
         }
 
-
         if (combatManager == null)
         {
             Debug.LogWarning(
@@ -554,32 +438,25 @@ public class EncounterManager : MonoBehaviour
             );
         }
 
-
         roundsToSurvive =
             Mathf.Max(
                 1,
                 roundsToSurvive
             );
 
-
-        // --------------------------------------------------------
-        // SPECIFIC TARGET VALIDATION
-        // --------------------------------------------------------
-
         if (UsesSpecificEnemyTarget())
         {
             if (string.IsNullOrWhiteSpace(targetEnemyId))
             {
                 Debug.LogError(
-                    "[EncounterManager] This mission requires a " +
-                    "specific enemy target, but Target Enemy ID is empty!",
+                    "[EncounterManager] Specific-target mission " +
+                    "has no Target Enemy ID.",
                     this
                 );
 
                 valid = false;
             }
         }
-
 
         return valid;
     }
@@ -594,24 +471,22 @@ public class EncounterManager : MonoBehaviour
         if (gridManager == null)
         {
             Debug.LogError(
-                "[EncounterManager] GridManager is missing!",
+                "[EncounterManager] GridManager is missing.",
                 this
             );
 
             return;
         }
-
 
         if (currentEncounter == null)
         {
             Debug.LogError(
-                "[EncounterManager] Current encounter is NULL!",
+                "[EncounterManager] Current encounter is NULL.",
                 this
             );
 
             return;
         }
-
 
         gridManager.SetGridShape(
             currentEncounter.shape,
@@ -620,22 +495,6 @@ public class EncounterManager : MonoBehaviour
             currentEncounter.minRadius,
             currentEncounter.maxRadius,
             true
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] Grid created: " +
-            "Shape=" +
-            currentEncounter.shape +
-            ", Width=" +
-            currentEncounter.width +
-            ", Height=" +
-            currentEncounter.height +
-            ", MinRadius=" +
-            currentEncounter.minRadius +
-            ", MaxRadius=" +
-            currentEncounter.maxRadius,
-            this
         );
     }
 
@@ -647,7 +506,6 @@ public class EncounterManager : MonoBehaviour
     private void ClearPreviousEncounter()
     {
         ClearUnits();
-
 
         if (gridManager != null)
         {
@@ -663,18 +521,15 @@ public class EncounterManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-
         for (int i = 0; i < units.Length; i++)
         {
             AttackUnit unit =
                 units[i];
 
-
             if (unit == null)
             {
                 continue;
             }
-
 
             if (gridManager != null)
             {
@@ -682,7 +537,6 @@ public class EncounterManager : MonoBehaviour
                     unit.gameObject
                 );
             }
-
 
             Destroy(
                 unit.gameObject
@@ -701,17 +555,12 @@ public class EncounterManager : MonoBehaviour
         {
             Debug.LogWarning(
                 "[EncounterManager] NextRound ignored. " +
-                "No encounter is running.",
+                "Encounter is not running.",
                 this
             );
 
             return;
         }
-
-
-        // --------------------------------------------------------
-        // PREPARATION -> FIRST ROUND
-        // --------------------------------------------------------
 
         if (currentState == EncounterState.Preparing)
         {
@@ -720,11 +569,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
-        // --------------------------------------------------------
-        // COMBAT -> NEXT ROUND
-        // --------------------------------------------------------
-
         if (currentState == EncounterState.Combat)
         {
             StartNextRound();
@@ -732,10 +576,9 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         Debug.LogWarning(
             "[EncounterManager] NextRound ignored. " +
-            "Current state = " +
+            "State=" +
             currentState,
             this
         );
@@ -753,22 +596,21 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         if (firstRoundStarted)
         {
             Debug.LogWarning(
-                "[EncounterManager] First round has already started.",
+                "[EncounterManager] First round already started.",
                 this
             );
 
             return;
         }
 
-
         if (currentState != EncounterState.Preparing)
         {
             Debug.LogWarning(
-                "[EncounterManager] Cannot start Round 1 from state: " +
+                "[EncounterManager] Cannot start first round. " +
+                "State=" +
                 currentState,
                 this
             );
@@ -776,11 +618,10 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         if (roundManager == null)
         {
             Debug.LogError(
-                "[EncounterManager] RoundManager is missing!",
+                "[EncounterManager] RoundManager is missing.",
                 this
             );
 
@@ -789,7 +630,7 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // VERIFY PLAYER EXISTS
+        // VERIFY PLAYER
         // --------------------------------------------------------
 
         AttackUnit[] players =
@@ -797,21 +638,17 @@ public class EncounterManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-
         bool playerFound = false;
-
 
         for (int i = 0; i < players.Length; i++)
         {
             AttackUnit unit =
                 players[i];
 
-
             if (unit == null)
             {
                 continue;
             }
-
 
             if (unit.GetTeam() == Team.Player)
             {
@@ -821,13 +658,11 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
-
         if (!playerFound)
         {
             Debug.LogWarning(
                 "[EncounterManager] Cannot start combat. " +
-                "No Team.Player unit exists.\n" +
-                "Place the player on the grid first.",
+                "No Team.Player unit exists.",
                 this
             );
 
@@ -836,31 +671,17 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // STARTING COMBAT
+        // START COMBAT
         // --------------------------------------------------------
 
         SetEncounterState(
             EncounterState.StartingCombat
         );
 
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] STARTING COMBAT",
-            this
-        );
-
-
         if (gameStateManager != null)
         {
             gameStateManager.EncounterStarted();
         }
-
 
         if (combatStartDelay <= 0f)
         {
@@ -885,18 +706,15 @@ public class EncounterManager : MonoBehaviour
             combatStartDelay
         );
 
-
         if (!encounterRunning)
         {
             yield break;
         }
 
-
         if (currentState != EncounterState.StartingCombat)
         {
             yield break;
         }
-
 
         StartCombatRound();
     }
@@ -913,55 +731,21 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         if (roundManager == null)
         {
             Debug.LogError(
-                "[EncounterManager] RoundManager is missing!",
+                "[EncounterManager] RoundManager is missing.",
                 this
             );
 
             return;
         }
 
-
         firstRoundStarted = true;
-
 
         SetEncounterState(
             EncounterState.Combat
         );
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] COMBAT STARTED",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ROUND 1 START",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] PLAYER TURN SHOULD START FIRST",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
-
 
         roundManager.StartRound();
     }
@@ -978,17 +762,15 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         if (roundManager == null)
         {
             Debug.LogError(
-                "[EncounterManager] RoundManager is missing!",
+                "[EncounterManager] RoundManager is missing.",
                 this
             );
 
             return;
         }
-
 
         if (roundManager.IsRoundRunning())
         {
@@ -1003,31 +785,13 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // CHECK VICTORY BEFORE STARTING ANOTHER ROUND
+        // FINAL SAFETY CHECK
         // --------------------------------------------------------
 
         if (CheckVictoryConditions())
         {
             return;
         }
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] NEXT ROUND",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
 
 
         roundManager.StartRound();
@@ -1038,10 +802,6 @@ public class EncounterManager : MonoBehaviour
     // UNIT KILLED
     // ============================================================
 
-    /// <summary>
-    /// Called by HealthManager BEFORE the unit is disabled.
-    /// This is important for specific-target missions.
-    /// </summary>
     public void HandleUnitKilled(
         HealthManager killedUnit,
         string encounterUnitId)
@@ -1051,27 +811,14 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         if (killedUnit == null)
         {
             return;
         }
 
 
-        Debug.Log(
-            "[EncounterManager] UNIT KILLED\n" +
-            "Unit=" +
-            killedUnit.name +
-            "\nTeam=" +
-            killedUnit.GetTeam() +
-            "\nEncounterID=" +
-            encounterUnitId,
-            this
-        );
-
-
         // --------------------------------------------------------
-        // ONLY ENEMY DEATHS CAN COMPLETE ENEMY MISSIONS
+        // PLAYER DEATH
         // --------------------------------------------------------
 
         if (killedUnit.GetTeam() != Team.Enemy)
@@ -1093,58 +840,10 @@ public class EncounterManager : MonoBehaviour
                 encounterUnitId == targetEnemyId
             )
             {
-                Debug.Log(
-                    "[EncounterManager] ========================================",
-                    this
-                );
-
-
-                Debug.Log(
-                    "[EncounterManager] TARGET ENEMY DEFEATED!",
-                    this
-                );
-
-
-                Debug.Log(
-                    "[EncounterManager] Target ID: " +
-                    targetEnemyId,
-                    this
-                );
-
-
-                Debug.Log(
-                    "[EncounterManager] Killed ID: " +
-                    encounterUnitId,
-                    this
-                );
-
-
-                Debug.Log(
-                    "[EncounterManager] ========================================",
-                    this
-                );
-
-
                 EncounterVictory();
 
                 return;
             }
-
-
-            Debug.Log(
-                "[EncounterManager] Enemy killed, " +
-                "but it was NOT the mission target.\n" +
-                "Target=" +
-                targetEnemyId +
-                "\nKilled=" +
-                encounterUnitId,
-                this
-            );
-
-
-            // ----------------------------------------------------
-            // OR SURVIVE ROUNDS
-            // ----------------------------------------------------
 
             if (
                 victoryCondition ==
@@ -1153,7 +852,6 @@ public class EncounterManager : MonoBehaviour
             {
                 CheckVictoryConditions();
             }
-
 
             return;
         }
@@ -1192,7 +890,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         if (
             currentState != EncounterState.Combat &&
             currentState != EncounterState.StartingCombat
@@ -1200,7 +897,6 @@ public class EncounterManager : MonoBehaviour
         {
             return;
         }
-
 
         if (healthManager == null)
         {
@@ -1221,7 +917,7 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // ENEMY HEALTH
+        // ENEMY
         // --------------------------------------------------------
 
         if (healthManager.GetTeam() != Team.Enemy)
@@ -1229,23 +925,13 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
-        // --------------------------------------------------------
-        // DO NOT DETERMINE SPECIFIC TARGET HERE.
-        //
-        // Die() calls HandleUnitKilled() with the actual ID.
-        // --------------------------------------------------------
-
         if (!healthManager.IsAlive())
         {
             return;
         }
 
 
-        // --------------------------------------------------------
-        // SURVIVAL CONDITIONS DO NOT CARE ABOUT HEALTH.
-        // --------------------------------------------------------
-
+        // Survival missions do not care about enemy health.
         if (UsesSurvival())
         {
             return;
@@ -1253,7 +939,7 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // NORMAL DEFEAT-ALL CHECK
+        // NORMAL DEFEAT-ALL
         // --------------------------------------------------------
 
         if (
@@ -1279,34 +965,28 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         AttackUnit[] units =
             FindObjectsByType<AttackUnit>(
                 FindObjectsSortMode.None
             );
-
 
         for (int i = 0; i < units.Length; i++)
         {
             AttackUnit unit =
                 units[i];
 
-
             if (unit == null)
             {
                 continue;
             }
-
 
             if (unit.GetTeam() != Team.Player)
             {
                 continue;
             }
 
-
             HealthManager health =
                 unit.GetComponent<HealthManager>();
-
 
             if (
                 health != null &&
@@ -1317,12 +997,10 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
-
         Debug.Log(
-            "[EncounterManager] PLAYER HAS BEEN DEFEATED.",
+            "[EncounterManager] PLAYER DEFEATED.",
             this
         );
-
 
         EncounterDefeat();
     }
@@ -1339,26 +1017,67 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-
-        if (
-            currentState != EncounterState.Combat &&
-            currentState != EncounterState.StartingCombat
-        )
+        if (roundManager == null)
         {
+            Debug.LogError(
+                "[EncounterManager] Victory check failed. " +
+                "RoundManager is NULL.",
+                this
+            );
+
             return false;
         }
 
-
-        Debug.Log(
-            "[EncounterManager] Checking victory after round " +
-            roundManager.GetCurrentRound(),
-            this
-        );
+        int currentRound =
+            roundManager.GetCurrentRound();
 
 
-        // ========================================================
+        // --------------------------------------------------------
+        // SURVIVAL
+        // --------------------------------------------------------
+
+        if (
+            victoryCondition ==
+                VictoryCondition.SurviveRounds ||
+            victoryCondition ==
+                VictoryCondition.DefeatAllEnemiesOrSurviveRounds ||
+            victoryCondition ==
+                VictoryCondition.DefeatSpecificEnemyOrSurviveRounds
+        )
+        {
+            bool survived =
+                currentRound >= roundsToSurvive;
+
+            Debug.Log(
+                "[EncounterManager] SURVIVAL CHECK | " +
+                "Round=" +
+                currentRound +
+                " | Required=" +
+                roundsToSurvive +
+                " | Result=" +
+                survived +
+                " | Condition=" +
+                victoryCondition,
+                this
+            );
+
+            if (survived)
+            {
+                Debug.Log(
+                    "[EncounterManager] SURVIVAL REQUIREMENT MET.",
+                    this
+                );
+
+                EncounterVictory();
+
+                return true;
+            }
+        }
+
+
+        // --------------------------------------------------------
         // DEFEAT ALL ENEMIES
-        // ========================================================
+        // --------------------------------------------------------
 
         if (
             victoryCondition ==
@@ -1372,35 +1091,13 @@ public class EncounterManager : MonoBehaviour
                 return true;
             }
 
-
             return false;
         }
 
 
-        // ========================================================
-        // SURVIVE ROUNDS
-        // ========================================================
-
-        if (
-            victoryCondition ==
-            VictoryCondition.SurviveRounds
-        )
-        {
-            if (HasSurvivedRequiredRounds())
-            {
-                EncounterVictory();
-
-                return true;
-            }
-
-
-            return false;
-        }
-
-
-        // ========================================================
+        // --------------------------------------------------------
         // DEFEAT ALL OR SURVIVE
-        // ========================================================
+        // --------------------------------------------------------
 
         if (
             victoryCondition ==
@@ -1414,22 +1111,13 @@ public class EncounterManager : MonoBehaviour
                 return true;
             }
 
-
-            if (HasSurvivedRequiredRounds())
-            {
-                EncounterVictory();
-
-                return true;
-            }
-
-
             return false;
         }
 
 
-        // ========================================================
-        // DEFEAT SPECIFIC ENEMY
-        // ========================================================
+        // --------------------------------------------------------
+        // SPECIFIC TARGET
+        // --------------------------------------------------------
 
         if (
             victoryCondition ==
@@ -1443,14 +1131,13 @@ public class EncounterManager : MonoBehaviour
                 return true;
             }
 
-
             return false;
         }
 
 
-        // ========================================================
-        // SPECIFIC ENEMY OR SURVIVE
-        // ========================================================
+        // --------------------------------------------------------
+        // SPECIFIC TARGET OR SURVIVE
+        // --------------------------------------------------------
 
         if (
             victoryCondition ==
@@ -1463,15 +1150,6 @@ public class EncounterManager : MonoBehaviour
 
                 return true;
             }
-
-
-            if (HasSurvivedRequiredRounds())
-            {
-                EncounterVictory();
-
-                return true;
-            }
-
 
             return false;
         }
@@ -1492,43 +1170,35 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-
         AttackUnit[] units =
             FindObjectsByType<AttackUnit>(
                 FindObjectsSortMode.None
             );
 
-
         bool targetWasFound = false;
-
 
         for (int i = 0; i < units.Length; i++)
         {
             AttackUnit unit =
                 units[i];
 
-
             if (unit == null)
             {
                 continue;
             }
-
 
             if (unit.GetTeam() != Team.Enemy)
             {
                 continue;
             }
 
-
             EncounterUnit encounterUnit =
                 unit.GetComponent<EncounterUnit>();
-
 
             if (encounterUnit == null)
             {
                 continue;
             }
-
 
             if (
                 !encounterUnit.HasEncounterUnitId(
@@ -1539,13 +1209,10 @@ public class EncounterManager : MonoBehaviour
                 continue;
             }
 
-
             targetWasFound = true;
-
 
             HealthManager health =
                 unit.GetComponent<HealthManager>();
-
 
             if (
                 health != null &&
@@ -1556,21 +1223,10 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
-
-        // --------------------------------------------------------
-        // If we found the target and it isn't alive, it is dead.
-        // --------------------------------------------------------
-
         if (targetWasFound)
         {
             return true;
         }
-
-
-        // --------------------------------------------------------
-        // Target may already have been disabled by HealthManager
-        // after HandleUnitKilled() was called.
-        // --------------------------------------------------------
 
         return false;
     }
@@ -1587,41 +1243,34 @@ public class EncounterManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-
         for (int i = 0; i < units.Length; i++)
         {
             AttackUnit unit =
                 units[i];
-
 
             if (unit == null)
             {
                 continue;
             }
 
-
             if (unit.GetTeam() != Team.Enemy)
             {
                 continue;
             }
 
-
             HealthManager health =
                 unit.GetComponent<HealthManager>();
-
 
             if (health == null)
             {
                 continue;
             }
 
-
             if (health.IsAlive())
             {
                 return true;
             }
         }
-
 
         return false;
     }
@@ -1638,22 +1287,24 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-
         int currentRound =
             roundManager.GetCurrentRound();
 
+        bool survived =
+            currentRound >= roundsToSurvive;
 
         Debug.Log(
-            "[EncounterManager] Survival check: " +
-            "Round " +
+            "[EncounterManager] SURVIVAL STATUS | " +
+            "Round=" +
             currentRound +
-            " / " +
-            roundsToSurvive,
+            " | Required=" +
+            roundsToSurvive +
+            " | Survived=" +
+            survived,
             this
         );
 
-
-        return currentRound >= roundsToSurvive;
+        return survived;
     }
 
 
@@ -1665,22 +1316,65 @@ public class EncounterManager : MonoBehaviour
     {
         if (!encounterRunning)
         {
+            Debug.LogWarning(
+                "[EncounterManager] Post-round victory check skipped. " +
+                "Encounter is no longer running.",
+                this
+            );
+
             return;
         }
 
-
-        if (currentState != EncounterState.Combat)
+        if (roundManager == null)
         {
+            Debug.LogError(
+                "[EncounterManager] Post-round victory check failed. " +
+                "RoundManager is NULL.",
+                this
+            );
+
             return;
         }
 
 
-        Debug.Log(
-            "[EncounterManager] Checking victory after round " +
-            roundManager.GetCurrentRound(),
-            this
-        );
+        int currentRound =
+            roundManager.GetCurrentRound();
 
+
+
+
+        // --------------------------------------------------------
+        // SURVIVAL IS CHECKED DIRECTLY HERE.
+        //
+        // This check happens after RoundManager has completed
+        // the round. Therefore Round 10 means ten complete rounds.
+        // --------------------------------------------------------
+
+        if (UsesSurvival())
+        {
+            if (currentRound >= roundsToSurvive)
+            {
+                Debug.Log(
+                    "[EncounterManager] POST-ROUND SURVIVAL SUCCESS | " +
+                    "Round " +
+                    currentRound +
+                    " reached required " +
+                    roundsToSurvive +
+                    " rounds.",
+                    this
+                );
+
+                EncounterVictory();
+
+                return;
+            }
+
+        }
+
+
+        // --------------------------------------------------------
+        // OTHER VICTORY CONDITIONS
+        // --------------------------------------------------------
 
         CheckVictoryConditions();
     }
@@ -1699,7 +1393,7 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // SAFETY CHECK
+        // SAFETY CHECKS
         // --------------------------------------------------------
 
         if (
@@ -1710,8 +1404,8 @@ public class EncounterManager : MonoBehaviour
             if (HasLivingEnemies())
             {
                 Debug.LogWarning(
-                    "[EncounterManager] Victory requested, " +
-                    "but living enemies still remain.",
+                    "[EncounterManager] Victory rejected. " +
+                    "Living enemies remain.",
                     this
                 );
 
@@ -1731,8 +1425,8 @@ public class EncounterManager : MonoBehaviour
             )
             {
                 Debug.LogWarning(
-                    "[EncounterManager] Victory requested, " +
-                    "but no victory condition has been satisfied.",
+                    "[EncounterManager] Victory rejected. " +
+                    "No victory condition has been satisfied.",
                     this
                 );
 
@@ -1749,8 +1443,8 @@ public class EncounterManager : MonoBehaviour
             if (!IsTargetEnemyDead())
             {
                 Debug.LogWarning(
-                    "[EncounterManager] Victory requested, " +
-                    "but target enemy has not been defeated.",
+                    "[EncounterManager] Victory rejected. " +
+                    "Target enemy is still alive.",
                     this
                 );
 
@@ -1770,8 +1464,8 @@ public class EncounterManager : MonoBehaviour
             )
             {
                 Debug.LogWarning(
-                    "[EncounterManager] Victory requested, " +
-                    "but no victory condition has been satisfied.",
+                    "[EncounterManager] Victory rejected. " +
+                    "Neither target nor survival condition is satisfied.",
                     this
                 );
 
@@ -1781,68 +1475,33 @@ public class EncounterManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // FINISH
+        // FINISH ENCOUNTER
         // --------------------------------------------------------
 
         encounterRunning = false;
 
-
         StopAllCoroutines();
-
 
         SetEncounterState(
             EncounterState.Victory
         );
 
 
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
+        int finalRound =
+            roundManager != null
+                ? roundManager.GetCurrentRound()
+                : -1;
 
 
         Debug.Log(
-            "[EncounterManager] ENCOUNTER FINISHED — VICTORY",
+            "[EncounterManager] ========================================\n" +
+            "[EncounterManager] VICTORY\n" +
+            "Condition=" + victoryCondition +
+            "\nFinalRound=" + finalRound +
+            "\nRequiredRounds=" + roundsToSurvive +
+            "\n========================================",
             this
         );
-
-
-        Debug.Log(
-            "[EncounterManager] Victory condition: " +
-            victoryCondition,
-            this
-        );
-
-
-        if (UsesSpecificEnemyTarget())
-        {
-            Debug.Log(
-                "[EncounterManager] Target enemy defeated: " +
-                targetEnemyId,
-                this
-            );
-        }
-
-
-        if (UsesSurvival())
-        {
-            Debug.Log(
-                "[EncounterManager] Survived " +
-                roundsToSurvive +
-                " rounds.",
-                this
-            );
-        }
-
-
-        if (roundManager != null)
-        {
-            Debug.Log(
-                "[EncounterManager] Final round: " +
-                roundManager.GetCurrentRound(),
-                this
-            );
-        }
 
 
         if (gameStateManager != null)
@@ -1851,31 +1510,8 @@ public class EncounterManager : MonoBehaviour
         }
 
 
-        string encounterName =
-            currentEncounter != null
-                ? currentEncounter.encounterName
-                : "Unknown";
-
-
-        Debug.Log(
-            "[EncounterManager] VICTORY: " +
-            encounterName,
-            this
-        );
-
-
-        // --------------------------------------------------------
-        // NOTIFY LEVEL MAP
-        // --------------------------------------------------------
-
         OnEncounterVictory?.Invoke(
             currentEncounter
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
         );
     }
 
@@ -1891,12 +1527,9 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         encounterRunning = false;
 
-
         StopAllCoroutines();
-
 
         SetEncounterState(
             EncounterState.Defeat
@@ -1904,13 +1537,7 @@ public class EncounterManager : MonoBehaviour
 
 
         Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ENCOUNTER FINISHED — DEFEAT",
+            "[EncounterManager] ENCOUNTER DEFEAT.",
             this
         );
 
@@ -1919,25 +1546,6 @@ public class EncounterManager : MonoBehaviour
         {
             gameStateManager.EncounterDefeat();
         }
-
-
-        string encounterName =
-            currentEncounter != null
-                ? currentEncounter.encounterName
-                : "Unknown";
-
-
-        Debug.Log(
-            "[EncounterManager] DEFEAT: " +
-            encounterName,
-            this
-        );
-
-
-        Debug.Log(
-            "[EncounterManager] ========================================",
-            this
-        );
     }
 
 
@@ -1979,13 +1587,6 @@ public class EncounterManager : MonoBehaviour
     {
         currentState =
             newState;
-
-
-        Debug.Log(
-            "[EncounterManager] State → " +
-            newState,
-            this
-        );
     }
 
 
@@ -2000,22 +1601,20 @@ public class EncounterManager : MonoBehaviour
         {
             Debug.LogWarning(
                 "[EncounterManager] Cannot change encounter " +
-                "while one is running.",
+                "while encounter is running.",
                 this
             );
 
             return;
         }
 
-
         if (encounter == null)
         {
             Debug.LogWarning(
-                "[EncounterManager] Trying to assign NULL encounter.",
+                "[EncounterManager] Assigned encounter is NULL.",
                 this
             );
         }
-
 
         currentEncounter =
             encounter;
@@ -2032,14 +1631,13 @@ public class EncounterManager : MonoBehaviour
         if (encounterRunning)
         {
             Debug.LogWarning(
-                "[EncounterManager] Cannot change victory " +
-                "condition while an encounter is running.",
+                "[EncounterManager] Cannot change victory condition " +
+                "while encounter is running.",
                 this
             );
 
             return;
         }
-
 
         victoryCondition =
             condition;
@@ -2053,13 +1651,12 @@ public class EncounterManager : MonoBehaviour
         {
             Debug.LogWarning(
                 "[EncounterManager] Cannot change target enemy " +
-                "while an encounter is running.",
+                "while encounter is running.",
                 this
             );
 
             return;
         }
-
 
         targetEnemyId =
             id;
@@ -2072,14 +1669,13 @@ public class EncounterManager : MonoBehaviour
         if (encounterRunning)
         {
             Debug.LogWarning(
-                "[EncounterManager] Cannot change survival " +
-                "rounds while an encounter is running.",
+                "[EncounterManager] Cannot change survival rounds " +
+                "while encounter is running.",
                 this
             );
 
             return;
         }
-
 
         roundsToSurvive =
             Mathf.Max(
@@ -2133,12 +1729,10 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-
         if (currentState == EncounterState.Preparing)
         {
             return true;
         }
-
 
         if (currentState == EncounterState.Combat)
         {
@@ -2147,11 +1741,9 @@ public class EncounterManager : MonoBehaviour
                 return false;
             }
 
-
             return
                 !roundManager.IsRoundRunning();
         }
-
 
         return false;
     }

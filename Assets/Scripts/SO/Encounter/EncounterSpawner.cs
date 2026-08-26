@@ -293,15 +293,6 @@ public class EncounterSpawner : MonoBehaviour
             return null;
         }
 
-
-        Debug.Log(
-            $"[EncounterSpawner] Spawned {unit.name} " +
-            $"at {position} " +
-            $"EncounterID={encounterUnitId}",
-            this
-        );
-
-
         return unit;
     }
 }
