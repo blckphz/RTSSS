@@ -52,15 +52,21 @@ public class HealthManager : MonoBehaviour
     // ==================================================
 
     [Header("Damage Screen Shake")]
-    [Tooltip("Enables a small screen shake whenever this unit loses health.")]
+    [Tooltip(
+        "Enables a small screen shake whenever this unit loses health."
+    )]
     [SerializeField]
     private bool enableDamageScreenShake = true;
 
-    [Tooltip("Strength of the screen shake when this unit takes damage.")]
+    [Tooltip(
+        "Strength of the screen shake when this unit takes damage."
+    )]
     [SerializeField]
     private float damageScreenShakeMagnitude = 1f;
 
-    [Tooltip("Duration of the screen shake when this unit takes damage.")]
+    [Tooltip(
+        "Duration of the screen shake when this unit takes damage."
+    )]
     [SerializeField]
     private float damageScreenShakeDuration = 0.15f;
 
@@ -70,7 +76,9 @@ public class HealthManager : MonoBehaviour
     // ==================================================
 
     [Header("Damage Sound")]
-    [Tooltip("Enables the damage sound whenever this unit loses health.")]
+    [Tooltip(
+        "Enables the damage sound whenever this unit loses health."
+    )]
     [SerializeField]
     private bool enableDamageSound = true;
 
@@ -112,13 +120,19 @@ public class HealthManager : MonoBehaviour
 
     private void Awake()
     {
-        maxHealth = Mathf.Max(1, maxHealth);
+        maxHealth =
+            Mathf.Max(
+                1,
+                maxHealth
+            );
 
-        health = maxHealth;
+        health =
+            maxHealth;
 
         SetupMaterial();
 
-        audioFXManager = AudioFXManager.Instance;
+        audioFXManager =
+            AudioFXManager.Instance;
     }
 
 
@@ -130,46 +144,61 @@ public class HealthManager : MonoBehaviour
     {
         if (spriteRenderer == null)
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer =
+                GetComponent<SpriteRenderer>();
         }
+
 
         if (spriteRenderer == null)
         {
             return;
         }
 
+
         if (material == null)
         {
-            material = spriteRenderer.material;
+            material =
+                spriteRenderer.material;
         }
     }
 
 
     // ==================================================
-    // INITIALIZE FROM CHARACTER SO
+    // INITIALIZE
     // ==================================================
 
-    public void Initialize(CharacterSO character)
+    public void Initialize(
+        CharacterSO character)
     {
         if (character == null)
         {
             return;
         }
 
-        team = character.team;
 
-        maxHealth = Mathf.Max(1, character.maxHealth);
+        team =
+            character.team;
 
-        health = maxHealth;
+        maxHealth =
+            Mathf.Max(
+                1,
+                character.maxHealth
+            );
+
+        health =
+            maxHealth;
 
         SetupMaterial();
 
         StopDamageFlash();
 
+
         if (audioFXManager == null)
         {
-            audioFXManager = AudioFXManager.Instance;
+            audioFXManager =
+                AudioFXManager.Instance;
         }
+
 
         NotifyHealthChanged();
     }
@@ -179,38 +208,40 @@ public class HealthManager : MonoBehaviour
     // DAMAGE
     // ==================================================
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(
+        int damage)
     {
         if (damage <= 0)
         {
             return;
         }
 
+
         if (IsDead())
         {
             return;
         }
 
-        health -= damage;
+
+        health -=
+            damage;
+
 
         if (health < 0)
         {
             health = 0;
         }
 
-        // DAMAGE SOUND
+
         PlayDamageSound();
 
-        // DAMAGE SCREEN SHAKE
         PlayDamageScreenShake();
 
-        // HEALTH CHANGE
         NotifyHealthChanged();
 
-        // DAMAGE FLASH
         FlashDamage();
 
-        // DEATH
+
         if (health <= 0)
         {
             Die();
@@ -229,10 +260,13 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
+
         if (audioFXManager == null)
         {
-            audioFXManager = AudioFXManager.Instance;
+            audioFXManager =
+                AudioFXManager.Instance;
         }
+
 
         if (audioFXManager != null)
         {
@@ -252,10 +286,12 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
+
         if (ScreenShaker.Instance == null)
         {
             return;
         }
+
 
         ScreenShaker.Instance.Shake(
             damageScreenShakeMagnitude,
@@ -265,7 +301,7 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
-    // HEALTH CHANGE NOTIFICATION
+    // HEALTH CHANGE
     // ==================================================
 
     private void NotifyHealthChanged()
@@ -282,23 +318,23 @@ public class HealthManager : MonoBehaviour
     {
         SetupMaterial();
 
+
         if (material == null)
         {
             return;
         }
+
 
         if (!material.HasProperty("_Intensity"))
         {
             return;
         }
 
-        // =================================================
-        // QUEUED MODE
-        // =================================================
 
         if (queueDamageFlashes)
         {
             pendingFlashes++;
+
 
             if (!isFlashing)
             {
@@ -308,18 +344,18 @@ public class HealthManager : MonoBehaviour
                     );
             }
 
+
             return;
         }
 
 
-        // =================================================
-        // NORMAL MODE
-        // =================================================
-
         if (flashCoroutine != null)
         {
-            StopCoroutine(flashCoroutine);
+            StopCoroutine(
+                flashCoroutine
+            );
         }
+
 
         flashCoroutine =
             StartCoroutine(
@@ -329,20 +365,23 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
-    // QUEUED FLASH COROUTINE
+    // QUEUED FLASH
     // ==================================================
 
     private IEnumerator DamageFlashQueueCoroutine()
     {
         isFlashing = true;
 
+
         while (pendingFlashes > 0)
         {
             pendingFlashes--;
 
+
             yield return StartCoroutine(
                 SingleDamageFlashCoroutine()
             );
+
 
             if (
                 pendingFlashes > 0 &&
@@ -354,6 +393,7 @@ public class HealthManager : MonoBehaviour
                 );
             }
         }
+
 
         isFlashing = false;
 
@@ -369,6 +409,7 @@ public class HealthManager : MonoBehaviour
     {
         SetupMaterial();
 
+
         if (
             material == null ||
             !material.HasProperty("_Intensity")
@@ -377,27 +418,34 @@ public class HealthManager : MonoBehaviour
             yield break;
         }
 
-        // FORCE FULL FLASH
+
         material.SetFloat(
             "_Intensity",
             flashIntensity
         );
 
+
         yield return null;
 
-        // FLASH FADE
+
         float timer = 0f;
+
 
         while (timer < flashDuration)
         {
-            timer += Time.deltaTime;
+            timer +=
+                Time.deltaTime;
+
 
             float t =
                 flashDuration <= 0f
                     ? 1f
                     : timer / flashDuration;
 
-            t = Mathf.Clamp01(t);
+
+            t =
+                Mathf.Clamp01(t);
+
 
             float intensity =
                 Mathf.Lerp(
@@ -405,6 +453,7 @@ public class HealthManager : MonoBehaviour
                     0f,
                     t
                 );
+
 
             if (
                 material != null &&
@@ -417,10 +466,11 @@ public class HealthManager : MonoBehaviour
                 );
             }
 
+
             yield return null;
         }
 
-        // RESET
+
         if (
             material != null &&
             material.HasProperty("_Intensity")
@@ -432,26 +482,31 @@ public class HealthManager : MonoBehaviour
             );
         }
 
+
         yield return null;
     }
 
 
     // ==================================================
-    // STOP DAMAGE FLASH
+    // STOP FLASH
     // ==================================================
 
     public void StopDamageFlash()
     {
         if (flashCoroutine != null)
         {
-            StopCoroutine(flashCoroutine);
+            StopCoroutine(
+                flashCoroutine
+            );
 
             flashCoroutine = null;
         }
 
+
         pendingFlashes = 0;
 
         isFlashing = false;
+
 
         if (
             material != null &&
@@ -470,24 +525,31 @@ public class HealthManager : MonoBehaviour
     // HEAL
     // ==================================================
 
-    public void Heal(int amount)
+    public void Heal(
+        int amount)
     {
         if (amount <= 0)
         {
             return;
         }
 
+
         if (IsDead())
         {
             return;
         }
 
-        health += amount;
+
+        health +=
+            amount;
+
 
         if (health > maxHealth)
         {
-            health = maxHealth;
+            health =
+                maxHealth;
         }
+
 
         NotifyHealthChanged();
     }
@@ -501,8 +563,49 @@ public class HealthManager : MonoBehaviour
     {
         StopDamageFlash();
 
+
+        // --------------------------------------------------
+        // GET ENCOUNTER INFORMATION BEFORE DISABLING
+        // --------------------------------------------------
+
+        EncounterUnit encounterUnit =
+            GetComponent<EncounterUnit>();
+
+
+        string encounterUnitId = null;
+
+
+        if (encounterUnit != null)
+        {
+            encounterUnitId =
+                encounterUnit.GetEncounterUnitId();
+        }
+
+
+        // --------------------------------------------------
+        // NOTIFY ENCOUNTER MANAGER
+        // --------------------------------------------------
+
+        EncounterManager encounterManager =
+            FindFirstObjectByType<EncounterManager>();
+
+
+        if (encounterManager != null)
+        {
+            encounterManager.HandleUnitKilled(
+                this,
+                encounterUnitId
+            );
+        }
+
+
+        // --------------------------------------------------
+        // REMOVE FROM GRID
+        // --------------------------------------------------
+
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
+
 
         if (gridManager != null)
         {
@@ -511,10 +614,16 @@ public class HealthManager : MonoBehaviour
                     transform.position
                 );
 
+
             gridManager.RemoveUnit(
                 gridPosition
             );
         }
+
+
+        // --------------------------------------------------
+        // DISABLE
+        // --------------------------------------------------
 
         gameObject.SetActive(false);
     }
@@ -558,17 +667,24 @@ public class HealthManager : MonoBehaviour
     // SETTERS
     // ==================================================
 
-    public void SetTeam(Team newTeam)
+    public void SetTeam(
+        Team newTeam)
     {
         team = newTeam;
     }
 
 
-    public void SetMaxHealth(int newMaxHealth)
+    public void SetMaxHealth(
+        int newMaxHealth)
     {
-        maxHealth = Mathf.Max(1, newMaxHealth);
+        maxHealth =
+            Mathf.Max(
+                1,
+                newMaxHealth
+            );
 
-        health = maxHealth;
+        health =
+            maxHealth;
 
         StopDamageFlash();
 

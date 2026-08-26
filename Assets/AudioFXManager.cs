@@ -114,11 +114,6 @@ public class AudioFXManager : MonoBehaviour
 
         audioSource.playOnAwake =
             false;
-
-
-        Debug.Log(
-            "[AudioFXManager] Initialized."
-        );
     }
 
 
@@ -128,18 +123,7 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitHover()
     {
-        if (unitHoverClip == null)
-        {
-            Debug.LogWarning(
-                "[AudioFXManager] " +
-                "Unit Hover Clip is not assigned."
-            );
-
-            return;
-        }
-
-
-        if (audioSource == null)
+        if (unitHoverClip == null || audioSource == null)
         {
             return;
         }
@@ -158,18 +142,7 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitClick()
     {
-        if (unitClickClip == null)
-        {
-            Debug.LogWarning(
-                "[AudioFXManager] " +
-                "Unit Click Clip is not assigned."
-            );
-
-            return;
-        }
-
-
-        if (audioSource == null)
+        if (unitClickClip == null || audioSource == null)
         {
             return;
         }
@@ -188,18 +161,7 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayAbilitySelect()
     {
-        if (abilitySelectClip == null)
-        {
-            Debug.LogWarning(
-                "[AudioFXManager] " +
-                "Ability Select Clip is not assigned."
-            );
-
-            return;
-        }
-
-
-        if (audioSource == null)
+        if (abilitySelectClip == null || audioSource == null)
         {
             return;
         }
@@ -218,18 +180,7 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitDeselect()
     {
-        if (unitDeselectClip == null)
-        {
-            Debug.LogWarning(
-                "[AudioFXManager] " +
-                "Unit Deselect Clip is not assigned."
-            );
-
-            return;
-        }
-
-
-        if (audioSource == null)
+        if (unitDeselectClip == null || audioSource == null)
         {
             return;
         }
@@ -248,18 +199,7 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitDamage()
     {
-        if (unitDamageClip == null)
-        {
-            Debug.LogWarning(
-                "[AudioFXManager] " +
-                "Unit Damage Clip is not assigned."
-            );
-
-            return;
-        }
-
-
-        if (audioSource == null)
+        if (unitDamageClip == null || audioSource == null)
         {
             return;
         }

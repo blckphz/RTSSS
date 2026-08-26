@@ -174,27 +174,6 @@ public class BoardViewController : MonoBehaviour
         FindExternalUnits();
 
 
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] INITIALIZED\n" +
-                "Board: " +
-                boardTransform.name +
-                "\nGrid: " +
-                gridWidth +
-                " x " +
-                gridHeight +
-                "\nCell Size: " +
-                cellSize +
-                "\nRotation Center: " +
-                rotationCenter +
-                "\nStarting Rotation: " +
-                currentRotation,
-                this
-            );
-        }
-
-
         if (currentRotation != 0)
         {
             RotateEverythingInstant(
@@ -1179,13 +1158,7 @@ public class BoardViewController : MonoBehaviour
 
         if (debugLogs)
         {
-            Debug.Log(
-                "[BoardViewController] Units found: " +
-                units.Length +
-                "\nExternal units: " +
-                externalUnits.Count,
-                this
-            );
+           
         }
     }
 

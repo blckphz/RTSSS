@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 [RequireComponent(typeof(AttackUnit))]
@@ -40,24 +39,11 @@ public class UnitMoveBrain : MonoBehaviour
     [SerializeField] private bool preferSidePositions = true;
 
     // ============================================================
-    // DEBUG CONFIG
-    // ============================================================
-
-    [Header("Movement Debug")]
-    [SerializeField] private bool enableMovementDebug = true;
-    [SerializeField] private bool logMovementRequests = true;
-    [SerializeField] private bool logMovementSteps = true;
-    [SerializeField] private bool logPathResults = true;
-    [SerializeField] private bool logGridSynchronization = true;
-    [SerializeField] private bool logMovementWarnings = true;
-
-    // ============================================================
     // STATE & CACHE
     // ============================================================
 
     private bool isMoving;
     private bool movementConsumed;
-    private readonly StringBuilder pathLogBuilder = new StringBuilder();
 
     // ============================================================
     // UNITY LIFECYCLE
@@ -69,8 +55,6 @@ public class UnitMoveBrain : MonoBehaviour
 
         movementConsumed = false;
         isMoving = false;
-
-        DebugLog($"Awake | MoveRange={GetMoveRange()} | Diagonal={CanWalkDiagonally()}");
     }
 
     private void OnEnable()
@@ -95,8 +79,8 @@ public class UnitMoveBrain : MonoBehaviour
 
     public bool CanUseAIMovement() => attackUnit != null && !attackUnit.IsDead() && attackUnit.GetTeam() != Team.Player;
     public bool CanMoveThisTurn() => !isMoving && !movementConsumed && CanMove();
-    public void ConsumeMovement() { movementConsumed = true; DebugLog("Movement consumed."); }
-    public void ResetMovement() { movementConsumed = false; DebugLog("Movement reset."); }
+    public void ConsumeMovement() { movementConsumed = true; }
+    public void ResetMovement() { movementConsumed = false; }
     public bool HasConsumedMovement() => movementConsumed;
     public bool IsMoving() => isMoving;
     public AttackUnit GetAttackUnit() => attackUnit;
@@ -110,7 +94,6 @@ public class UnitMoveBrain : MonoBehaviour
     {
         if (UnitMoveBrainManager.Instance == null)
         {
-            DebugWarning("UnitMoveBrainManager.Instance is NULL.");
             return null;
         }
         return UnitMoveBrainManager.Instance.GetGridManager();
@@ -123,7 +106,6 @@ public class UnitMoveBrain : MonoBehaviour
         CharacterSO data = GetCharacterData();
         if (data == null)
         {
-            DebugWarning("CharacterSO is NULL.");
             return 0;
         }
         return Mathf.Max(0, data.moveRange);
@@ -177,7 +159,6 @@ public class UnitMoveBrain : MonoBehaviour
     {
         if (!CanMoveThisTurn())
         {
-            DebugWarning($"TryMoveTo rejected | Moving={isMoving} | Consumed={movementConsumed}");
             return false;
         }
 
@@ -186,38 +167,28 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (!TryGetCurrentTile(out Vector2Int start))
         {
-            DebugWarning("Move rejected | Could not determine current tile.");
             return false;
-        }
-
-        if (logMovementRequests)
-        {
-            DebugLog($"Move request | Start={start} | Destination={destination} | World={transform.position}");
         }
 
         if (!gridManager.IsInsideGrid(destination))
         {
-            DebugWarning($"Move rejected | Destination outside grid: {destination}");
             return false;
         }
 
         if (start == destination)
         {
-            DebugWarning("Move rejected | Start equals destination.");
             return false;
         }
 
         GameObject occupant = gridManager.GetUnitAt(destination);
         if (occupant != null && occupant != gameObject)
         {
-            DebugWarning($"Move rejected | Destination occupied by {occupant.name}");
             return false;
         }
 
         int moveRange = GetMoveRange();
         if (moveRange <= 0)
         {
-            DebugWarning("Move rejected | Move range is zero.");
             return false;
         }
 
@@ -228,21 +199,15 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (!foundPath)
         {
-            DebugWarning("Move rejected | No path.");
             return false;
         }
 
         int steps = path.Count - 1;
-        if (logPathResults)
-        {
-            DebugLog($"Path found | Steps={steps} | Path={FormatPath(path)}");
-        }
 
         if (steps <= 0) return false;
 
         if (steps > moveRange)
         {
-            DebugWarning($"Move rejected | Steps={steps} > MoveRange={moveRange}");
             return false;
         }
 
@@ -276,7 +241,6 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (target == null)
         {
-            DebugWarning("AI movement | No target found.");
             yield break;
         }
 
@@ -285,11 +249,8 @@ public class UnitMoveBrain : MonoBehaviour
         Vector2Int targetPos = gridManager.WorldToGridPosition(target.transform.position);
         int distance = UnitMoveBrainManager.Instance.GetMovementDistance(currentPos, targetPos, CanWalkDiagonally());
 
-        DebugLog($"AI movement | Current={currentPos} | Target={target.name} | TargetTile={targetPos} | Distance={distance}");
-
         if (distance <= attackRange)
         {
-            DebugLog("AI movement cancelled | Already in attack range.");
             yield break;
         }
 
@@ -298,11 +259,8 @@ public class UnitMoveBrain : MonoBehaviour
             preferCloserAttackPosition, preferMoreOpenPositions, preferSidePositions
         );
 
-        DebugLog($"AI attack position | Selected={attackPos}");
-
         if (attackPos == currentPos)
         {
-            DebugLog("AI movement cancelled | Already at best position.");
             yield break;
         }
 
@@ -313,12 +271,10 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (!foundPath || path.Count < 2)
         {
-            DebugWarning("AI movement failed | No path to attack position.");
             yield break;
         }
 
         int availableSteps = Mathf.Min(GetMoveRange(), path.Count - 1);
-        DebugLog($"AI movement path | Steps={path.Count - 1} | Taking={availableSteps} | Path={FormatPath(path)}");
 
         if (availableSteps <= 0) yield break;
 
@@ -341,8 +297,6 @@ public class UnitMoveBrain : MonoBehaviour
         ConsumeMovement();
 
         Vector2Int lastLogicalTile = path[0];
-        DebugLog($"MOVEMENT START | LogicalStart={lastLogicalTile} | WorldStart={transform.position} | Steps={stepsToTake}");
-
         bool completedAllSteps = false;
 
         try
@@ -353,40 +307,26 @@ public class UnitMoveBrain : MonoBehaviour
             {
                 if (!CanMove())
                 {
-                    DebugWarning("Movement interrupted | Unit cannot move.");
                     break;
                 }
 
                 Vector2Int currentPosition = lastLogicalTile;
                 Vector2Int nextPosition = path[i];
 
-                if (logMovementSteps)
-                {
-                    DebugLog($"STEP START | Step={i}/{actualSteps} | LogicalCurrent={currentPosition} | LogicalNext={nextPosition} | VisualWorld={transform.position}");
-                }
-
                 if (!gridManager.IsInsideGrid(nextPosition))
                 {
-                    DebugWarning($"Step rejected | Outside grid: {nextPosition}");
                     break;
                 }
 
                 GameObject occupant = gridManager.GetUnitAt(nextPosition);
                 if (occupant != null && occupant != gameObject)
                 {
-                    DebugWarning($"Step rejected | {nextPosition} occupied by {occupant.name}");
                     break;
                 }
 
                 if (!gridManager.StartMoveUnit(gameObject, currentPosition, nextPosition))
                 {
-                    DebugWarning($"StartMoveUnit FAILED | {currentPosition} -> {nextPosition}");
                     break;
-                }
-
-                if (logGridSynchronization)
-                {
-                    DebugLog($"GRID RESERVED | {currentPosition} -> {nextPosition}");
                 }
 
                 Vector3 startWorldPosition = transform.position;
@@ -397,7 +337,6 @@ public class UnitMoveBrain : MonoBehaviour
                 {
                     if (!CanMove())
                     {
-                        DebugWarning("Movement interrupted during animation.");
                         break;
                     }
 
@@ -415,11 +354,6 @@ public class UnitMoveBrain : MonoBehaviour
                 if (tilePin != null)
                 {
                     tilePin.UpdateTileAfterMovement(nextPosition);
-                }
-
-                if (logGridSynchronization)
-                {
-                    DebugLog($"STEP FINISHED | LogicalTile={nextPosition} | World={transform.position}");
                 }
 
                 yield return null;
@@ -443,8 +377,6 @@ public class UnitMoveBrain : MonoBehaviour
             {
                 gridManager.FinishMoveUnit(gameObject, lastLogicalTile);
             }
-
-            DebugLog($"MOVEMENT END | FinalLogicalTile={lastLogicalTile} | FinalWorld={transform.position}");
         }
     }
 
@@ -479,7 +411,6 @@ public class UnitMoveBrain : MonoBehaviour
         if (!foundPath)
         {
             result.Clear();
-            if (logPathResults) DebugLog($"Preview path FAILED | {start} -> {destination}");
             return false;
         }
 
@@ -503,7 +434,6 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (!TryGetCurrentTile(out Vector2Int start))
         {
-            DebugWarning("Could not determine current logical tile.");
             return;
         }
 
@@ -515,36 +445,5 @@ public class UnitMoveBrain : MonoBehaviour
         );
 
         result.Remove(start);
-        DebugLog($"Reachable cells | Start={start} | Range={moveRange} | Count={result.Count}");
-    }
-
-    // ============================================================
-    // DEBUG LOGGING & HELPERS
-    // ============================================================
-
-    private void DebugLog(string message)
-    {
-        if (!enableMovementDebug) return;
-        Debug.Log($"[UnitMoveBrain] {gameObject.name} | {message}", this);
-    }
-
-    private void DebugWarning(string message)
-    {
-        if (!enableMovementDebug || !logMovementWarnings) return;
-        Debug.LogWarning($"[UnitMoveBrain] {gameObject.name} | {message}", this);
-    }
-
-    private string FormatPath(List<Vector2Int> path)
-    {
-        if (path == null || path.Count == 0) return "EMPTY";
-
-        pathLogBuilder.Clear();
-        for (int i = 0; i < path.Count; i++)
-        {
-            if (i > 0) pathLogBuilder.Append(" -> ");
-            pathLogBuilder.Append(path[i]);
-        }
-
-        return pathLogBuilder.ToString();
     }
 }

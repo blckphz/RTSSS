@@ -10,7 +10,6 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private GridManager gridManager;
 
-
     // ==================================================
     // SETTINGS
     // ==================================================
@@ -18,10 +17,6 @@ public class UnitTilePin : MonoBehaviour
     [Header("Pin Settings")]
     [SerializeField]
     private bool pinEveryFrame = true;
-
-    [SerializeField]
-    private bool logUnitTile = true;
-
 
     // ==================================================
     // ROTATION
@@ -41,7 +36,6 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private bool lockRotationEveryFrame = true;
 
-
     // ==================================================
     // UNIQUE UNIT ID
     // ==================================================
@@ -52,7 +46,6 @@ public class UnitTilePin : MonoBehaviour
 
     private static int nextUnitId = 1;
 
-
     // ==================================================
     // TILE STATE
     // ==================================================
@@ -60,7 +53,6 @@ public class UnitTilePin : MonoBehaviour
     private Vector2Int logicalTile;
 
     private bool hasTile;
-
 
     // ==================================================
     // UNITY
@@ -75,7 +67,6 @@ public class UnitTilePin : MonoBehaviour
         ForceRotation();
     }
 
-
     private void Start()
     {
         FindGridManager();
@@ -85,12 +76,10 @@ public class UnitTilePin : MonoBehaviour
         ForceRotation();
     }
 
-
     private void LateUpdate()
     {
         BoardViewController board =
             BoardViewController.Instance;
-
 
         if (
             board != null &&
@@ -105,19 +94,16 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
-
         if (pinEveryFrame)
         {
             PinToTile();
         }
-
 
         if (lockRotationEveryFrame)
         {
             ForceRotation();
         }
     }
-
 
     // ==================================================
     // UNIQUE ID
@@ -135,20 +121,12 @@ public class UnitTilePin : MonoBehaviour
             nextUnitId.ToString("D4");
 
         nextUnitId++;
-
-        Debug.Log(
-            $"[UnitTilePin] Generated ID {unitId} " +
-            $"for {gameObject.name}.",
-            this
-        );
     }
-
 
     public string GetUnitId()
     {
         return unitId;
     }
-
 
     // ==================================================
     // FIND GRID MANAGER
@@ -165,7 +143,6 @@ public class UnitTilePin : MonoBehaviour
             FindFirstObjectByType<GridManager>();
     }
 
-
     // ==================================================
     // REGISTER CURRENT TILE
     // ==================================================
@@ -177,35 +154,20 @@ public class UnitTilePin : MonoBehaviour
             FindGridManager();
         }
 
-
         if (gridManager == null)
         {
             return;
         }
-
 
         logicalTile =
             gridManager.WorldToGridPosition(
                 transform.position
             );
 
-
         hasTile = true;
-
-
-        if (logUnitTile)
-        {
-            Debug.Log(
-                $"[Unit Tile] {gameObject.name} " +
-                $"[{unitId}] -> {logicalTile}",
-                this
-            );
-        }
-
 
         PinToTile();
     }
-
 
     // ==================================================
     // SET TILE
@@ -220,37 +182,22 @@ public class UnitTilePin : MonoBehaviour
             FindGridManager();
         }
 
-
         if (gridManager == null)
         {
             return;
         }
-
 
         if (!gridManager.IsInsideGrid(tile))
         {
             return;
         }
 
-
         logicalTile = tile;
 
         hasTile = true;
 
-
-        if (logUnitTile)
-        {
-            Debug.Log(
-                $"[Unit Tile] {gameObject.name} " +
-                $"[{unitId}] -> {logicalTile}",
-                this
-            );
-        }
-
-
         PinToTile();
     }
-
 
     // ==================================================
     // IMPORTANT:
@@ -266,31 +213,21 @@ public class UnitTilePin : MonoBehaviour
             FindGridManager();
         }
 
-
         if (gridManager == null)
         {
             return;
         }
 
-
         if (!gridManager.IsInsideGrid(newTile))
         {
-            Debug.LogWarning(
-                $"[UnitTilePin] Tried to move " +
-                $"{gameObject.name} to invalid tile {newTile}.",
-                this
-            );
-
             return;
         }
-
 
         logicalTile =
             newTile;
 
         hasTile =
             true;
-
 
         // Make absolutely sure the world position
         // agrees with the new logical tile.
@@ -299,27 +236,11 @@ public class UnitTilePin : MonoBehaviour
                 newTile
             );
 
-
         transform.position =
             targetPosition;
 
-
-        if (logUnitTile)
-        {
-            Debug.Log(
-                $"[UnitTilePin] MOVEMENT SYNC\n" +
-                $"Unit: {gameObject.name}\n" +
-                $"ID: {unitId}\n" +
-                $"New Tile: {logicalTile}\n" +
-                $"World Position: {transform.position}",
-                this
-            );
-        }
-
-
         ForceRotation();
     }
-
 
     // ==================================================
     // PIN TO TILE
@@ -332,22 +253,18 @@ public class UnitTilePin : MonoBehaviour
             FindGridManager();
         }
 
-
         if (gridManager == null)
         {
             return;
         }
-
 
         if (!hasTile)
         {
             return;
         }
 
-
         BoardViewController board =
             BoardViewController.Instance;
-
 
         if (
             board != null &&
@@ -357,17 +274,14 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
-
         Vector3 targetPosition =
             gridManager.GridToWorldPosition(
                 logicalTile
             );
 
-
         transform.position =
             targetPosition;
     }
-
 
     // ==================================================
     // FORCE ROTATION
@@ -379,7 +293,6 @@ public class UnitTilePin : MonoBehaviour
             Quaternion.Euler(
                 fixedRotation
             );
-
 
         if (
             Quaternion.Angle(
@@ -393,7 +306,6 @@ public class UnitTilePin : MonoBehaviour
         }
     }
 
-
     // ==================================================
     // GET TILE
     // ==================================================
@@ -402,7 +314,6 @@ public class UnitTilePin : MonoBehaviour
     {
         return logicalTile;
     }
-
 
     // ==================================================
     // HAS TILE
@@ -413,7 +324,6 @@ public class UnitTilePin : MonoBehaviour
         return hasTile;
     }
 
-
     // ==================================================
     // GET GRID MANAGER
     // ==================================================
@@ -422,7 +332,6 @@ public class UnitTilePin : MonoBehaviour
     {
         return gridManager;
     }
-
 
     // ==================================================
     // SET FIXED ROTATION
@@ -437,7 +346,6 @@ public class UnitTilePin : MonoBehaviour
 
         ForceRotation();
     }
-
 
     // ==================================================
     // GET FIXED ROTATION

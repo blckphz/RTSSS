@@ -258,19 +258,6 @@ public class AttackUnit : MonoBehaviour
         {
             EnsureGridManager();
         }
-
-        if (cachedGridManager != null)
-        {
-            Debug.Log(
-                "[AttackUnit] LOGICAL GRID POSITION SET\n" +
-                "Unit: " +
-                gameObject.name +
-                "\n" +
-                "Logical Position: " +
-                logicalGridPosition,
-                this
-            );
-        }
     }
 
 
@@ -862,33 +849,6 @@ public class AttackUnit : MonoBehaviour
 
         cachedGridManager =
             FindFirstObjectByType<GridManager>();
-
-        if (cachedGridManager == null)
-        {
-            Debug.LogError(
-                "[AttackUnit] GridManager NOT FOUND!\n" +
-                "Unit: " +
-                gameObject.name,
-                this
-            );
-
-            return;
-        }
-
-        Debug.Log(
-            "[AttackUnit] GridManager FOUND.\n" +
-            "Unit: " +
-            gameObject.name +
-            "\n" +
-            "GridManager: " +
-            cachedGridManager.gameObject.name +
-            "\n" +
-            "Grid Size: " +
-            cachedGridManager.GetWidth() +
-            " x " +
-            cachedGridManager.GetHeight(),
-            this
-        );
     }
 
 
@@ -903,126 +863,8 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager == null)
         {
-            Debug.LogError(
-                "[AttackUnit] Cannot debug grid position.\n" +
-                "GridManager is missing.\n" +
-                "Unit: " +
-                gameObject.name,
-                this
-            );
-
             return;
         }
-
-        Vector3 worldPosition =
-            transform.position;
-
-        Vector2Int logicalPosition =
-            GetLogicalGridPosition();
-
-        Vector2Int worldDetectedPosition =
-            cachedGridManager.WorldToGridPosition(
-                worldPosition
-            );
-
-        bool insideGrid =
-            cachedGridManager.IsInsideGrid(
-                logicalPosition
-            );
-
-        Vector3 expectedWorldPosition =
-            cachedGridManager.GridToWorldPosition(
-                logicalPosition
-            );
-
-        float distanceFromLogicalTile =
-            Vector3.Distance(
-                worldPosition,
-                expectedWorldPosition
-            );
-
-        GameObject registeredUnit =
-            cachedGridManager.GetUnitAt(
-                logicalPosition
-            );
-
-        bool isRegisteredHere =
-            registeredUnit == gameObject;
-
-        Debug.Log(
-            "========================================\n" +
-            "[AttackUnit] GRID POSITION DEBUG\n" +
-            "========================================\n\n" +
-
-            "UNIT\n" +
-            "Name: " +
-            gameObject.name +
-            "\n\n" +
-
-            "WORLD POSITION\n" +
-            worldPosition +
-            "\n\n" +
-
-            "CACHED LOGICAL GRID POSITION\n" +
-            logicalPosition +
-            "\n\n" +
-
-            "WORLD -> GRID DETECTED POSITION\n" +
-            worldDetectedPosition +
-            "\n\n" +
-
-            "POSITION MATCHES\n" +
-            (
-                logicalPosition ==
-                worldDetectedPosition
-            ) +
-            "\n\n" +
-
-            "INSIDE GRID\n" +
-            insideGrid +
-            "\n\n" +
-
-            "EXPECTED LOGICAL TILE CENTER\n" +
-            expectedWorldPosition +
-            "\n\n" +
-
-            "DISTANCE FROM LOGICAL TILE CENTER\n" +
-            distanceFromLogicalTile +
-            "\n\n" +
-
-            "REGISTERED UNIT AT LOGICAL TILE\n" +
-            (
-                registeredUnit == null
-                    ? "NONE"
-                    : registeredUnit.name
-            ) +
-            "\n\n" +
-
-            "IS THIS UNIT REGISTERED HERE\n" +
-            isRegisteredHere +
-            "\n\n" +
-
-            "GRID SIZE\n" +
-            cachedGridManager.GetWidth() +
-            " x " +
-            cachedGridManager.GetHeight() +
-            "\n\n" +
-
-            "GRID X RANGE\n" +
-            cachedGridManager.GetMinX() +
-            " -> " +
-            cachedGridManager.GetMaxX() +
-            "\n\n" +
-
-            "GRID Y RANGE\n" +
-            cachedGridManager.GetMinY() +
-            " -> " +
-            cachedGridManager.GetMaxY() +
-            "\n\n" +
-
-            "========================================",
-            this
-        );
     }
 
 
@@ -1040,57 +882,12 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        Vector3 beforePosition =
-            transform.position;
-
-        /*
-         * IMPORTANT:
-         *
-         * Snap uses the logical grid position.
-         *
-         * It does NOT redefine the logical position from the
-         * rotated world position.
-         */
         Vector2Int gridPosition =
             GetLogicalGridPosition();
-
-        Debug.Log(
-            "[AttackUnit] SNAP START\n" +
-            "Unit: " +
-            gameObject.name +
-            "\n" +
-            "World Position Before: " +
-            beforePosition +
-            "\n" +
-            "Logical Grid Position: " +
-            gridPosition,
-            this
-        );
 
         if (!cachedGridManager.IsInsideGrid(
                 gridPosition))
         {
-            Debug.LogWarning(
-                "[AttackUnit] SNAP CANCELLED.\n" +
-                "Logical position is OUTSIDE grid.\n" +
-                "Unit: " +
-                gameObject.name +
-                "\n" +
-                "Grid Position: " +
-                gridPosition +
-                "\n" +
-                "Valid X: " +
-                cachedGridManager.GetMinX() +
-                " -> " +
-                cachedGridManager.GetMaxX() +
-                "\n" +
-                "Valid Y: " +
-                cachedGridManager.GetMinY() +
-                " -> " +
-                cachedGridManager.GetMaxY(),
-                this
-            );
-
             return;
         }
 
@@ -1101,43 +898,6 @@ public class AttackUnit : MonoBehaviour
 
         transform.position =
             targetPosition;
-
-        Vector3 afterPosition =
-            transform.position;
-
-        Debug.Log(
-            "[AttackUnit] SNAP COMPLETE\n" +
-            "========================================\n" +
-            "Unit: " +
-            gameObject.name +
-            "\n\n" +
-
-            "Logical Grid Position:\n" +
-            gridPosition +
-            "\n\n" +
-
-            "Before:\n" +
-            beforePosition +
-            "\n\n" +
-
-            "After:\n" +
-            afterPosition +
-            "\n\n" +
-
-            "Expected Tile Center:\n" +
-            targetPosition +
-            "\n\n" +
-
-            "Distance From Expected Center:\n" +
-            Vector3.Distance(
-                afterPosition,
-                targetPosition
-            ) +
-            "\n\n" +
-
-            "========================================",
-            this
-        );
     }
 
 
@@ -1147,16 +907,6 @@ public class AttackUnit : MonoBehaviour
 
     public Vector2Int GetCurrentGridPosition()
     {
-        /*
-         * DO NOT DO THIS:
-         *
-         * WorldToGridPosition(transform.position)
-         *
-         * after board rotation.
-         *
-         * The transform has been visually rotated/moved while
-         * the logical board coordinate remains unchanged.
-         */
         Vector2Int position =
             GetLogicalGridPosition();
 

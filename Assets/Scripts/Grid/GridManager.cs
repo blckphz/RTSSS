@@ -612,4 +612,82 @@ public class GridManager : MonoBehaviour
         Vector3Int cell = new Vector3Int(x + width / 2, y + height / 2, 0);
         return ConvertGridToWorldSpace(grid.CellToWorld(cell));
     }
+
+    public bool TryGetRandomFreeCell(out Vector2Int position)
+    {
+        position = Vector2Int.zero;
+
+        if (occupiedCells == null)
+        {
+            Debug.LogError(
+                "[GridManager] Grid has not been initialized!",
+                this
+            );
+
+            return false;
+        }
+
+        int minX = GetMinX();
+        int maxX = GetMaxX();
+        int minY = GetMinY();
+        int maxY = GetMaxY();
+
+        // Count available cells first.
+        int freeCellCount = 0;
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = minY; y <= maxY; y++)
+            {
+                Vector2Int cell = new Vector2Int(x, y);
+
+                if (!IsInsideGrid(cell))
+                    continue;
+
+                if (IsCellOccupied(cell))
+                    continue;
+
+                freeCellCount++;
+            }
+        }
+
+        if (freeCellCount == 0)
+        {
+            Debug.LogWarning(
+                "[GridManager] No free cells available!",
+                this
+            );
+
+            return false;
+        }
+
+        // Pick a random free cell.
+        int randomIndex = Random.Range(0, freeCellCount);
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = minY; y <= maxY; y++)
+            {
+                Vector2Int cell = new Vector2Int(x, y);
+
+                if (!IsInsideGrid(cell))
+                    continue;
+
+                if (IsCellOccupied(cell))
+                    continue;
+
+                if (randomIndex == 0)
+                {
+                    position = cell;
+                    return true;
+                }
+
+                randomIndex--;
+            }
+        }
+
+        return false;
+    }
+
+
 }
