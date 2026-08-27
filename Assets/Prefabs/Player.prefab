@@ -142,7 +142,7 @@ GameObject:
   - component: {fileID: 899678385597234880}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -261,6 +261,7 @@ MonoBehaviour:
   characterData: {fileID: 11400000, guid: ad18bbb26e16b984498d916f39746623, type: 2}
   abilities: []
   healthManager: {fileID: 7781654838360763359}
+  logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &8427803419809321729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -379,6 +380,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   attackUnit: {fileID: 7910321259876173858}
+  tilePin: {fileID: 0}
   moveDuration: 0.25
   attackRange: 1
   preferLowHealthEnemies: 1
@@ -466,6 +468,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitTilePin
   gridManager: {fileID: 0}
   pinEveryFrame: 0
-  logDebug: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
+  unitId: 

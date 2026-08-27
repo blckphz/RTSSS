@@ -13,7 +13,6 @@ public class RoundManager : MonoBehaviour
         EnemyTurn
     }
 
-
     [Serializable]
     public struct AbilityLogEntry
     {
@@ -21,7 +20,6 @@ public class RoundManager : MonoBehaviour
         public string unitName;
         public string abilityName;
     }
-
 
     // ============================================================
     // ROUND STATE
@@ -32,8 +30,7 @@ public class RoundManager : MonoBehaviour
     private int currentRound = 0;
 
     [SerializeField]
-    private RoundState currentState =
-        RoundState.Setup;
+    private RoundState currentState = RoundState.Setup;
 
     [SerializeField]
     private bool autoBattle = false;
@@ -76,15 +73,30 @@ public class RoundManager : MonoBehaviour
     private readonly List<AttackUnit> cachedUnits =
         new List<AttackUnit>();
 
+
+    // ============================================================
+    // ENEMY SPAWN LOCK
+    // ============================================================
+    //
+    // Enemies spawned during THIS round are locked.
+    //
+    // They do not receive an enemy turn until the next round.
+    //
+    // Existing enemies are allowed to act normally.
+    //
+    // ============================================================
+
+    private readonly HashSet<AttackUnit> enemyTurnLockedUnits =
+        new HashSet<AttackUnit>();
+
+
     private WaitForSeconds unitDelay;
 
     private bool roundRunning;
 
     private CanvasInfoManager canvasInfoManager;
 
-
     public event Action<AbilityLogEntry> OnAbilityUsed;
-
 
 
     // ============================================================
@@ -96,27 +108,23 @@ public class RoundManager : MonoBehaviour
         if (combatManager == null)
         {
             combatManager =
-                FindObjectOfType<CombatManager>();
+                FindFirstObjectByType<CombatManager>();
         }
-
 
         if (gridManager == null)
         {
             gridManager =
-                FindObjectOfType<GridManager>();
+                FindFirstObjectByType<GridManager>();
         }
-
 
         if (encounterManager == null)
         {
             encounterManager =
-                FindObjectOfType<EncounterManager>();
+                FindFirstObjectByType<EncounterManager>();
         }
-
 
         canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
-
 
         unitDelay =
             new WaitForSeconds(
@@ -125,7 +133,6 @@ public class RoundManager : MonoBehaviour
                     delayBetweenUnits
                 )
             );
-
 
         if (autoBattleToggle != null)
         {
@@ -152,6 +159,15 @@ public class RoundManager : MonoBehaviour
 
     private void Update()
     {
+        // --------------------------------------------------------
+        // AUTO BATTLE
+        // --------------------------------------------------------
+        //
+        // Auto battle can only start a round when the player is
+        // actually present on the field.
+        //
+        // --------------------------------------------------------
+
         if (
             autoBattle &&
             currentState == RoundState.Setup &&
@@ -169,11 +185,19 @@ public class RoundManager : MonoBehaviour
 
     public void StartRound()
     {
+        // --------------------------------------------------------
+        // ALREADY RUNNING
+        // --------------------------------------------------------
+
         if (roundRunning)
         {
             return;
         }
 
+
+        // --------------------------------------------------------
+        // WRONG STATE
+        // --------------------------------------------------------
 
         if (currentState != RoundState.Setup)
         {
@@ -181,26 +205,83 @@ public class RoundManager : MonoBehaviour
         }
 
 
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
+        // --------------------------------------------------------
+        // PLAYER MUST BE ON THE FIELD
+        // --------------------------------------------------------
+        //
+        // This is the important check.
+        //
+        // Do not start a round until a living Player AttackUnit
+        // exists.
+        //
+        // This also prevents AutoBattle from starting rounds
+        // before the player has spawned.
+        //
+        // --------------------------------------------------------
+
+        if (!IsPlayerOnField())
         {
+            Debug.Log(
+                "[RoundManager] Cannot start round: " +
+                "Player is not on the field.",
+                this
+            );
 
             return;
         }
 
 
-        float startTime =
-            Time.realtimeSinceStartup;
+        // --------------------------------------------------------
+        // ENCOUNTER FINISHED
+        // --------------------------------------------------------
 
+        if (
+            encounterManager != null &&
+            encounterManager.IsFinished()
+        )
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // START ROUND
+        // --------------------------------------------------------
 
         currentRound++;
 
         roundRunning = true;
 
 
+        // --------------------------------------------------------
+        // CLEAR PREVIOUS ROUND'S LOCKS
+        // --------------------------------------------------------
+        //
+        // Enemies that were spawned during the previous round
+        // can now act.
+        //
+        // --------------------------------------------------------
 
+        enemyTurnLockedUnits.Clear();
+
+
+        // --------------------------------------------------------
+        // CAPTURE EXISTING ENEMIES
+        // --------------------------------------------------------
+        //
+        // These enemies existed before this round's wave spawn.
+        //
+        // They are allowed to act this round.
+        //
+        // --------------------------------------------------------
+
+        HashSet<AttackUnit> enemiesExistingBeforeSpawn =
+            CaptureLivingEnemies();
+
+
+        // --------------------------------------------------------
+        // REFRESH
+        // --------------------------------------------------------
 
         RefreshCachedUnits();
 
@@ -209,8 +290,211 @@ public class RoundManager : MonoBehaviour
         UpdateAllUnitCooldowns();
 
 
+        // --------------------------------------------------------
+        // SURVIVAL WAVE SPAWN
+        // --------------------------------------------------------
+        //
+        // A new wave can spawn even if old enemies are still alive.
+        //
+        // Newly spawned enemies are locked for this round.
+        //
+        // --------------------------------------------------------
+
+        if (
+            encounterManager != null &&
+            currentRound > 1 &&
+            encounterManager.IsEncounterRunning()
+        )
+        {
+            encounterManager.SpawnNextRoundEnemies();
+
+            // New enemies now exist.
+            RefreshCachedUnits();
+
+            // Lock only enemies that did not exist before spawning.
+            LockNewlySpawnedEnemies(
+                enemiesExistingBeforeSpawn
+            );
+        }
+
+
         StartCoroutine(
             RunRoundPipeline()
+        );
+    }
+
+
+    // ============================================================
+    // PLAYER ON FIELD
+    // ============================================================
+
+    private bool IsPlayerOnField()
+    {
+        List<AttackUnit> players =
+            CombatUtility.GetUnitsByTeam(
+                Team.Player
+            );
+
+        if (players == null || players.Count == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            AttackUnit player =
+                players[i];
+
+            if (player == null)
+            {
+                continue;
+            }
+
+            if (!CombatUtility.IsAlive(player))
+            {
+                continue;
+            }
+
+            // A living Player AttackUnit exists.
+            return true;
+        }
+
+        return false;
+    }
+
+
+    // ============================================================
+    // CAPTURE LIVING ENEMIES
+    // ============================================================
+
+    private HashSet<AttackUnit> CaptureLivingEnemies()
+    {
+        HashSet<AttackUnit> enemies =
+            new HashSet<AttackUnit>();
+
+        List<AttackUnit> units =
+            CombatUtility.GetUnitsByTeam(
+                Team.Enemy
+            );
+
+        if (units == null)
+        {
+            return enemies;
+        }
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            AttackUnit unit =
+                units[i];
+
+            if (unit == null)
+            {
+                continue;
+            }
+
+            if (!CombatUtility.IsAlive(unit))
+            {
+                continue;
+            }
+
+            enemies.Add(
+                unit
+            );
+        }
+
+        return enemies;
+    }
+
+
+    // ============================================================
+    // LOCK NEW ENEMIES
+    // ============================================================
+
+    private void LockNewlySpawnedEnemies(
+        HashSet<AttackUnit> enemiesExistingBeforeSpawn
+    )
+    {
+        if (enemiesExistingBeforeSpawn == null)
+        {
+            return;
+        }
+
+        List<AttackUnit> currentEnemies =
+            CombatUtility.GetUnitsByTeam(
+                Team.Enemy
+            );
+
+        if (currentEnemies == null)
+        {
+            return;
+        }
+
+        int lockedCount = 0;
+
+        for (int i = 0; i < currentEnemies.Count; i++)
+        {
+            AttackUnit enemy =
+                currentEnemies[i];
+
+            if (enemy == null)
+            {
+                continue;
+            }
+
+            if (!CombatUtility.IsAlive(enemy))
+            {
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // OLD ENEMY
+            // ----------------------------------------------------
+
+            if (
+                enemiesExistingBeforeSpawn.Contains(
+                    enemy
+                )
+            )
+            {
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // NEW ENEMY
+            // ----------------------------------------------------
+
+            enemyTurnLockedUnits.Add(
+                enemy
+            );
+
+            lockedCount++;
+        }
+
+        Debug.Log(
+            "[RoundManager] New enemies locked for this round: " +
+            lockedCount,
+            this
+        );
+    }
+
+
+    // ============================================================
+    // IS ENEMY LOCKED
+    // ============================================================
+
+    private bool IsEnemyTurnLocked(
+        AttackUnit enemy
+    )
+    {
+        if (enemy == null)
+        {
+            return true;
+        }
+
+        return enemyTurnLockedUnits.Contains(
+            enemy
         );
     }
 
@@ -226,16 +510,13 @@ public class RoundManager : MonoBehaviour
             AttackUnit unit =
                 cachedUnits[i];
 
-
             if (unit == null)
             {
                 continue;
             }
 
-
             UnitMoveBrain moveBrain =
                 unit.GetComponent<UnitMoveBrain>();
-
 
             if (moveBrain != null)
             {
@@ -251,12 +532,6 @@ public class RoundManager : MonoBehaviour
 
     private IEnumerator RunRoundPipeline()
     {
-        float roundStart =
-            Time.realtimeSinceStartup;
-
-
-
-
         if (gridManager != null)
         {
             gridManager.CleanupDeadUnits();
@@ -264,29 +539,24 @@ public class RoundManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // ENEMY SPAWN
+        // LEGACY / TEST SPAWN
         // --------------------------------------------------------
 
         bool enemiesWereSpawned =
             EnsureEnemiesExist();
 
 
-
         // --------------------------------------------------------
-        // PLAYER / ALLY
+        // PLAYER / ALLY TURN
         // --------------------------------------------------------
 
         currentState =
             RoundState.PlayerAndAllyTurn;
 
-
         if (canvasInfoManager != null)
         {
             canvasInfoManager.RefreshCurrentSelection();
         }
-
-
-
 
         yield return StartCoroutine(
             ExecutePlayerAndAllyTurn()
@@ -309,7 +579,7 @@ public class RoundManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // ENEMY
+        // ENEMY TURN
         // --------------------------------------------------------
 
         currentState =
@@ -319,19 +589,16 @@ public class RoundManager : MonoBehaviour
         if (enemiesWereSpawned)
         {
             Debug.Log(
-                "ENEMIES SPAWNED THIS ROUND — " +
-                "SKIPPING ENEMY TURN"
+                "[RoundManager] Enemies were spawned this round. " +
+                "New enemies are locked; existing enemies may act.",
+                this
             );
         }
-        else
-        {
-
-            yield return StartCoroutine(
-                ExecuteEnemyTurn()
-            );
 
 
-        }
+        yield return StartCoroutine(
+            ExecuteEnemyTurn()
+        );
 
 
         // --------------------------------------------------------
@@ -339,8 +606,6 @@ public class RoundManager : MonoBehaviour
         // --------------------------------------------------------
 
         EndRound();
-
-
     }
 
 
@@ -350,30 +615,9 @@ public class RoundManager : MonoBehaviour
 
     private void EndRound()
     {
-
-        // ========================================================
-        // IMPORTANT
-        //
-        // Check victory BEFORE changing the EncounterManager
-        // or RoundManager state.
-        //
-        // This allows SurvivalRounds to see:
-        //
-        // Round 1 / 1
-        //
-        // instead of accidentally returning because the state
-        // was already changed to Setup.
-        // ========================================================
-
         if (encounterManager != null)
         {
             encounterManager.CheckVictoryAfterRound();
-
-
-            // ----------------------------------------------------
-            // If victory happened, DO NOT continue normal round
-            // cleanup/start logic.
-            // ----------------------------------------------------
 
             if (encounterManager.IsFinished())
             {
@@ -384,17 +628,22 @@ public class RoundManager : MonoBehaviour
         }
 
 
-        // ========================================================
+        // --------------------------------------------------------
         // NORMAL ROUND RESET
-        // ========================================================
+        // --------------------------------------------------------
 
         currentState =
             RoundState.Setup;
 
-
         roundRunning = false;
 
 
+        // IMPORTANT:
+        //
+        // Do NOT clear enemyTurnLockedUnits here.
+        //
+        // They remain locked until the NEXT round starts.
+        //
     }
 
 
@@ -406,22 +655,18 @@ public class RoundManager : MonoBehaviour
     {
         RefreshCachedUnits();
 
-
         for (int i = 0; i < cachedUnits.Count; i++)
         {
             AttackUnit unit =
                 cachedUnits[i];
-
 
             if (!IsValidUnit(unit))
             {
                 continue;
             }
 
-
             Team team =
                 unit.GetTeam();
-
 
             if (
                 team != Team.Player &&
@@ -431,8 +676,6 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
-
-
             yield return StartCoroutine(
                 CombatUtility.ExecuteUnitTurnCoroutine(
                     unit,
@@ -440,12 +683,10 @@ public class RoundManager : MonoBehaviour
                 )
             );
 
-
             if (delayBetweenUnits > 0f)
             {
                 yield return unitDelay;
             }
-
 
             if (
                 encounterManager != null &&
@@ -474,9 +715,104 @@ public class RoundManager : MonoBehaviour
             yield break;
         }
 
+        List<AttackUnit> enemies =
+            CombatUtility.GetUnitsByTeam(
+                Team.Enemy
+            );
 
-        yield return StartCoroutine(
-            combatManager.RunEnemyRound()
+        if (enemies == null || enemies.Count == 0)
+        {
+            Debug.Log(
+                "[RoundManager] No enemies available for enemy turn.",
+                this
+            );
+
+            yield break;
+        }
+
+
+        Debug.Log(
+            "[RoundManager] Enemy turn starting. " +
+            "Total enemies=" +
+            enemies.Count +
+            " | Locked=" +
+            enemyTurnLockedUnits.Count,
+            this
+        );
+
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            AttackUnit enemy =
+                enemies[i];
+
+            if (enemy == null)
+            {
+                continue;
+            }
+
+            if (!CombatUtility.IsAlive(enemy))
+            {
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // NEWLY SPAWNED THIS ROUND
+            // ----------------------------------------------------
+
+            if (IsEnemyTurnLocked(enemy))
+            {
+                Debug.Log(
+                    "[RoundManager] Skipping newly spawned enemy: " +
+                    enemy.name,
+                    enemy
+                );
+
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // OLD ENEMY ACTS
+            // ----------------------------------------------------
+
+            Debug.Log(
+                "[RoundManager] Enemy acting: " +
+                enemy.name,
+                enemy
+            );
+
+
+            yield return StartCoroutine(
+                CombatUtility.ExecuteEnemyTurn(
+                    enemy,
+                    !combatManager.EnemiesMoveAfterRound,
+                    combatManager.EnemiesAttackAfterMoving
+                )
+            );
+
+
+            yield return null;
+
+
+            // ----------------------------------------------------
+            // STOP IF ENCOUNTER FINISHED
+            // ----------------------------------------------------
+
+            if (
+                encounterManager != null &&
+                encounterManager.IsFinished()
+            )
+            {
+                yield break;
+            }
+        }
+
+
+        Debug.Log(
+            "[RoundManager] Enemy turn complete.",
+            this
         );
     }
 
@@ -486,9 +822,12 @@ public class RoundManager : MonoBehaviour
     // ============================================================
 
     private bool IsValidUnit(
-        AttackUnit unit)
+        AttackUnit unit
+    )
     {
-        return CombatUtility.IsAlive(unit);
+        return CombatUtility.IsAlive(
+            unit
+        );
     }
 
 
@@ -500,10 +839,13 @@ public class RoundManager : MonoBehaviour
     {
         cachedUnits.Clear();
 
-
         List<AttackUnit> units =
             CombatUtility.GetAllAliveUnits();
 
+        if (units == null)
+        {
+            return;
+        }
 
         for (int i = 0; i < units.Count; i++)
         {
@@ -524,7 +866,13 @@ public class RoundManager : MonoBehaviour
     private bool EnsureEnemiesExist()
     {
         // --------------------------------------------------------
-        // Encounter mode owns enemy spawning.
+        // ENCOUNTER MODE
+        // --------------------------------------------------------
+        //
+        // EncounterManager owns spawning.
+        //
+        // Multiple waves can exist simultaneously.
+        //
         // --------------------------------------------------------
 
         if (
@@ -532,25 +880,18 @@ public class RoundManager : MonoBehaviour
             encounterManager.IsEncounterRunning()
         )
         {
-            if (
-                CombatUtility.GetUnitCount(
-                    Team.Enemy
-                ) == 0
-            )
-
             return false;
         }
 
 
         // --------------------------------------------------------
-        // Legacy/test mode
+        // LEGACY / TEST MODE
         // --------------------------------------------------------
 
         if (combatManager == null)
         {
             return false;
         }
-
 
         if (
             CombatUtility.GetUnitCount(
@@ -560,10 +901,8 @@ public class RoundManager : MonoBehaviour
         {
             combatManager.CheckForEnemies();
 
-
             return true;
         }
-
 
         return false;
     }
@@ -580,12 +919,10 @@ public class RoundManager : MonoBehaviour
             AttackUnit unit =
                 cachedUnits[i];
 
-
             if (unit == null)
             {
                 continue;
             }
-
 
             unit.StartNewRound();
         }
@@ -598,7 +935,8 @@ public class RoundManager : MonoBehaviour
 
     private void LogAbilityUse(
         string unitName,
-        string abilityName)
+        string abilityName
+    )
     {
         AbilityLogEntry entry =
             new AbilityLogEntry
@@ -608,11 +946,9 @@ public class RoundManager : MonoBehaviour
                 abilityName = abilityName
             };
 
-
         roundAbilityLogs.Add(
             entry
         );
-
 
         OnAbilityUsed?.Invoke(
             entry
@@ -625,7 +961,8 @@ public class RoundManager : MonoBehaviour
     // ============================================================
 
     public void SetAutoBattle(
-        bool enabled)
+        bool enabled
+    )
     {
         autoBattle =
             enabled;
@@ -637,7 +974,6 @@ public class RoundManager : MonoBehaviour
         SetAutoBattle(
             !autoBattle
         );
-
 
         if (autoBattleToggle != null)
         {
@@ -654,7 +990,8 @@ public class RoundManager : MonoBehaviour
 
     public List<AbilityLogEntry>
         GetAbilityLogsForRound(
-            int round)
+            int round
+        )
     {
         return roundAbilityLogs.FindAll(
             log => log.round == round
@@ -691,5 +1028,15 @@ public class RoundManager : MonoBehaviour
     public RoundState GetCurrentState()
     {
         return currentState;
+    }
+
+
+    // ============================================================
+    // PLAYER CHECK ACCESSOR
+    // ============================================================
+
+    public bool HasPlayerOnField()
+    {
+        return IsPlayerOnField();
     }
 }

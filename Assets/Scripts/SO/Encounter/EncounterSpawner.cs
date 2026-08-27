@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class EncounterSpawner : MonoBehaviour
 {
@@ -12,6 +13,9 @@ public class EncounterSpawner : MonoBehaviour
 
     [SerializeField]
     private EncounterManager encounterManager;
+
+    [SerializeField]
+    private CombatManager combatManager;
 
 
     // ============================================================
@@ -40,6 +44,12 @@ public class EncounterSpawner : MonoBehaviour
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
+
+        if (combatManager == null)
+        {
+            combatManager =
+                FindFirstObjectByType<CombatManager>();
+        }
     }
 
 
@@ -50,8 +60,10 @@ public class EncounterSpawner : MonoBehaviour
     public void SpawnEncounter(
         EncounterDefinition encounter)
     {
-        if (encounterManager != null &&
-            encounterManager.IsFinished())
+        if (
+            encounterManager != null &&
+            encounterManager.IsFinished()
+        )
         {
             Debug.Log(
                 "[EncounterSpawner] Encounter is finished — " +
@@ -61,7 +73,6 @@ public class EncounterSpawner : MonoBehaviour
 
             return;
         }
-
 
         if (encounter == null)
         {
@@ -73,11 +84,7 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
-
-        // --------------------------------------------------------
-        // PLAYER IS NOT SPAWNED HERE
-        // --------------------------------------------------------
-
+        // Player is not spawned here.
         SpawnAllies();
 
         SpawnEnemies(encounter);
@@ -90,12 +97,13 @@ public class EncounterSpawner : MonoBehaviour
 
     private void SpawnAllies()
     {
-        if (allyPrefabs == null ||
-            allyPrefabs.Length == 0)
+        if (
+            allyPrefabs == null ||
+            allyPrefabs.Length == 0
+        )
         {
             return;
         }
-
 
         for (int i = 0; i < allyPrefabs.Length; i++)
         {
@@ -106,7 +114,6 @@ public class EncounterSpawner : MonoBehaviour
             {
                 continue;
             }
-
 
             SpawnRandomUnit(
                 prefab,
@@ -121,11 +128,13 @@ public class EncounterSpawner : MonoBehaviour
     // ENEMIES
     // ============================================================
 
-    private void SpawnEnemies(
+    public void SpawnEnemies(
         EncounterDefinition encounter)
     {
-        if (encounterManager != null &&
-            encounterManager.IsFinished())
+        if (
+            encounterManager != null &&
+            encounterManager.IsFinished()
+        )
         {
             Debug.Log(
                 "[EncounterSpawner] Encounter is finished — " +
@@ -136,13 +145,14 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
-
-        if (encounter.enemies == null ||
-            encounter.enemies.Count == 0)
+        if (
+            encounter == null ||
+            encounter.enemies == null ||
+            encounter.enemies.Count == 0
+        )
         {
             return;
         }
-
 
         for (
             int i = 0;
@@ -161,10 +171,8 @@ public class EncounterSpawner : MonoBehaviour
                 continue;
             }
 
-
             string enemyId =
                 data.enemyId;
-
 
             if (string.IsNullOrWhiteSpace(enemyId))
             {
@@ -172,12 +180,44 @@ public class EncounterSpawner : MonoBehaviour
                     $"Enemy_{i}";
             }
 
+            GameObject spawnedEnemy =
+                SpawnRandomUnit(
+                    data.prefab,
+                    $"Enemy_{i}",
+                    enemyId
+                );
 
-            SpawnRandomUnit(
-                data.prefab,
-                $"Enemy_{i}",
-                enemyId
-            );
+            // ----------------------------------------------------
+            // LOCK NEW ENEMY
+            // ----------------------------------------------------
+            //
+            // This enemy was created during the current round.
+            // It cannot act until the next round.
+            //
+            // Existing enemies are NOT affected.
+            // ----------------------------------------------------
+
+            if (spawnedEnemy != null)
+            {
+                AttackUnit attackUnit =
+                    spawnedEnemy.GetComponent<AttackUnit>();
+
+                if (attackUnit != null)
+                {
+                    if (combatManager == null)
+                    {
+                        combatManager =
+                            FindFirstObjectByType<CombatManager>();
+                    }
+
+                    if (combatManager != null)
+                    {
+                        combatManager.LockEnemyForCurrentRound(
+                            attackUnit
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -191,8 +231,10 @@ public class EncounterSpawner : MonoBehaviour
         string identifier,
         string encounterUnitId)
     {
-        if (encounterManager != null &&
-            encounterManager.IsFinished())
+        if (
+            encounterManager != null &&
+            encounterManager.IsFinished()
+        )
         {
             Debug.Log(
                 $"[EncounterSpawner] Encounter is finished — " +
@@ -203,7 +245,6 @@ public class EncounterSpawner : MonoBehaviour
             return null;
         }
 
-
         if (gridManager == null)
         {
             Debug.LogError(
@@ -213,7 +254,6 @@ public class EncounterSpawner : MonoBehaviour
 
             return null;
         }
-
 
         if (
             !gridManager.TryGetRandomFreeCell(
@@ -230,10 +270,8 @@ public class EncounterSpawner : MonoBehaviour
             return null;
         }
 
-
         GameObject unit =
             Instantiate(prefab);
-
 
         if (unit == null)
         {
@@ -246,10 +284,8 @@ public class EncounterSpawner : MonoBehaviour
             return null;
         }
 
-
         unit.name =
             $"{identifier}_{prefab.name}";
-
 
         // --------------------------------------------------------
         // ASSIGN ENCOUNTER ID
@@ -258,18 +294,15 @@ public class EncounterSpawner : MonoBehaviour
         EncounterUnit encounterUnit =
             unit.GetComponent<EncounterUnit>();
 
-
         if (encounterUnit == null)
         {
             encounterUnit =
                 unit.AddComponent<EncounterUnit>();
         }
 
-
         encounterUnit.SetEncounterUnitId(
             encounterUnitId
         );
-
 
         // --------------------------------------------------------
         // PLACE ON GRID
@@ -292,6 +325,12 @@ public class EncounterSpawner : MonoBehaviour
 
             return null;
         }
+
+        Debug.Log(
+            $"[EncounterSpawner] Spawned {unit.name} " +
+            $"at {position}.",
+            unit
+        );
 
         return unit;
     }

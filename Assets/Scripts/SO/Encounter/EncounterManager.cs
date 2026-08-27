@@ -11,7 +11,6 @@ public class EncounterManager : MonoBehaviour
     public static event Action<EncounterDefinition>
         OnEncounterVictory;
 
-
     // ============================================================
     // ENCOUNTER STATE
     // ============================================================
@@ -28,7 +27,6 @@ public class EncounterManager : MonoBehaviour
         Defeat
     }
 
-
     // ============================================================
     // MISSION TYPE
     // ============================================================
@@ -37,11 +35,8 @@ public class EncounterManager : MonoBehaviour
     {
         DefeatAllEnemies,
         SurviveRounds,
-        DefeatAllEnemiesOrSurviveRounds,
-        DefeatSpecificEnemy,
-        DefeatSpecificEnemyOrSurviveRounds
+        DefeatSpecificEnemy
     }
-
 
     // ============================================================
     // REFERENCES
@@ -63,7 +58,6 @@ public class EncounterManager : MonoBehaviour
     [SerializeField]
     private CombatManager combatManager;
 
-
     // ============================================================
     // CURRENT ENCOUNTER
     // ============================================================
@@ -71,7 +65,6 @@ public class EncounterManager : MonoBehaviour
     [Header("Current Encounter")]
     [SerializeField]
     private EncounterDefinition currentEncounter;
-
 
     // ============================================================
     // VICTORY
@@ -82,20 +75,17 @@ public class EncounterManager : MonoBehaviour
     private VictoryCondition victoryCondition =
         VictoryCondition.DefeatAllEnemies;
 
-
     [Header("Specific Enemy Target")]
     [Tooltip(
         "EncounterUnit ID that must be killed when using " +
-        "DefeatSpecificEnemy or DefeatSpecificEnemyOrSurviveRounds."
+        "DefeatSpecificEnemy."
     )]
     [SerializeField]
     private string targetEnemyId;
 
-
     [Header("Survival")]
     [SerializeField, Min(1)]
     private int roundsToSurvive = 5;
-
 
     // ============================================================
     // TIMING
@@ -111,7 +101,6 @@ public class EncounterManager : MonoBehaviour
     [SerializeField, Min(0f)]
     private float combatStartDelay = 0.25f;
 
-
     // ============================================================
     // STATE
     // ============================================================
@@ -122,7 +111,6 @@ public class EncounterManager : MonoBehaviour
     private bool encounterRunning;
 
     private bool firstRoundStarted;
-
 
     // ============================================================
     // ACCESSORS
@@ -143,7 +131,6 @@ public class EncounterManager : MonoBehaviour
     public int RoundsToSurvive =>
         roundsToSurvive;
 
-
     // ============================================================
     // UNITY
     // ============================================================
@@ -153,20 +140,17 @@ public class EncounterManager : MonoBehaviour
         FindDependencies();
     }
 
-
     private void OnEnable()
     {
         HealthManager.OnHealthChanged +=
             HandleHealthChanged;
     }
 
-
     private void OnDisable()
     {
         HealthManager.OnHealthChanged -=
             HandleHealthChanged;
     }
-
 
     // ============================================================
     // DEPENDENCIES
@@ -205,7 +189,6 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // START ENCOUNTER
     // ============================================================
@@ -240,7 +223,6 @@ public class EncounterManager : MonoBehaviour
             StartEncounterRoutine()
         );
     }
-
 
     // ============================================================
     // LOAD MISSION FROM DEFINITION
@@ -278,7 +260,6 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-
     // ============================================================
     // ENCOUNTER PREPARATION
     // ============================================================
@@ -313,7 +294,6 @@ public class EncounterManager : MonoBehaviour
 
         yield return null;
 
-
         // --------------------------------------------------------
         // CREATE GRID
         // --------------------------------------------------------
@@ -331,9 +311,8 @@ public class EncounterManager : MonoBehaviour
             );
         }
 
-
         // --------------------------------------------------------
-        // SPAWN UNITS
+        // INITIAL UNIT SPAWN
         // --------------------------------------------------------
 
         SetEncounterState(
@@ -367,7 +346,6 @@ public class EncounterManager : MonoBehaviour
             );
         }
 
-
         // --------------------------------------------------------
         // PREPARATION COMPLETE
         // --------------------------------------------------------
@@ -382,7 +360,6 @@ public class EncounterManager : MonoBehaviour
             this
         );
     }
-
 
     // ============================================================
     // VALIDATION
@@ -461,7 +438,6 @@ public class EncounterManager : MonoBehaviour
         return valid;
     }
 
-
     // ============================================================
     // GRID
     // ============================================================
@@ -498,7 +474,6 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-
     // ============================================================
     // CLEAR PREVIOUS ENCOUNTER
     // ============================================================
@@ -512,7 +487,6 @@ public class EncounterManager : MonoBehaviour
             gridManager.CleanupDeadUnits();
         }
     }
-
 
     private void ClearUnits()
     {
@@ -544,6 +518,77 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+    // ============================================================
+    // SURVIVAL WAVE SPAWNING
+    // ============================================================
+
+    public bool ShouldSpawnNextRound()
+    {
+        if (!encounterRunning)
+        {
+            return false;
+        }
+
+        return UsesSurvival();
+    }
+
+    public void SpawnNextRoundEnemies()
+    {
+        if (!encounterRunning)
+        {
+            return;
+        }
+
+        if (!UsesSurvival())
+        {
+            return;
+        }
+
+        if (currentEncounter == null)
+        {
+            Debug.LogWarning(
+                "[EncounterManager] Cannot spawn next-round enemies. " +
+                "Current EncounterDefinition is NULL.",
+                this
+            );
+
+            return;
+        }
+
+        if (encounterSpawner == null)
+        {
+            Debug.LogWarning(
+                "[EncounterManager] Cannot spawn next-round enemies. " +
+                "EncounterSpawner is missing.",
+                this
+            );
+
+            return;
+        }
+
+        SetEncounterState(
+            EncounterState.SpawningUnits
+        );
+
+        encounterSpawner.SpawnEncounter(
+            currentEncounter
+        );
+
+        SetEncounterState(
+            EncounterState.Combat
+        );
+
+        Debug.Log(
+            "[EncounterManager] SURVIVAL WAVE SPAWNED | " +
+            "Round=" +
+            (roundManager != null
+                ? roundManager.GetCurrentRound()
+                : -1) +
+            " | Required=" +
+            roundsToSurvive,
+            this
+        );
+    }
 
     // ============================================================
     // NEXT ROUND
@@ -583,7 +628,6 @@ public class EncounterManager : MonoBehaviour
             this
         );
     }
-
 
     // ============================================================
     // FIRST ROUND
@@ -628,7 +672,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // VERIFY PLAYER
         // --------------------------------------------------------
@@ -669,7 +712,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // START COMBAT
         // --------------------------------------------------------
@@ -695,7 +737,6 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // START COMBAT AFTER DELAY
     // ============================================================
@@ -718,7 +759,6 @@ public class EncounterManager : MonoBehaviour
 
         StartCombatRound();
     }
-
 
     // ============================================================
     // START COMBAT ROUND
@@ -749,7 +789,6 @@ public class EncounterManager : MonoBehaviour
 
         roundManager.StartRound();
     }
-
 
     // ============================================================
     // NEXT NORMAL ROUND
@@ -783,7 +822,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // FINAL SAFETY CHECK
         // --------------------------------------------------------
@@ -793,10 +831,8 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         roundManager.StartRound();
     }
-
 
     // ============================================================
     // UNIT KILLED
@@ -816,7 +852,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // PLAYER DEATH
         // --------------------------------------------------------
@@ -828,12 +863,12 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // SPECIFIC TARGET
         // --------------------------------------------------------
 
-        if (UsesSpecificEnemyTarget())
+        if (victoryCondition ==
+            VictoryCondition.DefeatSpecificEnemy)
         {
             if (
                 !string.IsNullOrWhiteSpace(encounterUnitId) &&
@@ -845,17 +880,8 @@ public class EncounterManager : MonoBehaviour
                 return;
             }
 
-            if (
-                victoryCondition ==
-                VictoryCondition.DefeatSpecificEnemyOrSurviveRounds
-            )
-            {
-                CheckVictoryConditions();
-            }
-
             return;
         }
-
 
         // --------------------------------------------------------
         // DEFEAT ALL ENEMIES
@@ -863,9 +889,7 @@ public class EncounterManager : MonoBehaviour
 
         if (
             victoryCondition ==
-            VictoryCondition.DefeatAllEnemies ||
-            victoryCondition ==
-            VictoryCondition.DefeatAllEnemiesOrSurviveRounds
+            VictoryCondition.DefeatAllEnemies
         )
         {
             if (!HasLivingEnemies())
@@ -876,7 +900,6 @@ public class EncounterManager : MonoBehaviour
             }
         }
     }
-
 
     // ============================================================
     // HEALTH CHANGE
@@ -903,7 +926,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // PLAYER DEFEAT
         // --------------------------------------------------------
@@ -914,7 +936,6 @@ public class EncounterManager : MonoBehaviour
 
             return;
         }
-
 
         // --------------------------------------------------------
         // ENEMY
@@ -930,13 +951,11 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // Survival missions do not care about enemy health.
         if (UsesSurvival())
         {
             return;
         }
-
 
         // --------------------------------------------------------
         // NORMAL DEFEAT-ALL
@@ -944,15 +963,12 @@ public class EncounterManager : MonoBehaviour
 
         if (
             victoryCondition ==
-            VictoryCondition.DefeatAllEnemies ||
-            victoryCondition ==
-            VictoryCondition.DefeatAllEnemiesOrSurviveRounds
+            VictoryCondition.DefeatAllEnemies
         )
         {
             CheckVictoryConditions();
         }
     }
-
 
     // ============================================================
     // PLAYER DEFEAT
@@ -1005,7 +1021,6 @@ public class EncounterManager : MonoBehaviour
         EncounterDefeat();
     }
 
-
     // ============================================================
     // VICTORY CONDITION CHECK
     // ============================================================
@@ -1028,23 +1043,18 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-        int currentRound =
-            roundManager.GetCurrentRound();
-
-
         // --------------------------------------------------------
-        // SURVIVAL
+        // SURVIVE ROUNDS
         // --------------------------------------------------------
 
         if (
             victoryCondition ==
-                VictoryCondition.SurviveRounds ||
-            victoryCondition ==
-                VictoryCondition.DefeatAllEnemiesOrSurviveRounds ||
-            victoryCondition ==
-                VictoryCondition.DefeatSpecificEnemyOrSurviveRounds
+            VictoryCondition.SurviveRounds
         )
         {
+            int currentRound =
+                roundManager.GetCurrentRound();
+
             bool survived =
                 currentRound >= roundsToSurvive;
 
@@ -1055,25 +1065,19 @@ public class EncounterManager : MonoBehaviour
                 " | Required=" +
                 roundsToSurvive +
                 " | Result=" +
-                survived +
-                " | Condition=" +
-                victoryCondition,
+                survived,
                 this
             );
 
             if (survived)
             {
-                Debug.Log(
-                    "[EncounterManager] SURVIVAL REQUIREMENT MET.",
-                    this
-                );
-
                 EncounterVictory();
 
                 return true;
             }
-        }
 
+            return false;
+        }
 
         // --------------------------------------------------------
         // DEFEAT ALL ENEMIES
@@ -1094,27 +1098,6 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // DEFEAT ALL OR SURVIVE
-        // --------------------------------------------------------
-
-        if (
-            victoryCondition ==
-            VictoryCondition.DefeatAllEnemiesOrSurviveRounds
-        )
-        {
-            if (!HasLivingEnemies())
-            {
-                EncounterVictory();
-
-                return true;
-            }
-
-            return false;
-        }
-
-
         // --------------------------------------------------------
         // SPECIFIC TARGET
         // --------------------------------------------------------
@@ -1134,30 +1117,8 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // SPECIFIC TARGET OR SURVIVE
-        // --------------------------------------------------------
-
-        if (
-            victoryCondition ==
-            VictoryCondition.DefeatSpecificEnemyOrSurviveRounds
-        )
-        {
-            if (IsTargetEnemyDead())
-            {
-                EncounterVictory();
-
-                return true;
-            }
-
-            return false;
-        }
-
-
         return false;
     }
-
 
     // ============================================================
     // TARGET ENEMY DEAD
@@ -1231,7 +1192,6 @@ public class EncounterManager : MonoBehaviour
         return false;
     }
 
-
     // ============================================================
     // LIVING ENEMIES
     // ============================================================
@@ -1275,7 +1235,6 @@ public class EncounterManager : MonoBehaviour
         return false;
     }
 
-
     // ============================================================
     // SURVIVAL
     // ============================================================
@@ -1307,7 +1266,6 @@ public class EncounterManager : MonoBehaviour
         return survived;
     }
 
-
     // ============================================================
     // CHECK AFTER ROUND
     // ============================================================
@@ -1336,21 +1294,17 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         int currentRound =
             roundManager.GetCurrentRound();
 
-
-
-
         // --------------------------------------------------------
-        // SURVIVAL IS CHECKED DIRECTLY HERE.
-        //
-        // This check happens after RoundManager has completed
-        // the round. Therefore Round 10 means ten complete rounds.
+        // SURVIVAL
         // --------------------------------------------------------
 
-        if (UsesSurvival())
+        if (
+            victoryCondition ==
+            VictoryCondition.SurviveRounds
+        )
         {
             if (currentRound >= roundsToSurvive)
             {
@@ -1368,9 +1322,7 @@ public class EncounterManager : MonoBehaviour
 
                 return;
             }
-
         }
-
 
         // --------------------------------------------------------
         // OTHER VICTORY CONDITIONS
@@ -1378,7 +1330,6 @@ public class EncounterManager : MonoBehaviour
 
         CheckVictoryConditions();
     }
-
 
     // ============================================================
     // VICTORY
@@ -1391,9 +1342,8 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
-        // SAFETY CHECKS
+        // DEFEAT ALL ENEMIES
         // --------------------------------------------------------
 
         if (
@@ -1413,20 +1363,20 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
+        // --------------------------------------------------------
+        // SURVIVE ROUNDS
+        // --------------------------------------------------------
 
         if (
             victoryCondition ==
-            VictoryCondition.DefeatAllEnemiesOrSurviveRounds
+            VictoryCondition.SurviveRounds
         )
         {
-            if (
-                HasLivingEnemies() &&
-                !HasSurvivedRequiredRounds()
-            )
+            if (!HasSurvivedRequiredRounds())
             {
                 Debug.LogWarning(
                     "[EncounterManager] Victory rejected. " +
-                    "No victory condition has been satisfied.",
+                    "Required survival rounds have not been reached.",
                     this
                 );
 
@@ -1434,6 +1384,9 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
+        // --------------------------------------------------------
+        // SPECIFIC TARGET
+        // --------------------------------------------------------
 
         if (
             victoryCondition ==
@@ -1452,28 +1405,6 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
-
-        if (
-            victoryCondition ==
-            VictoryCondition.DefeatSpecificEnemyOrSurviveRounds
-        )
-        {
-            if (
-                !IsTargetEnemyDead() &&
-                !HasSurvivedRequiredRounds()
-            )
-            {
-                Debug.LogWarning(
-                    "[EncounterManager] Victory rejected. " +
-                    "Neither target nor survival condition is satisfied.",
-                    this
-                );
-
-                return;
-            }
-        }
-
-
         // --------------------------------------------------------
         // FINISH ENCOUNTER
         // --------------------------------------------------------
@@ -1486,35 +1417,33 @@ public class EncounterManager : MonoBehaviour
             EncounterState.Victory
         );
 
-
         int finalRound =
             roundManager != null
                 ? roundManager.GetCurrentRound()
                 : -1;
 
-
         Debug.Log(
             "[EncounterManager] ========================================\n" +
             "[EncounterManager] VICTORY\n" +
-            "Condition=" + victoryCondition +
-            "\nFinalRound=" + finalRound +
-            "\nRequiredRounds=" + roundsToSurvive +
+            "Condition=" +
+            victoryCondition +
+            "\nFinalRound=" +
+            finalRound +
+            "\nRequiredRounds=" +
+            roundsToSurvive +
             "\n========================================",
             this
         );
-
 
         if (gameStateManager != null)
         {
             gameStateManager.EncounterVictory();
         }
 
-
         OnEncounterVictory?.Invoke(
             currentEncounter
         );
     }
-
 
     // ============================================================
     // DEFEAT
@@ -1535,19 +1464,16 @@ public class EncounterManager : MonoBehaviour
             EncounterState.Defeat
         );
 
-
         Debug.Log(
             "[EncounterManager] ENCOUNTER DEFEAT.",
             this
         );
-
 
         if (gameStateManager != null)
         {
             gameStateManager.EncounterDefeat();
         }
     }
-
 
     // ============================================================
     // CONDITION HELPERS
@@ -1557,26 +1483,15 @@ public class EncounterManager : MonoBehaviour
     {
         return
             victoryCondition ==
-                VictoryCondition.DefeatSpecificEnemy
-            ||
-            victoryCondition ==
-                VictoryCondition.DefeatSpecificEnemyOrSurviveRounds;
+            VictoryCondition.DefeatSpecificEnemy;
     }
-
 
     private bool UsesSurvival()
     {
         return
             victoryCondition ==
-                VictoryCondition.SurviveRounds
-            ||
-            victoryCondition ==
-                VictoryCondition.DefeatAllEnemiesOrSurviveRounds
-            ||
-            victoryCondition ==
-                VictoryCondition.DefeatSpecificEnemyOrSurviveRounds;
+            VictoryCondition.SurviveRounds;
     }
-
 
     // ============================================================
     // STATE
@@ -1588,7 +1503,6 @@ public class EncounterManager : MonoBehaviour
         currentState =
             newState;
     }
-
 
     // ============================================================
     // SET CURRENT ENCOUNTER
@@ -1620,7 +1534,6 @@ public class EncounterManager : MonoBehaviour
             encounter;
     }
 
-
     // ============================================================
     // SET VICTORY CONDITION
     // ============================================================
@@ -1643,7 +1556,6 @@ public class EncounterManager : MonoBehaviour
             condition;
     }
 
-
     public void SetTargetEnemyId(
         string id)
     {
@@ -1661,7 +1573,6 @@ public class EncounterManager : MonoBehaviour
         targetEnemyId =
             id;
     }
-
 
     public void SetRoundsToSurvive(
         int rounds)
@@ -1684,7 +1595,6 @@ public class EncounterManager : MonoBehaviour
             );
     }
 
-
     // ============================================================
     // ACCESSORS
     // ============================================================
@@ -1694,7 +1604,6 @@ public class EncounterManager : MonoBehaviour
         return encounterRunning;
     }
 
-
     public bool IsPreparing()
     {
         return
@@ -1702,14 +1611,12 @@ public class EncounterManager : MonoBehaviour
             EncounterState.Preparing;
     }
 
-
     public bool IsInCombat()
     {
         return
             currentState ==
             EncounterState.Combat;
     }
-
 
     public bool IsFinished()
     {
@@ -1720,7 +1627,6 @@ public class EncounterManager : MonoBehaviour
             currentState ==
                 EncounterState.Defeat;
     }
-
 
     public bool CanPressNextRound()
     {

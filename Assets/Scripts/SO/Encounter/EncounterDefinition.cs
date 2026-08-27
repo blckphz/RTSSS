@@ -101,11 +101,8 @@ public enum MissionType
 
     SurviveRounds,
 
-    KillTarget,
+    KillTarget
 
-    DefeatAllEnemiesOrSurviveRounds,
-
-    KillTargetOrSurviveRounds
 }
 
 

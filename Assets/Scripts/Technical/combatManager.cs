@@ -40,6 +40,14 @@ public class CombatManager : MonoBehaviour
 
 
     // ============================================================
+    // ENEMY TURN LOCK
+    // ============================================================
+
+    private readonly HashSet<AttackUnit> lockedEnemies =
+        new HashSet<AttackUnit>();
+
+
+    // ============================================================
     // UNITY
     // ============================================================
 
@@ -51,34 +59,16 @@ public class CombatManager : MonoBehaviour
 
     private void Start()
     {
-        // IMPORTANT:
-        //
-        // Do NOT automatically spawn enemies here.
-        //
-        // EncounterManager / EncounterSpawner is responsible
-        // for creating the encounter.
-        //
-        // This prevents:
-        //
-        // Main Menu
-        //     ↓
-        // CombatManager.Start()
-        //     ↓
-        // Spawn enemies
-        //
-        // before EncounterManager has finished preparing
-        // the encounter.
-        //
         if (spawnEnemiesAutomatically)
         {
             Debug.Log(
                 "[CombatManager] Automatic enemy spawning is enabled, " +
-                "but enemy spawning is now intended to be controlled " +
+                "but enemy spawning is intended to be controlled " +
                 "by EncounterManager.",
                 this
             );
 
-            // Deliberately NOT calling CheckForEnemies().
+            // Deliberately do not spawn here.
         }
     }
 
@@ -109,11 +99,6 @@ public class CombatManager : MonoBehaviour
     // ENEMY TURN
     // ============================================================
 
-    /// <summary>
-    /// Executes the enemy turn for every living enemy.
-    ///
-    /// This is called by RoundManager after the Player/Ally phase.
-    /// </summary>
     public IEnumerator RunEnemyRound()
     {
         List<AttackUnit> enemies =
@@ -133,7 +118,8 @@ public class CombatManager : MonoBehaviour
 
         Debug.Log(
             $"[CombatManager] Enemy turn starting. " +
-            $"Enemies={enemies.Count}",
+            $"Enemies={enemies.Count} | " +
+            $"Locked={lockedEnemies.Count}",
             this
         );
 
@@ -151,6 +137,25 @@ public class CombatManager : MonoBehaviour
             {
                 continue;
             }
+
+            // ----------------------------------------------------
+            // NEWLY SPAWNED ENEMY LOCK
+            // ----------------------------------------------------
+
+            if (IsEnemyLocked(enemy))
+            {
+                Debug.Log(
+                    $"[CombatManager] Skipping newly spawned enemy: " +
+                    $"{enemy.name}",
+                    enemy
+                );
+
+                continue;
+            }
+
+            // ----------------------------------------------------
+            // NORMAL ENEMY TURN
+            // ----------------------------------------------------
 
             Debug.Log(
                 $"[CombatManager] Enemy acting: {enemy.name}",
@@ -175,10 +180,10 @@ public class CombatManager : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Manual helper for UI buttons/testing.
-    /// Normally RoundManager controls enemy turns.
-    /// </summary>
+    // ============================================================
+    // MANUAL ENEMY ROUND
+    // ============================================================
+
     public void StartEnemyRound()
     {
         StartCoroutine(
@@ -188,15 +193,133 @@ public class CombatManager : MonoBehaviour
 
 
     // ============================================================
+    // ENEMY TURN LOCK
+    // ============================================================
+
+    public void LockEnemyForCurrentRound(
+        AttackUnit enemy
+    )
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        if (enemy.GetTeam() != Team.Enemy)
+        {
+            return;
+        }
+
+        lockedEnemies.Add(
+            enemy
+        );
+
+        Debug.Log(
+            $"[CombatManager] Enemy locked for current round: " +
+            $"{enemy.name}",
+            enemy
+        );
+    }
+
+
+    public void LockEnemiesForCurrentRound(
+        List<AttackUnit> enemies
+    )
+    {
+        if (enemies == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            LockEnemyForCurrentRound(
+                enemies[i]
+            );
+        }
+    }
+
+
+    public void UnlockEnemy(
+        AttackUnit enemy
+    )
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        lockedEnemies.Remove(
+            enemy
+        );
+    }
+
+
+    public void ClearEnemyTurnLocks()
+    {
+        lockedEnemies.Clear();
+
+        Debug.Log(
+            "[CombatManager] Enemy turn locks cleared.",
+            this
+        );
+    }
+
+
+    public bool IsEnemyLocked(
+        AttackUnit enemy
+    )
+    {
+        if (enemy == null)
+        {
+            return false;
+        }
+
+        return lockedEnemies.Contains(
+            enemy
+        );
+    }
+
+
+    public int GetLockedEnemyCount()
+    {
+        return lockedEnemies.Count;
+    }
+
+
+    // ============================================================
+    // ENEMY TURN SETTINGS
+    // ============================================================
+    //
+    // PUBLIC READ-ONLY ACCESSORS.
+    //
+    // RoundManager uses these instead of trying to access
+    // the private serialized fields directly.
+    //
+    // ============================================================
+
+    public bool EnemiesMoveAfterRound
+    {
+        get
+        {
+            return enemiesMoveAfterRound;
+        }
+    }
+
+
+    public bool EnemiesAttackAfterMoving
+    {
+        get
+        {
+            return enemiesAttackAfterMoving;
+        }
+    }
+
+
+    // ============================================================
     // ENEMIES
     // ============================================================
 
-    /// <summary>
-    /// Checks whether enemies currently exist.
-    ///
-    /// This does NOT spawn enemies automatically unless explicitly
-    /// requested through the test spawning functionality.
-    /// </summary>
     public void CheckForEnemies()
     {
         int enemyCount =
@@ -249,14 +372,6 @@ public class CombatManager : MonoBehaviour
     // TEST ENEMY SPAWNING
     // ============================================================
 
-    /// <summary>
-    /// Spawns a random number of test enemies on random valid cells.
-    ///
-    /// This is retained for testing.
-    ///
-    /// EncounterManager / EncounterSpawner should normally be used
-    /// for real encounters.
-    /// </summary>
     public void SpawnTestEnemiesNow()
     {
         SpawnTestEnemies();
@@ -446,6 +561,20 @@ public class CombatManager : MonoBehaviour
         );
 
 
+        // --------------------------------------------------------
+        // LOCK TEST ENEMY
+        // --------------------------------------------------------
+        //
+        // If this is spawned during a round, prevent it from
+        // immediately receiving an enemy turn.
+        //
+        // --------------------------------------------------------
+
+        LockEnemyForCurrentRound(
+            attackUnit
+        );
+
+
         Debug.Log(
             $"[CombatManager] Test enemy spawned at " +
             $"{gridPosition}: {enemy.name}",
@@ -482,7 +611,6 @@ public class CombatManager : MonoBehaviour
         int maxY =
             gridManager.GetMaxY();
 
-
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
@@ -493,18 +621,6 @@ public class CombatManager : MonoBehaviour
                         y
                     );
 
-                // IMPORTANT:
-                //
-                // Use the GridManager's logical coordinates.
-                //
-                // Do NOT use:
-                //
-                // new Vector2Int(x, y)
-                //
-                // with x/y starting at zero.
-                //
-                // Your grid is centered around (0,0).
-                //
                 if (
                     !gridManager.IsInsideGrid(
                         position
@@ -537,10 +653,6 @@ public class CombatManager : MonoBehaviour
     // RANDOM AVAILABLE CELL
     // ============================================================
 
-    /// <summary>
-    /// Returns a random valid, unoccupied logical grid position.
-    /// Returns false if no position exists.
-    /// </summary>
     public bool TryGetRandomAvailableCell(
         out Vector2Int position
     )

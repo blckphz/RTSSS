@@ -20,7 +20,7 @@ MonoBehaviour:
   shape: 0
   minRadius: 2
   maxRadius: 5
-  victoryCondition: 3
+  victoryCondition: 0
   targetEnemyId: penis
   roundsToSurvive: 5
   enemies:
