@@ -4,6 +4,18 @@ using UnityEngine;
 
 
 // ============================================================
+// VICTORY CONDITION
+// ============================================================
+
+public enum VictoryCondition
+{
+    DefeatAllEnemies,
+    SurviveRounds,
+    DefeatSpecificEnemy
+}
+
+
+// ============================================================
 // ENCOUNTER DEFINITION
 // ============================================================
 
@@ -68,13 +80,25 @@ public class EncounterDefinition : ScriptableObject
     // ============================================================
 
     [Header("Mission")]
-    public EncounterManager.VictoryCondition victoryCondition =
-        EncounterManager.VictoryCondition.DefeatAllEnemies;
+    public VictoryCondition victoryCondition =
+        VictoryCondition.DefeatAllEnemies;
 
+
+    // ============================================================
+    // SPECIFIC TARGET
+    // ============================================================
 
     [Header("Specific Target")]
+    [Tooltip(
+        "EncounterUnit ID that must be killed when using " +
+        "DefeatSpecificEnemy."
+    )]
     public string targetEnemyId;
 
+
+    // ============================================================
+    // SURVIVAL
+    // ============================================================
 
     [Header("Survival")]
     [Min(1)]
@@ -88,21 +112,6 @@ public class EncounterDefinition : ScriptableObject
     [Header("Enemy Spawn")]
     public List<EnemySpawnData> enemies =
         new List<EnemySpawnData>();
-}
-
-
-// ============================================================
-// MISSION TYPE
-// ============================================================
-
-public enum MissionType
-{
-    DefeatAllEnemies,
-
-    SurviveRounds,
-
-    KillTarget
-
 }
 
 

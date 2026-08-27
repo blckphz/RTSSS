@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EncounterSpawner : MonoBehaviour
 {
@@ -191,10 +190,8 @@ public class EncounterSpawner : MonoBehaviour
             // LOCK NEW ENEMY
             // ----------------------------------------------------
             //
-            // This enemy was created during the current round.
-            // It cannot act until the next round.
-            //
-            // Existing enemies are NOT affected.
+            // Enemy spawned during the current round cannot act
+            // until the next round.
             // ----------------------------------------------------
 
             if (spawnedEnemy != null)
@@ -287,6 +284,7 @@ public class EncounterSpawner : MonoBehaviour
         unit.name =
             $"{identifier}_{prefab.name}";
 
+
         // --------------------------------------------------------
         // ASSIGN ENCOUNTER ID
         // --------------------------------------------------------
@@ -303,6 +301,7 @@ public class EncounterSpawner : MonoBehaviour
         encounterUnit.SetEncounterUnitId(
             encounterUnitId
         );
+
 
         // --------------------------------------------------------
         // PLACE ON GRID
