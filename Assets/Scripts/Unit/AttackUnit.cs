@@ -5,34 +5,34 @@ using UnityEngine;
 
 public class AttackUnit : MonoBehaviour
 {
-    // ==================================================
+    // ============================================================
     // STATIC EVENTS
-    // ==================================================
+    // ============================================================
 
     public static event Action<AttackUnit, AbilitySO> OnAbilityUsed;
 
 
-    // ==================================================
+    // ============================================================
     // CHARACTER DATA
-    // ==================================================
+    // ============================================================
 
     [Header("Character Data")]
     [SerializeField]
     private CharacterSO characterData;
 
 
-    // ==================================================
+    // ============================================================
     // ABILITIES
-    // ==================================================
+    // ============================================================
 
     [Header("Abilities")]
     [SerializeField]
     private List<AbilitySO> abilities = new();
 
 
-    // ==================================================
+    // ============================================================
     // REFERENCES
-    // ==================================================
+    // ============================================================
 
     [Header("References")]
     [SerializeField]
@@ -42,9 +42,9 @@ public class AttackUnit : MonoBehaviour
     private IAttackAnimation attackAnimation;
 
 
-    // ==================================================
+    // ============================================================
     // ABILITY STATE
-    // ==================================================
+    // ============================================================
 
     private readonly Dictionary<AbilitySO, int> abilityCooldowns =
         new();
@@ -53,41 +53,21 @@ public class AttackUnit : MonoBehaviour
         new();
 
 
-    // ==================================================
+    // ============================================================
     // GRID
-    // ==================================================
+    // ============================================================
 
     private GridManager cachedGridManager;
 
-    /*
-     * IMPORTANT:
-     *
-     * This is the UNIT'S LOGICAL GRID POSITION.
-     *
-     * It must NOT be recalculated from transform.position
-     * after the board visually rotates.
-     *
-     * Example:
-     *
-     * Logical position:
-     * (-2, 1)
-     *
-     * Board rotates 90 degrees.
-     *
-     * The unit may move in WORLD SPACE to another position,
-     * but its logical grid position is STILL:
-     *
-     * (-2, 1)
-     */
     [SerializeField]
     private Vector2Int logicalGridPosition;
 
     private bool hasLogicalGridPosition;
 
 
-    // ==================================================
+    // ============================================================
     // UNITY
-    // ==================================================
+    // ============================================================
 
     private void Awake()
     {
@@ -105,12 +85,10 @@ public class AttackUnit : MonoBehaviour
 
         EnsureGridManager();
 
-        /*
-         * Do not immediately overwrite an already assigned
-         * logical position.
-         */
-        if (!hasLogicalGridPosition &&
-            cachedGridManager != null)
+        if (
+            !hasLogicalGridPosition &&
+            cachedGridManager != null
+        )
         {
             logicalGridPosition =
                 cachedGridManager.WorldToGridPosition(
@@ -131,9 +109,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // INITIALIZE
-    // ==================================================
+    // ============================================================
 
     public void Initialize(CharacterSO data)
     {
@@ -178,9 +156,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // INITIALIZE ABILITY STATE
-    // ==================================================
+    // ============================================================
 
     private void InitializeCooldowns()
     {
@@ -210,9 +188,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // ENSURE ABILITY STATE
-    // ==================================================
+    // ============================================================
 
     private bool EnsureAbilityState(
         AbilitySO ability)
@@ -241,9 +219,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // LOGICAL GRID POSITION
-    // ==================================================
+    // ============================================================
 
     public void SetLogicalGridPosition(
         Vector2Int position)
@@ -289,9 +267,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // MOVEMENT STATE
-    // ==================================================
+    // ============================================================
 
     public bool HasMovedThisTurn()
     {
@@ -308,9 +286,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // COOLDOWN
-    // ==================================================
+    // ============================================================
 
     public int GetAbilityCooldown(
         AbilitySO ability)
@@ -337,9 +315,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // USES PER TURN
-    // ==================================================
+    // ============================================================
 
     public int GetAbilityUsesRemaining(
         AbilitySO ability)
@@ -391,9 +369,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CONSUME ABILITY USE
-    // ==================================================
+    // ============================================================
 
     private bool ConsumeAbilityUse(
         AbilitySO ability)
@@ -428,9 +406,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // MOVEMENT / ABILITY RESTRICTION
-    // ==================================================
+    // ============================================================
 
     private bool CanUseAbilityAfterMovement(
         AbilitySO ability)
@@ -455,9 +433,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // READY
-    // ==================================================
+    // ============================================================
 
     public bool IsAbilityReady(
         AbilitySO ability)
@@ -484,9 +462,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // PUBLIC ABILITY CHECK
-    // ==================================================
+    // ============================================================
 
     public bool CanUseAbility(
         AbilitySO ability)
@@ -496,9 +474,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // ROUND
-    // ==================================================
+    // ============================================================
 
     public void StartNewRound()
     {
@@ -536,9 +514,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // COOLDOWN START
-    // ==================================================
+    // ============================================================
 
     private void StartAbilityCooldown(
         AbilitySO ability)
@@ -556,14 +534,25 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
-    // ATTACK
-    // ==================================================
+    // ============================================================
+    // PLAYER ATTACK
+    // ============================================================
 
     public bool Attack(
         GameObject target,
         AbilitySO selectedAbility)
     {
+        // IMPORTANT:
+        // This is the player-facing attack entry point.
+        //
+        // Enemy AI uses UnitAttackBrain directly and therefore
+        // is NOT blocked by the player input lock.
+
+        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        {
+            return false;
+        }
+
         if (
             !CanAttack() ||
             target == null ||
@@ -608,14 +597,20 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // ATTACK AT TILE
-    // ==================================================
+    // ============================================================
 
     public bool AttackAtTile(
         Vector2Int targetTile,
         AbilitySO selectedAbility)
     {
+        // Player-facing action.
+        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        {
+            return false;
+        }
+
         if (
             !CanAttack() ||
             selectedAbility == null
@@ -666,9 +661,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // COMPLETE ABILITY USE
-    // ==================================================
+    // ============================================================
 
     private void CompleteAbilityUse(
         AbilitySO ability)
@@ -688,14 +683,20 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // ATTACK ROUTINE
-    // ==================================================
+    // ============================================================
 
     public IEnumerator AttackRoutine(
         GameObject target,
         AbilitySO selectedAbility)
     {
+        // IMPORTANT:
+        // This routine can be used by AI.
+        //
+        // Do NOT put the global player-input lock here,
+        // otherwise enemy AI would stop attacking.
+
         if (
             !CanAttack() ||
             target == null ||
@@ -749,9 +750,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // GENERIC TARGET CHECK
-    // ==================================================
+    // ============================================================
 
     public bool IsValidTarget(
         GameObject target)
@@ -786,9 +787,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CAN ATTACK
-    // ==================================================
+    // ============================================================
 
     public bool CanAttack()
     {
@@ -816,9 +817,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // DEAD
-    // ==================================================
+    // ============================================================
 
     public bool IsDead()
     {
@@ -828,9 +829,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // GRID MANAGER
-    // ==================================================
+    // ============================================================
 
     public GridManager GetGridManager()
     {
@@ -852,9 +853,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // GRID POSITION DEBUG
-    // ==================================================
+    // ============================================================
 
     [ContextMenu("Debug Grid Position")]
     public void DebugGridPosition()
@@ -868,9 +869,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // SNAP TO GRID
-    // ==================================================
+    // ============================================================
 
     [ContextMenu("Snap To Grid")]
     public void SnapToGrid()
@@ -901,9 +902,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CURRENT GRID POSITION
-    // ==================================================
+    // ============================================================
 
     public Vector2Int GetCurrentGridPosition()
     {
@@ -914,9 +915,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // CURRENT WORLD-DETECTED POSITION
-    // ==================================================
+    // ============================================================
 
     public Vector2Int GetWorldDetectedGridPosition()
     {
@@ -934,9 +935,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // RANGE
-    // ==================================================
+    // ============================================================
 
     public int GetAttackRange()
     {
@@ -995,9 +996,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // ABILITIES
-    // ==================================================
+    // ============================================================
 
     public List<AbilitySO> GetAbilities()
     {
@@ -1052,9 +1053,9 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    // ==================================================
+    // ============================================================
     // ACCESSORS
-    // ==================================================
+    // ============================================================
 
     public Team GetTeam()
     {

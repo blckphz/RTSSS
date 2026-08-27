@@ -5,6 +5,57 @@ using UnityEngine;
 public static class CombatUtility
 {
     // ============================================================
+    // TURN / PLAYER INPUT STATE
+    // ============================================================
+
+    private static bool playerInputLocked;
+
+    /// <summary>
+    /// True while the enemy turn is active.
+    /// This only blocks PLAYER input.
+    /// It does NOT block enemy AI.
+    /// </summary>
+    public static bool IsPlayerInputLocked()
+    {
+        return playerInputLocked;
+    }
+
+    /// <summary>
+    /// Locks or unlocks player-controlled actions.
+    /// Enemy AI is NOT affected by this flag.
+    /// </summary>
+    public static void SetPlayerInputLocked(bool locked)
+    {
+        playerInputLocked = locked;
+    }
+
+    /// <summary>
+    /// Returns true when this unit is allowed to receive
+    /// player-controlled ability input.
+    /// </summary>
+    public static bool IsPlayerTurnInputAllowed(
+        AttackUnit unit
+    )
+    {
+        if (unit == null)
+        {
+            return false;
+        }
+
+        if (playerInputLocked)
+        {
+            return false;
+        }
+
+        Team team = unit.GetTeam();
+
+        return
+            team == Team.Player ||
+            team == Team.Ally;
+    }
+
+
+    // ============================================================
     // UNITS
     // ============================================================
 
@@ -29,6 +80,7 @@ public static class CombatUtility
 
         return units;
     }
+
 
     public static List<AttackUnit> GetAllAliveUnits()
     {
@@ -55,6 +107,7 @@ public static class CombatUtility
         return units;
     }
 
+
     public static List<GameObject> GetAllUnitObjects()
     {
         List<GameObject> objects =
@@ -75,6 +128,7 @@ public static class CombatUtility
 
         return objects;
     }
+
 
     public static List<AttackUnit> GetUnitsByTeam(
         Team team
@@ -105,6 +159,7 @@ public static class CombatUtility
         return units;
     }
 
+
     public static List<GameObject> GetObjectsByTeam(
         Team team
     )
@@ -128,12 +183,14 @@ public static class CombatUtility
         return objects;
     }
 
+
     public static int GetUnitCount(
         Team team
     )
     {
         return GetUnitsByTeam(team).Count;
     }
+
 
     public static bool IsValidUnit(
         AttackUnit unit
@@ -152,6 +209,7 @@ public static class CombatUtility
         return true;
     }
 
+
     public static bool IsAlive(
         AttackUnit unit
     )
@@ -160,6 +218,7 @@ public static class CombatUtility
             IsValidUnit(unit) &&
             !unit.IsDead();
     }
+
 
     // ============================================================
     // TARGETS
@@ -209,6 +268,7 @@ public static class CombatUtility
 
         return enemies;
     }
+
 
     public static GameObject FindNearestEnemy(
         AttackUnit attacker,
@@ -292,6 +352,7 @@ public static class CombatUtility
             : null;
     }
 
+
     // ============================================================
     // ATTACK
     // ============================================================
@@ -317,6 +378,7 @@ public static class CombatUtility
         return attacker.IsValidTarget(target);
     }
 
+
     public static int ExecuteAllAvailableAttacks(
         AttackUnit attacker
     )
@@ -336,6 +398,7 @@ public static class CombatUtility
 
         return brain.UseAllAvailableAbilities();
     }
+
 
     // ============================================================
     // PLAYER / ALLY TURN
@@ -395,6 +458,7 @@ public static class CombatUtility
         }
     }
 
+
     // ============================================================
     // LEGACY TURN
     // ============================================================
@@ -433,6 +497,7 @@ public static class CombatUtility
 
         return string.Empty;
     }
+
 
     // ============================================================
     // ENEMY TURN
@@ -510,6 +575,7 @@ public static class CombatUtility
         }
     }
 
+
     // ============================================================
     // GRID
     // ============================================================
@@ -518,6 +584,7 @@ public static class CombatUtility
     {
         return Object.FindObjectOfType<GridManager>();
     }
+
 
     public static Vector2Int GetGridPosition(
         AttackUnit unit,
@@ -537,6 +604,7 @@ public static class CombatUtility
         );
     }
 
+
     // ============================================================
     // WIN / LOSE
     // ============================================================
@@ -548,12 +616,14 @@ public static class CombatUtility
         return GetUnitCount(team) > 0;
     }
 
+
     public static bool AreEnemiesDefeated()
     {
         return !HasTeamAlive(
             Team.Enemy
         );
     }
+
 
     public static bool ArePlayerUnitsDefeated()
     {
