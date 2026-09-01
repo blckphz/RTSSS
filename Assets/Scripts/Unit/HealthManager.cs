@@ -126,10 +126,13 @@ public class HealthManager : MonoBehaviour
                 maxHealth
             );
 
+
         health =
             maxHealth;
 
+
         SetupMaterial();
+
 
         audioFXManager =
             AudioFXManager.Instance;
@@ -179,16 +182,20 @@ public class HealthManager : MonoBehaviour
         team =
             character.team;
 
+
         maxHealth =
             Mathf.Max(
                 1,
                 character.maxHealth
             );
 
+
         health =
             maxHealth;
 
+
         SetupMaterial();
+
 
         StopDamageFlash();
 
@@ -198,6 +205,25 @@ public class HealthManager : MonoBehaviour
             audioFXManager =
                 AudioFXManager.Instance;
         }
+
+
+        NotifyHealthChanged();
+    }
+
+
+    // ==================================================
+    // SET HEALTH
+    // ==================================================
+
+    public void SetHealth(
+        int newHealth)
+    {
+        health =
+            Mathf.Clamp(
+                newHealth,
+                0,
+                maxHealth
+            );
 
 
         NotifyHealthChanged();
@@ -235,9 +261,12 @@ public class HealthManager : MonoBehaviour
 
         PlayDamageSound();
 
+
         PlayDamageScreenShake();
 
+
         NotifyHealthChanged();
+
 
         FlashDamage();
 
@@ -499,6 +528,7 @@ public class HealthManager : MonoBehaviour
                 flashCoroutine
             );
 
+
             flashCoroutine = null;
         }
 
@@ -683,10 +713,13 @@ public class HealthManager : MonoBehaviour
                 newMaxHealth
             );
 
+
         health =
             maxHealth;
 
+
         StopDamageFlash();
+
 
         NotifyHealthChanged();
     }

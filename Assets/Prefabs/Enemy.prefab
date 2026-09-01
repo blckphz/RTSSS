@@ -139,7 +139,7 @@ GameObject:
   - component: {fileID: 6138558681720875464}
   - component: {fileID: 1213053164979615894}
   - component: {fileID: 3565167239940467447}
-  - component: {fileID: 8815402151060560787}
+  - component: {fileID: 4653433185496737857}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -419,7 +419,7 @@ MonoBehaviour:
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
   unitId: 
---- !u!114 &8815402151060560787
+--- !u!114 &4653433185496737857
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -428,6 +428,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5869547761387176993}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a0146d7f9c36374f841b27d35351716, type: 3}
+  m_Script: {fileID: 11500000, guid: b915052cf5ca8644882da3dc9527c18a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: '::'
+  m_EditorClassIdentifier: Assembly-CSharp::UnitData
+  character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}

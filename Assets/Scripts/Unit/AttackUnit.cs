@@ -535,35 +535,76 @@ public class AttackUnit : MonoBehaviour
 
 
     // ============================================================
-    // PLAYER ATTACK
+    // ATTACK
+    // ============================================================
+    //
+    // IMPORTANT:
+    // This method is usable by BOTH:
+    //
+    // 1. Player systems
+    // 2. Enemy AI / UnitAttackBrain
+    //
+    // DO NOT check IsPlayerTurnInputAllowed() here.
+    //
+    // Player input restrictions belong in PlayerAttack().
+    //
     // ============================================================
 
     public bool Attack(
         GameObject target,
         AbilitySO selectedAbility)
     {
-        // IMPORTANT:
-        // This is the player-facing attack entry point.
-        //
-        // Enemy AI uses UnitAttackBrain directly and therefore
-        // is NOT blocked by the player input lock.
-
-        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        if (!CanAttack())
         {
+            Debug.LogWarning(
+                "[AttackUnit][Attack] FAILED CanAttack=false | " +
+                "Unit=" + name +
+                " | Team=" + GetTeam() +
+                " | PlayerInputLocked=" +
+                CombatUtility.IsPlayerInputLocked(),
+                this
+            );
+
             return false;
         }
 
-        if (
-            !CanAttack() ||
-            target == null ||
-            selectedAbility == null
-        )
+        if (target == null)
         {
+            Debug.LogWarning(
+                "[AttackUnit][Attack] FAILED Target=NULL | " +
+                "Unit=" + name +
+                " | Team=" + GetTeam(),
+                this
+            );
+
+            return false;
+        }
+
+        if (selectedAbility == null)
+        {
+            Debug.LogWarning(
+                "[AttackUnit][Attack] FAILED Ability=NULL | " +
+                "Unit=" + name +
+                " | Team=" + GetTeam(),
+                this
+            );
+
             return false;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
+            Debug.LogWarning(
+                "[AttackUnit][Attack] FAILED AbilityNotReady | " +
+                "Unit=" + name +
+                " | Ability=" + selectedAbility.GetAbilityName() +
+                " | Cooldown=" +
+                GetAbilityCooldown(selectedAbility) +
+                " | UsesRemaining=" +
+                GetAbilityUsesRemaining(selectedAbility),
+                this
+            );
+
             return false;
         }
 
@@ -571,6 +612,12 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager == null)
         {
+            Debug.LogError(
+                "[AttackUnit][Attack] FAILED GridManager=NULL | " +
+                "Unit=" + name,
+                this
+            );
+
             return false;
         }
 
@@ -579,13 +626,43 @@ public class AttackUnit : MonoBehaviour
                 gameObject,
                 target))
         {
+            Debug.LogWarning(
+                "[AttackUnit][Attack] FAILED CanHit=false | " +
+                "Unit=" + name +
+                " | Ability=" +
+                selectedAbility.GetAbilityName() +
+                " | Target=" + target.name,
+                this
+            );
+
             return false;
         }
+
+        Debug.Log(
+            "[AttackUnit][Attack] EXECUTE | " +
+            "Unit=" + name +
+            " | Team=" + GetTeam() +
+            " | Ability=" +
+            selectedAbility.GetAbilityName() +
+            " | Target=" + target.name +
+            " | PlayerInputLocked=" +
+            CombatUtility.IsPlayerInputLocked(),
+            this
+        );
 
         if (!selectedAbility.Use(
                 gameObject,
                 target))
         {
+            Debug.LogWarning(
+                "[AttackUnit][Attack] FAILED Ability.Use | " +
+                "Unit=" + name +
+                " | Ability=" +
+                selectedAbility.GetAbilityName() +
+                " | Target=" + target.name,
+                this
+            );
+
             return false;
         }
 
@@ -593,7 +670,52 @@ public class AttackUnit : MonoBehaviour
             selectedAbility
         );
 
+        Debug.Log(
+            "[AttackUnit][Attack] SUCCESS | " +
+            "Unit=" + name +
+            " | Team=" + GetTeam() +
+            " | Ability=" +
+            selectedAbility.GetAbilityName() +
+            " | Target=" + target.name,
+            this
+        );
+
         return true;
+    }
+
+
+    // ============================================================
+    // PLAYER ATTACK
+    // ============================================================
+    //
+    // Player UI/input should call THIS method.
+    //
+    // Enemy AI should call Attack().
+    //
+    // ============================================================
+
+    public bool PlayerAttack(
+        GameObject target,
+        AbilitySO selectedAbility)
+    {
+        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        {
+            Debug.Log(
+                "[AttackUnit][PlayerAttack] BLOCKED | " +
+                "Unit=" + name +
+                " | Team=" + GetTeam() +
+                " | PlayerInputLocked=" +
+                CombatUtility.IsPlayerInputLocked(),
+                this
+            );
+
+            return false;
+        }
+
+        return Attack(
+            target,
+            selectedAbility
+        );
     }
 
 
@@ -605,16 +727,27 @@ public class AttackUnit : MonoBehaviour
         Vector2Int targetTile,
         AbilitySO selectedAbility)
     {
-        // Player-facing action.
+        // This is player-facing.
         if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        {
+            Debug.Log(
+                "[AttackUnit][AttackAtTile] BLOCKED | " +
+                "Unit=" + name +
+                " | Team=" + GetTeam() +
+                " | PlayerInputLocked=" +
+                CombatUtility.IsPlayerInputLocked(),
+                this
+            );
+
+            return false;
+        }
+
+        if (!CanAttack())
         {
             return false;
         }
 
-        if (
-            !CanAttack() ||
-            selectedAbility == null
-        )
+        if (selectedAbility == null)
         {
             return false;
         }
@@ -691,23 +824,54 @@ public class AttackUnit : MonoBehaviour
         GameObject target,
         AbilitySO selectedAbility)
     {
-        // IMPORTANT:
-        // This routine can be used by AI.
+        // Used by AI.
         //
-        // Do NOT put the global player-input lock here,
-        // otherwise enemy AI would stop attacking.
+        // DO NOT check player input lock here.
 
-        if (
-            !CanAttack() ||
-            target == null ||
-            selectedAbility == null
-        )
+        if (!CanAttack())
         {
+            Debug.LogWarning(
+                "[AttackUnit][AttackRoutine] FAILED CanAttack=false | " +
+                "Unit=" + name +
+                " | Team=" + GetTeam(),
+                this
+            );
+
+            yield break;
+        }
+
+        if (target == null)
+        {
+            Debug.LogWarning(
+                "[AttackUnit][AttackRoutine] FAILED Target=NULL | " +
+                "Unit=" + name,
+                this
+            );
+
+            yield break;
+        }
+
+        if (selectedAbility == null)
+        {
+            Debug.LogWarning(
+                "[AttackUnit][AttackRoutine] FAILED Ability=NULL | " +
+                "Unit=" + name,
+                this
+            );
+
             yield break;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
+            Debug.LogWarning(
+                "[AttackUnit][AttackRoutine] FAILED AbilityNotReady | " +
+                "Unit=" + name +
+                " | Ability=" +
+                selectedAbility.GetAbilityName(),
+                this
+            );
+
             yield break;
         }
 
@@ -715,6 +879,12 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager == null)
         {
+            Debug.LogError(
+                "[AttackUnit][AttackRoutine] FAILED GridManager=NULL | " +
+                "Unit=" + name,
+                this
+            );
+
             yield break;
         }
 
@@ -723,6 +893,15 @@ public class AttackUnit : MonoBehaviour
                 gameObject,
                 target))
         {
+            Debug.LogWarning(
+                "[AttackUnit][AttackRoutine] FAILED CanHit=false | " +
+                "Unit=" + name +
+                " | Ability=" +
+                selectedAbility.GetAbilityName() +
+                " | Target=" + target.name,
+                this
+            );
+
             yield break;
         }
 
@@ -730,6 +909,15 @@ public class AttackUnit : MonoBehaviour
                 gameObject,
                 target))
         {
+            Debug.LogWarning(
+                "[AttackUnit][AttackRoutine] FAILED Ability.Use | " +
+                "Unit=" + name +
+                " | Ability=" +
+                selectedAbility.GetAbilityName() +
+                " | Target=" + target.name,
+                this
+            );
+
             yield break;
         }
 

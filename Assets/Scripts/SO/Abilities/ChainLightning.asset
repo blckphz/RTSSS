@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: ChainLightning
   m_EditorClassIdentifier: Assembly-CSharp::ChainLightning
   abilityName: ChainLIghtning
-  description: 
+  description: 'Attacks
+
+'
   damage: 10
   cooldown: 0
   canAttackWithThisAfterMove: 0
@@ -29,3 +31,4 @@ MonoBehaviour:
   projectilePrefab: {fileID: 1253008432403029687, guid: 450c971267a451f40bb389db9cf5bd0e, type: 3}
   projectileSpeed: 12
   abilitySpawnPointName: AbilitySpawnPoint
+  enableDebugLogs: 0

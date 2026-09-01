@@ -169,13 +169,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &10881487
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -849,13 +842,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &231203037
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1019,13 +1005,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &325048054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1098,7 +1077,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -428.70343, y: 680.04407}
+  m_AnchoredPosition: {x: -428.70343, y: 680.044}
   m_SizeDelta: {x: 428.7034, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &331207865
@@ -1711,13 +1690,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &427792188
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1971,13 +1943,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &433339952
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3060,13 +3025,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &691746553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3606,13 +3564,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 0}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &765278936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4204,8 +4155,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 2
-  m_Value: -0.00000008975177
-  m_Size: 0.5947768
+  m_Value: 0.00000008975177
+  m_Size: 0
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -4298,13 +4249,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &990868882
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4749,13 +4693,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1052833392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5032,13 +4969,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 1
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1066227400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5366,13 +5296,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1183173363
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5627,13 +5550,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1237854248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5722,13 +5638,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1246974965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5817,13 +5726,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1250468783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6120,13 +6022,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1312617949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6215,13 +6110,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1317292552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6310,13 +6198,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 0}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1396041558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6582,13 +6463,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1439190118
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6899,13 +6773,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1501561312
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7963,13 +7830,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 1
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1672678661
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8269,13 +8129,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &1767411030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15472,13 +15325,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &2096604276
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15567,13 +15413,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60effe6c388235447906da98a41c2c59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IconBehav
-  encounter: {fileID: 11400000, guid: a4c9c20bf4fdb394faed0030b13436e6, type: 2}
-  mapManager: {fileID: 819778747}
-  isUnlocked: 0
-  isCompleted: 0
-  lockedVisual: {fileID: 0}
-  unlockedVisual: {fileID: 0}
-  completedVisual: {fileID: 0}
 --- !u!114 &2115543390
 MonoBehaviour:
   m_ObjectHideFlags: 0
