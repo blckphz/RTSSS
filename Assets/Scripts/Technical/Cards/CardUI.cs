@@ -10,23 +10,49 @@ public class CardUI :
     IPointerEnterHandler,
     IPointerExitHandler
 {
+    // ==================================================
+    // CARD
+    // ==================================================
+
     [Header("Card")]
+
     [SerializeField]
     private Image cardImage;
 
-    [Header("Character")]
-    [SerializeField]
+
+    // ==================================================
+    // CHARACTER
+    // ==================================================
+
     private CharacterSO character;
 
+
+    // ==================================================
+    // GHOST
+    // ==================================================
+
     [Header("Ghost")]
+
     [SerializeField]
     private GameObject ghostPrefab;
 
+
+    // ==================================================
+    // DRAG
+    // ==================================================
+
     [Header("Drag")]
+
     [SerializeField]
     private float draggedScale = 1.1f;
 
+
+    // ==================================================
+    // HOVER
+    // ==================================================
+
     [Header("Hover")]
+
     [SerializeField]
     private float hoverScale = 1.15f;
 
@@ -92,25 +118,62 @@ public class CardUI :
     // ==================================================
 
     public void Setup(
-        CardManager manager)
+        CardManager manager,
+        CharacterSO characterData)
     {
+        // ==================================================
+        // ASSIGN DATA
+        // ==================================================
+
         cardManager =
             manager;
 
+
+        character =
+            characterData;
+
+
+        // ==================================================
+        // CARD IMAGE
+        // ==================================================
+
+        if (
+            cardImage != null &&
+            character != null &&
+            character.icon != null
+        )
+        {
+            cardImage.sprite =
+                character.icon;
+        }
+
+
+        // ==================================================
+        // CARD MANAGER REFERENCES
+        // ==================================================
 
         if (cardManager != null)
         {
             gridManager =
                 cardManager.GetGridManager();
 
+
             mainCamera =
                 cardManager.GetCamera();
         }
 
 
+        // ==================================================
+        // ENCOUNTER MANAGER
+        // ==================================================
+
         encounterManager =
             FindFirstObjectByType<EncounterManager>();
 
+
+        // ==================================================
+        // HIGHLIGHT MANAGER
+        // ==================================================
 
         if (gridManager != null)
         {
@@ -122,13 +185,23 @@ public class CardUI :
         if (highlightManager == null)
         {
             highlightManager =
-                FindFirstObjectByType<GridHighlightManager>();
+                FindFirstObjectByType<
+                    GridHighlightManager
+                >();
         }
 
+
+        // ==================================================
+        // CANVAS
+        // ==================================================
 
         canvas =
             GetComponentInParent<Canvas>();
 
+
+        // ==================================================
+        // ORIGINAL STATE
+        // ==================================================
 
         originalParent =
             transform.parent;
@@ -157,7 +230,8 @@ public class CardUI :
     public void OnPointerEnter(
         PointerEventData eventData)
     {
-        hovering = true;
+        hovering =
+            true;
 
 
         if (dragging)
@@ -179,7 +253,8 @@ public class CardUI :
     public void OnPointerExit(
         PointerEventData eventData)
     {
-        hovering = false;
+        hovering =
+            false;
 
 
         if (dragging)
@@ -206,9 +281,12 @@ public class CardUI :
         }
 
 
-        dragging = true;
+        dragging =
+            true;
 
-        validPlacement = false;
+
+        validPlacement =
+            false;
 
 
         SaveCardPosition();
@@ -221,7 +299,8 @@ public class CardUI :
 
         if (cardImage != null)
         {
-            cardImage.enabled = false;
+            cardImage.enabled =
+                false;
         }
 
 
@@ -271,7 +350,8 @@ public class CardUI :
         }
 
 
-        dragging = false;
+        dragging =
+            false;
 
 
         if (highlightManager != null)
@@ -292,7 +372,8 @@ public class CardUI :
         }
 
 
-        validPlacement = false;
+        validPlacement =
+            false;
     }
 
 
@@ -340,13 +421,19 @@ public class CardUI :
 
         if (encounterManager != null)
         {
-            if (!encounterManager.IsEncounterRunning())
+            if (
+                !encounterManager
+                    .IsEncounterRunning()
+            )
             {
                 return false;
             }
 
 
-            if (!encounterManager.IsPreparing())
+            if (
+                !encounterManager
+                    .IsPreparing()
+            )
             {
                 return false;
             }
@@ -403,7 +490,9 @@ public class CardUI :
 
 
         RectTransform canvasRect =
-            canvas.GetComponent<RectTransform>();
+            canvas.GetComponent<
+                RectTransform
+            >();
 
 
         if (canvasRect == null)
@@ -426,7 +515,8 @@ public class CardUI :
                     screenPosition,
                     eventCamera,
                     out Vector2 localPosition
-                ))
+                )
+        )
         {
             rect.localPosition =
                 localPosition;
@@ -459,13 +549,16 @@ public class CardUI :
 
 
         ghostObject.name =
-            $"{character.characterName}_Ghost";
+            character.characterName +
+            "_Ghost";
 
 
         DisableGhostBehaviour();
 
 
-        ghostObject.SetActive(true);
+        ghostObject.SetActive(
+            true
+        );
     }
 
 
@@ -482,55 +575,69 @@ public class CardUI :
 
 
         AttackUnit attackUnit =
-            ghostObject.GetComponent<AttackUnit>();
+            ghostObject.GetComponent<
+                AttackUnit
+            >();
 
 
         if (attackUnit != null)
         {
-            attackUnit.enabled = false;
+            attackUnit.enabled =
+                false;
         }
 
 
         HealthManager healthManager =
-            ghostObject.GetComponent<HealthManager>();
+            ghostObject.GetComponent<
+                HealthManager
+            >();
 
 
         if (healthManager != null)
         {
-            healthManager.enabled = false;
+            healthManager.enabled =
+                false;
         }
 
 
         Collider2D[] colliders =
-            ghostObject.GetComponentsInChildren<Collider2D>(
+            ghostObject.GetComponentsInChildren<
+                Collider2D
+            >(
                 true
             );
 
 
         foreach (
             Collider2D collider
-            in colliders)
+            in colliders
+        )
         {
             if (collider != null)
             {
-                collider.enabled = false;
+                collider.enabled =
+                    false;
             }
         }
 
 
         Graphic[] graphics =
-            ghostObject.GetComponentsInChildren<Graphic>(
+            ghostObject.GetComponentsInChildren<
+                Graphic
+            >(
                 true
             );
 
 
         foreach (
             Graphic graphic
-            in graphics)
+            in graphics
+        )
         {
             if (graphic != null)
             {
-                graphic.raycastTarget = false;
+                graphic.raycastTarget =
+                    false;
             }
         }
     }
@@ -566,9 +673,12 @@ public class CardUI :
             );
 
 
-        if (!gameplayPlane.Raycast(
+        if (
+            !gameplayPlane.Raycast(
                 ray,
-                out float distance))
+                out float distance
+            )
+        )
         {
             SetInvalidPlacement();
 
@@ -577,10 +687,13 @@ public class CardUI :
 
 
         Vector3 worldPosition =
-            ray.GetPoint(distance);
+            ray.GetPoint(
+                distance
+            );
 
 
-        worldPosition.z = 0f;
+        worldPosition.z =
+            0f;
 
 
         currentGridPosition =
@@ -589,8 +702,11 @@ public class CardUI :
             );
 
 
-        if (!gridManager.IsInsideGrid(
-                currentGridPosition))
+        if (
+            !gridManager.IsInsideGrid(
+                currentGridPosition
+            )
+        )
         {
             SetInvalidPlacement();
 
@@ -629,16 +745,21 @@ public class CardUI :
             Quaternion.identity;
 
 
-        if (gridManager.IsCellOccupied(
-                currentGridPosition))
+        if (
+            gridManager.IsCellOccupied(
+                currentGridPosition
+            )
+        )
         {
-            validPlacement = false;
+            validPlacement =
+                false;
 
             return;
         }
 
 
-        validPlacement = true;
+        validPlacement =
+            true;
     }
 
 
@@ -648,7 +769,8 @@ public class CardUI :
 
     private void SetInvalidPlacement()
     {
-        validPlacement = false;
+        validPlacement =
+            false;
 
 
         if (highlightManager != null)
@@ -730,13 +852,17 @@ public class CardUI :
         // ==================================================
 
         UnitData unitData =
-            placedObject.GetComponent<UnitData>();
+            placedObject.GetComponent<
+                UnitData
+            >();
 
 
         if (unitData == null)
         {
             unitData =
-                placedObject.AddComponent<UnitData>();
+                placedObject.AddComponent<
+                    UnitData
+                >();
         }
 
 
@@ -750,7 +876,9 @@ public class CardUI :
         // ==================================================
 
         HealthManager healthManager =
-            placedObject.GetComponent<HealthManager>();
+            placedObject.GetComponent<
+                HealthManager
+            >();
 
 
         if (healthManager == null)
@@ -764,7 +892,10 @@ public class CardUI :
             );
 
 
-            Destroy(placedObject);
+            Destroy(
+                placedObject
+            );
+
 
             ReturnCardToHand();
 
@@ -777,7 +908,9 @@ public class CardUI :
         // ==================================================
 
         AttackUnit attackUnit =
-            placedObject.GetComponent<AttackUnit>();
+            placedObject.GetComponent<
+                AttackUnit
+            >();
 
 
         if (attackUnit == null)
@@ -791,7 +924,10 @@ public class CardUI :
             );
 
 
-            Destroy(placedObject);
+            Destroy(
+                placedObject
+            );
+
 
             ReturnCardToHand();
 
@@ -834,14 +970,16 @@ public class CardUI :
                 "[CardUI] Failed to place unit on grid.\n" +
                 "Character: " +
                 character.characterName +
-                "\n" +
-                "Grid Position: " +
+                "\nGrid Position: " +
                 currentGridPosition,
                 this
             );
 
 
-            Destroy(placedObject);
+            Destroy(
+                placedObject
+            );
+
 
             ReturnCardToHand();
 
@@ -866,11 +1004,9 @@ public class CardUI :
             "[CardUI] Unit deployed.\n" +
             "Character: " +
             character.characterName +
-            "\n" +
-            "Grid Position: " +
+            "\nGrid Position: " +
             currentGridPosition +
-            "\n" +
-            "Team: " +
+            "\nTeam: " +
             character.team,
             placedObject
         );
@@ -888,7 +1024,9 @@ public class CardUI :
         }
 
 
-        Destroy(gameObject);
+        Destroy(
+            gameObject
+        );
     }
 
 
@@ -900,7 +1038,8 @@ public class CardUI :
     {
         if (cardImage != null)
         {
-            cardImage.enabled = true;
+            cardImage.enabled =
+                true;
         }
 
 
@@ -949,7 +1088,8 @@ public class CardUI :
         );
 
 
-        ghostObject = null;
+        ghostObject =
+            null;
     }
 
 

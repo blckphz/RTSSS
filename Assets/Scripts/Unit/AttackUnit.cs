@@ -537,18 +537,6 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
     // ATTACK
     // ============================================================
-    //
-    // IMPORTANT:
-    // This method is usable by BOTH:
-    //
-    // 1. Player systems
-    // 2. Enemy AI / UnitAttackBrain
-    //
-    // DO NOT check IsPlayerTurnInputAllowed() here.
-    //
-    // Player input restrictions belong in PlayerAttack().
-    //
-    // ============================================================
 
     public bool Attack(
         GameObject target,
@@ -597,7 +585,8 @@ public class AttackUnit : MonoBehaviour
             Debug.LogWarning(
                 "[AttackUnit][Attack] FAILED AbilityNotReady | " +
                 "Unit=" + name +
-                " | Ability=" + selectedAbility.GetAbilityName() +
+                " | Ability=" +
+                selectedAbility.GetAbilityName() +
                 " | Cooldown=" +
                 GetAbilityCooldown(selectedAbility) +
                 " | UsesRemaining=" +
@@ -687,12 +676,6 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
     // PLAYER ATTACK
     // ============================================================
-    //
-    // Player UI/input should call THIS method.
-    //
-    // Enemy AI should call Attack().
-    //
-    // ============================================================
 
     public bool PlayerAttack(
         GameObject target,
@@ -727,7 +710,6 @@ public class AttackUnit : MonoBehaviour
         Vector2Int targetTile,
         AbilitySO selectedAbility)
     {
-        // This is player-facing.
         if (!CombatUtility.IsPlayerTurnInputAllowed(this))
         {
             Debug.Log(
@@ -824,10 +806,6 @@ public class AttackUnit : MonoBehaviour
         GameObject target,
         AbilitySO selectedAbility)
     {
-        // Used by AI.
-        //
-        // DO NOT check player input lock here.
-
         if (!CanAttack())
         {
             Debug.LogWarning(

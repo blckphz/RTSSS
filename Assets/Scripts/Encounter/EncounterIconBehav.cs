@@ -124,12 +124,6 @@ public class IconBehav :
 
         if (!isUnlocked)
         {
-            Debug.Log(
-                "[IconBehav] Node is locked: " +
-                gameObject.name,
-                this
-            );
-
             return;
         }
 
@@ -140,12 +134,6 @@ public class IconBehav :
 
         if (isCompleted)
         {
-            Debug.Log(
-                "[IconBehav] Node already completed: " +
-                gameObject.name,
-                this
-            );
-
             return;
         }
 
@@ -163,11 +151,6 @@ public class IconBehav :
 
         if (mapManager == null)
         {
-            Debug.LogError(
-                "[IconBehav] LevelMapManager not found!",
-                this
-            );
-
             return;
         }
 
@@ -178,13 +161,6 @@ public class IconBehav :
 
         if (encounter == null)
         {
-            Debug.LogError(
-                "[IconBehav] No EncounterDefinition assigned " +
-                "to " +
-                gameObject.name,
-                this
-            );
-
             return;
         }
 
@@ -208,19 +184,6 @@ public class IconBehav :
     {
         encounter =
             newEncounter;
-
-
-        Debug.Log(
-            "[IconBehav] Encounter assigned to " +
-            gameObject.name +
-            ": " +
-            (
-                encounter != null
-                    ? encounter.encounterName
-                    : "NULL"
-            ),
-            this
-        );
     }
 
 
