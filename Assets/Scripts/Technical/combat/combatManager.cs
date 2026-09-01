@@ -29,27 +29,12 @@ public class CombatManager : MonoBehaviour
     [SerializeField]
     private bool enemiesAttackAfterMoving = true;
 
-    [Header("Testing")]
-    [Tooltip(
-        "If enabled, CombatManager can spawn test enemies when " +
-        "CheckForEnemies() is explicitly called. " +
-        "It does NOT spawn enemies automatically on Start."
-    )]
     [SerializeField]
     private bool spawnEnemiesAutomatically = false;
-
-
-    // ============================================================
-    // ENEMY TURN LOCK
-    // ============================================================
 
     private readonly HashSet<AttackUnit> lockedEnemies =
         new HashSet<AttackUnit>();
 
-
-    // ============================================================
-    // UNITY
-    // ============================================================
 
     private void Awake()
     {
@@ -61,21 +46,10 @@ public class CombatManager : MonoBehaviour
     {
         if (spawnEnemiesAutomatically)
         {
-            Debug.Log(
-                "[CombatManager] Automatic enemy spawning is enabled, " +
-                "but enemy spawning is intended to be controlled " +
-                "by EncounterManager.",
-                this
-            );
-
-            // Deliberately do not spawn here.
+            return;
         }
     }
 
-
-    // ============================================================
-    // REFERENCES
-    // ============================================================
 
     private void FindReferences()
     {
@@ -84,20 +58,8 @@ public class CombatManager : MonoBehaviour
             gridManager =
                 FindFirstObjectByType<GridManager>();
         }
-
-        if (gridManager == null)
-        {
-            Debug.LogWarning(
-                "[CombatManager] GridManager not found yet.",
-                this
-            );
-        }
     }
 
-
-    // ============================================================
-    // ENEMY TURN
-    // ============================================================
 
     public IEnumerator RunEnemyRound()
     {
@@ -108,20 +70,8 @@ public class CombatManager : MonoBehaviour
 
         if (enemies == null || enemies.Count == 0)
         {
-            Debug.Log(
-                "[CombatManager] No enemies available for enemy turn.",
-                this
-            );
-
             yield break;
         }
-
-        Debug.Log(
-            $"[CombatManager] Enemy turn starting. " +
-            $"Enemies={enemies.Count} | " +
-            $"Locked={lockedEnemies.Count}",
-            this
-        );
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -138,29 +88,10 @@ public class CombatManager : MonoBehaviour
                 continue;
             }
 
-            // ----------------------------------------------------
-            // NEWLY SPAWNED ENEMY LOCK
-            // ----------------------------------------------------
-
             if (IsEnemyLocked(enemy))
             {
-                Debug.Log(
-                    $"[CombatManager] Skipping newly spawned enemy: " +
-                    $"{enemy.name}",
-                    enemy
-                );
-
                 continue;
             }
-
-            // ----------------------------------------------------
-            // NORMAL ENEMY TURN
-            // ----------------------------------------------------
-
-            Debug.Log(
-                $"[CombatManager] Enemy acting: {enemy.name}",
-                enemy
-            );
 
             yield return StartCoroutine(
                 CombatUtility.ExecuteEnemyTurn(
@@ -172,17 +103,8 @@ public class CombatManager : MonoBehaviour
 
             yield return null;
         }
-
-        Debug.Log(
-            "[CombatManager] Enemy turn complete.",
-            this
-        );
     }
 
-
-    // ============================================================
-    // MANUAL ENEMY ROUND
-    // ============================================================
 
     public void StartEnemyRound()
     {
@@ -191,10 +113,6 @@ public class CombatManager : MonoBehaviour
         );
     }
 
-
-    // ============================================================
-    // ENEMY TURN LOCK
-    // ============================================================
 
     public void LockEnemyForCurrentRound(
         AttackUnit enemy
@@ -211,12 +129,6 @@ public class CombatManager : MonoBehaviour
         }
 
         lockedEnemies.Add(
-            enemy
-        );
-
-        Debug.Log(
-            $"[CombatManager] Enemy locked for current round: " +
-            $"{enemy.name}",
             enemy
         );
     }
@@ -258,11 +170,6 @@ public class CombatManager : MonoBehaviour
     public void ClearEnemyTurnLocks()
     {
         lockedEnemies.Clear();
-
-        Debug.Log(
-            "[CombatManager] Enemy turn locks cleared.",
-            this
-        );
     }
 
 
@@ -287,17 +194,6 @@ public class CombatManager : MonoBehaviour
     }
 
 
-    // ============================================================
-    // ENEMY TURN SETTINGS
-    // ============================================================
-    //
-    // PUBLIC READ-ONLY ACCESSORS.
-    //
-    // RoundManager uses these instead of trying to access
-    // the private serialized fields directly.
-    //
-    // ============================================================
-
     public bool EnemiesMoveAfterRound
     {
         get
@@ -316,10 +212,6 @@ public class CombatManager : MonoBehaviour
     }
 
 
-    // ============================================================
-    // ENEMIES
-    // ============================================================
-
     public void CheckForEnemies()
     {
         int enemyCount =
@@ -327,18 +219,8 @@ public class CombatManager : MonoBehaviour
 
         if (enemyCount > 0)
         {
-            Debug.Log(
-                $"[CombatManager] Enemies already exist: {enemyCount}",
-                this
-            );
-
             return;
         }
-
-        Debug.Log(
-            "[CombatManager] No enemies currently exist.",
-            this
-        );
 
         SpawnTestEnemies();
     }
@@ -368,10 +250,6 @@ public class CombatManager : MonoBehaviour
     }
 
 
-    // ============================================================
-    // TEST ENEMY SPAWNING
-    // ============================================================
-
     public void SpawnTestEnemiesNow()
     {
         SpawnTestEnemies();
@@ -391,12 +269,6 @@ public class CombatManager : MonoBehaviour
             enemyCharacter == null
         )
         {
-            Debug.LogWarning(
-                "[CombatManager] Cannot spawn test enemies. " +
-                "GridManager, enemyPrefab, or enemyCharacter is missing.",
-                this
-            );
-
             return;
         }
 
@@ -411,11 +283,6 @@ public class CombatManager : MonoBehaviour
 
         if (availableCells.Count == 0)
         {
-            Debug.LogWarning(
-                "[CombatManager] No available cells for test enemies.",
-                this
-            );
-
             return;
         }
 
@@ -424,11 +291,6 @@ public class CombatManager : MonoBehaviour
                 amount,
                 availableCells.Count
             );
-
-        Debug.Log(
-            $"[CombatManager] Spawning {amount} test enemies.",
-            this
-        );
 
         for (int i = 0; i < amount; i++)
         {
@@ -461,30 +323,14 @@ public class CombatManager : MonoBehaviour
 
         if (!gridManager.IsInsideGrid(gridPosition))
         {
-            Debug.LogWarning(
-                $"[CombatManager] Cannot spawn enemy at " +
-                $"{gridPosition}: outside grid.",
-                this
-            );
-
             return false;
         }
 
         if (gridManager.IsCellOccupied(gridPosition))
         {
-            Debug.LogWarning(
-                $"[CombatManager] Cannot spawn enemy at " +
-                $"{gridPosition}: cell occupied.",
-                this
-            );
-
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // CREATE ENEMY
-        // --------------------------------------------------------
 
         GameObject enemy =
             Instantiate(enemyPrefab);
@@ -498,10 +344,6 @@ public class CombatManager : MonoBehaviour
             $"{enemyCharacter.name}_Enemy";
 
 
-        // --------------------------------------------------------
-        // COMPONENTS
-        // --------------------------------------------------------
-
         HealthManager health =
             enemy.GetComponent<HealthManager>();
 
@@ -513,21 +355,11 @@ public class CombatManager : MonoBehaviour
             attackUnit == null
         )
         {
-            Debug.LogError(
-                "[CombatManager] Enemy prefab requires " +
-                "HealthManager and AttackUnit.",
-                enemy
-            );
-
             Destroy(enemy);
 
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // PLACE ON GRID
-        // --------------------------------------------------------
 
         if (
             !gridManager.PlaceUnit(
@@ -536,21 +368,11 @@ public class CombatManager : MonoBehaviour
             )
         )
         {
-            Debug.LogWarning(
-                $"[CombatManager] Failed to place enemy at " +
-                $"{gridPosition}.",
-                enemy
-            );
-
             Destroy(enemy);
 
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // INITIALIZE
-        // --------------------------------------------------------
 
         health.Initialize(
             enemyCharacter
@@ -561,33 +383,13 @@ public class CombatManager : MonoBehaviour
         );
 
 
-        // --------------------------------------------------------
-        // LOCK TEST ENEMY
-        // --------------------------------------------------------
-        //
-        // If this is spawned during a round, prevent it from
-        // immediately receiving an enemy turn.
-        //
-        // --------------------------------------------------------
-
         LockEnemyForCurrentRound(
             attackUnit
-        );
-
-
-        Debug.Log(
-            $"[CombatManager] Test enemy spawned at " +
-            $"{gridPosition}: {enemy.name}",
-            enemy
         );
 
         return true;
     }
 
-
-    // ============================================================
-    // AVAILABLE CELLS
-    // ============================================================
 
     private List<Vector2Int> GetAvailableCells()
     {
@@ -649,10 +451,6 @@ public class CombatManager : MonoBehaviour
     }
 
 
-    // ============================================================
-    // RANDOM AVAILABLE CELL
-    // ============================================================
-
     public bool TryGetRandomAvailableCell(
         out Vector2Int position
     )
@@ -690,10 +488,6 @@ public class CombatManager : MonoBehaviour
         return true;
     }
 
-
-    // ============================================================
-    // ACCESSORS
-    // ============================================================
 
     public GridManager GetGridManager()
     {

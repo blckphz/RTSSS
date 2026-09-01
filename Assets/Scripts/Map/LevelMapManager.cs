@@ -32,10 +32,6 @@ public class LevelNode
 
 public class LevelMapManager : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("Map Parents")]
     [SerializeField] private Transform iconParent;
     [SerializeField] private Transform lineParent;
@@ -97,13 +93,6 @@ public class LevelMapManager : MonoBehaviour
     [SerializeField] private bool hideMapDuringEncounter = true;
     [SerializeField] private bool showMapAfterVictory = true;
 
-    [Header("Debug")]
-    [SerializeField] private bool debugLogs = true;
-
-    // ============================================================
-    // STATE
-    // ============================================================
-
     private List<List<LevelNode>> mapNodes =
         new List<List<LevelNode>>();
 
@@ -113,10 +102,6 @@ public class LevelMapManager : MonoBehaviour
     private LevelNode currentNode;
 
     private bool mapGenerated;
-
-    // ============================================================
-    // UNITY
-    // ============================================================
 
     private void Start()
     {
@@ -135,41 +120,6 @@ public class LevelMapManager : MonoBehaviour
             HandleEncounterVictory;
     }
 
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void Log(string message)
-    {
-        if (!debugLogs)
-            return;
-
-        Debug.Log(
-            "[LevelMap] " + message,
-            this
-        );
-    }
-
-    private void LogWarning(string message)
-    {
-        Debug.LogWarning(
-            "[LevelMap] " + message,
-            this
-        );
-    }
-
-    private void LogError(string message)
-    {
-        Debug.LogError(
-            "[LevelMap] " + message,
-            this
-        );
-    }
-
-    // ============================================================
-    // GENERATE MAP
-    // ============================================================
-
     [ContextMenu("Regenerate Map")]
     public void GenerateMap()
     {
@@ -186,80 +136,23 @@ public class LevelMapManager : MonoBehaviour
         mapGenerated = true;
 
         ShowMap();
-
-        Log(
-            "Map generated. Rows=" +
-            rows +
-            ", Nodes=" +
-            CountNodes()
-        );
     }
-
-    // ============================================================
-    // VALIDATION
-    // ============================================================
 
     private bool ValidateMapSettings()
     {
         bool valid = true;
 
         if (iconPrefab == null)
-        {
-            LogError("Icon Prefab is missing.");
             valid = false;
-        }
 
         if (linePrefab == null)
-        {
-            LogError("Line Prefab is missing.");
             valid = false;
-        }
 
         if (iconParent == null)
-        {
-            LogError("Icon Parent is missing.");
             valid = false;
-        }
 
         if (lineParent == null)
-        {
-            LogError("Line Parent is missing.");
             valid = false;
-        }
-
-        if (mapCanvas == null)
-        {
-            LogWarning(
-                "Map Canvas is not assigned. " +
-                "Using icon/line parents for visibility."
-            );
-        }
-
-        if (startEncounter == null)
-        {
-            LogWarning("Start Encounter is not assigned.");
-        }
-
-        if (bossEncounter == null)
-        {
-            LogWarning("Boss Encounter is not assigned.");
-        }
-
-        if (
-            normalEncounters == null ||
-            normalEncounters.Count == 0
-        )
-        {
-            LogWarning("No Normal Encounters assigned.");
-        }
-
-        if (
-            eliteEncounters == null ||
-            eliteEncounters.Count == 0
-        )
-        {
-            LogWarning("No Elite Encounters assigned.");
-        }
 
         rows = Mathf.Max(2, rows);
 
@@ -286,10 +179,6 @@ public class LevelMapManager : MonoBehaviour
 
         return valid;
     }
-
-    // ============================================================
-    // SPAWN NODES
-    // ============================================================
 
     private void SpawnNodes()
     {
@@ -405,10 +294,6 @@ public class LevelMapManager : MonoBehaviour
         }
     }
 
-    // ============================================================
-    // NODE ICON
-    // ============================================================
-
     private void SetNodeIconSprite(
         GameObject iconObject,
         EncounterDefinition encounter)
@@ -426,13 +311,7 @@ public class LevelMapManager : MonoBehaviour
         }
 
         if (image == null)
-        {
-            LogWarning(
-                "Icon prefab has no Image component."
-            );
-
             return;
-        }
 
         Sprite spriteToUse =
             defaultNodeIcon;
@@ -452,10 +331,6 @@ public class LevelMapManager : MonoBehaviour
                 spriteToUse;
         }
     }
-
-    // ============================================================
-    // ENCOUNTER SELECTION
-    // ============================================================
 
     private EncounterDefinition GetEncounterForNode(
         int row,
@@ -598,18 +473,10 @@ public class LevelMapManager : MonoBehaviour
             $"LevelNode_Row{row}_Column{column}_{encounter.encounterName}";
     }
 
-    // ============================================================
-    // PATH GENERATION
-    // ============================================================
-
     private void GeneratePaths()
     {
         if (mapNodes.Count < 2)
             return;
-
-        // --------------------------------------------------------
-        // GUARANTEE PRIMARY CONNECTION
-        // --------------------------------------------------------
 
         for (
             int row = 0;
@@ -656,10 +523,6 @@ public class LevelMapManager : MonoBehaviour
                 );
             }
         }
-
-        // --------------------------------------------------------
-        // OPTIONAL EXTRA CONNECTIONS
-        // --------------------------------------------------------
 
         for (
             int row = 0;
@@ -758,10 +621,6 @@ public class LevelMapManager : MonoBehaviour
                 }
             }
         }
-
-        // --------------------------------------------------------
-        // GUARANTEE EVERY NODE HAS INCOMING CONNECTION
-        // --------------------------------------------------------
 
         for (
             int row = 0;
@@ -863,10 +722,6 @@ public class LevelMapManager : MonoBehaviour
 
         return false;
     }
-
-    // ============================================================
-    // DRAW LINES
-    // ============================================================
 
     private void DrawLines2D()
     {
@@ -1020,22 +875,14 @@ public class LevelMapManager : MonoBehaviour
             );
 
         if (obj == null)
-        {
-            LogError("Failed to create line.");
             return null;
-        }
 
         Image image =
             obj.GetComponent<Image>();
 
         if (image == null)
         {
-            LogError(
-                "Line Prefab requires an Image component."
-            );
-
             Destroy(obj);
-
             return null;
         }
 
@@ -1045,10 +892,6 @@ public class LevelMapManager : MonoBehaviour
 
         return image;
     }
-
-    // ============================================================
-    // START NODE
-    // ============================================================
 
     private void UnlockStartNode()
     {
@@ -1064,11 +907,6 @@ public class LevelMapManager : MonoBehaviour
             mapNodes[0][0];
 
         UnlockNode(startNode);
-
-        Log(
-            "Start node unlocked: " +
-            startNode.Transform.name
-        );
     }
 
     private void UnlockNode(
@@ -1082,10 +920,6 @@ public class LevelMapManager : MonoBehaviour
         UpdateIconState(node);
     }
 
-    // ============================================================
-    // NODE CLICK
-    // ============================================================
-
     public void HandleNodeClicked(
         IconBehav icon)
     {
@@ -1096,76 +930,29 @@ public class LevelMapManager : MonoBehaviour
             FindNode(icon.transform);
 
         if (node == null)
-        {
-            LogWarning(
-                "Clicked icon does not belong to map."
-            );
-
             return;
-        }
 
         if (!node.IsUnlocked)
-        {
-            Log(
-                "Blocked locked node: " +
-                node.Transform.name
-            );
-
             return;
-        }
 
         if (node.IsCompleted)
-        {
-            Log(
-                "Blocked completed node: " +
-                node.Transform.name
-            );
-
             return;
-        }
 
         if (node.Encounter == null)
-        {
-            LogError(
-                "Node has no EncounterDefinition."
-            );
-
             return;
-        }
 
         EncounterManager encounterManager =
             FindFirstObjectByType<EncounterManager>();
 
         if (encounterManager == null)
-        {
-            LogError(
-                "EncounterManager not found."
-            );
-
             return;
-        }
 
         if (encounterManager.IsEncounterRunning())
-        {
-            Log(
-                "Encounter already running."
-            );
-
             return;
-        }
-
-        // --------------------------------------------------------
-        // SELECT THIS ROUTE
-        // --------------------------------------------------------
 
         SelectRoute(node);
 
         currentNode = node;
-
-        Log(
-            "Selected node: " +
-            node.Transform.name
-        );
 
         if (hideMapDuringEncounter)
         {
@@ -1179,24 +966,11 @@ public class LevelMapManager : MonoBehaviour
         encounterManager.StartEncounter();
     }
 
-    // ============================================================
-    // ROUTE SELECTION
-    // ============================================================
-
     private void SelectRoute(
         LevelNode selectedNode)
     {
         if (selectedNode == null)
             return;
-
-        /*
-         * The player has chosen this node.
-         *
-         * Every other currently unlocked node is locked.
-         *
-         * This prevents the player from clicking another
-         * branch after choosing a route.
-         */
 
         foreach (
             List<LevelNode> row
@@ -1218,43 +992,16 @@ public class LevelMapManager : MonoBehaviour
             }
         }
 
-        // The selected node remains active.
         selectedNode.IsUnlocked = true;
 
         UpdateIconState(selectedNode);
-
-        Log(
-            "Route locked to: " +
-            selectedNode.Transform.name
-        );
     }
-
-    // ============================================================
-    // VICTORY
-    // ============================================================
 
     private void HandleEncounterVictory(
         EncounterDefinition completedEncounter)
     {
         if (currentNode == null)
-        {
-            LogWarning(
-                "Victory received with no current node."
-            );
-
             return;
-        }
-
-        if (
-            completedEncounter != null &&
-            currentNode.Encounter !=
-            completedEncounter
-        )
-        {
-            LogWarning(
-                "Victory encounter does not match current node."
-            );
-        }
 
         CompleteCurrentNode();
 
@@ -1279,10 +1026,6 @@ public class LevelMapManager : MonoBehaviour
             completedNode
         );
 
-        // --------------------------------------------------------
-        // ONLY DIRECT CONNECTIONS BECOME AVAILABLE
-        // --------------------------------------------------------
-
         foreach (
             LevelNode nextNode
             in completedNode.NextNodes)
@@ -1293,29 +1036,8 @@ public class LevelMapManager : MonoBehaviour
             UnlockNode(nextNode);
         }
 
-        Log(
-            "Completed: " +
-            completedNode.Transform.name +
-            ". Unlocked next nodes: " +
-            completedNode.NextNodes.Count
-        );
-
-        if (
-            completedNode.Row ==
-            rows - 1
-        )
-        {
-            Log(
-                "Boss completed. Map complete."
-            );
-        }
-
         currentNode = null;
     }
-
-    // ============================================================
-    // MAP VISIBILITY
-    // ============================================================
 
     public void HideMap()
     {
@@ -1381,10 +1103,6 @@ public class LevelMapManager : MonoBehaviour
             ShowMap();
     }
 
-    // ============================================================
-    // FIND NODE
-    // ============================================================
-
     private LevelNode FindNode(
         Transform target)
     {
@@ -1411,10 +1129,6 @@ public class LevelMapManager : MonoBehaviour
 
         return null;
     }
-
-    // ============================================================
-    // UPDATE ICON
-    // ============================================================
 
     private void UpdateIconState(
         LevelNode node)
@@ -1483,10 +1197,6 @@ public class LevelMapManager : MonoBehaviour
         }
     }
 
-    // ============================================================
-    // CLOSEST NODE
-    // ============================================================
-
     private LevelNode GetClosestNode(
         LevelNode target,
         List<LevelNode> pool)
@@ -1518,10 +1228,6 @@ public class LevelMapManager : MonoBehaviour
 
         return closest;
     }
-
-    // ============================================================
-    // CLEAR MAP
-    // ============================================================
 
     private void ClearMap()
     {
@@ -1562,10 +1268,6 @@ public class LevelMapManager : MonoBehaviour
         mapGenerated = false;
     }
 
-    // ============================================================
-    // DEBUG / INFORMATION
-    // ============================================================
-
     private int CountNodes()
     {
         int count = 0;
@@ -1582,10 +1284,6 @@ public class LevelMapManager : MonoBehaviour
 
         return count;
     }
-
-    // ============================================================
-    // PUBLIC API
-    // ============================================================
 
     public List<List<LevelNode>> GetMapNodes()
     {

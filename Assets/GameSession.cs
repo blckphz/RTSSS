@@ -42,14 +42,6 @@ public class GameSession : MonoBehaviour
     {
         SelectedSquad = squad;
 
-
-        if (squad != null)
-        {
-            Debug.Log(
-                "[GameSession] Selected Squad: " +
-                squad.name
-            );
-        }
     }
 
 

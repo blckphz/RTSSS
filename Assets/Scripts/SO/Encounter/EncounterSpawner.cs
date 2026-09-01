@@ -2,10 +2,6 @@
 
 public class EncounterSpawner : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("References")]
 
     [SerializeField]
@@ -18,10 +14,6 @@ public class EncounterSpawner : MonoBehaviour
     private CombatManager combatManager;
 
 
-    // ============================================================
-    // UNITY
-    // ============================================================
-
     private void Awake()
     {
         if (gridManager == null)
@@ -30,13 +22,11 @@ public class EncounterSpawner : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
 
-
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
-
 
         if (combatManager == null)
         {
@@ -46,10 +36,6 @@ public class EncounterSpawner : MonoBehaviour
     }
 
 
-    // ============================================================
-    // ENCOUNTER
-    // ============================================================
-
     public void SpawnEncounter(
         EncounterDefinition encounter)
     {
@@ -58,48 +44,17 @@ public class EncounterSpawner : MonoBehaviour
             encounterManager.IsFinished()
         )
         {
-            Debug.Log(
-                "[EncounterSpawner] Encounter is finished — " +
-                "spawning blocked.",
-                this
-            );
-
             return;
         }
-
 
         if (encounter == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] Encounter definition is NULL!",
-                this
-            );
-
             return;
         }
 
-
-        // ========================================================
-        // IMPORTANT
-        // ========================================================
-        //
-        // Player units are NOT spawned here anymore.
-        //
-        // They are created by CardUI when the player
-        // drags a squad card onto the grid.
-        //
-        // ========================================================
-
-
-        SpawnEnemies(
-            encounter
-        );
+        SpawnEnemies(encounter);
     }
 
-
-    // ============================================================
-    // ENEMIES
-    // ============================================================
 
     public void SpawnEnemies(
         EncounterDefinition encounter)
@@ -109,15 +64,8 @@ public class EncounterSpawner : MonoBehaviour
             encounterManager.IsFinished()
         )
         {
-            Debug.Log(
-                "[EncounterSpawner] Encounter is finished — " +
-                "enemy spawning blocked.",
-                this
-            );
-
             return;
         }
-
 
         if (
             encounter == null ||
@@ -128,7 +76,6 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
-
         for (
             int i = 0;
             i < encounter.enemies.Count;
@@ -138,7 +85,6 @@ public class EncounterSpawner : MonoBehaviour
             EnemySpawnData data =
                 encounter.enemies[i];
 
-
             if (
                 data == null ||
                 data.prefab == null
@@ -147,10 +93,8 @@ public class EncounterSpawner : MonoBehaviour
                 continue;
             }
 
-
             string enemyId =
                 data.enemyId;
-
 
             if (
                 string.IsNullOrWhiteSpace(
@@ -162,7 +106,6 @@ public class EncounterSpawner : MonoBehaviour
                     $"Enemy_{i}";
             }
 
-
             GameObject spawnedEnemy =
                 SpawnRandomUnit(
                     data.prefab,
@@ -170,18 +113,12 @@ public class EncounterSpawner : MonoBehaviour
                     enemyId
                 );
 
-
-            // ====================================================
-            // LOCK NEW ENEMY
-            // ====================================================
-
             if (spawnedEnemy != null)
             {
                 AttackUnit attackUnit =
                     spawnedEnemy.GetComponent<
                         AttackUnit
                     >();
-
 
                 if (attackUnit != null)
                 {
@@ -192,7 +129,6 @@ public class EncounterSpawner : MonoBehaviour
                                 CombatManager
                             >();
                     }
-
 
                     if (combatManager != null)
                     {
@@ -207,10 +143,6 @@ public class EncounterSpawner : MonoBehaviour
     }
 
 
-    // ============================================================
-    // RANDOM SPAWN
-    // ============================================================
-
     private GameObject SpawnRandomUnit(
         GameObject prefab,
         string identifier,
@@ -221,26 +153,13 @@ public class EncounterSpawner : MonoBehaviour
             encounterManager.IsFinished()
         )
         {
-            Debug.Log(
-                $"[EncounterSpawner] Encounter is finished — " +
-                $"spawn blocked for {identifier}.",
-                this
-            );
-
             return null;
         }
-
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] GridManager is missing!",
-                this
-            );
-
             return null;
         }
-
 
         if (
             !gridManager.TryGetRandomFreeCell(
@@ -248,47 +167,27 @@ public class EncounterSpawner : MonoBehaviour
             )
         )
         {
-            Debug.LogError(
-                $"[EncounterSpawner] No free grid cell available " +
-                $"for {identifier}!",
-                this
-            );
-
             return null;
         }
-
 
         GameObject unit =
             Instantiate(
                 prefab
             );
 
-
         if (unit == null)
         {
-            Debug.LogError(
-                $"[EncounterSpawner] Failed to instantiate " +
-                $"{identifier}.",
-                this
-            );
-
             return null;
         }
-
 
         unit.name =
             $"{identifier}_{prefab.name}";
 
 
-        // ========================================================
-        // ENCOUNTER ID
-        // ========================================================
-
         EncounterUnit encounterUnit =
             unit.GetComponent<
                 EncounterUnit
             >();
-
 
         if (encounterUnit == null)
         {
@@ -298,15 +197,10 @@ public class EncounterSpawner : MonoBehaviour
                 >();
         }
 
-
         encounterUnit.SetEncounterUnitId(
             encounterUnitId
         );
 
-
-        // ========================================================
-        // PLACE ON GRID
-        // ========================================================
 
         if (
             !gridManager.PlaceUnit(
@@ -315,28 +209,9 @@ public class EncounterSpawner : MonoBehaviour
             )
         )
         {
-            Destroy(
-                unit
-            );
-
-
-            Debug.LogError(
-                $"[EncounterSpawner] Failed to place " +
-                $"{identifier} at {position}.",
-                this
-            );
-
-
+            Destroy(unit);
             return null;
         }
-
-
-        Debug.Log(
-            $"[EncounterSpawner] Spawned {unit.name} " +
-            $"at {position}.",
-            unit
-        );
-
 
         return unit;
     }

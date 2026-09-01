@@ -186,11 +186,6 @@ public class RoundManager : MonoBehaviour
 
         if (!IsPlayerOnField())
         {
-            Debug.Log(
-                "[RoundManager] Cannot start round: Player is not on the field.",
-                this
-            );
-
             return;
         }
 
@@ -343,8 +338,6 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        int lockedCount = 0;
-
         for (int i = 0; i < currentEnemies.Count; i++)
         {
             AttackUnit enemy =
@@ -370,15 +363,7 @@ public class RoundManager : MonoBehaviour
             }
 
             enemyTurnLockedUnits.Add(enemy);
-
-            lockedCount++;
         }
-
-        Debug.Log(
-            "[RoundManager] New enemies locked for this round: " +
-            lockedCount,
-            this
-        );
     }
 
 
@@ -488,22 +473,6 @@ public class RoundManager : MonoBehaviour
         //
         CombatUtility.SetPlayerInputLocked(true);
 
-        Debug.Log(
-            "[RoundManager] Enemy turn started. " +
-            "Player input LOCKED.",
-            this
-        );
-
-
-        if (enemiesWereSpawned)
-        {
-            Debug.Log(
-                "[RoundManager] Enemies were spawned this round. " +
-                "New enemies are locked; existing enemies may act.",
-                this
-            );
-        }
-
         yield return StartCoroutine(
             ExecuteEnemyTurn()
         );
@@ -539,12 +508,6 @@ public class RoundManager : MonoBehaviour
                 currentState =
                     RoundState.Setup;
 
-                Debug.Log(
-                    "[RoundManager] Encounter finished. " +
-                    "Player input UNLOCKED.",
-                    this
-                );
-
                 return;
             }
         }
@@ -553,12 +516,6 @@ public class RoundManager : MonoBehaviour
             RoundState.Setup;
 
         roundRunning = false;
-
-        Debug.Log(
-            "[RoundManager] Round ended. " +
-            "Player input UNLOCKED.",
-            this
-        );
 
         // IMPORTANT:
         //
@@ -629,11 +586,6 @@ public class RoundManager : MonoBehaviour
     {
         if (combatManager == null)
         {
-            Debug.LogWarning(
-                "[RoundManager] CombatManager is NULL.",
-                this
-            );
-
             yield break;
         }
 
@@ -644,23 +596,8 @@ public class RoundManager : MonoBehaviour
 
         if (enemies == null || enemies.Count == 0)
         {
-            Debug.Log(
-                "[RoundManager] No enemies available for enemy turn.",
-                this
-            );
-
             yield break;
         }
-
-        Debug.Log(
-            "[RoundManager] Enemy turn starting. " +
-            "Total enemies=" +
-            enemies.Count +
-            " | Locked=" +
-            enemyTurnLockedUnits.Count,
-            this
-        );
-
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -679,20 +616,8 @@ public class RoundManager : MonoBehaviour
 
             if (IsEnemyTurnLocked(enemy))
             {
-                Debug.Log(
-                    "[RoundManager] Skipping newly spawned enemy: " +
-                    enemy.name,
-                    enemy
-                );
-
                 continue;
             }
-
-            Debug.Log(
-                "[RoundManager] Enemy acting: " +
-                enemy.name,
-                enemy
-            );
 
             yield return StartCoroutine(
                 CombatUtility.ExecuteEnemyTurn(
@@ -712,11 +637,6 @@ public class RoundManager : MonoBehaviour
                 yield break;
             }
         }
-
-        Debug.Log(
-            "[RoundManager] Enemy turn complete.",
-            this
-        );
     }
 
 

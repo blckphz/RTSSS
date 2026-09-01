@@ -141,11 +141,6 @@ public class CardManager : MonoBehaviour
 
     public void StartNewEncounterHand()
     {
-        Debug.Log(
-            "[CardManager] Creating new encounter hand.",
-            this
-        );
-
 
         // Remove any cards left from the previous encounter.
         ClearHand();
@@ -229,13 +224,6 @@ public class CardManager : MonoBehaviour
 
             return;
         }
-
-
-        Debug.Log(
-            "[CardManager] Creating hand for squad: " +
-            selectedSquad.name,
-            this
-        );
 
 
         foreach (

@@ -78,11 +78,6 @@ public class MapController : MonoBehaviour
 
         mapRoot.SetActive(true);
 
-
-        Debug.Log(
-            "[MapController] Map enabled.",
-            this
-        );
     }
 
 

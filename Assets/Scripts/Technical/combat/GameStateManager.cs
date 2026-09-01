@@ -50,11 +50,6 @@ public class GameStateManager : MonoBehaviour
 
         currentState = newState;
 
-        Debug.Log(
-            $"[GameStateManager] State changed to {currentState}",
-            this
-        );
-
         OnGameStateChanged?.Invoke(currentState);
     }
 

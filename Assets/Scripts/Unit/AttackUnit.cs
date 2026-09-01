@@ -282,7 +282,6 @@ public class AttackUnit : MonoBehaviour
     public void SetHasMovedThisTurn(
         bool value)
     {
-        // Movement state is owned by UnitMoveBrain.
     }
 
 
@@ -330,7 +329,6 @@ public class AttackUnit : MonoBehaviour
         int usesPerTurn =
             ability.GetUsesPerTurn();
 
-        // 0 = unlimited.
         if (usesPerTurn <= 0)
         {
             return 0;
@@ -358,7 +356,6 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        // 0 = unlimited.
         if (ability.GetUsesPerTurn() <= 0)
         {
             return true;
@@ -384,7 +381,6 @@ public class AttackUnit : MonoBehaviour
         int usesPerTurn =
             ability.GetUsesPerTurn();
 
-        // Unlimited-use ability.
         if (usesPerTurn <= 0)
         {
             return false;
@@ -544,56 +540,21 @@ public class AttackUnit : MonoBehaviour
     {
         if (!CanAttack())
         {
-            Debug.LogWarning(
-                "[AttackUnit][Attack] FAILED CanAttack=false | " +
-                "Unit=" + name +
-                " | Team=" + GetTeam() +
-                " | PlayerInputLocked=" +
-                CombatUtility.IsPlayerInputLocked(),
-                this
-            );
-
             return false;
         }
 
         if (target == null)
         {
-            Debug.LogWarning(
-                "[AttackUnit][Attack] FAILED Target=NULL | " +
-                "Unit=" + name +
-                " | Team=" + GetTeam(),
-                this
-            );
-
             return false;
         }
 
         if (selectedAbility == null)
         {
-            Debug.LogWarning(
-                "[AttackUnit][Attack] FAILED Ability=NULL | " +
-                "Unit=" + name +
-                " | Team=" + GetTeam(),
-                this
-            );
-
             return false;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
-            Debug.LogWarning(
-                "[AttackUnit][Attack] FAILED AbilityNotReady | " +
-                "Unit=" + name +
-                " | Ability=" +
-                selectedAbility.GetAbilityName() +
-                " | Cooldown=" +
-                GetAbilityCooldown(selectedAbility) +
-                " | UsesRemaining=" +
-                GetAbilityUsesRemaining(selectedAbility),
-                this
-            );
-
             return false;
         }
 
@@ -601,12 +562,6 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager == null)
         {
-            Debug.LogError(
-                "[AttackUnit][Attack] FAILED GridManager=NULL | " +
-                "Unit=" + name,
-                this
-            );
-
             return false;
         }
 
@@ -615,58 +570,18 @@ public class AttackUnit : MonoBehaviour
                 gameObject,
                 target))
         {
-            Debug.LogWarning(
-                "[AttackUnit][Attack] FAILED CanHit=false | " +
-                "Unit=" + name +
-                " | Ability=" +
-                selectedAbility.GetAbilityName() +
-                " | Target=" + target.name,
-                this
-            );
-
             return false;
         }
-
-        Debug.Log(
-            "[AttackUnit][Attack] EXECUTE | " +
-            "Unit=" + name +
-            " | Team=" + GetTeam() +
-            " | Ability=" +
-            selectedAbility.GetAbilityName() +
-            " | Target=" + target.name +
-            " | PlayerInputLocked=" +
-            CombatUtility.IsPlayerInputLocked(),
-            this
-        );
 
         if (!selectedAbility.Use(
                 gameObject,
                 target))
         {
-            Debug.LogWarning(
-                "[AttackUnit][Attack] FAILED Ability.Use | " +
-                "Unit=" + name +
-                " | Ability=" +
-                selectedAbility.GetAbilityName() +
-                " | Target=" + target.name,
-                this
-            );
-
             return false;
         }
 
         CompleteAbilityUse(
             selectedAbility
-        );
-
-        Debug.Log(
-            "[AttackUnit][Attack] SUCCESS | " +
-            "Unit=" + name +
-            " | Team=" + GetTeam() +
-            " | Ability=" +
-            selectedAbility.GetAbilityName() +
-            " | Target=" + target.name,
-            this
         );
 
         return true;
@@ -683,15 +598,6 @@ public class AttackUnit : MonoBehaviour
     {
         if (!CombatUtility.IsPlayerTurnInputAllowed(this))
         {
-            Debug.Log(
-                "[AttackUnit][PlayerAttack] BLOCKED | " +
-                "Unit=" + name +
-                " | Team=" + GetTeam() +
-                " | PlayerInputLocked=" +
-                CombatUtility.IsPlayerInputLocked(),
-                this
-            );
-
             return false;
         }
 
@@ -712,15 +618,6 @@ public class AttackUnit : MonoBehaviour
     {
         if (!CombatUtility.IsPlayerTurnInputAllowed(this))
         {
-            Debug.Log(
-                "[AttackUnit][AttackAtTile] BLOCKED | " +
-                "Unit=" + name +
-                " | Team=" + GetTeam() +
-                " | PlayerInputLocked=" +
-                CombatUtility.IsPlayerInputLocked(),
-                this
-            );
-
             return false;
         }
 
@@ -808,48 +705,21 @@ public class AttackUnit : MonoBehaviour
     {
         if (!CanAttack())
         {
-            Debug.LogWarning(
-                "[AttackUnit][AttackRoutine] FAILED CanAttack=false | " +
-                "Unit=" + name +
-                " | Team=" + GetTeam(),
-                this
-            );
-
             yield break;
         }
 
         if (target == null)
         {
-            Debug.LogWarning(
-                "[AttackUnit][AttackRoutine] FAILED Target=NULL | " +
-                "Unit=" + name,
-                this
-            );
-
             yield break;
         }
 
         if (selectedAbility == null)
         {
-            Debug.LogWarning(
-                "[AttackUnit][AttackRoutine] FAILED Ability=NULL | " +
-                "Unit=" + name,
-                this
-            );
-
             yield break;
         }
 
         if (!IsAbilityReady(selectedAbility))
         {
-            Debug.LogWarning(
-                "[AttackUnit][AttackRoutine] FAILED AbilityNotReady | " +
-                "Unit=" + name +
-                " | Ability=" +
-                selectedAbility.GetAbilityName(),
-                this
-            );
-
             yield break;
         }
 
@@ -857,12 +727,6 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager == null)
         {
-            Debug.LogError(
-                "[AttackUnit][AttackRoutine] FAILED GridManager=NULL | " +
-                "Unit=" + name,
-                this
-            );
-
             yield break;
         }
 
@@ -871,15 +735,6 @@ public class AttackUnit : MonoBehaviour
                 gameObject,
                 target))
         {
-            Debug.LogWarning(
-                "[AttackUnit][AttackRoutine] FAILED CanHit=false | " +
-                "Unit=" + name +
-                " | Ability=" +
-                selectedAbility.GetAbilityName() +
-                " | Target=" + target.name,
-                this
-            );
-
             yield break;
         }
 
@@ -887,15 +742,6 @@ public class AttackUnit : MonoBehaviour
                 gameObject,
                 target))
         {
-            Debug.LogWarning(
-                "[AttackUnit][AttackRoutine] FAILED Ability.Use | " +
-                "Unit=" + name +
-                " | Ability=" +
-                selectedAbility.GetAbilityName() +
-                " | Target=" + target.name,
-                this
-            );
-
             yield break;
         }
 
@@ -1016,22 +862,6 @@ public class AttackUnit : MonoBehaviour
 
         cachedGridManager =
             FindFirstObjectByType<GridManager>();
-    }
-
-
-    // ============================================================
-    // GRID POSITION DEBUG
-    // ============================================================
-
-    [ContextMenu("Debug Grid Position")]
-    public void DebugGridPosition()
-    {
-        EnsureGridManager();
-
-        if (cachedGridManager == null)
-        {
-            return;
-        }
     }
 
 

@@ -1000,17 +1000,7 @@ public class CardUI :
         // SUCCESS
         // ==================================================
 
-        Debug.Log(
-            "[CardUI] Unit deployed.\n" +
-            "Character: " +
-            character.characterName +
-            "\nGrid Position: " +
-            currentGridPosition +
-            "\nTeam: " +
-            character.team,
-            placedObject
-        );
-
+   
 
         // ==================================================
         // REMOVE CARD
