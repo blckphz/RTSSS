@@ -236,6 +236,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
   team: 0
+  isPlayerCharacter: 0
   maxHealth: 100
   health: 0
   spriteRenderer: {fileID: 0}
@@ -245,6 +246,9 @@ MonoBehaviour:
   damageScreenShakeMagnitude: 1
   damageScreenShakeDuration: 0.15
   enableDamageSound: 1
+  damageNumberPrefab: {fileID: 5742265421823657814, guid: e332337082ba6ce4c9f2c18e3fa4330d, type: 3}
+  damageNumberParent: {fileID: 0}
+  damageNumberOffset: {x: 0, y: 1, z: 0}
   queueDamageFlashes: 1
   minimumFlashInterval: 0.03
 --- !u!114 &7910321259876173858

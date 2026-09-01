@@ -10,18 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
-  m_Name: Player
+  m_Name: RUSTYSENTRY
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
-  characterName: Player
-  icon: {fileID: 21300000, guid: fb4133cde8645db47bd19b13ff0590fb, type: 3}
-  prefabToSpawn: {fileID: 2305230657848179651, guid: 9fea782588f72b74b9b9cc4baf5c27d7, type: 3}
+  characterName: Sentry
+  icon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
+  prefabToSpawn: {fileID: 0}
   team: 0
+  isPlayerCharacter: 0
   maxHealth: 100
-  moveRange: 4
-  canwalkdiagonally: 1
+  moveRange: 0
+  canwalkdiagonally: 0
   abilities:
-  - {fileID: 11400000, guid: 700548be2ef013645be511273ce187fd, type: 2}
-  - {fileID: 11400000, guid: 10a3d323965d847439150b2decd37e21, type: 2}
-  - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
   - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
-  RangedAttacker: 0
+  RangedAttacker: 1

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 
 public class HealthManager : MonoBehaviour
@@ -18,6 +19,19 @@ public class HealthManager : MonoBehaviour
     [Header("Team")]
     [SerializeField]
     private Team team;
+
+
+    // ==================================================
+    // PLAYER
+    // ==================================================
+
+    [Header("Player")]
+    [Tooltip(
+        "If enabled, this unit's health is saved in PlayerDataManager " +
+        "and restored when the next encounter starts."
+    )]
+    [SerializeField]
+    private bool isPlayerCharacter;
 
 
     // ==================================================
@@ -84,6 +98,31 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
+    // DAMAGE NUMBERS
+    // ==================================================
+
+    [Header("Damage Numbers")]
+    [Tooltip(
+        "Prefab used to display floating damage numbers."
+    )]
+    [SerializeField]
+    private DamageNumber damageNumberPrefab;
+
+    [Tooltip(
+        "Canvas or transform that will contain spawned damage numbers."
+    )]
+    [SerializeField]
+    private Transform damageNumberParent;
+
+    [Tooltip(
+        "World-space offset from the unit where the damage number appears."
+    )]
+    [SerializeField]
+    private Vector3 damageNumberOffset =
+        new Vector3(0f, 1f, 0f);
+
+
+    // ==================================================
     // QUEUED FLASH
     // ==================================================
 
@@ -113,6 +152,8 @@ public class HealthManager : MonoBehaviour
 
     private AudioFXManager audioFXManager;
 
+    private PlayerDataManager playerDataManager;
+
 
     // ==================================================
     // UNITY
@@ -126,16 +167,16 @@ public class HealthManager : MonoBehaviour
                 maxHealth
             );
 
-
         health =
             maxHealth;
 
-
         SetupMaterial();
-
 
         audioFXManager =
             AudioFXManager.Instance;
+
+        playerDataManager =
+            PlayerDataManager.Instance;
     }
 
 
@@ -151,12 +192,10 @@ public class HealthManager : MonoBehaviour
                 GetComponent<SpriteRenderer>();
         }
 
-
         if (spriteRenderer == null)
         {
             return;
         }
-
 
         if (material == null)
         {
@@ -179,9 +218,12 @@ public class HealthManager : MonoBehaviour
         }
 
 
+        // --------------------------------------------------
+        // CHARACTER DATA
+        // --------------------------------------------------
+
         team =
             character.team;
-
 
         maxHealth =
             Mathf.Max(
@@ -189,16 +231,22 @@ public class HealthManager : MonoBehaviour
                 character.maxHealth
             );
 
+        isPlayerCharacter =
+            character.isPlayerCharacter;
 
-        health =
-            maxHealth;
 
+        // --------------------------------------------------
+        // MATERIAL
+        // --------------------------------------------------
 
         SetupMaterial();
 
-
         StopDamageFlash();
 
+
+        // --------------------------------------------------
+        // AUDIO
+        // --------------------------------------------------
 
         if (audioFXManager == null)
         {
@@ -206,6 +254,56 @@ public class HealthManager : MonoBehaviour
                 AudioFXManager.Instance;
         }
 
+
+        // --------------------------------------------------
+        // PLAYER HEALTH
+        // --------------------------------------------------
+
+        if (isPlayerCharacter)
+        {
+            if (playerDataManager == null)
+            {
+                playerDataManager =
+                    PlayerDataManager.Instance;
+            }
+
+
+            if (playerDataManager != null)
+            {
+                // Initialize persistent player data.
+                // This only sets the initial HP the first time.
+                playerDataManager.Initialize(
+                    character
+                );
+
+
+                // Restore HP from the previous encounter.
+                health =
+                    playerDataManager.GetHealth();
+            }
+            else
+            {
+                // Fallback if PlayerDataManager doesn't exist.
+                health =
+                    maxHealth;
+            }
+        }
+
+
+        // --------------------------------------------------
+        // NORMAL UNIT
+        // --------------------------------------------------
+
+        else
+        {
+            health =
+                maxHealth;
+        }
+
+
+        // --------------------------------------------------
+        // NOTIFY UI
+        // --------------------------------------------------
 
         NotifyHealthChanged();
     }
@@ -224,7 +322,6 @@ public class HealthManager : MonoBehaviour
                 0,
                 maxHealth
             );
-
 
         NotifyHealthChanged();
     }
@@ -249,6 +346,10 @@ public class HealthManager : MonoBehaviour
         }
 
 
+        // --------------------------------------------------
+        // APPLY DAMAGE
+        // --------------------------------------------------
+
         health -=
             damage;
 
@@ -259,21 +360,123 @@ public class HealthManager : MonoBehaviour
         }
 
 
-        PlayDamageSound();
+        // --------------------------------------------------
+        // DAMAGE NUMBER
+        // --------------------------------------------------
 
+        SpawnDamageNumber(
+            damage
+        );
+
+
+        // --------------------------------------------------
+        // SAVE PLAYER HP
+        // --------------------------------------------------
+
+        SavePlayerHealth();
+
+
+        // --------------------------------------------------
+        // DAMAGE FEEDBACK
+        // --------------------------------------------------
+
+        PlayDamageSound();
 
         PlayDamageScreenShake();
 
-
         NotifyHealthChanged();
-
 
         FlashDamage();
 
 
+        // --------------------------------------------------
+        // DEATH
+        // --------------------------------------------------
+
         if (health <= 0)
         {
             Die();
+        }
+    }
+
+
+    // ==================================================
+    // DAMAGE NUMBER
+    // ==================================================
+
+    private void SpawnDamageNumber(
+        int damage)
+    {
+        if (damageNumberPrefab == null)
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------
+        // SPAWN POSITION
+        // --------------------------------------------------
+
+        Vector3 spawnPosition =
+            transform.position
+            + damageNumberOffset;
+
+
+        // --------------------------------------------------
+        // PARENT
+        // --------------------------------------------------
+
+        Transform parent =
+            damageNumberParent;
+
+
+        // --------------------------------------------------
+        // INSTANTIATE
+        // --------------------------------------------------
+
+        DamageNumber damageNumber =
+            Instantiate(
+                damageNumberPrefab,
+                spawnPosition,
+                Quaternion.identity,
+                parent
+            );
+
+
+        // --------------------------------------------------
+        // INITIALIZE
+        // --------------------------------------------------
+
+        damageNumber.Setup(
+            damage
+        );
+    }
+
+
+    // ==================================================
+    // SAVE PLAYER HEALTH
+    // ==================================================
+
+    private void SavePlayerHealth()
+    {
+        if (!isPlayerCharacter)
+        {
+            return;
+        }
+
+
+        if (playerDataManager == null)
+        {
+            playerDataManager =
+                PlayerDataManager.Instance;
+        }
+
+
+        if (playerDataManager != null)
+        {
+            playerDataManager.SetHealth(
+                health
+            );
         }
     }
 
@@ -336,6 +539,28 @@ public class HealthManager : MonoBehaviour
     private void NotifyHealthChanged()
     {
         OnHealthChanged?.Invoke(this);
+
+
+        // --------------------------------------------------
+        // SAVE PLAYER HEALTH
+        // --------------------------------------------------
+
+        if (isPlayerCharacter)
+        {
+            if (playerDataManager == null)
+            {
+                playerDataManager =
+                    PlayerDataManager.Instance;
+            }
+
+
+            if (playerDataManager != null)
+            {
+                playerDataManager.SetHealth(
+                    health
+                );
+            }
+        }
     }
 
 
@@ -586,11 +811,35 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
+    // FULL HEAL
+    // ==================================================
+
+    public void FullHeal()
+    {
+        if (IsDead())
+        {
+            return;
+        }
+
+
+        health =
+            maxHealth;
+
+
+        NotifyHealthChanged();
+    }
+
+
+    // ==================================================
     // DEATH
     // ==================================================
 
     private void Die()
     {
+        // Save zero HP before the unit is disabled.
+        SavePlayerHealth();
+
+
         StopDamageFlash();
 
 
@@ -693,6 +942,12 @@ public class HealthManager : MonoBehaviour
     }
 
 
+    public bool IsPlayerCharacter()
+    {
+        return isPlayerCharacter;
+    }
+
+
     // ==================================================
     // SETTERS
     // ==================================================
@@ -714,8 +969,20 @@ public class HealthManager : MonoBehaviour
             );
 
 
+        // IMPORTANT:
+        // Do NOT automatically restore health to max.
+        // This is what allows HP to persist between encounters.
+
         health =
-            maxHealth;
+            Mathf.Clamp(
+                health,
+                0,
+                maxHealth
+            );
+
+
+        // Keep persistent player data in sync.
+        SavePlayerHealth();
 
 
         StopDamageFlash();
