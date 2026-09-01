@@ -99,7 +99,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     private Color hoverOutlineColor = Color.white;
 
     [SerializeField]
-    private string hoverShaderObjectName = "HoverShaderSprite";
+    private string hoverShaderObjectName =
+        "HoverShaderSprite";
 
     [SerializeField]
     private bool enableHoverOutline = true;
@@ -122,7 +123,20 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
     private bool isSelected;
     private bool isHovered;
+
+    // True when the unit is currently a valid target
+    // of the active ability.
     private bool isAbilityTargetHovered;
+
+    // IMPORTANT:
+    //
+    // This is DIFFERENT from isHovered/isSelected.
+    //
+    // false = normal WHITE outline behavior
+    // true  = RED/GREEN ability outline behavior
+    //
+    // When true, deselection does NOT hide the outline.
+    private bool isAbilityRangeOutlined;
 
     private AttackUnit attackUnit;
 
@@ -158,7 +172,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
     private void Awake()
     {
-        attackUnit = GetComponent<AttackUnit>();
+        attackUnit =
+            GetComponent<AttackUnit>();
 
         originalScale =
             transform.localScale;
@@ -183,7 +198,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             FindFirstObjectByType<GridHighlightManager>();
     }
 
-
     private void Update()
     {
         UpdateScale();
@@ -199,19 +213,21 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         if (hoverShaderSprite == null)
         {
             Transform hoverShader =
-                transform.Find(hoverShaderObjectName);
+                transform.Find(
+                    hoverShaderObjectName
+                );
 
             if (hoverShader != null)
             {
                 hoverShaderSprite =
-                    hoverShader.GetComponent<SpriteRenderer>();
+                    hoverShader.GetComponent<
+                        SpriteRenderer
+                    >();
             }
         }
 
         if (hoverShaderSprite == null)
-        {
             return;
-        }
 
         hoverShaderSprite.enabled = false;
 
@@ -244,8 +260,81 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             return;
         }
 
+        // ========================================================
+        // ABILITY OUTLINE HAS PRIORITY
+        // ========================================================
+        //
+        // If this unit is a valid damage/heal target, its RED/GREEN
+        // outline must remain visible even when the unit is
+        // deselected.
+        //
+        if (isAbilityRangeOutlined)
+        {
+            hoverShaderSprite.enabled = true;
+            return;
+        }
+
+        // ========================================================
+        // NORMAL WHITE OUTLINE
+        // ========================================================
+        //
+        // This is the regular mouse-hover / selection outline.
+        //
         hoverShaderSprite.enabled =
-            isHovered || isSelected;
+            isHovered ||
+            isSelected;
+    }
+
+
+    // ============================================================
+    // ABILITY RANGE OUTLINE
+    // ============================================================
+
+    /// <summary>
+    /// Controls the persistent RED/GREEN ability-range outline.
+    ///
+    /// This is intentionally separate from normal hover/selection.
+    ///
+    /// When enabled:
+    ///     RED/GREEN outline stays visible after deselection.
+    ///
+    /// When disabled:
+    ///     Normal white hover/selection behavior resumes.
+    /// </summary>
+    public void SetAbilityRangeOutline(
+        bool enabled,
+        Color outlineColor)
+    {
+        isAbilityRangeOutlined =
+            enabled;
+
+        if (hoverShaderSprite == null)
+            return;
+
+        hoverShaderSprite.GetPropertyBlock(
+            hoverPropertyBlock
+        );
+
+        hoverPropertyBlock.SetColor(
+            OutlineColorID,
+            outlineColor
+        );
+
+        hoverShaderSprite.SetPropertyBlock(
+            hoverPropertyBlock
+        );
+
+        UpdateHoverOutline();
+    }
+
+
+    /// <summary>
+    /// Returns true if this unit currently has a
+    /// RED/GREEN ability-range outline.
+    /// </summary>
+    public bool HasAbilityRangeOutline()
+    {
+        return isAbilityRangeOutlined;
     }
 
 
@@ -253,25 +342,20 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     // HOVER MANAGER CALLBACK
     // ============================================================
 
-    public void SetHoveredFromManager(bool hovered)
+    public void SetHoveredFromManager(
+        bool hovered)
     {
         if (isHovered == hovered)
-        {
             return;
-        }
 
         isHovered = hovered;
 
         UpdateHoverOutline();
 
         if (hovered)
-        {
             OnHoverEnter();
-        }
         else
-        {
             OnHoverExit();
-        }
     }
 
 
@@ -305,7 +389,9 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
         if (canvasInfoManager != null)
         {
-            canvasInfoManager.ShowCharacter(this);
+            canvasInfoManager.ShowCharacter(
+                this
+            );
         }
 
         UpdateAbilityTargetHover();
@@ -354,7 +440,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
                 : 1f;
 
         float targetHoverScale =
-            isHovered && enableHoverScale
+            isHovered &&
+            enableHoverScale
                 ? hoverScaleAmount
                 : 0f;
 
@@ -386,13 +473,15 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             currentAbilityTargetScale;
 
         Vector3 targetScale =
-            originalScale * finalScale;
+            originalScale *
+            finalScale;
 
         transform.localScale =
             Vector3.Lerp(
                 transform.localScale,
                 targetScale,
-                Time.deltaTime * scaleSpeed
+                Time.deltaTime *
+                scaleSpeed
             );
     }
 
@@ -406,35 +495,30 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         isAbilityTargetHovered = false;
 
         if (!enableAbilityTargetScale)
-        {
             return;
-        }
 
         if (canvasInfoManager == null)
-        {
             return;
-        }
 
         if (!canvasInfoManager.HasSelectedAbility())
-        {
             return;
-        }
 
         if (gridHighlightManager == null)
         {
             gridHighlightManager =
-                FindFirstObjectByType<GridHighlightManager>();
+                FindFirstObjectByType<
+                    GridHighlightManager
+                >();
         }
 
         if (gridHighlightManager == null)
-        {
             return;
-        }
 
         isAbilityTargetHovered =
-            gridHighlightManager.IsValidCurrentAbilityTarget(
-                gameObject
-            );
+            gridHighlightManager
+                .IsValidCurrentAbilityTarget(
+                    gameObject
+                );
     }
 
 
@@ -447,18 +531,23 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         return isSelected;
     }
 
-
-    public void SetSelected(bool selected)
+    public void SetSelected(
+        bool selected)
     {
         bool becomingSelected =
-            selected && !isSelected;
+            selected &&
+            !isSelected;
 
         bool becomingDeselected =
-            !selected && isSelected;
+            !selected &&
+            isSelected;
 
         if (
             audioFXManager == null &&
-            (becomingSelected || becomingDeselected)
+            (
+                becomingSelected ||
+                becomingDeselected
+            )
         )
         {
             audioFXManager =
@@ -486,20 +575,32 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             audioFXManager?.PlayUnitDeselect();
         }
 
-        isSelected = selected;
+        isSelected =
+            selected;
 
+        // IMPORTANT:
+        //
+        // If isAbilityRangeOutlined is true,
+        // UpdateHoverOutline() will keep the RED/GREEN
+        // outline visible.
+        //
+        // If it is false, the normal WHITE outline
+        // disappears when deselected.
         UpdateHoverOutline();
 
         if (selectedChildSprite != null)
         {
-            selectedChildSprite.enabled = selected;
+            selectedChildSprite.enabled =
+                selected;
         }
 
         if (canvasInfoManager != null)
         {
             if (selected)
             {
-                canvasInfoManager.ShowCharacter(this);
+                canvasInfoManager.ShowCharacter(
+                    this
+                );
             }
             else
             {
@@ -518,6 +619,10 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         isSelected = false;
         isHovered = false;
         isAbilityTargetHovered = false;
+
+        // Reset ability-range outline state when the
+        // entire unit is disabled/destroyed.
+        isAbilityRangeOutlined = false;
 
         currentHoverScale = 0f;
         hoverScaleVelocity = 0f;
@@ -581,32 +686,43 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     // ABILITIES
     // ============================================================
 
-    public int GetAbilityCooldown(AbilitySO ability)
+    public int GetAbilityCooldown(
+        AbilitySO ability)
     {
         return attackUnit != null
-            ? attackUnit.GetAbilityCooldown(ability)
+            ? attackUnit.GetAbilityCooldown(
+                ability
+            )
             : -1;
     }
 
-
-    public bool IsAbilityOnCooldown(AbilitySO ability)
+    public bool IsAbilityOnCooldown(
+        AbilitySO ability)
     {
-        return attackUnit != null &&
-               attackUnit.IsAbilityOnCooldown(ability);
+        return
+            attackUnit != null &&
+            attackUnit.IsAbilityOnCooldown(
+                ability
+            );
     }
 
-
-    public int GetAbilityUsesRemaining(AbilitySO ability)
+    public int GetAbilityUsesRemaining(
+        AbilitySO ability)
     {
         return attackUnit != null
-            ? attackUnit.GetAbilityUsesRemaining(ability)
+            ? attackUnit.GetAbilityUsesRemaining(
+                ability
+            )
             : -1;
     }
 
-
-    public bool IsAbilityReady(AbilitySO ability)
+    public bool IsAbilityReady(
+        AbilitySO ability)
     {
-        return attackUnit != null &&
-               attackUnit.IsAbilityReady(ability);
+        return
+            attackUnit != null &&
+            attackUnit.IsAbilityReady(
+                ability
+            );
     }
 }

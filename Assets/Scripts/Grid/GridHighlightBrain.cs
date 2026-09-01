@@ -69,7 +69,8 @@ public class GridHighlightBrain : MonoBehaviour
         CacheGridBounds();
         CacheBoardRotation();
 
-        settleDelayWait = new WaitForSeconds(rotationSettleDelay);
+        settleDelayWait =
+            new WaitForSeconds(rotationSettleDelay);
     }
 
     private void Update()
@@ -97,10 +98,12 @@ public class GridHighlightBrain : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
 
             if (gridManager == null)
+            {
                 Debug.LogError(
                     "[GridHighlightBrain] GridManager reference missing.",
                     this
                 );
+            }
         }
 
         if (highlightManager == null)
@@ -110,10 +113,12 @@ public class GridHighlightBrain : MonoBehaviour
                 FindFirstObjectByType<GridHighlightManager>();
 
             if (highlightManager == null)
+            {
                 Debug.LogError(
                     "[GridHighlightBrain] GridHighlightManager reference missing.",
                     this
                 );
+            }
         }
 
         FindBoardRotationTransform();
@@ -129,7 +134,9 @@ public class GridHighlightBrain : MonoBehaviour
 
         if (boardController != null)
         {
-            boardRotationTransform = boardController.transform;
+            boardRotationTransform =
+                boardController.transform;
+
             return;
         }
 
@@ -150,11 +157,6 @@ public class GridHighlightBrain : MonoBehaviour
         maxGridY = gridManager.GetMaxY();
     }
 
-    /// <summary>
-    /// Call this whenever the GridManager changes its dimensions or shape.
-    /// Refreshes the cached bounds, rebuilds the highlight tile cache,
-    /// and restores the currently active highlights.
-    /// </summary>
     public void RefreshGridBounds()
     {
         if (gridManager == null)
@@ -179,7 +181,8 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void CacheBoardRotation()
     {
-        lastKnownBoardRotation = GetBoardRotation();
+        lastKnownBoardRotation =
+            GetBoardRotation();
     }
 
     private Vector3 GetBoardRotation()
@@ -195,15 +198,19 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void CheckBoardRotationChange()
     {
-        Vector3 currentRotation = GetBoardRotation();
+        Vector3 currentRotation =
+            GetBoardRotation();
 
-        if ((currentRotation - lastKnownBoardRotation).sqrMagnitude <=
-            RotationThresholdSqr)
+        if (
+            (currentRotation - lastKnownBoardRotation).sqrMagnitude
+            <= RotationThresholdSqr
+        )
         {
             return;
         }
 
-        lastKnownBoardRotation = currentRotation;
+        lastKnownBoardRotation =
+            currentRotation;
 
         if (!isBoardRotating)
         {
@@ -219,7 +226,9 @@ public class GridHighlightBrain : MonoBehaviour
         StopRotationRefresh();
 
         rotationRefreshCoroutine =
-            StartCoroutine(RefreshAfterRotationStops());
+            StartCoroutine(
+                RefreshAfterRotationStops()
+            );
     }
 
     private void StopRotationRefresh()
@@ -256,9 +265,11 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void CheckHighlightedUnitTileChanged()
     {
-        if (cachedUser == null ||
+        if (
+            cachedUser == null ||
             isBoardRotating ||
-            !UsesUnitPosition())
+            !UsesUnitPosition()
+        )
         {
             return;
         }
@@ -281,6 +292,7 @@ public class GridHighlightBrain : MonoBehaviour
         {
             cachedUserTile = currentTile;
             hasCachedUserTile = true;
+
             return;
         }
 
@@ -328,15 +340,18 @@ public class GridHighlightBrain : MonoBehaviour
 
         CacheUserComponents(user);
 
-        if (cachedUserTilePin != null &&
-            cachedUserTilePin.HasTile())
+        if (
+            cachedUserTilePin != null &&
+            cachedUserTilePin.HasTile()
+        )
         {
             cachedUserTile =
                 cachedUserTilePin.GetTile();
         }
         else
         {
-            cachedUserTile = fallbackTile;
+            cachedUserTile =
+                fallbackTile;
         }
 
         hasCachedUserTile = true;
@@ -351,19 +366,24 @@ public class GridHighlightBrain : MonoBehaviour
         if (user == null)
             return false;
 
-        if (user != cachedUser ||
-            cachedUserTilePin == null)
+        if (
+            user != cachedUser ||
+            cachedUserTilePin == null
+        )
         {
             CacheUserComponents(user);
         }
 
-        if (cachedUserTilePin == null ||
-            !cachedUserTilePin.HasTile())
+        if (
+            cachedUserTilePin == null ||
+            !cachedUserTilePin.HasTile()
+        )
         {
             return false;
         }
 
-        tile = cachedUserTilePin.GetTile();
+        tile =
+            cachedUserTilePin.GetTile();
 
         return true;
     }
@@ -456,8 +476,10 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void RefreshScriptableAbilityFromCache()
     {
-        if (cachedAbility == null ||
-            cachedUser == null)
+        if (
+            cachedAbility == null ||
+            cachedUser == null
+        )
         {
             return;
         }
@@ -470,8 +492,10 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void RefreshCustomTilesFromCache()
     {
-        if (cachedCustomPositions == null ||
-            highlightManager == null)
+        if (
+            cachedCustomPositions == null ||
+            highlightManager == null
+        )
         {
             return;
         }
@@ -489,8 +513,10 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void RefreshOffsetCellsFromCache()
     {
-        if (cachedOffsets == null ||
-            !HasReferences())
+        if (
+            cachedOffsets == null ||
+            !HasReferences()
+        )
         {
             return;
         }
@@ -509,8 +535,10 @@ public class GridHighlightBrain : MonoBehaviour
 
     private void RefreshSingleCellFromCache()
     {
-        if (!HasReferences() ||
-            !IsInsideGrid(cachedCenterPos))
+        if (
+            !HasReferences() ||
+            !IsInsideGrid(cachedCenterPos)
+        )
         {
             return;
         }
@@ -522,9 +550,12 @@ public class GridHighlightBrain : MonoBehaviour
 
     private Vector2Int ResolveCachedUserCenter()
     {
-        if (TryGetUserLogicalTile(
+        if (
+            TryGetUserLogicalTile(
                 cachedUser,
-                out Vector2Int userTile))
+                out Vector2Int userTile
+            )
+        )
         {
             cachedCenterPos = userTile;
             cachedUserTile = userTile;
@@ -543,8 +574,10 @@ public class GridHighlightBrain : MonoBehaviour
         int range,
         GameObject user = null)
     {
-        if (!HasReferences() ||
-            isBoardRotating)
+        if (
+            !HasReferences() ||
+            isBoardRotating
+        )
         {
             return;
         }
@@ -552,7 +585,8 @@ public class GridHighlightBrain : MonoBehaviour
         Vector2Int logicalCenter =
             TryGetUserLogicalTile(
                 user,
-                out Vector2Int userTile)
+                out Vector2Int userTile
+            )
                 ? userTile
                 : ConvertToLogicalGridPosition(
                     centerPosition
@@ -561,17 +595,24 @@ public class GridHighlightBrain : MonoBehaviour
         currentHighlightState =
             HighlightState.MovementRange;
 
-        cachedCenterPos = logicalCenter;
-        cachedRange = Mathf.Max(0, range);
-        cachedUser = user;
+        cachedCenterPos =
+            logicalCenter;
+
+        cachedRange =
+            Mathf.Max(0, range);
+
+        cachedUser =
+            user;
 
         CacheUserTile(
             user,
             logicalCenter
         );
 
-        if (cachedMoveBrain != null &&
-            !cachedMoveBrain.CanMoveThisTurn())
+        if (
+            cachedMoveBrain != null &&
+            !cachedMoveBrain.CanMoveThisTurn()
+        )
         {
             highlightManager.ClearMovementRange();
             return;
@@ -602,9 +643,17 @@ public class GridHighlightBrain : MonoBehaviour
     {
         results.Clear();
 
-        for (int x = minGridX; x <= maxGridX; x++)
+        for (
+            int x = minGridX;
+            x <= maxGridX;
+            x++
+        )
         {
-            for (int y = minGridY; y <= maxGridY; y++)
+            for (
+                int y = minGridY;
+                y <= maxGridY;
+                y++
+            )
             {
                 Vector2Int pos =
                     new Vector2Int(x, y);
@@ -612,15 +661,22 @@ public class GridHighlightBrain : MonoBehaviour
                 if (pos == center)
                     continue;
 
-                if (gridManager.GetDistance(
+                if (
+                    gridManager.GetDistance(
                         center,
-                        pos) > range)
+                        pos
+                    ) > range
+                )
                 {
                     continue;
                 }
 
-                if (gridManager.IsCellOccupied(pos))
+                if (
+                    gridManager.IsCellOccupied(pos)
+                )
+                {
                     continue;
+                }
 
                 results.Add(pos);
             }
@@ -635,8 +691,10 @@ public class GridHighlightBrain : MonoBehaviour
         Vector2Int centerPosition,
         int range)
     {
-        if (!HasReferences() ||
-            isBoardRotating)
+        if (
+            !HasReferences() ||
+            isBoardRotating
+        )
         {
             return;
         }
@@ -649,8 +707,11 @@ public class GridHighlightBrain : MonoBehaviour
         currentHighlightState =
             HighlightState.BasicAbilityRange;
 
-        cachedCenterPos = logicalCenter;
-        cachedRange = Mathf.Max(0, range);
+        cachedCenterPos =
+            logicalCenter;
+
+        cachedRange =
+            Mathf.Max(0, range);
 
         if (!IsInsideGrid(logicalCenter))
         {
@@ -676,9 +737,17 @@ public class GridHighlightBrain : MonoBehaviour
     {
         results.Clear();
 
-        for (int x = minGridX; x <= maxGridX; x++)
+        for (
+            int x = minGridX;
+            x <= maxGridX;
+            x++
+        )
         {
-            for (int y = minGridY; y <= maxGridY; y++)
+            for (
+                int y = minGridY;
+                y <= maxGridY;
+                y++
+            )
             {
                 Vector2Int pos =
                     new Vector2Int(x, y);
@@ -688,8 +757,12 @@ public class GridHighlightBrain : MonoBehaviour
 
                 int distance =
                     Mathf.Max(
-                        Mathf.Abs(pos.x - center.x),
-                        Mathf.Abs(pos.y - center.y)
+                        Mathf.Abs(
+                            pos.x - center.x
+                        ),
+                        Mathf.Abs(
+                            pos.y - center.y
+                        )
                     );
 
                 if (distance <= range)
@@ -706,8 +779,10 @@ public class GridHighlightBrain : MonoBehaviour
         AbilitySO ability,
         GameObject user)
     {
-        if (!HasReferences() ||
-            isBoardRotating)
+        if (
+            !HasReferences() ||
+            isBoardRotating
+        )
         {
             return;
         }
@@ -715,14 +790,20 @@ public class GridHighlightBrain : MonoBehaviour
         currentHighlightState =
             HighlightState.ScriptableObjectAbility;
 
-        cachedAbility = ability;
-        cachedUser = user;
+        cachedAbility =
+            ability;
+
+        cachedUser =
+            user;
+
         hasCachedUserTile = false;
 
         CacheUserComponents(user);
 
-        if (ability == null ||
-            user == null)
+        if (
+            ability == null ||
+            user == null
+        )
         {
             highlightManager.ClearAbilityRange();
             return;
@@ -731,7 +812,8 @@ public class GridHighlightBrain : MonoBehaviour
         Vector2Int userGridPosition =
             TryGetUserLogicalTile(
                 user,
-                out Vector2Int userTile)
+                out Vector2Int userTile
+            )
                 ? userTile
                 : ConvertToLogicalGridPosition(
                     gridManager.WorldToGridPosition(
@@ -739,7 +821,8 @@ public class GridHighlightBrain : MonoBehaviour
                     )
                 );
 
-        cachedCenterPos = userGridPosition;
+        cachedCenterPos =
+            userGridPosition;
 
         CacheUserTile(
             user,
@@ -793,25 +876,35 @@ public class GridHighlightBrain : MonoBehaviour
     {
         results.Clear();
 
-        if (ability == null ||
+        if (
+            ability == null ||
             user == null ||
-            positions == null)
+            positions == null
+        )
         {
             return;
         }
 
-        for (int i = 0; i < positions.Count; i++)
+        for (
+            int i = 0;
+            i < positions.Count;
+            i++
+        )
         {
-            Vector2Int pos = positions[i];
+            Vector2Int pos =
+                positions[i];
 
             if (!IsInsideGrid(pos))
                 continue;
 
-            if (ability.CanHitTile(
+            if (
+                ability.CanHitTile(
                     gridManager,
                     user,
-                    pos) &&
-                !results.Contains(pos))
+                    pos
+                ) &&
+                !results.Contains(pos)
+            )
             {
                 results.Add(pos);
             }
@@ -826,8 +919,10 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> positions,
         GameObject user = null)
     {
-        if (!HasReferences() ||
-            isBoardRotating)
+        if (
+            !HasReferences() ||
+            isBoardRotating
+        )
         {
             return;
         }
@@ -840,7 +935,9 @@ public class GridHighlightBrain : MonoBehaviour
                 ? new List<Vector2Int>(positions)
                 : null;
 
-        cachedUser = user;
+        cachedUser =
+            user;
+
         hasCachedUserTile = false;
 
         FilterValidTiles(
@@ -863,15 +960,21 @@ public class GridHighlightBrain : MonoBehaviour
         if (positions == null)
             return;
 
-        for (int i = 0; i < positions.Count; i++)
+        for (
+            int i = 0;
+            i < positions.Count;
+            i++
+        )
         {
             Vector2Int logicalPos =
                 ConvertToLogicalGridPosition(
                     positions[i]
                 );
 
-            if (IsInsideGrid(logicalPos) &&
-                !results.Contains(logicalPos))
+            if (
+                IsInsideGrid(logicalPos) &&
+                !results.Contains(logicalPos)
+            )
             {
                 results.Add(logicalPos);
             }
@@ -883,24 +986,32 @@ public class GridHighlightBrain : MonoBehaviour
         List<Vector2Int> offsets,
         GameObject user = null)
     {
-        if (!HasReferences() ||
+        if (
+            !HasReferences() ||
             offsets == null ||
-            isBoardRotating)
+            isBoardRotating
+        )
         {
             return;
         }
 
         Vector2Int logicalOrigin =
-            ConvertToLogicalGridPosition(origin);
+            ConvertToLogicalGridPosition(
+                origin
+            );
 
         currentHighlightState =
             HighlightState.OffsetCells;
 
-        cachedCenterPos = logicalOrigin;
+        cachedCenterPos =
+            logicalOrigin;
+
         cachedOffsets =
             new List<Vector2Int>(offsets);
 
-        cachedUser = user;
+        cachedUser =
+            user;
+
         hasCachedUserTile = false;
 
         BuildOffsetCells(
@@ -922,13 +1033,19 @@ public class GridHighlightBrain : MonoBehaviour
     {
         results.Clear();
 
-        for (int i = 0; i < offsets.Count; i++)
+        for (
+            int i = 0;
+            i < offsets.Count;
+            i++
+        )
         {
             Vector2Int targetPos =
                 origin + offsets[i];
 
-            if (IsInsideGrid(targetPos) &&
-                !results.Contains(targetPos))
+            if (
+                IsInsideGrid(targetPos) &&
+                !results.Contains(targetPos)
+            )
             {
                 results.Add(targetPos);
             }
@@ -942,19 +1059,25 @@ public class GridHighlightBrain : MonoBehaviour
     public void ShowAbilityCell(
         Vector2Int position)
     {
-        if (!HasReferences() ||
-            isBoardRotating)
+        if (
+            !HasReferences() ||
+            isBoardRotating
+        )
         {
             return;
         }
 
         Vector2Int logicalPosition =
-            ConvertToLogicalGridPosition(position);
+            ConvertToLogicalGridPosition(
+                position
+            );
 
         currentHighlightState =
             HighlightState.SingleCell;
 
-        cachedCenterPos = logicalPosition;
+        cachedCenterPos =
+            logicalPosition;
+
         cachedUser = null;
         hasCachedUserTile = false;
 
@@ -968,8 +1091,10 @@ public class GridHighlightBrain : MonoBehaviour
 
     public void ClearMovementHighlightState()
     {
-        if (currentHighlightState !=
-            HighlightState.MovementRange)
+        if (
+            currentHighlightState !=
+            HighlightState.MovementRange
+        )
         {
             return;
         }
@@ -977,8 +1102,12 @@ public class GridHighlightBrain : MonoBehaviour
         currentHighlightState =
             HighlightState.None;
 
-        cachedCenterPos = Vector2Int.zero;
-        cachedUserTile = Vector2Int.zero;
+        cachedCenterPos =
+            Vector2Int.zero;
+
+        cachedUserTile =
+            Vector2Int.zero;
+
         cachedRange = 0;
 
         cachedUser = null;
@@ -992,11 +1121,16 @@ public class GridHighlightBrain : MonoBehaviour
         StopRotationRefresh();
 
         isBoardRotating = false;
+
         currentHighlightState =
             HighlightState.None;
 
-        cachedCenterPos = Vector2Int.zero;
-        cachedUserTile = Vector2Int.zero;
+        cachedCenterPos =
+            Vector2Int.zero;
+
+        cachedUserTile =
+            Vector2Int.zero;
+
         cachedRange = 0;
 
         cachedUser = null;
@@ -1070,8 +1204,10 @@ public class GridHighlightBrain : MonoBehaviour
         GameObject unit,
         GameObject sourceUser)
     {
-        if (unit == null ||
-            sourceUser == null)
+        if (
+            unit == null ||
+            sourceUser == null
+        )
         {
             return false;
         }
@@ -1082,9 +1218,11 @@ public class GridHighlightBrain : MonoBehaviour
         AttackUnit sourceAttack =
             sourceUser.GetComponent<AttackUnit>();
 
-        if (targetAttack != null &&
+        if (
+            targetAttack != null &&
             sourceAttack != null &&
-            !targetAttack.IsDead())
+            !targetAttack.IsDead()
+        )
         {
             return targetAttack.GetTeam() !=
                    sourceAttack.GetTeam();
@@ -1096,9 +1234,11 @@ public class GridHighlightBrain : MonoBehaviour
         HealthManager sourceHealth =
             sourceUser.GetComponent<HealthManager>();
 
-        if (targetHealth != null &&
+        if (
+            targetHealth != null &&
             sourceHealth != null &&
-            !targetHealth.IsDead())
+            !targetHealth.IsDead()
+        )
         {
             return targetHealth.GetTeam() !=
                    sourceHealth.GetTeam();
@@ -1120,8 +1260,10 @@ public class GridHighlightBrain : MonoBehaviour
 
     private bool HasReferences()
     {
-        if (gridManager == null ||
-            highlightManager == null)
+        if (
+            gridManager == null ||
+            highlightManager == null
+        )
         {
             InitializeReferences();
         }
@@ -1129,8 +1271,9 @@ public class GridHighlightBrain : MonoBehaviour
         if (boardRotationTransform == null)
             FindBoardRotationTransform();
 
-        return gridManager != null &&
-               highlightManager != null;
+        return
+            gridManager != null &&
+            highlightManager != null;
     }
 
     public GridManager GetGridManager()
