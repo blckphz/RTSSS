@@ -18,29 +18,35 @@ public class GridHighlightManager : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] private Color movementRangeColor = Color.cyan;
+
     [SerializeField, Range(0f, 1f)]
     private float movementRangeAlpha = 0.35f;
 
     [Header("Enemy Hover")]
     [SerializeField] private Color enemyHoverColor = Color.red;
+
     [SerializeField] private bool enableEnemyHoverShader = true;
+
     [SerializeField]
-    private string enemyHoverObjectName =
-        "HoverShaderSprite";
+    private string enemyHoverObjectName = "HoverShaderSprite";
 
     [Header("Heal Hover")]
     [SerializeField] private Color healHoverColor = Color.green;
+
     [SerializeField] private bool enableHealHoverShader = true;
+
     [SerializeField]
-    private string healHoverObjectName =
-        "HoverShaderSprite";
+    private string healHoverObjectName = "HoverShaderSprite";
 
     [Header("Target Pulse")]
     [SerializeField] private bool enableTargetPulse = true;
+
     [SerializeField, Min(0f)]
     private float targetPulseAmount = 0.06f;
+
     [SerializeField, Min(0.01f)]
     private float targetPulseSpeed = 5f;
+
     [SerializeField, Min(0.01f)]
     private float targetPulseSmoothSpeed = 12f;
 
@@ -48,9 +54,14 @@ public class GridHighlightManager : MonoBehaviour
     [SerializeField, Min(0.01f)]
     private float explosionPulseDuration = 0.12f;
 
+
+    // ============================================================
+    // TILE DATA
+    // ============================================================
+
     private readonly Dictionary<Vector2Int, GridHighlightVisuals>
         tileVisuals =
-            new Dictionary<Vector2Int, GridHighlightVisuals>(256);
+        new Dictionary<Vector2Int, GridHighlightVisuals>(256);
 
     private readonly HashSet<Vector2Int> abilityCells =
         new HashSet<Vector2Int>();
@@ -61,36 +72,48 @@ public class GridHighlightManager : MonoBehaviour
     private readonly HashSet<Vector2Int> explosionCells =
         new HashSet<Vector2Int>();
 
-    // IMPORTANT:
-    // These are now HoverInfoTriggers rather than SpriteRenderers.
-    // This allows HoverInfoTrigger to distinguish:
-    //
-    // WHITE = normal hover/selection
-    // RED/GREEN = ability range
-    //
-    // Deselecting therefore does NOT remove RED/GREEN.
+
+    // ============================================================
+    // ABILITY OUTLINES
+    // ============================================================
+
     private readonly HashSet<HoverInfoTrigger>
         activeAbilityOutlines =
-            new HashSet<HoverInfoTrigger>();
+        new HashSet<HoverInfoTrigger>();
+
+
+    // ============================================================
+    // UNIT CACHE
+    // ============================================================
 
     private readonly Dictionary<GameObject, AttackUnit>
         unitComponentCache =
-            new Dictionary<GameObject, AttackUnit>();
+        new Dictionary<GameObject, AttackUnit>();
+
+
+    // ============================================================
+    // TEMP LISTS
+    // ============================================================
 
     private readonly List<Vector2Int> tempCellList =
         new List<Vector2Int>(64);
 
     private readonly Dictionary<Transform, Vector3>
         targetOriginalScales =
-            new Dictionary<Transform, Vector3>(16);
+        new Dictionary<Transform, Vector3>(16);
 
     private readonly HashSet<Transform>
         activeTargetPulseTransforms =
-            new HashSet<Transform>();
+        new HashSet<Transform>();
 
     private readonly List<Transform>
         tempTargetTransformList =
-            new List<Transform>(16);
+        new List<Transform>(16);
+
+
+    // ============================================================
+    // CURRENT STATE
+    // ============================================================
 
     private Vector2Int placementPosition;
     private bool hasPlacementPosition;
@@ -101,6 +124,7 @@ public class GridHighlightManager : MonoBehaviour
     private AbilitySO currentAbility;
 
     private bool suppressMovementHighlight;
+
     private bool currentAbilityIsHeal;
 
 
@@ -111,6 +135,7 @@ public class GridHighlightManager : MonoBehaviour
     private void Awake()
     {
         FindReferences();
+
         DebugLog("Awake completed.");
     }
 
@@ -122,12 +147,17 @@ public class GridHighlightManager : MonoBehaviour
     private void OnEnable()
     {
         if (refreshGridOnEnable)
-            StartCoroutine(RefreshGridDelayed());
+        {
+            StartCoroutine(
+                RefreshGridDelayed()
+            );
+        }
     }
 
     private IEnumerator RefreshGridDelayed()
     {
         yield return null;
+
         RefreshGrid();
     }
 
@@ -144,31 +174,37 @@ public class GridHighlightManager : MonoBehaviour
     private void DebugLog(string message)
     {
         if (enableDebugLogs)
+        {
             Debug.Log(
                 "[GridHighlightManager] " +
                 message,
                 this
             );
+        }
     }
 
     private void DebugWarning(string message)
     {
         if (enableWarningLogs)
+        {
             Debug.LogWarning(
                 "[GridHighlightManager] " +
                 message,
                 this
             );
+        }
     }
 
     private void DebugError(string message)
     {
         if (enableErrorLogs)
+        {
             Debug.LogError(
                 "[GridHighlightManager] " +
                 message,
                 this
             );
+        }
     }
 
 
@@ -179,12 +215,16 @@ public class GridHighlightManager : MonoBehaviour
     private void FindReferences()
     {
         if (gridManager == null)
+        {
             gridManager =
                 FindFirstObjectByType<GridManager>();
+        }
 
         if (brain == null)
+        {
             brain =
                 FindFirstObjectByType<GridHighlightBrain>();
+        }
 
         if (gridManager == null)
         {
@@ -215,6 +255,7 @@ public class GridHighlightManager : MonoBehaviour
             DebugError(
                 "RefreshGrid failed because GridManager is missing."
             );
+
             return;
         }
 
@@ -234,22 +275,21 @@ public class GridHighlightManager : MonoBehaviour
 
     private void CacheTiles()
     {
-        int minX = gridManager.GetMinX();
-        int maxX = gridManager.GetMaxX();
-        int minY = gridManager.GetMinY();
-        int maxY = gridManager.GetMaxY();
+        int minX =
+            gridManager.GetMinX();
 
-        for (
-            int x = minX;
-            x <= maxX;
-            x++
-        )
+        int maxX =
+            gridManager.GetMaxX();
+
+        int minY =
+            gridManager.GetMinY();
+
+        int maxY =
+            gridManager.GetMaxY();
+
+        for (int x = minX; x <= maxX; x++)
         {
-            for (
-                int y = minY;
-                y <= maxY;
-                y++
-            )
+            for (int y = minY; y <= maxY; y++)
             {
                 CacheTile(
                     new Vector2Int(x, y)
@@ -341,14 +381,21 @@ public class GridHighlightManager : MonoBehaviour
         )
         {
             if (visual != null)
+            {
                 visual.Reset();
+            }
         }
 
         RefreshCells(movementCells);
+
         RefreshCells(abilityCells);
 
         if (hasPlacementPosition)
-            RefreshTile(placementPosition);
+        {
+            RefreshTile(
+                placementPosition
+            );
+        }
 
         RefreshAllTargetHovers();
     }
@@ -359,8 +406,13 @@ public class GridHighlightManager : MonoBehaviour
         if (cells == null)
             return;
 
-        foreach (Vector2Int position in cells)
+        foreach (
+            Vector2Int position
+            in cells
+        )
+        {
             RefreshTile(position);
+        }
     }
 
     private void RefreshTile(
@@ -378,6 +430,7 @@ public class GridHighlightManager : MonoBehaviour
         if (IsPlacementCell(position))
         {
             visual.ShowPlacement();
+
             return;
         }
 
@@ -389,9 +442,13 @@ public class GridHighlightManager : MonoBehaviour
             if (IsValidAbilityTarget(unit))
             {
                 if (currentAbilityIsHeal)
+                {
                     visual.ShowHeal();
+                }
                 else
+                {
                     visual.ShowEnemy();
+                }
             }
             else
             {
@@ -428,7 +485,9 @@ public class GridHighlightManager : MonoBehaviour
         GameObject user = null)
     {
         if (brain == null)
+        {
             FindReferences();
+        }
 
         if (brain == null)
         {
@@ -458,6 +517,11 @@ public class GridHighlightManager : MonoBehaviour
         List<Vector2Int> cells,
         GameObject user = null)
     {
+        // Clear only the CURRENT VISUAL movement cells.
+        //
+        // IMPORTANT:
+        // ClearMovementRange() no longer clears the Brain's
+        // cached movement state.
         ClearMovementRange();
 
         SetCurrentRangeUser(user);
@@ -523,18 +587,33 @@ public class GridHighlightManager : MonoBehaviour
             tempCellList.Clear();
         }
 
-        if (brain != null)
-            brain.ClearMovementHighlightState();
+        // IMPORTANT:
+        //
+        // DO NOT call:
+        //
+        // brain.ClearMovementHighlightState();
+        //
+        // here.
+        //
+        // The Brain owns the cached movement state.
+        // The Manager only owns the currently displayed
+        // movement visuals.
+        //
+        // If we cleared the Brain state here, then when an
+        // enemy dies and we ask the Brain to refresh, the Brain
+        // would no longer know that MovementRange is active.
 
         DebugLog(
-            "Movement range cleared."
+            "Movement range visuals cleared."
         );
     }
 
     public bool IsMovementCell(
         Vector2Int position)
     {
-        return movementCells.Contains(position);
+        return movementCells.Contains(
+            position
+        );
     }
 
     public bool HasMovementRange()
@@ -561,7 +640,9 @@ public class GridHighlightManager : MonoBehaviour
         suppressMovementHighlight =
             suppressed;
 
-        RefreshCells(movementCells);
+        RefreshCells(
+            movementCells
+        );
 
         DebugLog(
             "Movement highlight suppression: " +
@@ -631,12 +712,16 @@ public class GridHighlightManager : MonoBehaviour
                     gridManager.IsInsideGrid(position)
                 )
                 {
-                    abilityCells.Add(position);
+                    abilityCells.Add(
+                        position
+                    );
                 }
             }
         }
 
-        RefreshCells(abilityCells);
+        RefreshCells(
+            abilityCells
+        );
 
         RefreshAllTargetHovers();
 
@@ -660,8 +745,8 @@ public class GridHighlightManager : MonoBehaviour
         {
             DebugWarning(
                 "Attempted to show ability cell " +
-                "outside the grid: " +
-                position
+                position +
+                " outside the grid."
             );
 
             return;
@@ -670,25 +755,35 @@ public class GridHighlightManager : MonoBehaviour
         if (!abilityCells.Add(position))
         {
             RefreshTile(position);
-            RefreshTargetHoverForTile(position);
+
+            RefreshTargetHoverForTile(
+                position
+            );
+
             return;
         }
 
         RefreshTile(position);
-        RefreshTargetHoverForTile(position);
+
+        RefreshTargetHoverForTile(
+            position
+        );
     }
 
     public void ClearAbilityRange()
     {
         ClearAllTargetHovers();
+
         ClearAllTargetPulse();
 
         currentAbility = null;
+
         currentAbilityIsHeal = false;
 
         if (abilityCells.Count == 0)
         {
             SetMovementHighlightSuppressed(false);
+
             return;
         }
 
@@ -723,7 +818,9 @@ public class GridHighlightManager : MonoBehaviour
     public bool IsAbilityCell(
         Vector2Int position)
     {
-        return abilityCells.Contains(position);
+        return abilityCells.Contains(
+            position
+        );
     }
 
     public bool IsCurrentAbilityHeal()
@@ -734,7 +831,8 @@ public class GridHighlightManager : MonoBehaviour
     public void SetCurrentAbility(
         AbilitySO ability)
     {
-        currentAbility = ability;
+        currentAbility =
+            ability;
 
         RefreshAllTargetHovers();
 
@@ -784,7 +882,9 @@ public class GridHighlightManager : MonoBehaviour
             if (cached != null)
                 return cached;
 
-            unitComponentCache.Remove(target);
+            unitComponentCache.Remove(
+                target
+            );
         }
 
         if (
@@ -806,7 +906,11 @@ public class GridHighlightManager : MonoBehaviour
         GameObject unit)
     {
         if (unit != null)
-            unitComponentCache.Remove(unit);
+        {
+            unitComponentCache.Remove(
+                unit
+            );
+        }
     }
 
 
@@ -849,18 +953,21 @@ public class GridHighlightManager : MonoBehaviour
             )
             {
                 case AbilitySO.TargetType.Enemy:
+
                     return IsEnemyTeam(
                         userTeam,
                         targetTeam
                     );
 
                 case AbilitySO.TargetType.Ally:
+
                     return IsAllyTeam(
                         userTeam,
                         targetTeam
                     );
 
                 case AbilitySO.TargetType.Any:
+
                     return true;
             }
         }
@@ -913,7 +1020,9 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         if (userTeam == Team.Enemy)
+        {
             return targetTeam == Team.Enemy;
+        }
 
         return false;
     }
@@ -930,7 +1039,9 @@ public class GridHighlightManager : MonoBehaviour
             return false;
         }
 
-        return IsValidAbilityTarget(target);
+        return IsValidAbilityTarget(
+            target
+        );
     }
 
 
@@ -941,6 +1052,7 @@ public class GridHighlightManager : MonoBehaviour
     private void RefreshAllTargetHovers()
     {
         ClearAllTargetHovers();
+
         ClearAllTargetPulse();
 
         if (gridManager == null)
@@ -1000,7 +1112,11 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         if (enableTargetPulse)
-            AddTargetPulse(unit.transform);
+        {
+            AddTargetPulse(
+                unit.transform
+            );
+        }
     }
 
     private void SetTargetHover(
@@ -1024,12 +1140,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        // This is the important part.
-        //
-        // We DON'T directly enable the SpriteRenderer.
-        // HoverInfoTrigger now knows that this outline
-        // is an ability-range outline and therefore keeps
-        // it visible after deselection.
         hoverInfo.SetAbilityRangeOutline(
             true,
             outlineColor
@@ -1091,6 +1201,7 @@ public class GridHighlightManager : MonoBehaviour
         if (!enableTargetPulse)
         {
             ResetTargetPulseScales();
+
             return;
         }
 
@@ -1304,6 +1415,7 @@ public class GridHighlightManager : MonoBehaviour
         )
         {
             ClearPlacementTile();
+
             return;
         }
 
@@ -1324,10 +1436,15 @@ public class GridHighlightManager : MonoBehaviour
         placementPosition =
             position;
 
-        hasPlacementPosition = true;
+        hasPlacementPosition =
+            true;
 
         if (hadOldPosition)
-            RefreshTile(oldPosition);
+        {
+            RefreshTile(
+                oldPosition
+            );
+        }
 
         RefreshTile(position);
 
@@ -1345,9 +1462,12 @@ public class GridHighlightManager : MonoBehaviour
         Vector2Int oldPosition =
             placementPosition;
 
-        hasPlacementPosition = false;
+        hasPlacementPosition =
+            false;
 
-        RefreshTile(oldPosition);
+        RefreshTile(
+            oldPosition
+        );
 
         DebugLog(
             "Placement tile cleared."
@@ -1417,7 +1537,9 @@ public class GridHighlightManager : MonoBehaviour
             explosionPulseDuration * 2f
         );
 
-        explosionCells.Remove(position);
+        explosionCells.Remove(
+            position
+        );
 
         RefreshTile(position);
     }
@@ -1430,19 +1552,25 @@ public class GridHighlightManager : MonoBehaviour
     public void ClearAllHighlights()
     {
         ClearPlacementTile();
+
         ClearMovementRange();
+
         ClearAbilityRange();
 
         ClearAllTargetHovers();
+
         ClearAllTargetPulse();
 
         explosionCells.Clear();
 
         suppressMovementHighlight = false;
+
         currentAbility = null;
+
         currentAbilityIsHeal = false;
 
         currentRangeUser = null;
+
         currentRangeUserUnit = null;
 
         foreach (
@@ -1451,7 +1579,9 @@ public class GridHighlightManager : MonoBehaviour
         )
         {
             if (visual != null)
+            {
                 visual.Reset();
+            }
         }
 
         DebugLog(
@@ -1497,6 +1627,7 @@ public class GridHighlightManager : MonoBehaviour
     public IEnumerator RefreshAfterBoardRotation()
     {
         yield return null;
+
         yield return new WaitForEndOfFrame();
 
         RefreshGrid();

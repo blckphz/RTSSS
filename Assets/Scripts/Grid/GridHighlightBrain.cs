@@ -1,10 +1,10 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class GridHighlightBrain : MonoBehaviour
 {
-    private enum HighlightState
+    public enum HighlightState
     {
         None,
         MovementRange,
@@ -15,1248 +15,182 @@ public class GridHighlightBrain : MonoBehaviour
         SingleCell
     }
 
-    #region Inspector Fields
+
+    // ============================================================
+    // REFERENCES
+    // ============================================================
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
     [SerializeField] private GridHighlightManager highlightManager;
 
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    [Header("Debug")]
+    [SerializeField] private bool enableDebugLogs = false;
+
+
+    // ============================================================
+    // BOARD ROTATION
+    // ============================================================
+
     [Header("Board Rotation")]
-    [SerializeField] private Transform boardRotationTransform;
-    [SerializeField] private bool compensateForBoardRotation = true;
-    [SerializeField, Min(0.01f)] private float rotationSettleDelay = 0.08f;
+    [SerializeField] private bool refreshAfterBoardRotation = true;
 
-    #endregion
+    [SerializeField, Min(0f)]
+    private float boardRotationThreshold = 0.1f;
 
-    #region Private State & Cache
 
-    private const float RotationThresholdSqr = 0.0001f;
+    // ============================================================
+    // CURRENT STATE
+    // ============================================================
 
-    private HighlightState currentHighlightState = HighlightState.None;
+    [SerializeField]
+    private HighlightState currentState =
+        HighlightState.None;
 
-    private Vector3 lastKnownBoardRotation;
-    private bool isBoardRotating;
-    private Coroutine rotationRefreshCoroutine;
-    private WaitForSeconds settleDelayWait;
+    private HighlightState cachedState =
+        HighlightState.None;
+
+
+    // ============================================================
+    // MOVEMENT RANGE VISIBILITY
+    // ============================================================
+
+    private bool movementRangeHidden;
+
+
+    // ============================================================
+    // CACHED MOVEMENT DATA
+    // ============================================================
 
     private Vector2Int cachedCenterPos;
+
     private Vector2Int cachedUserTile;
+
     private int cachedRange;
+
     private GameObject cachedUser;
+
+
+    // ============================================================
+    // CACHED ABILITY DATA
+    // ============================================================
+
     private AbilitySO cachedAbility;
-    private List<Vector2Int> cachedCustomPositions;
-    private List<Vector2Int> cachedOffsets;
-    private bool hasCachedUserTile;
+
+
+    // ============================================================
+    // CUSTOM DATA
+    // ============================================================
+
+    private readonly List<Vector2Int>
+        cachedCustomPositions =
+        new List<Vector2Int>(64);
+
+    private readonly List<Vector2Int>
+        cachedOffsetCells =
+        new List<Vector2Int>(64);
+
+
+    // ============================================================
+    // USER / MOVEMENT CACHE
+    // ============================================================
 
     private UnitTilePin cachedUserTilePin;
+
     private UnitMoveBrain cachedMoveBrain;
+
+
+    // ============================================================
+    // GRID BOUNDS
+    // ============================================================
 
     private int minGridX;
     private int maxGridX;
     private int minGridY;
     private int maxGridY;
 
-    private readonly List<Vector2Int> reusableTileList =
-        new List<Vector2Int>(64);
 
-    #endregion
+    // ============================================================
+    // REUSABLE LIST
+    // ============================================================
 
-    #region Unity Lifecycle
+    private readonly List<Vector2Int>
+        reusableTileList =
+        new List<Vector2Int>(128);
+
+
+    // ============================================================
+    // BOARD ROTATION STATE
+    // ============================================================
+
+    private Quaternion lastBoardRotation;
+
+    private bool isBoardRotating;
+
+    private Coroutine boardRotationCoroutine;
+
+
+    // ============================================================
+    // UNITY
+    // ============================================================
 
     private void Awake()
     {
-        InitializeReferences();
-        CacheGridBounds();
-        CacheBoardRotation();
+        FindReferences();
 
-        settleDelayWait =
-            new WaitForSeconds(rotationSettleDelay);
+        RefreshGridBounds();
+
+        lastBoardRotation =
+            transform.rotation;
+
+        StartCoroutine(
+            DelayedInitialRefresh()
+        );
     }
+
+
+    private IEnumerator DelayedInitialRefresh()
+    {
+        yield return null;
+
+        FindReferences();
+
+        RefreshGridBounds();
+    }
+
 
     private void Update()
     {
         CheckBoardRotationChange();
+
         CheckHighlightedUnitTileChanged();
     }
 
-    private void OnDisable()
-    {
-        StopRotationRefresh();
-        isBoardRotating = false;
-    }
 
-    #endregion
+    // ============================================================
+    // REFERENCES
+    // ============================================================
 
-    #region Initialization & Setup
-
-    private void InitializeReferences()
+    private void FindReferences()
     {
         if (gridManager == null)
         {
             gridManager =
-                GetComponent<GridManager>() ??
                 FindFirstObjectByType<GridManager>();
-
-            if (gridManager == null)
-            {
-                Debug.LogError(
-                    "[GridHighlightBrain] GridManager reference missing.",
-                    this
-                );
-            }
         }
 
         if (highlightManager == null)
         {
             highlightManager =
-                GetComponent<GridHighlightManager>() ??
                 FindFirstObjectByType<GridHighlightManager>();
-
-            if (highlightManager == null)
-            {
-                Debug.LogError(
-                    "[GridHighlightBrain] GridHighlightManager reference missing.",
-                    this
-                );
-            }
-        }
-
-        FindBoardRotationTransform();
-    }
-
-    private void FindBoardRotationTransform()
-    {
-        if (boardRotationTransform != null)
-            return;
-
-        BoardViewController boardController =
-            FindFirstObjectByType<BoardViewController>();
-
-        if (boardController != null)
-        {
-            boardRotationTransform =
-                boardController.transform;
-
-            return;
-        }
-
-        boardRotationTransform =
-            gridManager != null
-                ? gridManager.transform
-                : transform;
-    }
-
-    private void CacheGridBounds()
-    {
-        if (gridManager == null)
-            return;
-
-        minGridX = gridManager.GetMinX();
-        maxGridX = gridManager.GetMaxX();
-        minGridY = gridManager.GetMinY();
-        maxGridY = gridManager.GetMaxY();
-    }
-
-    public void RefreshGridBounds()
-    {
-        if (gridManager == null)
-        {
-            InitializeReferences();
-
-            if (gridManager == null)
-                return;
-        }
-
-        CacheGridBounds();
-
-        if (highlightManager != null)
-            highlightManager.RebuildTileCache();
-
-        RefreshActiveHighlights();
-    }
-
-    #endregion
-
-    #region Board Rotation Handling
-
-    private void CacheBoardRotation()
-    {
-        lastKnownBoardRotation =
-            GetBoardRotation();
-    }
-
-    private Vector3 GetBoardRotation()
-    {
-        if (boardRotationTransform != null)
-            return boardRotationTransform.eulerAngles;
-
-        if (gridManager != null)
-            return gridManager.transform.eulerAngles;
-
-        return transform.eulerAngles;
-    }
-
-    private void CheckBoardRotationChange()
-    {
-        Vector3 currentRotation =
-            GetBoardRotation();
-
-        if (
-            (currentRotation - lastKnownBoardRotation).sqrMagnitude
-            <= RotationThresholdSqr
-        )
-        {
-            return;
-        }
-
-        lastKnownBoardRotation =
-            currentRotation;
-
-        if (!isBoardRotating)
-        {
-            isBoardRotating = true;
-            HideHighlightsDuringRotation();
-        }
-
-        RestartRotationRefresh();
-    }
-
-    private void RestartRotationRefresh()
-    {
-        StopRotationRefresh();
-
-        rotationRefreshCoroutine =
-            StartCoroutine(
-                RefreshAfterRotationStops()
-            );
-    }
-
-    private void StopRotationRefresh()
-    {
-        if (rotationRefreshCoroutine == null)
-            return;
-
-        StopCoroutine(rotationRefreshCoroutine);
-        rotationRefreshCoroutine = null;
-    }
-
-    private void HideHighlightsDuringRotation()
-    {
-        if (highlightManager == null)
-            return;
-
-        highlightManager.ClearMovementRange();
-        highlightManager.ClearAbilityRange();
-    }
-
-    private IEnumerator RefreshAfterRotationStops()
-    {
-        yield return settleDelayWait;
-
-        isBoardRotating = false;
-        rotationRefreshCoroutine = null;
-
-        RefreshActiveHighlights();
-    }
-
-    #endregion
-
-    #region Unit Tracking
-
-    private void CheckHighlightedUnitTileChanged()
-    {
-        if (
-            cachedUser == null ||
-            isBoardRotating ||
-            !UsesUnitPosition()
-        )
-        {
-            return;
-        }
-
-        if (cachedUserTilePin == null)
-        {
-            CacheUserComponents(cachedUser);
-
-            if (cachedUserTilePin == null)
-                return;
-        }
-
-        if (!cachedUserTilePin.HasTile())
-            return;
-
-        Vector2Int currentTile =
-            cachedUserTilePin.GetTile();
-
-        if (!hasCachedUserTile)
-        {
-            cachedUserTile = currentTile;
-            hasCachedUserTile = true;
-
-            return;
-        }
-
-        if (currentTile == cachedUserTile)
-            return;
-
-        cachedUserTile = currentTile;
-        cachedCenterPos = currentTile;
-
-        RefreshActiveHighlights();
-    }
-
-    private bool UsesUnitPosition()
-    {
-        return currentHighlightState ==
-                   HighlightState.MovementRange ||
-               currentHighlightState ==
-                   HighlightState.ScriptableObjectAbility;
-    }
-
-    private void CacheUserComponents(GameObject user)
-    {
-        if (user == null)
-        {
-            cachedUserTilePin = null;
-            cachedMoveBrain = null;
-            return;
-        }
-
-        cachedUserTilePin =
-            user.GetComponent<UnitTilePin>();
-
-        cachedMoveBrain =
-            user.GetComponent<UnitMoveBrain>();
-    }
-
-    private void CacheUserTile(
-        GameObject user,
-        Vector2Int fallbackTile)
-    {
-        hasCachedUserTile = false;
-
-        if (user == null)
-            return;
-
-        CacheUserComponents(user);
-
-        if (
-            cachedUserTilePin != null &&
-            cachedUserTilePin.HasTile()
-        )
-        {
-            cachedUserTile =
-                cachedUserTilePin.GetTile();
-        }
-        else
-        {
-            cachedUserTile =
-                fallbackTile;
-        }
-
-        hasCachedUserTile = true;
-    }
-
-    private bool TryGetUserLogicalTile(
-        GameObject user,
-        out Vector2Int tile)
-    {
-        tile = Vector2Int.zero;
-
-        if (user == null)
-            return false;
-
-        if (
-            user != cachedUser ||
-            cachedUserTilePin == null
-        )
-        {
-            CacheUserComponents(user);
-        }
-
-        if (
-            cachedUserTilePin == null ||
-            !cachedUserTilePin.HasTile()
-        )
-        {
-            return false;
-        }
-
-        tile =
-            cachedUserTilePin.GetTile();
-
-        return true;
-    }
-
-    #endregion
-
-    #region Highlight Refresh Execution
-
-    public void RefreshActiveHighlights()
-    {
-        if (isBoardRotating)
-            return;
-
-        switch (currentHighlightState)
-        {
-            case HighlightState.MovementRange:
-                RefreshMovementRangeFromCache();
-                break;
-
-            case HighlightState.BasicAbilityRange:
-                RefreshBasicAbilityRangeFromCache();
-                break;
-
-            case HighlightState.ScriptableObjectAbility:
-                RefreshScriptableAbilityFromCache();
-                break;
-
-            case HighlightState.CustomTiles:
-                RefreshCustomTilesFromCache();
-                break;
-
-            case HighlightState.OffsetCells:
-                RefreshOffsetCellsFromCache();
-                break;
-
-            case HighlightState.SingleCell:
-                RefreshSingleCellFromCache();
-                break;
         }
     }
 
-    private void RefreshMovementRangeFromCache()
-    {
-        if (!HasReferences())
-            return;
-
-        Vector2Int center =
-            ResolveCachedUserCenter();
-
-        if (!IsInsideGrid(center))
-        {
-            highlightManager.ClearMovementRange();
-            return;
-        }
-
-        CalculateMovementRange(
-            center,
-            cachedRange,
-            reusableTileList
-        );
-
-        highlightManager.ShowMovementTiles(
-            reusableTileList,
-            cachedUser
-        );
-    }
-
-    private void RefreshBasicAbilityRangeFromCache()
-    {
-        if (!HasReferences())
-            return;
-
-        if (!IsInsideGrid(cachedCenterPos))
-        {
-            highlightManager.ClearAbilityRange();
-            return;
-        }
-
-        CalculateAbilityRange(
-            cachedCenterPos,
-            cachedRange,
-            reusableTileList
-        );
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList,
-            cachedUser
-        );
-    }
-
-    private void RefreshScriptableAbilityFromCache()
-    {
-        if (
-            cachedAbility == null ||
-            cachedUser == null
-        )
-        {
-            return;
-        }
-
-        ShowAbilityRange(
-            cachedAbility,
-            cachedUser
-        );
-    }
-
-    private void RefreshCustomTilesFromCache()
-    {
-        if (
-            cachedCustomPositions == null ||
-            highlightManager == null
-        )
-        {
-            return;
-        }
-
-        FilterValidTiles(
-            cachedCustomPositions,
-            reusableTileList
-        );
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList,
-            cachedUser
-        );
-    }
-
-    private void RefreshOffsetCellsFromCache()
-    {
-        if (
-            cachedOffsets == null ||
-            !HasReferences()
-        )
-        {
-            return;
-        }
-
-        BuildOffsetCells(
-            cachedCenterPos,
-            cachedOffsets,
-            reusableTileList
-        );
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList,
-            cachedUser
-        );
-    }
-
-    private void RefreshSingleCellFromCache()
-    {
-        if (
-            !HasReferences() ||
-            !IsInsideGrid(cachedCenterPos)
-        )
-        {
-            return;
-        }
-
-        highlightManager.ShowAbilityCell(
-            cachedCenterPos
-        );
-    }
-
-    private Vector2Int ResolveCachedUserCenter()
-    {
-        if (
-            TryGetUserLogicalTile(
-                cachedUser,
-                out Vector2Int userTile
-            )
-        )
-        {
-            cachedCenterPos = userTile;
-            cachedUserTile = userTile;
-            hasCachedUserTile = true;
-        }
-
-        return cachedCenterPos;
-    }
-
-    #endregion
-
-    #region Movement Range Logic
-
-    public void ShowMovementRange(
-        Vector2Int centerPosition,
-        int range,
-        GameObject user = null)
-    {
-        if (
-            !HasReferences() ||
-            isBoardRotating
-        )
-        {
-            return;
-        }
-
-        Vector2Int logicalCenter =
-            TryGetUserLogicalTile(
-                user,
-                out Vector2Int userTile
-            )
-                ? userTile
-                : ConvertToLogicalGridPosition(
-                    centerPosition
-                );
-
-        currentHighlightState =
-            HighlightState.MovementRange;
-
-        cachedCenterPos =
-            logicalCenter;
-
-        cachedRange =
-            Mathf.Max(0, range);
-
-        cachedUser =
-            user;
-
-        CacheUserTile(
-            user,
-            logicalCenter
-        );
-
-        if (
-            cachedMoveBrain != null &&
-            !cachedMoveBrain.CanMoveThisTurn()
-        )
-        {
-            highlightManager.ClearMovementRange();
-            return;
-        }
-
-        if (!IsInsideGrid(logicalCenter))
-        {
-            highlightManager.ClearMovementRange();
-            return;
-        }
-
-        CalculateMovementRange(
-            logicalCenter,
-            cachedRange,
-            reusableTileList
-        );
-
-        highlightManager.ShowMovementTiles(
-            reusableTileList,
-            user
-        );
-    }
-
-    private void CalculateMovementRange(
-        Vector2Int center,
-        int range,
-        List<Vector2Int> results)
-    {
-        results.Clear();
-
-        for (
-            int x = minGridX;
-            x <= maxGridX;
-            x++
-        )
-        {
-            for (
-                int y = minGridY;
-                y <= maxGridY;
-                y++
-            )
-            {
-                Vector2Int pos =
-                    new Vector2Int(x, y);
-
-                if (pos == center)
-                    continue;
-
-                if (
-                    gridManager.GetDistance(
-                        center,
-                        pos
-                    ) > range
-                )
-                {
-                    continue;
-                }
-
-                if (
-                    gridManager.IsCellOccupied(pos)
-                )
-                {
-                    continue;
-                }
-
-                results.Add(pos);
-            }
-        }
-    }
-
-    #endregion
-
-    #region Ability Range Logic
-
-    public void ShowAbilityRange(
-        Vector2Int centerPosition,
-        int range)
-    {
-        if (
-            !HasReferences() ||
-            isBoardRotating
-        )
-        {
-            return;
-        }
-
-        Vector2Int logicalCenter =
-            ConvertToLogicalGridPosition(
-                centerPosition
-            );
-
-        currentHighlightState =
-            HighlightState.BasicAbilityRange;
-
-        cachedCenterPos =
-            logicalCenter;
-
-        cachedRange =
-            Mathf.Max(0, range);
-
-        if (!IsInsideGrid(logicalCenter))
-        {
-            highlightManager.ClearAbilityRange();
-            return;
-        }
-
-        CalculateAbilityRange(
-            logicalCenter,
-            cachedRange,
-            reusableTileList
-        );
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList
-        );
-    }
-
-    private void CalculateAbilityRange(
-        Vector2Int center,
-        int range,
-        List<Vector2Int> results)
-    {
-        results.Clear();
-
-        for (
-            int x = minGridX;
-            x <= maxGridX;
-            x++
-        )
-        {
-            for (
-                int y = minGridY;
-                y <= maxGridY;
-                y++
-            )
-            {
-                Vector2Int pos =
-                    new Vector2Int(x, y);
-
-                if (pos == center)
-                    continue;
-
-                int distance =
-                    Mathf.Max(
-                        Mathf.Abs(
-                            pos.x - center.x
-                        ),
-                        Mathf.Abs(
-                            pos.y - center.y
-                        )
-                    );
-
-                if (distance <= range)
-                    results.Add(pos);
-            }
-        }
-    }
-
-    #endregion
-
-    #region Scriptable Object Ability
-
-    public void ShowAbilityRange(
-        AbilitySO ability,
-        GameObject user)
-    {
-        if (
-            !HasReferences() ||
-            isBoardRotating
-        )
-        {
-            return;
-        }
-
-        currentHighlightState =
-            HighlightState.ScriptableObjectAbility;
-
-        cachedAbility =
-            ability;
-
-        cachedUser =
-            user;
-
-        hasCachedUserTile = false;
-
-        CacheUserComponents(user);
-
-        if (
-            ability == null ||
-            user == null
-        )
-        {
-            highlightManager.ClearAbilityRange();
-            return;
-        }
-
-        Vector2Int userGridPosition =
-            TryGetUserLogicalTile(
-                user,
-                out Vector2Int userTile
-            )
-                ? userTile
-                : ConvertToLogicalGridPosition(
-                    gridManager.WorldToGridPosition(
-                        user.transform.position
-                    )
-                );
-
-        cachedCenterPos =
-            userGridPosition;
-
-        CacheUserTile(
-            user,
-            userGridPosition
-        );
-
-        if (!ability.CanUseAfterMovement(user))
-        {
-            highlightManager.ClearAbilityRange();
-            return;
-        }
-
-        List<Vector2Int> rangeTiles =
-            ability.GetRangeTiles(
-                gridManager,
-                user
-            );
-
-        if (rangeTiles == null)
-        {
-            highlightManager.ClearAbilityRange();
-            return;
-        }
-
-        FilterValidAbilityTiles(
-            ability,
-            user,
-            rangeTiles,
-            reusableTileList
-        );
-
-        bool isHeal =
-            ability is HealAbilitySO;
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList,
-            user,
-            isHeal
-        );
-
-        highlightManager.SetCurrentAbility(
-            ability
-        );
-    }
-
-    private void FilterValidAbilityTiles(
-        AbilitySO ability,
-        GameObject user,
-        List<Vector2Int> positions,
-        List<Vector2Int> results)
-    {
-        results.Clear();
-
-        if (
-            ability == null ||
-            user == null ||
-            positions == null
-        )
-        {
-            return;
-        }
-
-        for (
-            int i = 0;
-            i < positions.Count;
-            i++
-        )
-        {
-            Vector2Int pos =
-                positions[i];
-
-            if (!IsInsideGrid(pos))
-                continue;
-
-            if (
-                ability.CanHitTile(
-                    gridManager,
-                    user,
-                    pos
-                ) &&
-                !results.Contains(pos)
-            )
-            {
-                results.Add(pos);
-            }
-        }
-    }
-
-    #endregion
-
-    #region Custom Tiles & Offsets
-
-    public void ShowAbilityTiles(
-        List<Vector2Int> positions,
-        GameObject user = null)
-    {
-        if (
-            !HasReferences() ||
-            isBoardRotating
-        )
-        {
-            return;
-        }
-
-        currentHighlightState =
-            HighlightState.CustomTiles;
-
-        cachedCustomPositions =
-            positions != null
-                ? new List<Vector2Int>(positions)
-                : null;
-
-        cachedUser =
-            user;
-
-        hasCachedUserTile = false;
-
-        FilterValidTiles(
-            positions,
-            reusableTileList
-        );
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList,
-            user
-        );
-    }
-
-    private void FilterValidTiles(
-        List<Vector2Int> positions,
-        List<Vector2Int> results)
-    {
-        results.Clear();
-
-        if (positions == null)
-            return;
-
-        for (
-            int i = 0;
-            i < positions.Count;
-            i++
-        )
-        {
-            Vector2Int logicalPos =
-                ConvertToLogicalGridPosition(
-                    positions[i]
-                );
-
-            if (
-                IsInsideGrid(logicalPos) &&
-                !results.Contains(logicalPos)
-            )
-            {
-                results.Add(logicalPos);
-            }
-        }
-    }
-
-    public void ShowAbilityCells(
-        Vector2Int origin,
-        List<Vector2Int> offsets,
-        GameObject user = null)
-    {
-        if (
-            !HasReferences() ||
-            offsets == null ||
-            isBoardRotating
-        )
-        {
-            return;
-        }
-
-        Vector2Int logicalOrigin =
-            ConvertToLogicalGridPosition(
-                origin
-            );
-
-        currentHighlightState =
-            HighlightState.OffsetCells;
-
-        cachedCenterPos =
-            logicalOrigin;
-
-        cachedOffsets =
-            new List<Vector2Int>(offsets);
-
-        cachedUser =
-            user;
-
-        hasCachedUserTile = false;
-
-        BuildOffsetCells(
-            logicalOrigin,
-            cachedOffsets,
-            reusableTileList
-        );
-
-        highlightManager.ShowAbilityTiles(
-            reusableTileList,
-            user
-        );
-    }
-
-    private void BuildOffsetCells(
-        Vector2Int origin,
-        List<Vector2Int> offsets,
-        List<Vector2Int> results)
-    {
-        results.Clear();
-
-        for (
-            int i = 0;
-            i < offsets.Count;
-            i++
-        )
-        {
-            Vector2Int targetPos =
-                origin + offsets[i];
-
-            if (
-                IsInsideGrid(targetPos) &&
-                !results.Contains(targetPos)
-            )
-            {
-                results.Add(targetPos);
-            }
-        }
-    }
-
-    #endregion
-
-    #region Single Cell & Clear
-
-    public void ShowAbilityCell(
-        Vector2Int position)
-    {
-        if (
-            !HasReferences() ||
-            isBoardRotating
-        )
-        {
-            return;
-        }
-
-        Vector2Int logicalPosition =
-            ConvertToLogicalGridPosition(
-                position
-            );
-
-        currentHighlightState =
-            HighlightState.SingleCell;
-
-        cachedCenterPos =
-            logicalPosition;
-
-        cachedUser = null;
-        hasCachedUserTile = false;
-
-        if (IsInsideGrid(logicalPosition))
-        {
-            highlightManager.ShowAbilityCell(
-                logicalPosition
-            );
-        }
-    }
-
-    public void ClearMovementHighlightState()
-    {
-        if (
-            currentHighlightState !=
-            HighlightState.MovementRange
-        )
-        {
-            return;
-        }
-
-        currentHighlightState =
-            HighlightState.None;
-
-        cachedCenterPos =
-            Vector2Int.zero;
-
-        cachedUserTile =
-            Vector2Int.zero;
-
-        cachedRange = 0;
-
-        cachedUser = null;
-        cachedUserTilePin = null;
-        cachedMoveBrain = null;
-        hasCachedUserTile = false;
-    }
-
-    public void ClearAllHighlights()
-    {
-        StopRotationRefresh();
-
-        isBoardRotating = false;
-
-        currentHighlightState =
-            HighlightState.None;
-
-        cachedCenterPos =
-            Vector2Int.zero;
-
-        cachedUserTile =
-            Vector2Int.zero;
-
-        cachedRange = 0;
-
-        cachedUser = null;
-        cachedAbility = null;
-        cachedCustomPositions = null;
-        cachedOffsets = null;
-
-        cachedUserTilePin = null;
-        cachedMoveBrain = null;
-        hasCachedUserTile = false;
-
-        if (highlightManager != null)
-        {
-            highlightManager.ClearMovementRange();
-            highlightManager.ClearAbilityRange();
-        }
-    }
-
-    #endregion
-
-    #region Coordinate & Math Conversions
-
-    private Vector2Int ConvertToLogicalGridPosition(
-        Vector2Int receivedPosition)
-    {
-        if (!compensateForBoardRotation)
-            return receivedPosition;
-
-        int rotation =
-            Mathf.RoundToInt(
-                NormalizeAngle(
-                    GetBoardRotation().z
-                ) / 90f
-            ) & 3;
-
-        return rotation switch
-        {
-            1 => new Vector2Int(
-                receivedPosition.y,
-                -receivedPosition.x
-            ),
-
-            2 => new Vector2Int(
-                -receivedPosition.x,
-                -receivedPosition.y
-            ),
-
-            3 => new Vector2Int(
-                -receivedPosition.y,
-                receivedPosition.x
-            ),
-
-            _ => receivedPosition
-        };
-    }
-
-    private float NormalizeAngle(float angle)
-    {
-        angle %= 360f;
-
-        return angle < 0f
-            ? angle + 360f
-            : angle;
-    }
-
-    #endregion
-
-    #region Team Utilities
-
-    public bool IsEnemyUnit(
-        GameObject unit,
-        GameObject sourceUser)
-    {
-        if (
-            unit == null ||
-            sourceUser == null
-        )
-        {
-            return false;
-        }
-
-        AttackUnit targetAttack =
-            unit.GetComponent<AttackUnit>();
-
-        AttackUnit sourceAttack =
-            sourceUser.GetComponent<AttackUnit>();
-
-        if (
-            targetAttack != null &&
-            sourceAttack != null &&
-            !targetAttack.IsDead()
-        )
-        {
-            return targetAttack.GetTeam() !=
-                   sourceAttack.GetTeam();
-        }
-
-        HealthManager targetHealth =
-            unit.GetComponent<HealthManager>();
-
-        HealthManager sourceHealth =
-            sourceUser.GetComponent<HealthManager>();
-
-        if (
-            targetHealth != null &&
-            sourceHealth != null &&
-            !targetHealth.IsDead()
-        )
-        {
-            return targetHealth.GetTeam() !=
-                   sourceHealth.GetTeam();
-        }
-
-        return false;
-    }
-
-    #endregion
-
-    #region Helpers & Getters
-
-    private bool IsInsideGrid(
-        Vector2Int position)
-    {
-        return gridManager != null &&
-               gridManager.IsInsideGrid(position);
-    }
 
     private bool HasReferences()
     {
@@ -1265,41 +199,1265 @@ public class GridHighlightBrain : MonoBehaviour
             highlightManager == null
         )
         {
-            InitializeReferences();
+            FindReferences();
         }
-
-        if (boardRotationTransform == null)
-            FindBoardRotationTransform();
 
         return
             gridManager != null &&
             highlightManager != null;
     }
 
+
+    // ============================================================
+    // RESET FOR NEW ENCOUNTER / LEVEL
+    // ============================================================
+
+    public void ResetForNewEncounter()
+    {
+        DebugLog(
+            "Resetting GridHighlightBrain for new encounter."
+        );
+
+
+        // ========================================================
+        // STOP BOARD ROTATION REFRESH
+        // ========================================================
+
+        if (boardRotationCoroutine != null)
+        {
+            StopCoroutine(
+                boardRotationCoroutine
+            );
+
+            boardRotationCoroutine = null;
+        }
+
+        isBoardRotating = false;
+
+
+        // ========================================================
+        // CLEAR CURRENT VISUAL HIGHLIGHTS
+        // ========================================================
+
+        if (highlightManager != null)
+        {
+            highlightManager.ClearAllHighlights();
+        }
+
+
+        // ========================================================
+        // RESET HIGHLIGHT STATE
+        // ========================================================
+
+        currentState =
+            HighlightState.None;
+
+        cachedState =
+            HighlightState.None;
+
+
+        // ========================================================
+        // RESET MOVEMENT CACHE
+        // ========================================================
+
+        cachedCenterPos =
+            Vector2Int.zero;
+
+        cachedUserTile =
+            Vector2Int.zero;
+
+        cachedRange = 0;
+
+        cachedUser = null;
+
+
+        // ========================================================
+        // RESET ABILITY CACHE
+        // ========================================================
+
+        cachedAbility = null;
+
+
+        // ========================================================
+        // RESET CUSTOM DATA
+        // ========================================================
+
+        cachedCustomPositions.Clear();
+
+        cachedOffsetCells.Clear();
+
+
+        // ========================================================
+        // RESET USER COMPONENT CACHE
+        // ========================================================
+
+        cachedUserTilePin = null;
+
+        cachedMoveBrain = null;
+
+
+        // ========================================================
+        // RESET MOVEMENT VISIBILITY
+        // ========================================================
+
+        movementRangeHidden = false;
+
+
+        // ========================================================
+        // RE-FIND CURRENT REFERENCES
+        // ========================================================
+        //
+        // This is important if the new encounter created a new
+        // GridManager or GridHighlightManager.
+        // ========================================================
+
+        gridManager = null;
+
+        highlightManager = null;
+
+        FindReferences();
+
+
+        // ========================================================
+        // REFRESH CURRENT GRID BOUNDS
+        // ========================================================
+
+        RefreshGridBounds();
+
+
+        // ========================================================
+        // RESET BOARD ROTATION CACHE
+        // ========================================================
+
+        lastBoardRotation =
+            transform.rotation;
+
+
+        DebugLog(
+            "GridHighlightBrain reset complete."
+        );
+    }
+
+
+    // ============================================================
+    // GRID BOUNDS
+    // ============================================================
+
+    public void RefreshGridBounds()
+    {
+        if (gridManager == null)
+        {
+            FindReferences();
+        }
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+
+        minGridX =
+            gridManager.GetMinX();
+
+        maxGridX =
+            gridManager.GetMaxX();
+
+        minGridY =
+            gridManager.GetMinY();
+
+        maxGridY =
+            gridManager.GetMaxY();
+
+
+        DebugLog(
+            "Grid bounds refreshed: " +
+            minGridX + " to " + maxGridX +
+            ", " +
+            minGridY + " to " + maxGridY
+        );
+    }
+
+
+    private bool IsInsideGrid(
+        Vector2Int position)
+    {
+        return
+            position.x >= minGridX &&
+            position.x <= maxGridX &&
+            position.y >= minGridY &&
+            position.y <= maxGridY;
+    }
+
+
+    // ============================================================
+    // BOARD ROTATION
+    // ============================================================
+
+    private void CheckBoardRotationChange()
+    {
+        Quaternion currentRotation =
+            transform.rotation;
+
+
+        float angle =
+            Quaternion.Angle(
+                lastBoardRotation,
+                currentRotation
+            );
+
+
+        if (
+            angle <
+            boardRotationThreshold
+        )
+        {
+            return;
+        }
+
+
+        lastBoardRotation =
+            currentRotation;
+
+        isBoardRotating = true;
+
+
+        if (boardRotationCoroutine != null)
+        {
+            StopCoroutine(
+                boardRotationCoroutine
+            );
+        }
+
+
+        boardRotationCoroutine =
+            StartCoroutine(
+                HandleBoardRotationRefresh()
+            );
+    }
+
+
+    private IEnumerator HandleBoardRotationRefresh()
+    {
+        if (refreshAfterBoardRotation)
+        {
+            yield return null;
+
+            yield return new WaitForEndOfFrame();
+
+            RefreshGridBounds();
+
+            RefreshActiveHighlights();
+        }
+
+
+        isBoardRotating = false;
+
+        boardRotationCoroutine = null;
+    }
+
+
+    // ============================================================
+    // HIGHLIGHTED UNIT TILE TRACKING
+    // ============================================================
+
+    private void CheckHighlightedUnitTileChanged()
+    {
+        if (!UsesUnitPosition())
+        {
+            return;
+        }
+
+
+        if (cachedUser == null)
+        {
+            return;
+        }
+
+
+        if (
+            !TryGetUserLogicalTile(
+                cachedUser,
+                out Vector2Int currentTile
+            )
+        )
+        {
+            return;
+        }
+
+
+        if (currentTile == cachedUserTile)
+        {
+            return;
+        }
+
+
+        cachedUserTile =
+            currentTile;
+
+        cachedCenterPos =
+            currentTile;
+
+
+        RefreshActiveHighlights();
+    }
+
+
+    // ============================================================
+    // ACTIVE STATE
+    // ============================================================
+
+    public HighlightState GetCurrentState()
+    {
+        return currentState;
+    }
+
+
+    public bool HasActiveHighlight()
+    {
+        return currentState !=
+               HighlightState.None;
+    }
+
+
+    // ============================================================
+    // CLEAR ALL HIGHLIGHTS
+    // ============================================================
+
+    public void ClearAllHighlights()
+    {
+        currentState =
+            HighlightState.None;
+
+        cachedState =
+            HighlightState.None;
+
+        cachedUser = null;
+
+        cachedAbility = null;
+
+        cachedRange = 0;
+
+        cachedCenterPos =
+            Vector2Int.zero;
+
+        cachedUserTile =
+            Vector2Int.zero;
+
+        cachedCustomPositions.Clear();
+
+        cachedOffsetCells.Clear();
+
+        cachedUserTilePin = null;
+
+        cachedMoveBrain = null;
+
+        movementRangeHidden = false;
+
+
+        if (highlightManager != null)
+        {
+            highlightManager.ClearAllHighlights();
+        }
+
+
+        DebugLog(
+            "All highlight state cleared."
+        );
+    }
+
+
+    // ============================================================
+    // REFRESH ACTIVE HIGHLIGHTS
+    // ============================================================
+
+    public void RefreshActiveHighlights()
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        switch (currentState)
+        {
+            case HighlightState.MovementRange:
+
+                RefreshMovementRangeFromCache();
+
+                break;
+
+
+            case HighlightState.BasicAbilityRange:
+
+                RefreshAbilityRangeFromCache();
+
+                break;
+
+
+            case HighlightState.ScriptableObjectAbility:
+
+                RefreshAbilityRangeFromCache();
+
+                break;
+
+
+            case HighlightState.CustomTiles:
+
+                RefreshCustomTilesFromCache();
+
+                break;
+
+
+            case HighlightState.OffsetCells:
+
+                RefreshOffsetCellsFromCache();
+
+                break;
+
+
+            case HighlightState.SingleCell:
+
+                RefreshSingleCellFromCache();
+
+                break;
+
+
+            case HighlightState.None:
+
+            default:
+
+                break;
+        }
+    }
+
+
+    // ============================================================
+    // MOVEMENT RANGE
+    // ============================================================
+
+    public void ShowMovementRange(
+        Vector2Int centerPosition,
+        int range,
+        GameObject user = null)
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        // ========================================================
+        // NEW MOVEMENT REQUEST
+        // ========================================================
+
+        movementRangeHidden = false;
+
+
+        currentState =
+            HighlightState.MovementRange;
+
+        cachedState =
+            currentState;
+
+        cachedCenterPos =
+            centerPosition;
+
+        cachedRange =
+            range;
+
+        cachedUser =
+            user;
+
+        cachedUserTile =
+            centerPosition;
+
+
+        CacheUserComponents(
+            user
+        );
+
+
+        // ========================================================
+        // IMPORTANT
+        // ========================================================
+        //
+        // Refresh grid bounds every time movement range is shown.
+        //
+        // This makes sure the current encounter's grid is used.
+        // ========================================================
+
+        RefreshGridBounds();
+
+
+        RefreshMovementRangeFromCache();
+
+
+        DebugLog(
+            "Movement range shown. Center: " +
+            centerPosition +
+            ", Range: " +
+            range
+        );
+    }
+
+
+    // ============================================================
+    // REFRESH MOVEMENT RANGE
+    // ============================================================
+
+    private void RefreshMovementRangeFromCache()
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        // ========================================================
+        // MOVEMENT RANGE WAS INTENTIONALLY HIDDEN
+        // ========================================================
+
+        if (movementRangeHidden)
+        {
+            return;
+        }
+
+
+        // ========================================================
+        // REFRESH CURRENT GRID BOUNDS
+        // ========================================================
+
+        RefreshGridBounds();
+
+
+        // ========================================================
+        // CLEAN DEAD / INVALID UNITS
+        // ========================================================
+
+        gridManager.CleanupDeadUnits();
+
+
+        // ========================================================
+        // RESOLVE USER POSITION
+        // ========================================================
+
+        Vector2Int center =
+            ResolveCachedUserCenter();
+
+
+        if (!IsInsideGrid(center))
+        {
+            highlightManager.ClearMovementRange();
+
+            DebugLogWarning(
+                "Movement highlight center is outside current grid: " +
+                center
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // FIND ACTUAL REACHABLE CELLS
+        // ========================================================
+        //
+        // IMPORTANT:
+        //
+        // Do not use simple GetDistance() here.
+        //
+        // UnitMoveBrain uses the actual pathfinding system.
+        // The highlight should therefore use the same system.
+        // ========================================================
+
+        reusableTileList.Clear();
+
+
+        if (cachedMoveBrain == null)
+        {
+            if (cachedUser != null)
+            {
+                cachedMoveBrain =
+                    cachedUser.GetComponent<UnitMoveBrain>();
+            }
+        }
+
+
+        if (cachedMoveBrain == null)
+        {
+            DebugLogWarning(
+                "Could not find UnitMoveBrain for movement highlight."
+            );
+
+            return;
+        }
+
+
+        UnitMoveBrainManager moveBrainManager =
+            UnitMoveBrainManager.Instance;
+
+
+        if (moveBrainManager == null)
+        {
+            DebugLogWarning(
+                "UnitMoveBrainManager.Instance is null."
+            );
+
+            return;
+        }
+
+
+        moveBrainManager.GetReachableCells(
+            center,
+            cachedRange,
+            cachedMoveBrain.CanWalkDiagonally(),
+            reusableTileList,
+            cachedUser
+        );
+
+
+        // ========================================================
+        // NEVER SHOW USER'S OWN TILE
+        // ========================================================
+
+        reusableTileList.Remove(center);
+
+
+        // ========================================================
+        // SHOW MOVEMENT TILES
+        // ========================================================
+
+        highlightManager.ShowMovementTiles(
+            reusableTileList,
+            cachedUser
+        );
+
+
+        DebugLog(
+            "Movement range refreshed. " +
+            "Reachable cells: " +
+            reusableTileList.Count
+        );
+    }
+
+
+    // ============================================================
+    // HIDE MOVEMENT RANGE
+    // ============================================================
+
+    public void HideMovementRange()
+    {
+        movementRangeHidden = true;
+
+
+        if (highlightManager != null)
+        {
+            highlightManager.ClearMovementRange();
+        }
+
+
+        DebugLog(
+            "Movement range hidden after destination selection."
+        );
+    }
+
+
+    // ============================================================
+    // IS MOVEMENT RANGE HIDDEN
+    // ============================================================
+
+    public bool IsMovementRangeHidden()
+    {
+        return movementRangeHidden;
+    }
+
+
+    // ============================================================
+    // MOVEMENT CACHE STATE
+    // ============================================================
+
+    public void ClearMovementHighlightState()
+    {
+        if (
+            currentState ==
+            HighlightState.MovementRange
+        )
+        {
+            currentState =
+                HighlightState.None;
+        }
+
+
+        cachedState =
+            currentState;
+
+
+        cachedCenterPos =
+            Vector2Int.zero;
+
+        cachedUserTile =
+            Vector2Int.zero;
+
+        cachedRange = 0;
+
+        cachedUser = null;
+
+        cachedUserTilePin = null;
+
+        cachedMoveBrain = null;
+
+        movementRangeHidden = false;
+
+
+        if (highlightManager != null)
+        {
+            highlightManager.ClearMovementRange();
+        }
+
+
+        DebugLog(
+            "Movement highlight state completely cleared."
+        );
+    }
+
+
+    // ============================================================
+    // UNIT STATE CHANGE REFRESH
+    // ============================================================
+
+    public void RefreshAfterUnitStateChanged()
+    {
+        if (isBoardRotating)
+        {
+            DebugLog(
+                "Unit-state refresh skipped because board is rotating."
+            );
+
+            return;
+        }
+
+
+        if (!HasReferences())
+        {
+            DebugLog(
+                "Unit-state refresh failed because references are missing."
+            );
+
+            return;
+        }
+
+
+        DebugLog(
+            "Refreshing highlights after unit state changed."
+        );
+
+
+        RefreshActiveHighlights();
+    }
+
+
+    // ============================================================
+    // USER TILE
+    // ============================================================
+
+    private bool TryGetUserLogicalTile(
+        GameObject user,
+        out Vector2Int tile)
+    {
+        tile =
+            Vector2Int.zero;
+
+
+        if (user == null)
+        {
+            return false;
+        }
+
+
+        UnitTilePin pin =
+            user.GetComponent<UnitTilePin>();
+
+
+        if (pin == null)
+        {
+            return false;
+        }
+
+
+        tile =
+            pin.GetGridPosition();
+
+
+        return true;
+    }
+
+
+    private Vector2Int ResolveCachedUserCenter()
+    {
+        if (
+            cachedUser != null &&
+            TryGetUserLogicalTile(
+                cachedUser,
+                out Vector2Int currentTile
+            )
+        )
+        {
+            cachedUserTile =
+                currentTile;
+
+            cachedCenterPos =
+                currentTile;
+        }
+
+
+        return cachedCenterPos;
+    }
+
+
+    private bool UsesUnitPosition()
+    {
+        return
+            currentState ==
+                HighlightState.MovementRange ||
+            currentState ==
+                HighlightState.ScriptableObjectAbility;
+    }
+
+
+    // ============================================================
+    // CACHE USER COMPONENTS
+    // ============================================================
+
+    private void CacheUserComponents(
+        GameObject user)
+    {
+        cachedUserTilePin = null;
+
+        cachedMoveBrain = null;
+
+
+        if (user == null)
+        {
+            return;
+        }
+
+
+        cachedUserTilePin =
+            user.GetComponent<UnitTilePin>();
+
+        cachedMoveBrain =
+            user.GetComponent<UnitMoveBrain>();
+    }
+
+
+    // ============================================================
+    // BASIC ABILITY
+    // ============================================================
+
+    public void ShowBasicAbilityRange(
+        Vector2Int centerPosition,
+        int range,
+        GameObject user = null)
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        currentState =
+            HighlightState.BasicAbilityRange;
+
+        cachedState =
+            currentState;
+
+        cachedCenterPos =
+            centerPosition;
+
+        cachedRange =
+            range;
+
+        cachedUser =
+            user;
+
+
+        CacheUserComponents(
+            user
+        );
+
+
+        RefreshGridBounds();
+
+        RefreshAbilityRangeFromCache();
+    }
+
+
+    private void RefreshAbilityRangeFromCache()
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        RefreshGridBounds();
+
+
+        reusableTileList.Clear();
+
+
+        Vector2Int center =
+            ResolveCachedUserCenter();
+
+
+        for (
+            int x = minGridX;
+            x <= maxGridX;
+            x++
+        )
+        {
+            for (
+                int y = minGridY;
+                y <= maxGridY;
+                y++
+            )
+            {
+                Vector2Int position =
+                    new Vector2Int(
+                        x,
+                        y
+                    );
+
+
+                if (position == center)
+                {
+                    continue;
+                }
+
+
+                if (
+                    gridManager.GetDistance(
+                        center,
+                        position
+                    ) > cachedRange
+                )
+                {
+                    continue;
+                }
+
+
+                reusableTileList.Add(
+                    position
+                );
+            }
+        }
+
+
+        highlightManager.ShowAbilityTiles(
+            reusableTileList,
+            cachedUser
+        );
+    }
+
+
+    // ============================================================
+    // SCRIPTABLE OBJECT ABILITY
+    // ============================================================
+
+    public void ShowScriptableObjectAbility(
+        AbilitySO ability,
+        GameObject user = null)
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        currentState =
+            HighlightState.ScriptableObjectAbility;
+
+        cachedState =
+            currentState;
+
+        cachedAbility =
+            ability;
+
+        cachedUser =
+            user;
+
+
+        CacheUserComponents(
+            user
+        );
+
+
+        if (ability == null)
+        {
+            return;
+        }
+
+
+        RefreshGridBounds();
+
+        RefreshAbilityRangeFromCache();
+    }
+
+
+    // ============================================================
+    // CUSTOM TILES
+    // ============================================================
+
+    public void ShowCustomTiles(
+        List<Vector2Int> positions,
+        GameObject user = null)
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        currentState =
+            HighlightState.CustomTiles;
+
+        cachedState =
+            currentState;
+
+        cachedUser =
+            user;
+
+
+        cachedCustomPositions.Clear();
+
+
+        if (positions != null)
+        {
+            cachedCustomPositions.AddRange(
+                positions
+            );
+        }
+
+
+        highlightManager.ShowAbilityTiles(
+            cachedCustomPositions,
+            user
+        );
+    }
+
+
+    private void RefreshCustomTilesFromCache()
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        highlightManager.ShowAbilityTiles(
+            cachedCustomPositions,
+            cachedUser
+        );
+    }
+
+
+    // ============================================================
+    // OFFSET CELLS
+    // ============================================================
+
+    public void ShowOffsetCells(
+        Vector2Int centerPosition,
+        List<Vector2Int> offsets,
+        GameObject user = null)
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        currentState =
+            HighlightState.OffsetCells;
+
+        cachedState =
+            currentState;
+
+        cachedCenterPos =
+            centerPosition;
+
+        cachedUser =
+            user;
+
+
+        cachedOffsetCells.Clear();
+
+
+        if (offsets != null)
+        {
+            cachedOffsetCells.AddRange(
+                offsets
+            );
+        }
+
+
+        RefreshGridBounds();
+
+        RefreshOffsetCellsFromCache();
+    }
+
+
+    private void RefreshOffsetCellsFromCache()
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        reusableTileList.Clear();
+
+
+        foreach (
+            Vector2Int offset
+            in cachedOffsetCells
+        )
+        {
+            Vector2Int position =
+                cachedCenterPos +
+                offset;
+
+
+            if (
+                gridManager.IsInsideGrid(
+                    position
+                )
+            )
+            {
+                reusableTileList.Add(
+                    position
+                );
+            }
+        }
+
+
+        highlightManager.ShowAbilityTiles(
+            reusableTileList,
+            cachedUser
+        );
+    }
+
+
+    // ============================================================
+    // SINGLE CELL
+    // ============================================================
+
+    public void ShowSingleCell(
+        Vector2Int position,
+        GameObject user = null)
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        currentState =
+            HighlightState.SingleCell;
+
+        cachedState =
+            currentState;
+
+        cachedCenterPos =
+            position;
+
+        cachedUser =
+            user;
+
+
+        RefreshGridBounds();
+
+        RefreshSingleCellFromCache();
+    }
+
+
+    private void RefreshSingleCellFromCache()
+    {
+        if (!HasReferences())
+        {
+            return;
+        }
+
+
+        reusableTileList.Clear();
+
+
+        if (
+            gridManager.IsInsideGrid(
+                cachedCenterPos
+            )
+        )
+        {
+            reusableTileList.Add(
+                cachedCenterPos
+            );
+        }
+
+
+        highlightManager.ShowAbilityTiles(
+            reusableTileList,
+            cachedUser
+        );
+    }
+
+
+    // ============================================================
+    // ACCESSORS
+    // ============================================================
+
     public GridManager GetGridManager()
     {
         return gridManager;
     }
+
 
     public GridHighlightManager GetHighlightManager()
     {
         return highlightManager;
     }
 
-    public Transform GetBoardRotationTransform()
+
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    private void DebugLog(string message)
     {
-        return boardRotationTransform;
+        if (!enableDebugLogs)
+        {
+            return;
+        }
+
+
+        Debug.Log(
+            "[GridHighlightBrain] " +
+            message,
+            this
+        );
     }
 
-    public Vector2Int GetCachedCenterPosition()
-    {
-        return cachedCenterPos;
-    }
 
-    public bool IsBoardRotating()
+    private void DebugLogWarning(string message)
     {
-        return isBoardRotating;
-    }
+        if (!enableDebugLogs)
+        {
+            return;
+        }
 
-    #endregion
+
+        Debug.LogWarning(
+            "[GridHighlightBrain] " +
+            message,
+            this
+        );
+    }
 }

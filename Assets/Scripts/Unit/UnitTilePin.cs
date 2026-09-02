@@ -10,6 +10,7 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private GridManager gridManager;
 
+
     // ==================================================
     // SETTINGS
     // ==================================================
@@ -18,11 +19,13 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private bool pinEveryFrame = true;
 
+
     // ==================================================
     // ROTATION
     // ==================================================
 
     [Header("Rotation")]
+
     [Tooltip(
         "The rotation the unit should ALWAYS have. " +
         "The unit will never inherit board rotation."
@@ -36,6 +39,7 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private bool lockRotationEveryFrame = true;
 
+
     // ==================================================
     // UNIQUE UNIT ID
     // ==================================================
@@ -46,13 +50,26 @@ public class UnitTilePin : MonoBehaviour
 
     private static int nextUnitId = 1;
 
+
     // ==================================================
     // TILE STATE
     // ==================================================
 
+    // This is the authoritative logical grid position
+    // of this unit.
+    //
+    // Other systems such as:
+    //
+    // GridHighlightBrain
+    // GridManager
+    // UnitMoveBrain
+    //
+    // should use this logical position instead of
+    // converting transform.position whenever possible.
     private Vector2Int logicalTile;
 
     private bool hasTile;
+
 
     // ==================================================
     // UNITY
@@ -81,6 +98,10 @@ public class UnitTilePin : MonoBehaviour
         BoardViewController board =
             BoardViewController.Instance;
 
+        // --------------------------------------------------
+        // BOARD ROTATION
+        // --------------------------------------------------
+
         if (
             board != null &&
             board.IsRotating()
@@ -94,16 +115,25 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
+        // --------------------------------------------------
+        // KEEP UNIT PINNED TO ITS LOGICAL TILE
+        // --------------------------------------------------
+
         if (pinEveryFrame)
         {
             PinToTile();
         }
+
+        // --------------------------------------------------
+        // KEEP UNIT ROTATION FIXED
+        // --------------------------------------------------
 
         if (lockRotationEveryFrame)
         {
             ForceRotation();
         }
     }
+
 
     // ==================================================
     // UNIQUE ID
@@ -128,6 +158,7 @@ public class UnitTilePin : MonoBehaviour
         return unitId;
     }
 
+
     // ==================================================
     // FIND GRID MANAGER
     // ==================================================
@@ -142,6 +173,7 @@ public class UnitTilePin : MonoBehaviour
         gridManager =
             FindFirstObjectByType<GridManager>();
     }
+
 
     // ==================================================
     // REGISTER CURRENT TILE
@@ -159,6 +191,11 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
+        // Convert the current world position into the
+        // logical grid position ONCE when registering.
+        //
+        // After this, logicalTile becomes the authoritative
+        // position for this unit.
         logicalTile =
             gridManager.WorldToGridPosition(
                 transform.position
@@ -168,6 +205,7 @@ public class UnitTilePin : MonoBehaviour
 
         PinToTile();
     }
+
 
     // ==================================================
     // SET TILE
@@ -192,15 +230,17 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
-        logicalTile = tile;
+        logicalTile =
+            tile;
 
-        hasTile = true;
+        hasTile =
+            true;
 
         PinToTile();
     }
 
+
     // ==================================================
-    // IMPORTANT:
     // UPDATE TILE AFTER MOVEMENT
     // ==================================================
 
@@ -223,14 +263,20 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
+        // --------------------------------------------------
+        // UPDATE AUTHORITATIVE LOGICAL TILE
+        // --------------------------------------------------
+
         logicalTile =
             newTile;
 
         hasTile =
             true;
 
-        // Make absolutely sure the world position
-        // agrees with the new logical tile.
+        // --------------------------------------------------
+        // UPDATE WORLD POSITION
+        // --------------------------------------------------
+
         Vector3 targetPosition =
             gridManager.GridToWorldPosition(
                 newTile
@@ -239,8 +285,13 @@ public class UnitTilePin : MonoBehaviour
         transform.position =
             targetPosition;
 
+        // --------------------------------------------------
+        // KEEP ROTATION FIXED
+        // --------------------------------------------------
+
         ForceRotation();
     }
+
 
     // ==================================================
     // PIN TO TILE
@@ -266,6 +317,8 @@ public class UnitTilePin : MonoBehaviour
         BoardViewController board =
             BoardViewController.Instance;
 
+        // Do not reposition the unit while the board itself
+        // is rotating.
         if (
             board != null &&
             board.IsRotating()
@@ -282,6 +335,7 @@ public class UnitTilePin : MonoBehaviour
         transform.position =
             targetPosition;
     }
+
 
     // ==================================================
     // FORCE ROTATION
@@ -306,6 +360,7 @@ public class UnitTilePin : MonoBehaviour
         }
     }
 
+
     // ==================================================
     // GET TILE
     // ==================================================
@@ -314,6 +369,29 @@ public class UnitTilePin : MonoBehaviour
     {
         return logicalTile;
     }
+
+
+    // ==================================================
+    // GET GRID POSITION
+    // ==================================================
+
+    // This is an alias for GetTile().
+    //
+    // GridHighlightBrain can therefore safely call:
+    //
+    // pin.GetGridPosition()
+    //
+    // while older scripts can continue using:
+    //
+    // pin.GetTile()
+    //
+    // Both return the exact same logical tile.
+
+    public Vector2Int GetGridPosition()
+    {
+        return logicalTile;
+    }
+
 
     // ==================================================
     // HAS TILE
@@ -324,6 +402,7 @@ public class UnitTilePin : MonoBehaviour
         return hasTile;
     }
 
+
     // ==================================================
     // GET GRID MANAGER
     // ==================================================
@@ -332,6 +411,7 @@ public class UnitTilePin : MonoBehaviour
     {
         return gridManager;
     }
+
 
     // ==================================================
     // SET FIXED ROTATION
@@ -347,6 +427,7 @@ public class UnitTilePin : MonoBehaviour
         ForceRotation();
     }
 
+
     // ==================================================
     // GET FIXED ROTATION
     // ==================================================
@@ -354,5 +435,33 @@ public class UnitTilePin : MonoBehaviour
     public Vector3 GetFixedRotation()
     {
         return fixedRotation;
+    }
+
+
+    // ==================================================
+    // FORCE REGISTER TILE
+    // ==================================================
+
+    // Useful if another system has moved this unit and
+    // you want UnitTilePin to immediately recognize the
+    // new logical tile.
+    public void RefreshTileFromWorldPosition()
+    {
+        if (gridManager == null)
+        {
+            FindGridManager();
+        }
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        logicalTile =
+            gridManager.WorldToGridPosition(
+                transform.position
+            );
+
+        hasTile = true;
     }
 }

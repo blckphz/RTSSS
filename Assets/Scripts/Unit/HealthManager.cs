@@ -888,15 +888,50 @@ public class HealthManager : MonoBehaviour
 
         if (gridManager != null)
         {
+            // Get the unit's current grid position BEFORE
+            // removing it from the GridManager.
             Vector2Int gridPosition =
                 gridManager.WorldToGridPosition(
                     transform.position
                 );
 
 
+            // --------------------------------------------------
+            // REMOVE DEAD UNIT
+            // --------------------------------------------------
+
+            // IMPORTANT:
+            // This must happen BEFORE refreshing the highlights.
+            //
+            // GridHighlightBrain uses GridManager.IsCellOccupied()
+            // when calculating movement range.
+            //
+            // If we refreshed before RemoveUnit(), the dead enemy
+            // would still be considered to occupy this tile.
             gridManager.RemoveUnit(
                 gridPosition
             );
+
+
+            // --------------------------------------------------
+            // REFRESH GRID HIGHLIGHTS
+            // --------------------------------------------------
+
+            GridHighlightBrain highlightBrain =
+                FindFirstObjectByType<GridHighlightBrain>();
+
+
+            if (highlightBrain != null)
+            {
+                // The enemy has now been removed from the grid.
+                //
+                // Force GridHighlightBrain to recalculate its
+                // currently active highlights.
+                //
+                // This makes the enemy's old tile immediately
+                // available again for movement highlighting.
+                highlightBrain.RefreshAfterUnitStateChanged();
+            }
         }
 
 

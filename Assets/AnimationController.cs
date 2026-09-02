@@ -17,21 +17,27 @@ public class AnimationController : MonoBehaviour
     // ============================================================
 
     [Header("Walk Animation States")]
-    [SerializeField]
-    private string walkDownState =
-        "basicEnemyWalkDown";
 
     [SerializeField]
-    private string walkUpState =
-        "basicEnemyWalkUp";
+    private string walkDownState = "basicEnemyWalkDown";
+
+    [SerializeField]
+    private string walkUpState = "basicEnemyWalkUp";
+
+
+    [Header("Idle Animation State")]
+
+    [SerializeField]
+    private string idleState = "Idle";
 
 
     // ============================================================
-    // ANIMATION HASHES
+    // DEBUG
     // ============================================================
 
-    private int walkDownHash;
-    private int walkUpHash;
+    [Header("Debug")]
+    [SerializeField]
+    private bool enableDebugLogs = true;
 
 
     // ============================================================
@@ -47,21 +53,58 @@ public class AnimationController : MonoBehaviour
 
     private void Awake()
     {
+        // --------------------------------------------------------
+        // Get Animator automatically if one was not assigned.
+        // --------------------------------------------------------
+
         if (animator == null)
         {
-            animator =
-                GetComponent<Animator>();
+            animator = GetComponent<Animator>();
         }
 
-        walkDownHash =
-            Animator.StringToHash(
-                walkDownState
+
+        // --------------------------------------------------------
+        // Check Animator.
+        // --------------------------------------------------------
+
+        if (animator == null)
+        {
+            Debug.LogError(
+                $"[{name}] AnimationController ERROR: " +
+                "Animator component was not found!"
             );
 
-        walkUpHash =
-            Animator.StringToHash(
-                walkUpState
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Check Animator Controller.
+        // --------------------------------------------------------
+
+        if (animator.runtimeAnimatorController == null)
+        {
+            Debug.LogError(
+                $"[{name}] AnimationController ERROR: " +
+                "No Animator Controller is assigned!"
             );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Debug information.
+        // --------------------------------------------------------
+
+        DebugLog(
+            "AnimationController initialized.\n" +
+            $"Animator: {animator.name}\n" +
+            $"Controller: {animator.runtimeAnimatorController.name}\n" +
+            $"Walk Up State: {walkUpState}\n" +
+            $"Walk Down State: {walkDownState}\n" +
+            $"Idle State: {idleState}"
+        );
     }
 
 
@@ -69,65 +112,86 @@ public class AnimationController : MonoBehaviour
     // MOVEMENT DIRECTION
     // ============================================================
 
-    public void SetMovementDirection(
-        Vector2Int direction)
+    public void SetMovementDirection(Vector2Int direction)
     {
+        // --------------------------------------------------------
+        // Safety check.
+        // --------------------------------------------------------
+
         if (animator == null)
         {
+            Debug.LogError(
+                $"[{name}] SetMovementDirection ERROR: " +
+                "Animator is null!"
+            );
+
             return;
         }
 
 
+        DebugLog(
+            $"SetMovementDirection called with: {direction}"
+        );
+
+
         // --------------------------------------------------------
-        // Ignore zero movement.
+        // No movement.
         // --------------------------------------------------------
 
-        if (
-            direction.x == 0 &&
-            direction.y == 0
-        )
+        if (direction.x == 0 && direction.y == 0)
         {
+            DebugLog("Direction is zero. Ignoring.");
             return;
         }
 
 
         // --------------------------------------------------------
         // Determine dominant direction.
+        // --------------------------------------------------------
         //
-        // This matters for diagonal movement.
+        // (0, 1)  = UP
+        // (0,-1)  = DOWN
+        // (1, 1)  = UP
+        // (-1,1)  = UP
+        // (1,-1)  = DOWN
+        // (-1,-1) = DOWN
         //
-        // Example:
-        // (1, 1)  -> UP
-        // (-1, 1) -> UP
-        // (1,-1)  -> DOWN
-        // (-1,-1) -> DOWN
         // --------------------------------------------------------
 
-        if (
-            Mathf.Abs(direction.y) >=
-            Mathf.Abs(direction.x)
-        )
+        if (Mathf.Abs(direction.y) >= Mathf.Abs(direction.x))
         {
             if (direction.y > 0)
             {
+                DebugLog("Movement direction = UP");
+
                 PlayWalkUp();
             }
             else if (direction.y < 0)
             {
+                DebugLog("Movement direction = DOWN");
+
                 PlayWalkDown();
             }
         }
         else
         {
             // ----------------------------------------------------
-            // There are currently no left/right animations.
-            //
-            // For horizontal movement we keep the previous
-            // animation instead of changing to an incorrect one.
+            // No left/right animation yet.
+            // Keep current animation.
             // ----------------------------------------------------
+
+            DebugLog(
+                "Movement direction is horizontal. " +
+                "No left/right animation is configured."
+            );
 
             return;
         }
+
+
+        // --------------------------------------------------------
+        // Character is walking.
+        // --------------------------------------------------------
 
         isWalking = true;
     }
@@ -139,15 +203,44 @@ public class AnimationController : MonoBehaviour
 
     private void PlayWalkUp()
     {
-        if (IsCurrentState(walkUpHash))
+        if (animator == null)
         {
             return;
         }
 
+
+        DebugLog(
+            $"Trying to play UP animation: {walkUpState}"
+        );
+
+
+        // --------------------------------------------------------
+        // Check if already playing.
+        // --------------------------------------------------------
+
+        if (IsCurrentState(walkUpState))
+        {
+            DebugLog(
+                "UP animation is already playing."
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Play animation.
+        // --------------------------------------------------------
+
         animator.Play(
-            walkUpHash,
+            walkUpState,
             0,
             0f
+        );
+
+
+        DebugLog(
+            $"UP animation played: {walkUpState}"
         );
     }
 
@@ -158,15 +251,99 @@ public class AnimationController : MonoBehaviour
 
     private void PlayWalkDown()
     {
-        if (IsCurrentState(walkDownHash))
+        if (animator == null)
         {
             return;
         }
 
+
+        DebugLog(
+            $"Trying to play DOWN animation: {walkDownState}"
+        );
+
+
+        // --------------------------------------------------------
+        // Check if already playing.
+        // --------------------------------------------------------
+
+        if (IsCurrentState(walkDownState))
+        {
+            DebugLog(
+                "DOWN animation is already playing."
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Play animation.
+        // --------------------------------------------------------
+
         animator.Play(
-            walkDownHash,
+            walkDownState,
             0,
             0f
+        );
+
+
+        DebugLog(
+            $"DOWN animation played: {walkDownState}"
+        );
+    }
+
+
+    // ============================================================
+    // IDLE
+    // ============================================================
+
+    public void PlayIdle()
+    {
+        if (animator == null)
+        {
+            return;
+        }
+
+
+        DebugLog(
+            $"Trying to play IDLE animation: {idleState}"
+        );
+
+
+        // --------------------------------------------------------
+        // Character is no longer walking.
+        // --------------------------------------------------------
+
+        isWalking = false;
+
+
+        // --------------------------------------------------------
+        // Check if already playing.
+        // --------------------------------------------------------
+
+        if (IsCurrentState(idleState))
+        {
+            DebugLog(
+                "IDLE animation is already playing."
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Play idle animation.
+        // --------------------------------------------------------
+
+        animator.Play(
+            idleState,
+            0,
+            0f
+        );
+
+
+        DebugLog(
+            $"IDLE animation played: {idleState}"
         );
     }
 
@@ -178,27 +355,40 @@ public class AnimationController : MonoBehaviour
     public void StopWalking()
     {
         isWalking = false;
+
+        DebugLog("StopWalking called.");
     }
 
 
     // ============================================================
-    // STATE CHECK
+    // CHECK CURRENT ANIMATION STATE
     // ============================================================
 
-    private bool IsCurrentState(
-        int stateHash)
+    private bool IsCurrentState(string stateName)
     {
         if (animator == null)
         {
             return false;
         }
 
+
         AnimatorStateInfo stateInfo =
             animator.GetCurrentAnimatorStateInfo(0);
 
-        return
-            stateInfo.shortNameHash ==
-            stateHash;
+
+        bool isCurrent =
+            stateInfo.IsName(stateName);
+
+
+        DebugLog(
+            $"Current Animator State:\n" +
+            $"Checking: {stateName}\n" +
+            $"Is Current: {isCurrent}\n" +
+            $"Normalized Time: {stateInfo.normalizedTime}"
+        );
+
+
+        return isCurrent;
     }
 
 
@@ -209,5 +399,23 @@ public class AnimationController : MonoBehaviour
     public bool IsWalking()
     {
         return isWalking;
+    }
+
+
+    // ============================================================
+    // DEBUG LOG
+    // ============================================================
+
+    private void DebugLog(string message)
+    {
+        if (!enableDebugLogs)
+        {
+            return;
+        }
+
+
+        Debug.Log(
+            $"[{name}] AnimationController: {message}"
+        );
     }
 }
