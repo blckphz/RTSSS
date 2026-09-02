@@ -5,6 +5,21 @@ using UnityEngine;
 public static class CombatUtility
 {
     // ============================================================
+    // DEBUG
+    // ============================================================
+
+    private const string DEBUG_PREFIX = "[CombatUtility] ";
+
+    private static void DebugLog(string message)
+    {
+        Debug.Log(
+            DEBUG_PREFIX +
+            message
+        );
+    }
+
+
+    // ============================================================
     // TURN / PLAYER INPUT STATE
     // ============================================================
 
@@ -24,9 +39,16 @@ public static class CombatUtility
     /// Locks or unlocks player-controlled actions.
     /// Enemy AI is NOT affected by this flag.
     /// </summary>
-    public static void SetPlayerInputLocked(bool locked)
+    public static void SetPlayerInputLocked(
+        bool locked
+    )
     {
         playerInputLocked = locked;
+
+        DebugLog(
+            "Player input locked = " +
+            locked
+        );
     }
 
     /// <summary>
@@ -47,7 +69,8 @@ public static class CombatUtility
             return false;
         }
 
-        Team team = unit.GetTeam();
+        Team team =
+            unit.GetTeam();
 
         return
             team == Team.Player ||
@@ -428,15 +451,27 @@ public static class CombatUtility
         UnitMoveBrain moveBrain =
             unit.GetComponent<UnitMoveBrain>();
 
+        // --------------------------------------------------------
+        // ATTACK BEFORE MOVE
+        // --------------------------------------------------------
+
         if (
             attackBrain != null &&
             !unit.IsDead()
         )
         {
-            attackBrain.UseAllAvailableAbilities();
+            DebugLog(
+                unit.name +
+                " ATTACK BEFORE MOVE"
+            );
 
-            yield return null;
+            yield return attackBrain
+                .UseAllAvailableAbilitiesCoroutine();
         }
+
+        // --------------------------------------------------------
+        // MOVE
+        // --------------------------------------------------------
 
         if (
             moveBrain != null &&
@@ -444,17 +479,30 @@ public static class CombatUtility
             moveBrain.CanMoveThisTurn()
         )
         {
+            DebugLog(
+                unit.name +
+                " MOVING"
+            );
+
             yield return moveBrain.MoveTowardsEnemy();
         }
+
+        // --------------------------------------------------------
+        // ATTACK AFTER MOVE
+        // --------------------------------------------------------
 
         if (
             attackBrain != null &&
             !unit.IsDead()
         )
         {
-            attackBrain.UseAllAvailableAbilities();
+            DebugLog(
+                unit.name +
+                " ATTACK AFTER MOVE"
+            );
 
-            yield return null;
+            yield return attackBrain
+                .UseAllAvailableAbilitiesCoroutine();
         }
     }
 
@@ -530,8 +578,26 @@ public static class CombatUtility
 
         if (attackBrain == null)
         {
+            DebugLog(
+                enemy.name +
+                " has NO UnitAttackBrain."
+            );
+
             yield break;
         }
+
+        DebugLog(
+            "========================================"
+        );
+
+        DebugLog(
+            "ENEMY TURN START: " +
+            enemy.name +
+            " | moveFirst = " +
+            moveFirst +
+            " | attackAfterMoving = " +
+            attackAfterMoving
+        );
 
         // --------------------------------------------------------
         // ATTACK BEFORE MOVE
@@ -542,9 +608,23 @@ public static class CombatUtility
             !enemy.IsDead()
         )
         {
-            attackBrain.UseAllAvailableAbilities();
+            DebugLog(
+                enemy.name +
+                " ATTACK BEFORE MOVE"
+            );
 
-            yield return null;
+            DebugLog(
+                enemy.name +
+                " -> UseAllAvailableAbilitiesCoroutine()"
+            );
+
+            yield return attackBrain
+                .UseAllAvailableAbilitiesCoroutine();
+
+            DebugLog(
+                enemy.name +
+                " FINISHED ATTACK BEFORE MOVE"
+            );
         }
 
         // --------------------------------------------------------
@@ -557,7 +637,17 @@ public static class CombatUtility
             moveBrain.CanMoveThisTurn()
         )
         {
+            DebugLog(
+                enemy.name +
+                " MOVING"
+            );
+
             yield return moveBrain.MoveTowardsEnemy();
+
+            DebugLog(
+                enemy.name +
+                " FINISHED MOVING"
+            );
         }
 
         // --------------------------------------------------------
@@ -569,10 +659,33 @@ public static class CombatUtility
             !enemy.IsDead()
         )
         {
-            attackBrain.UseAllAvailableAbilities();
+            DebugLog(
+                enemy.name +
+                " ATTACK AFTER MOVE"
+            );
 
-            yield return null;
+            DebugLog(
+                enemy.name +
+                " -> UseAllAvailableAbilitiesCoroutine()"
+            );
+
+            yield return attackBrain
+                .UseAllAvailableAbilitiesCoroutine();
+
+            DebugLog(
+                enemy.name +
+                " FINISHED ATTACK AFTER MOVE"
+            );
         }
+
+        DebugLog(
+            "ENEMY TURN END: " +
+            enemy.name
+        );
+
+        DebugLog(
+            "========================================"
+        );
     }
 
 

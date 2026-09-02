@@ -1104,7 +1104,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -428.70343, y: 680.04407}
+  m_AnchoredPosition: {x: -428.70343, y: 680.0441}
   m_SizeDelta: {x: 428.7034, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &331207865
@@ -1534,6 +1534,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   MapCanvas: {fileID: 1596020169}
+  tgm: {fileID: 1572764121}
 --- !u!1 &389218100
 GameObject:
   m_ObjectHideFlags: 0
@@ -4447,7 +4448,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 2
   m_Value: -0.00000008975177
-  m_Size: 0.5942821
+  m_Size: 0.59476364
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

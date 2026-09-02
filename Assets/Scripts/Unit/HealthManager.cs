@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -25,7 +26,6 @@ public class HealthManager : MonoBehaviour
     // PLAYER
     // ==================================================
 
-    [Header("Player")]
     [Tooltip(
         "If enabled, this unit's health is saved in PlayerDataManager " +
         "and restored when the next encounter starts."
@@ -156,6 +156,47 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
+    // COMBINED DAMAGE BATCH
+    // ==================================================
+    //
+    // This is GLOBAL.
+    //
+    // Every HealthManager that receives damage while the
+    // batch is active collects its damage.
+    //
+    // Example:
+    //
+    // Player A gets 10
+    // Player A gets 10
+    // Player A gets 10
+    //
+    // Result:
+    //
+    // Player A displays 30
+    //
+    // This also works with AoE because we do not need to
+    // know which targets the ability will hit beforehand.
+    // ==================================================
+
+    private static int combinedDamageBatchDepth = 0;
+
+    private static readonly HashSet<HealthManager>
+        combinedDamageManagers =
+        new HashSet<HealthManager>();
+
+
+    private int combinedDamage = 0;
+
+
+    // ==================================================
+    // DEBUG
+    // ==================================================
+
+    private const string DEBUG_PREFIX =
+        "[HealthManager] ";
+
+
+    // ==================================================
     // UNITY
     // ==================================================
 
@@ -270,20 +311,16 @@ public class HealthManager : MonoBehaviour
 
             if (playerDataManager != null)
             {
-                // Initialize persistent player data.
-                // This only sets the initial HP the first time.
                 playerDataManager.Initialize(
                     character
                 );
 
 
-                // Restore HP from the previous encounter.
                 health =
                     playerDataManager.GetHealth();
             }
             else
             {
-                // Fallback if PlayerDataManager doesn't exist.
                 health =
                     maxHealth;
             }
@@ -299,6 +336,13 @@ public class HealthManager : MonoBehaviour
             health =
                 maxHealth;
         }
+
+
+        // --------------------------------------------------
+        // RESET COMBINED DAMAGE
+        // --------------------------------------------------
+
+        combinedDamage = 0;
 
 
         // --------------------------------------------------
@@ -336,14 +380,42 @@ public class HealthManager : MonoBehaviour
     {
         if (damage <= 0)
         {
+            Debug.LogWarning(
+                DEBUG_PREFIX +
+                name +
+                " received invalid damage: " +
+                damage
+            );
+
             return;
         }
 
 
         if (IsDead())
         {
+            Debug.Log(
+                DEBUG_PREFIX +
+                name +
+                " is already dead. " +
+                "Ignoring damage: " +
+                damage
+            );
+
             return;
         }
+
+
+        Debug.Log(
+            DEBUG_PREFIX +
+            name +
+            " TakeDamage(" +
+            damage +
+            ")" +
+            " | HP before = " +
+            health +
+            " | Combined batch active = " +
+            IsCombinedDamageBatchActive()
+        );
 
 
         // --------------------------------------------------
@@ -360,13 +432,52 @@ public class HealthManager : MonoBehaviour
         }
 
 
+        Debug.Log(
+            DEBUG_PREFIX +
+            name +
+            " HP after = " +
+            health
+        );
+
+
         // --------------------------------------------------
-        // DAMAGE NUMBER
+        // COMBINED DAMAGE
         // --------------------------------------------------
 
-        SpawnDamageNumber(
-            damage
-        );
+        if (IsCombinedDamageBatchActive())
+        {
+            combinedDamage +=
+                damage;
+
+
+            combinedDamageManagers.Add(
+                this
+            );
+
+
+            Debug.Log(
+                DEBUG_PREFIX +
+                name +
+                " COMBINED DAMAGE +" +
+                damage +
+                " | TOTAL = " +
+                combinedDamage
+            );
+        }
+        else
+        {
+            Debug.Log(
+                DEBUG_PREFIX +
+                name +
+                " spawning normal damage number: " +
+                damage
+            );
+
+
+            SpawnDamageNumber(
+                damage
+            );
+        }
 
 
         // --------------------------------------------------
@@ -395,8 +506,218 @@ public class HealthManager : MonoBehaviour
 
         if (health <= 0)
         {
+            Debug.Log(
+                DEBUG_PREFIX +
+                name +
+                " DIED during damage batch = " +
+                IsCombinedDamageBatchActive()
+            );
+
+
             Die();
         }
+    }
+
+
+    // ==================================================
+    // BEGIN COMBINED DAMAGE BATCH
+    // ==================================================
+
+    public static void BeginCombinedDamageBatch()
+    {
+        combinedDamageBatchDepth++;
+
+
+        if (combinedDamageBatchDepth == 1)
+        {
+            combinedDamageManagers.Clear();
+
+
+            Debug.Log(
+                DEBUG_PREFIX +
+                "========================================"
+            );
+
+
+            Debug.Log(
+                DEBUG_PREFIX +
+                "BEGIN COMBINED DAMAGE BATCH"
+            );
+
+
+            Debug.Log(
+                DEBUG_PREFIX +
+                "========================================"
+            );
+        }
+        else
+        {
+            Debug.Log(
+                DEBUG_PREFIX +
+                "Nested combined damage batch started. " +
+                "Depth = " +
+                combinedDamageBatchDepth
+            );
+        }
+    }
+
+
+    // ==================================================
+    // END COMBINED DAMAGE BATCH
+    // ==================================================
+
+    public static void EndCombinedDamageBatch()
+    {
+        if (combinedDamageBatchDepth <= 0)
+        {
+            Debug.LogWarning(
+                DEBUG_PREFIX +
+                "EndCombinedDamageBatch() called " +
+                "without an active batch."
+            );
+
+            combinedDamageBatchDepth = 0;
+
+            return;
+        }
+
+
+        combinedDamageBatchDepth--;
+
+
+        Debug.Log(
+            DEBUG_PREFIX +
+            "EndCombinedDamageBatch() | Depth = " +
+            combinedDamageBatchDepth
+        );
+
+
+        // --------------------------------------------------
+        // STILL NESTED
+        // --------------------------------------------------
+
+        if (combinedDamageBatchDepth > 0)
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------
+        // FLUSH
+        // --------------------------------------------------
+
+        Debug.Log(
+            DEBUG_PREFIX +
+            "========================================"
+        );
+
+
+        Debug.Log(
+            DEBUG_PREFIX +
+            "FLUSHING COMBINED DAMAGE"
+        );
+
+
+        Debug.Log(
+            DEBUG_PREFIX +
+            "Targets hit = " +
+            combinedDamageManagers.Count
+        );
+
+
+        Debug.Log(
+            DEBUG_PREFIX +
+            "========================================"
+        );
+
+
+        // Make a copy because spawning damage numbers or
+        // other callbacks should not modify our HashSet.
+        List<HealthManager> managers =
+            new List<HealthManager>(
+                combinedDamageManagers
+            );
+
+
+        for (
+            int i = 0;
+            i < managers.Count;
+            i++
+        )
+        {
+            HealthManager manager =
+                managers[i];
+
+
+            if (manager == null)
+            {
+                continue;
+            }
+
+
+            manager.FlushCombinedDamage();
+        }
+
+
+        combinedDamageManagers.Clear();
+    }
+
+
+    // ==================================================
+    // IS COMBINED DAMAGE ACTIVE
+    // ==================================================
+
+    public static bool IsCombinedDamageBatchActive()
+    {
+        return combinedDamageBatchDepth > 0;
+    }
+
+
+    // ==================================================
+    // FLUSH THIS UNIT'S COMBINED DAMAGE
+    // ==================================================
+
+    private void FlushCombinedDamage()
+    {
+        Debug.Log(
+            DEBUG_PREFIX +
+            name +
+            " FLUSH COMBINED DAMAGE = " +
+            combinedDamage
+        );
+
+
+        if (combinedDamage > 0)
+        {
+            SpawnDamageNumber(
+                combinedDamage
+            );
+        }
+
+
+        combinedDamage = 0;
+    }
+
+
+    // ==================================================
+    // RESET COMBINED DAMAGE
+    // ==================================================
+
+    public void CancelCombinedDamage()
+    {
+        Debug.Log(
+            DEBUG_PREFIX +
+            name +
+            " CancelCombinedDamage(). Previous total = " +
+            combinedDamage
+        );
+
+
+        combinedDamage = 0;
+
+        combinedDamageManagers.Remove(
+            this
+        );
     }
 
 
@@ -409,30 +730,34 @@ public class HealthManager : MonoBehaviour
     {
         if (damageNumberPrefab == null)
         {
+            Debug.LogWarning(
+                DEBUG_PREFIX +
+                name +
+                " has no DamageNumber prefab assigned!"
+            );
+
             return;
         }
 
-
-        // --------------------------------------------------
-        // SPAWN POSITION
-        // --------------------------------------------------
 
         Vector3 spawnPosition =
             transform.position
             + damageNumberOffset;
 
 
-        // --------------------------------------------------
-        // PARENT
-        // --------------------------------------------------
-
         Transform parent =
             damageNumberParent;
 
 
-        // --------------------------------------------------
-        // INSTANTIATE
-        // --------------------------------------------------
+        Debug.Log(
+            DEBUG_PREFIX +
+            name +
+            " SPAWN DAMAGE NUMBER = " +
+            damage +
+            " at " +
+            spawnPosition
+        );
+
 
         DamageNumber damageNumber =
             Instantiate(
@@ -442,10 +767,6 @@ public class HealthManager : MonoBehaviour
                 parent
             );
 
-
-        // --------------------------------------------------
-        // INITIALIZE
-        // --------------------------------------------------
 
         damageNumber.Setup(
             damage
@@ -540,10 +861,6 @@ public class HealthManager : MonoBehaviour
     {
         OnHealthChanged?.Invoke(this);
 
-
-        // --------------------------------------------------
-        // SAVE PLAYER HEALTH
-        // --------------------------------------------------
 
         if (isPlayerCharacter)
         {
@@ -836,15 +1153,20 @@ public class HealthManager : MonoBehaviour
 
     private void Die()
     {
-        // Save zero HP before the unit is disabled.
-        SavePlayerHealth();
+        // IMPORTANT:
+        // Do NOT end the global damage batch here.
+        //
+        // The enemy may have more attacks remaining.
+        // The batch must stay active until the entire
+        // multi-attack sequence is finished.
 
+        SavePlayerHealth();
 
         StopDamageFlash();
 
 
         // --------------------------------------------------
-        // GET ENCOUNTER INFORMATION BEFORE DISABLING
+        // GET ENCOUNTER INFORMATION
         // --------------------------------------------------
 
         EncounterUnit encounterUnit =
@@ -862,7 +1184,7 @@ public class HealthManager : MonoBehaviour
 
 
         // --------------------------------------------------
-        // NOTIFY ENCOUNTER MANAGER
+        // ENCOUNTER MANAGER
         // --------------------------------------------------
 
         EncounterManager encounterManager =
@@ -879,7 +1201,7 @@ public class HealthManager : MonoBehaviour
 
 
         // --------------------------------------------------
-        // REMOVE FROM GRID
+        // GRID
         // --------------------------------------------------
 
         GridManager gridManager =
@@ -888,33 +1210,19 @@ public class HealthManager : MonoBehaviour
 
         if (gridManager != null)
         {
-            // Get the unit's current grid position BEFORE
-            // removing it from the GridManager.
             Vector2Int gridPosition =
                 gridManager.WorldToGridPosition(
                     transform.position
                 );
 
 
-            // --------------------------------------------------
-            // REMOVE DEAD UNIT
-            // --------------------------------------------------
-
-            // IMPORTANT:
-            // This must happen BEFORE refreshing the highlights.
-            //
-            // GridHighlightBrain uses GridManager.IsCellOccupied()
-            // when calculating movement range.
-            //
-            // If we refreshed before RemoveUnit(), the dead enemy
-            // would still be considered to occupy this tile.
             gridManager.RemoveUnit(
                 gridPosition
             );
 
 
             // --------------------------------------------------
-            // REFRESH GRID HIGHLIGHTS
+            // REFRESH HIGHLIGHTS
             // --------------------------------------------------
 
             GridHighlightBrain highlightBrain =
@@ -923,13 +1231,6 @@ public class HealthManager : MonoBehaviour
 
             if (highlightBrain != null)
             {
-                // The enemy has now been removed from the grid.
-                //
-                // Force GridHighlightBrain to recalculate its
-                // currently active highlights.
-                //
-                // This makes the enemy's old tile immediately
-                // available again for movement highlighting.
                 highlightBrain.RefreshAfterUnitStateChanged();
             }
         }
@@ -1004,10 +1305,6 @@ public class HealthManager : MonoBehaviour
             );
 
 
-        // IMPORTANT:
-        // Do NOT automatically restore health to max.
-        // This is what allows HP to persist between encounters.
-
         health =
             Mathf.Clamp(
                 health,
@@ -1016,12 +1313,9 @@ public class HealthManager : MonoBehaviour
             );
 
 
-        // Keep persistent player data in sync.
         SavePlayerHealth();
 
-
         StopDamageFlash();
-
 
         NotifyHealthChanged();
     }

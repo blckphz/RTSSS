@@ -5,11 +5,11 @@ using UnityEngine;
 [RequireComponent(typeof(AttackUnit))]
 public class UnitMoveBrain : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
+// ============================================================
+// REFERENCES
+// ============================================================
 
-    [Header("References")]
+[Header("References")]
     [SerializeField] private AttackUnit attackUnit;
     [SerializeField] private UnitTilePin tilePin;
     [SerializeField] private AnimationController animationController;
@@ -44,14 +44,6 @@ public class UnitMoveBrain : MonoBehaviour
 
 
     // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-    [SerializeField] private bool enableDebugLogs = true;
-
-
-    // ============================================================
     // STATE & CACHE
     // ============================================================
 
@@ -69,8 +61,6 @@ public class UnitMoveBrain : MonoBehaviour
 
         movementConsumed = false;
         isMoving = false;
-
-        DebugLog("UnitMoveBrain initialized.");
     }
 
 
@@ -106,13 +96,6 @@ public class UnitMoveBrain : MonoBehaviour
         if (animationController == null)
         {
             animationController = GetComponent<AnimationController>();
-        }
-
-        if (animationController == null)
-        {
-            DebugLogWarning(
-                "AnimationController was not found on this GameObject."
-            );
         }
     }
 
@@ -277,10 +260,6 @@ public class UnitMoveBrain : MonoBehaviour
 
     public bool TryMoveTo(Vector2Int destination)
     {
-        // --------------------------------------------------------
-        // CHECK WHETHER THIS UNIT CAN MOVE
-        // --------------------------------------------------------
-
         if (!CanMoveThisTurn())
         {
             return false;
@@ -295,19 +274,11 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // GET CURRENT TILE
-        // --------------------------------------------------------
-
         if (!TryGetCurrentTile(out Vector2Int start))
         {
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // CHECK DESTINATION
-        // --------------------------------------------------------
 
         if (!gridManager.IsInsideGrid(destination))
         {
@@ -321,10 +292,6 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // CHECK DESTINATION OCCUPANCY
-        // --------------------------------------------------------
-
         GameObject occupant =
             gridManager.GetUnitAt(destination);
 
@@ -335,10 +302,6 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // GET MOVEMENT RANGE
-        // --------------------------------------------------------
-
         int moveRange = GetMoveRange();
 
         if (moveRange <= 0)
@@ -346,10 +309,6 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-
-        // --------------------------------------------------------
-        // FIND PATH
-        // --------------------------------------------------------
 
         List<Vector2Int> path =
             new List<Vector2Int>();
@@ -370,10 +329,6 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // CALCULATE NUMBER OF STEPS
-        // --------------------------------------------------------
-
         int steps = path.Count - 1;
 
         if (steps <= 0)
@@ -382,34 +337,14 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // MAKE SURE DESTINATION IS WITHIN RANGE
-        // --------------------------------------------------------
-
         if (steps > moveRange)
         {
             return false;
         }
 
 
-        // ========================================================
-        // DESTINATION IS VALID
-        // ========================================================
-        //
-        // IMPORTANT:
-        //
-        // The player has now selected a valid movement destination.
-        //
-        // Hide the movement range BEFORE the movement coroutine
-        // starts so the highlighted tiles disappear immediately.
-        // ========================================================
-
         HideMovementRangeImmediately();
 
-
-        // ========================================================
-        // START MOVEMENT
-        // ========================================================
 
         StartCoroutine(
             ExecuteMoveRoutine(path, steps)
@@ -430,20 +365,10 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (highlightBrain == null)
         {
-            DebugLogWarning(
-                "GridHighlightBrain was not found. " +
-                "Movement range could not be cleared."
-            );
-
             return;
         }
 
         highlightBrain.HideMovementRange();
-
-        DebugLog(
-            "Movement destination selected. " +
-            "Movement range hidden immediately."
-        );
     }
 
 
@@ -604,10 +529,6 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // START MOVING
-        // --------------------------------------------------------
-
         isMoving = true;
 
         ConsumeMovement();
@@ -637,10 +558,6 @@ public class UnitMoveBrain : MonoBehaviour
                     path.Count - 1
                 );
 
-
-            // ====================================================
-            // MOVE THROUGH EACH PATH TILE
-            // ====================================================
 
             for (
                 int i = 1;
@@ -681,10 +598,6 @@ public class UnitMoveBrain : MonoBehaviour
                 }
 
 
-                // ------------------------------------------------
-                // TELL GRID WE ARE MOVING
-                // ------------------------------------------------
-
                 if (!gridManager.StartMoveUnit(
                     gameObject,
                     currentPosition,
@@ -694,19 +607,8 @@ public class UnitMoveBrain : MonoBehaviour
                 }
 
 
-                // =================================================
-                // ANIMATION
-                // =================================================
-
                 Vector2Int movementDirection =
                     nextPosition - currentPosition;
-
-
-                DebugLog(
-                    $"Moving from {currentPosition} " +
-                    $"to {nextPosition}. " +
-                    $"Direction: {movementDirection}"
-                );
 
 
                 if (animationController != null)
@@ -716,10 +618,6 @@ public class UnitMoveBrain : MonoBehaviour
                     );
                 }
 
-
-                // ------------------------------------------------
-                // WORLD POSITIONS
-                // ------------------------------------------------
 
                 Vector3 startWorldPosition =
                     transform.position;
@@ -733,10 +631,6 @@ public class UnitMoveBrain : MonoBehaviour
 
                 float elapsed = 0f;
 
-
-                // ------------------------------------------------
-                // MOVE
-                // ------------------------------------------------
 
                 while (elapsed < moveDuration)
                 {
@@ -771,17 +665,9 @@ public class UnitMoveBrain : MonoBehaviour
                 }
 
 
-                // ------------------------------------------------
-                // SNAP TO TILE
-                // ------------------------------------------------
-
                 transform.position =
                     targetWorldPosition;
 
-
-                // ------------------------------------------------
-                // FINISH GRID MOVE
-                // ------------------------------------------------
 
                 gridManager.FinishMoveUnit(
                     gameObject,
@@ -792,10 +678,6 @@ public class UnitMoveBrain : MonoBehaviour
                 lastLogicalTile =
                     nextPosition;
 
-
-                // ------------------------------------------------
-                // UPDATE TILE PIN
-                // ------------------------------------------------
 
                 if (tilePin != null)
                 {
@@ -809,26 +691,14 @@ public class UnitMoveBrain : MonoBehaviour
             }
 
 
-            // ====================================================
-            // ONLY TRUE IF WE ACTUALLY REACHED FINAL TILE
-            // ====================================================
-
             completedAllSteps =
                 lastLogicalTile ==
                 finalRequestedTile;
         }
         finally
         {
-            // ====================================================
-            // STOP MOVING
-            // ====================================================
-
             isMoving = false;
 
-
-            // ====================================================
-            // FINAL POSITION
-            // ====================================================
 
             Vector3 finalWorld =
                 gridManager.GridToWorldPosition(
@@ -840,10 +710,6 @@ public class UnitMoveBrain : MonoBehaviour
                 finalWorld;
 
 
-            // ====================================================
-            // UPDATE TILE PIN
-            // ====================================================
-
             if (tilePin != null)
             {
                 tilePin.UpdateTileAfterMovement(
@@ -851,10 +717,6 @@ public class UnitMoveBrain : MonoBehaviour
                 );
             }
 
-
-            // ====================================================
-            // FINISH GRID MOVE IF INTERRUPTED
-            // ====================================================
 
             if (!completedAllSteps)
             {
@@ -865,26 +727,10 @@ public class UnitMoveBrain : MonoBehaviour
             }
 
 
-            // ====================================================
-            // PLAY IDLE ON FINAL TILE
-            // ====================================================
-
             if (animationController != null)
             {
                 animationController.PlayIdle();
             }
-
-
-            // ====================================================
-            // DEBUG
-            // ====================================================
-
-            DebugLog(
-                $"Movement finished at " +
-                $"{lastLogicalTile}. " +
-                $"Completed requested movement: " +
-                $"{completedAllSteps}"
-            );
         }
     }
 
@@ -1039,35 +885,4 @@ public class UnitMoveBrain : MonoBehaviour
         result.Remove(start);
     }
 
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void DebugLog(string message)
-    {
-        if (!enableDebugLogs)
-        {
-            return;
-        }
-
-
-        Debug.Log(
-            $"[{name}] UnitMoveBrain: {message}"
-        );
-    }
-
-
-    private void DebugLogWarning(string message)
-    {
-        if (!enableDebugLogs)
-        {
-            return;
-        }
-
-
-        Debug.LogWarning(
-            $"[{name}] UnitMoveBrain: {message}"
-        );
-    }
 }
