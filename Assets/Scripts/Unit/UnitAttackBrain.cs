@@ -9,19 +9,6 @@ public class UnitAttackBrain : MonoBehaviour
     private AttackUnit attackUnit;
 
 
-    [Header("Debug")]
-    [SerializeField]
-    private bool debugAttack = true;
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private const string DEBUG_PREFIX =
-        "[UnitAttackBrain] ";
-
-
     // ============================================================
     // UNITY
     // ============================================================
@@ -33,16 +20,6 @@ public class UnitAttackBrain : MonoBehaviour
             attackUnit =
                 GetComponent<AttackUnit>();
         }
-
-
-        DebugLog(
-            "Awake. AttackUnit = " +
-            (
-                attackUnit != null
-                    ? attackUnit.name
-                    : "NULL"
-            )
-        );
     }
 
 
@@ -174,11 +151,6 @@ public class UnitAttackBrain : MonoBehaviour
             !CanAttackTarget(target)
         )
         {
-            DebugLog(
-                "Attack failed. Invalid target or AttackUnit."
-            );
-
-
             return false;
         }
 
@@ -189,21 +161,8 @@ public class UnitAttackBrain : MonoBehaviour
 
         if (ability == null)
         {
-            DebugLog(
-                "Attack failed. No ability available."
-            );
-
-
             return false;
         }
-
-
-        DebugLog(
-            "Single Attack: " +
-            ability.name +
-            " -> " +
-            target.name
-        );
 
 
         return attackUnit.Attack(
@@ -579,37 +538,14 @@ public class UnitAttackBrain : MonoBehaviour
     // ============================================================
     // USE ALL AVAILABLE ABILITIES
     // ============================================================
-    //
-    // SYNCHRONOUS VERSION.
-    //
-    // This performs all available uses immediately.
-    //
-    // DO NOT use this for the enemy turn if you want visible
-    // delays between attacks.
-    // ============================================================
 
     public int UseAllAvailableAbilities()
     {
-        DebugLog(
-            "========================================"
-        );
-
-
-        DebugLog(
-            "UseAllAvailableAbilities START"
-        );
-
-
         if (
             attackUnit == null ||
             !attackUnit.CanAttack()
         )
         {
-            DebugLog(
-                "Cannot attack."
-            );
-
-
             return 0;
         }
 
@@ -634,29 +570,8 @@ public class UnitAttackBrain : MonoBehaviour
                 target == null
             )
             {
-                DebugLog(
-                    "No more abilities/targets."
-                );
-
-
                 break;
             }
-
-
-            int attackNumber =
-                attacksPerformed + 1;
-
-
-            DebugLog(
-                "ATTACK #" +
-                attackNumber +
-                " | Ability = " +
-                ability.GetAbilityName() +
-                " | Target = " +
-                target.name +
-                " | Damage = " +
-                ability.GetDamage()
-            );
 
 
             bool success =
@@ -666,41 +581,14 @@ public class UnitAttackBrain : MonoBehaviour
                 );
 
 
-            DebugLog(
-                "ATTACK #" +
-                attackNumber +
-                " result = " +
-                success
-            );
-
-
             if (!success)
             {
-                Debug.LogWarning(
-                    DEBUG_PREFIX +
-                    name +
-                    ": Attack failed. Stopping."
-                );
-
-
                 break;
             }
 
 
             attacksPerformed++;
         }
-
-
-        DebugLog(
-            "UseAllAvailableAbilities END | " +
-            "Attacks performed = " +
-            attacksPerformed
-        );
-
-
-        DebugLog(
-            "========================================"
-        );
 
 
         return attacksPerformed;
@@ -710,71 +598,23 @@ public class UnitAttackBrain : MonoBehaviour
     // ============================================================
     // USE ALL AVAILABLE ABILITIES COROUTINE
     // ============================================================
-    //
-    // THIS is the version used by the enemy turn.
-    //
-    // Every ability use is a SEPARATE attack.
-    //
-    // Example:
-    //
-    // usesPerTurn = 3
-    // damage = 10
-    // useDuration = 0.25
-    //
-    // RESULT:
-    //
-    // ATTACK #1 -> 10
-    // wait 0.25
-    // ATTACK #2 -> 10
-    // wait 0.25
-    // ATTACK #3 -> 10
-    //
-    // There is NO combined damage system here.
-    // ============================================================
 
     public IEnumerator UseAllAvailableAbilitiesCoroutine()
     {
-        DebugLog(
-            "========================================"
-        );
-
-
-        DebugLog(
-            "UseAllAvailableAbilitiesCoroutine START"
-        );
-
-
         if (attackUnit == null)
         {
-            Debug.LogError(
-                DEBUG_PREFIX +
-                name +
-                ": attackUnit is NULL!"
-            );
-
-
             yield break;
         }
 
 
         if (attackUnit.IsDead())
         {
-            DebugLog(
-                "Unit is already dead."
-            );
-
-
             yield break;
         }
 
 
         if (!attackUnit.CanAttack())
         {
-            DebugLog(
-                "attackUnit.CanAttack() = FALSE"
-            );
-
-
             yield break;
         }
 
@@ -785,10 +625,6 @@ public class UnitAttackBrain : MonoBehaviour
 
         while (!attackUnit.IsDead())
         {
-            // ----------------------------------------------------
-            // FIND NEXT ABILITY
-            // ----------------------------------------------------
-
             GameObject target;
 
 
@@ -798,26 +634,11 @@ public class UnitAttackBrain : MonoBehaviour
                 );
 
 
-            DebugLog(
-                "Searching for attack #" +
-                (attacksPerformed + 1)
-            );
-
-
-            // ----------------------------------------------------
-            // NO MORE ATTACKS
-            // ----------------------------------------------------
-
             if (
                 ability == null ||
                 target == null
             )
             {
-                DebugLog(
-                    "No more abilities/targets."
-                );
-
-
                 break;
             }
 
@@ -826,50 +647,6 @@ public class UnitAttackBrain : MonoBehaviour
                 attacksPerformed + 1;
 
 
-            // ----------------------------------------------------
-            // DEBUG INFO
-            // ----------------------------------------------------
-
-            DebugLog(
-                "----------------------------------------"
-            );
-
-
-            DebugLog(
-                "ATTACK #" +
-                attackNumber +
-                " START"
-            );
-
-
-            DebugLog(
-                "Ability = " +
-                ability.GetAbilityName()
-            );
-
-
-            DebugLog(
-                "Target = " +
-                target.name
-            );
-
-
-            DebugLog(
-                "Damage = " +
-                ability.GetDamage()
-            );
-
-
-            DebugLog(
-                "UseDuration = " +
-                ability.GetUseDuration()
-            );
-
-
-            // ----------------------------------------------------
-            // PERFORM ONE ATTACK
-            // ----------------------------------------------------
-
             bool success =
                 attackUnit.Attack(
                     target,
@@ -877,25 +654,8 @@ public class UnitAttackBrain : MonoBehaviour
                 );
 
 
-            DebugLog(
-                "ATTACK #" +
-                attackNumber +
-                " result = " +
-                success
-            );
-
-
             if (!success)
             {
-                Debug.LogWarning(
-                    DEBUG_PREFIX +
-                    name +
-                    ": Attack #" +
-                    attackNumber +
-                    " FAILED."
-                );
-
-
                 break;
             }
 
@@ -903,62 +663,21 @@ public class UnitAttackBrain : MonoBehaviour
             attacksPerformed++;
 
 
-            DebugLog(
-                "ATTACK #" +
-                attacksPerformed +
-                " COMPLETE"
-            );
-
-
-            // ----------------------------------------------------
-            // WAIT BETWEEN USES
-            // ----------------------------------------------------
-
             float useDuration =
                 ability.GetUseDuration();
 
 
             if (useDuration > 0f)
             {
-                DebugLog(
-                    "WAITING " +
-                    useDuration +
-                    " SECONDS BEFORE NEXT ATTACK"
-                );
-
-
                 yield return new WaitForSeconds(
                     useDuration
-                );
-
-
-                DebugLog(
-                    "WAIT COMPLETE"
                 );
             }
             else
             {
-                DebugLog(
-                    "UseDuration = 0. " +
-                    "Waiting one frame."
-                );
-
-
                 yield return null;
             }
         }
-
-
-        DebugLog(
-            "UseAllAvailableAbilitiesCoroutine END | " +
-            "Attacks performed = " +
-            attacksPerformed
-        );
-
-
-        DebugLog(
-            "========================================"
-        );
     }
 
 
@@ -1164,27 +883,5 @@ public class UnitAttackBrain : MonoBehaviour
     public AttackUnit GetAttackUnit()
     {
         return attackUnit;
-    }
-
-
-    // ============================================================
-    // DEBUG HELPER
-    // ============================================================
-
-    private void DebugLog(
-        string message)
-    {
-        if (!debugAttack)
-        {
-            return;
-        }
-
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            name +
-            ": " +
-            message
-        );
     }
 }
