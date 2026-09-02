@@ -4,6 +4,7 @@ public class VictoryManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GameStateManager gameStateManager;
+    [SerializeField] private transitionGameManager transitionManager;
 
     [Header("UI")]
     [SerializeField] private GameObject victoryCanvas;
@@ -16,7 +17,12 @@ public class VictoryManager : MonoBehaviour
                 FindFirstObjectByType<GameStateManager>();
         }
 
-        // Make sure it starts hidden
+        if (transitionManager == null)
+        {
+            transitionManager =
+                FindFirstObjectByType<transitionGameManager>();
+        }
+
         if (victoryCanvas != null)
         {
             victoryCanvas.SetActive(false);
@@ -42,8 +48,7 @@ public class VictoryManager : MonoBehaviour
     private void HandleGameStateChanged(
         GameStateManager.GameState newState)
     {
-        if (newState ==
-            GameStateManager.GameState.Victory)
+        if (newState == GameStateManager.GameState.Victory)
         {
             ShowVictoryCanvas();
         }
@@ -64,7 +69,15 @@ public class VictoryManager : MonoBehaviour
             victoryCanvas.SetActive(false);
         }
 
-        // Put your map-opening logic here
-        Debug.Log("Continue to map!");
+        if (transitionManager != null)
+        {
+            transitionManager.TransitionToMap();
+        }
+        else
+        {
+            Debug.LogError(
+                "[VictoryManager] transitionGameManager not found!"
+            );
+        }
     }
 }

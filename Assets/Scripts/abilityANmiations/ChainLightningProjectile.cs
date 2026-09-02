@@ -63,7 +63,9 @@ public class ChainLightningProjectile : MonoBehaviour
 
         this.chainTargets =
             chainTargets != null
-                ? new List<GameObject>(chainTargets)
+                ? new List<GameObject>(
+                    chainTargets
+                )
                 : new List<GameObject>();
 
         this.speed =
@@ -81,6 +83,7 @@ public class ChainLightningProjectile : MonoBehaviour
         this.damage = damage;
 
         currentTargetIndex = 0;
+
         initialized = false;
 
         if (
@@ -89,11 +92,13 @@ public class ChainLightningProjectile : MonoBehaviour
         )
         {
             Destroy(gameObject);
+
             return;
         }
 
         DebugLog(
-            $"Projectile initialized. Targets={this.chainTargets.Count}"
+            $"Projectile initialized. " +
+            $"Targets={this.chainTargets.Count}"
         );
 
         StartNextTarget();
@@ -114,7 +119,9 @@ public class ChainLightningProjectile : MonoBehaviour
         )
         {
             GameObject target =
-                chainTargets[currentTargetIndex];
+                chainTargets[
+                    currentTargetIndex
+                ];
 
             if (
                 target != null &&
@@ -141,8 +148,12 @@ public class ChainLightningProjectile : MonoBehaviour
             chainTargets.Count
         )
         {
-            DebugLog("Chain finished.");
+            DebugLog(
+                "Chain finished."
+            );
+
             Destroy(gameObject);
+
             return;
         }
 
@@ -150,7 +161,9 @@ public class ChainLightningProjectile : MonoBehaviour
             transform.position;
 
         GameObject currentTarget =
-            chainTargets[currentTargetIndex];
+            chainTargets[
+                currentTargetIndex
+            ];
 
         targetPosition =
             currentTarget.transform.position;
@@ -174,7 +187,8 @@ public class ChainLightningProjectile : MonoBehaviour
         initialized = true;
 
         DebugLog(
-            $"Flying to {currentTarget.name}"
+            $"Flying to " +
+            $"{currentTarget.name}"
         );
     }
 
@@ -195,7 +209,8 @@ public class ChainLightningProjectile : MonoBehaviour
 
         float t =
             Mathf.Clamp01(
-                elapsedTime / flightTime
+                elapsedTime /
+                flightTime
             );
 
         transform.position =
@@ -224,7 +239,10 @@ public class ChainLightningProjectile : MonoBehaviour
             targetPosition -
             transform.position;
 
-        if (direction.sqrMagnitude <= 0.0001f)
+        if (
+            direction.sqrMagnitude <=
+            0.0001f
+        )
         {
             return;
         }
@@ -322,7 +340,8 @@ public class ChainLightningProjectile : MonoBehaviour
         if (health == null)
         {
             DebugLog(
-                $"No HealthManager on {target.name}"
+                $"No HealthManager on " +
+                $"{target.name}"
             );
 
             return;
@@ -331,7 +350,8 @@ public class ChainLightningProjectile : MonoBehaviour
         health.TakeDamage(damage);
 
         DebugLog(
-            $"Hit {target.name} for {damage} damage."
+            $"Hit {target.name} " +
+            $"for {damage} damage."
         );
     }
 
@@ -340,7 +360,8 @@ public class ChainLightningProjectile : MonoBehaviour
     // CONTINUE CHAIN
     // ============================================================
 
-    private IEnumerator ContinueChainAfterDelay()
+    private IEnumerator
+        ContinueChainAfterDelay()
     {
         yield return new WaitForSeconds(
             jumpDelay
@@ -362,7 +383,8 @@ public class ChainLightningProjectile : MonoBehaviour
         }
 
         Debug.Log(
-            $"[ChainLightningProjectile] {message}"
+            $"[ChainLightningProjectile] " +
+            $"{message}"
         );
     }
 }

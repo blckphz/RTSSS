@@ -71,6 +71,30 @@ public class AudioFXManager : MonoBehaviour
 
 
     // ============================================================
+    // MAP NODE HOVER
+    // ============================================================
+
+    [Header("Map Node Hover")]
+    [SerializeField]
+    private AudioClip mapNodeHoverClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float mapNodeHoverVolume = 1f;
+
+
+    // ============================================================
+    // LEVEL ENTER
+    // ============================================================
+
+    [Header("Level Enter")]
+    [SerializeField]
+    private AudioClip levelEnterClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float levelEnterVolume = 1f;
+
+
+    // ============================================================
     // UNITY
     // ============================================================
 
@@ -90,8 +114,7 @@ public class AudioFXManager : MonoBehaviour
         }
 
 
-        Instance =
-            this;
+        Instance = this;
 
 
         // --------------------------------------------------------
@@ -112,8 +135,7 @@ public class AudioFXManager : MonoBehaviour
         }
 
 
-        audioSource.playOnAwake =
-            false;
+        audioSource.playOnAwake = false;
     }
 
 
@@ -123,7 +145,10 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitHover()
     {
-        if (unitHoverClip == null || audioSource == null)
+        if (
+            unitHoverClip == null ||
+            audioSource == null
+        )
         {
             return;
         }
@@ -142,7 +167,10 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitClick()
     {
-        if (unitClickClip == null || audioSource == null)
+        if (
+            unitClickClip == null ||
+            audioSource == null
+        )
         {
             return;
         }
@@ -161,7 +189,10 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayAbilitySelect()
     {
-        if (abilitySelectClip == null || audioSource == null)
+        if (
+            abilitySelectClip == null ||
+            audioSource == null
+        )
         {
             return;
         }
@@ -180,7 +211,10 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitDeselect()
     {
-        if (unitDeselectClip == null || audioSource == null)
+        if (
+            unitDeselectClip == null ||
+            audioSource == null
+        )
         {
             return;
         }
@@ -199,7 +233,10 @@ public class AudioFXManager : MonoBehaviour
 
     public void PlayUnitDamage()
     {
-        if (unitDamageClip == null || audioSource == null)
+        if (
+            unitDamageClip == null ||
+            audioSource == null
+        )
         {
             return;
         }
@@ -208,6 +245,50 @@ public class AudioFXManager : MonoBehaviour
         audioSource.PlayOneShot(
             unitDamageClip,
             unitDamageVolume
+        );
+    }
+
+
+    // ============================================================
+    // MAP NODE HOVER
+    // ============================================================
+
+    public void PlayMapNodeHover()
+    {
+        if (
+            mapNodeHoverClip == null ||
+            audioSource == null
+        )
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            mapNodeHoverClip,
+            mapNodeHoverVolume
+        );
+    }
+
+
+    // ============================================================
+    // LEVEL ENTER
+    // ============================================================
+
+    public void PlayLevelEnter()
+    {
+        if (
+            levelEnterClip == null ||
+            audioSource == null
+        )
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            levelEnterClip,
+            levelEnterVolume
         );
     }
 }

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
-  m_Name: Player
+  m_Name: RustyMancer
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
   characterName: Player
   icon: {fileID: 21300000, guid: fb4133cde8645db47bd19b13ff0590fb, type: 3}
@@ -26,3 +26,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
   - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
   RangedAttacker: 0
+  upgrades:
+  - {fileID: 11400000, guid: a852fc7afe4502047a6b0aadd1dcd67c, type: 2}

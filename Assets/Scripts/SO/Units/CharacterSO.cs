@@ -12,6 +12,7 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     // ==================================================
 
     [Header("Character Info")]
+
     public string characterName;
 
     public Sprite icon;
@@ -22,6 +23,7 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     // ==================================================
 
     [Header("Prefab")]
+
     public GameObject prefabToSpawn;
 
 
@@ -30,6 +32,7 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     // ==================================================
 
     [Header("Combat")]
+
     public Team team;
 
     public bool isPlayerCharacter;
@@ -46,6 +49,7 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     // ==================================================
 
     [Header("Abilities")]
+
     [SerializeField]
     private List<AbilitySO> abilities =
         new List<AbilitySO>();
@@ -56,7 +60,17 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     // ==================================================
 
     [Header("Attack Type")]
+
     public bool RangedAttacker;
+
+
+    // ==================================================
+    // UPGRADES
+    // ==================================================
+
+    [Header("Upgrades")]
+
+    public UpgradeSO[] upgrades;
 
 
     // ==================================================
@@ -78,5 +92,35 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     public CharacterSO GetCharacterData()
     {
         return this;
+    }
+
+
+    // ==================================================
+    // FIND ABILITY
+    // ==================================================
+
+    public T GetAbility<T>()
+        where T : AbilitySO
+    {
+        if (abilities == null)
+        {
+            return null;
+        }
+
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
+        {
+            if (
+                abilities[i] is T ability
+            )
+            {
+                return ability;
+            }
+        }
+
+        return null;
     }
 }

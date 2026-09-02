@@ -11,6 +11,10 @@ public class ScreenShaker : MonoBehaviour
     // CINEMACHINE
     // =====================================================
 
+    [Header("Cinemachine")]
+    [SerializeField]
+    private CinemachineCamera cinemachineCamera;
+
     private CinemachineBasicMultiChannelPerlin perlin;
 
 
@@ -54,17 +58,31 @@ public class ScreenShaker : MonoBehaviour
 
 
         // -------------------------------------------------
-        // GET CINEMACHINE CAMERA
+        // FIND CAMERA
         // -------------------------------------------------
 
-        CinemachineCamera cam =
-            GetComponent<CinemachineCamera>();
+        if (cinemachineCamera == null)
+        {
+            cinemachineCamera =
+                GetComponent<CinemachineCamera>();
+        }
 
 
-        if (cam != null)
+        if (cinemachineCamera == null)
+        {
+            cinemachineCamera =
+                FindFirstObjectByType<CinemachineCamera>();
+        }
+
+
+        // -------------------------------------------------
+        // FIND PERLIN
+        // -------------------------------------------------
+
+        if (cinemachineCamera != null)
         {
             perlin =
-                cam.GetComponent<
+                cinemachineCamera.GetComponent<
                     CinemachineBasicMultiChannelPerlin>();
         }
 
@@ -73,15 +91,38 @@ public class ScreenShaker : MonoBehaviour
         // VALIDATION
         // -------------------------------------------------
 
+        if (cinemachineCamera == null)
+        {
+            Debug.LogError(
+                "[ScreenShaker] Could not find a CinemachineCamera!"
+            );
+
+            return;
+        }
+
+
         if (perlin == null)
         {
             Debug.LogError(
-                "[ScreenShaker] " +
-                "No CinemachineBasicMultiChannelPerlin " +
-                "found on this CinemachineCamera!",
-                this
+                "[ScreenShaker] CinemachineCamera was found, " +
+                "but it does NOT have a " +
+                "CinemachineBasicMultiChannelPerlin component!",
+                cinemachineCamera
             );
+
+            return;
         }
+
+
+        Debug.Log(
+            "[ScreenShaker] Successfully connected to Cinemachine noise.",
+            this
+        );
+
+
+        // Make sure it starts with no shake.
+        perlin.AmplitudeGain = 0f;
+        perlin.FrequencyGain = 0f;
     }
 
 
@@ -100,7 +141,7 @@ public class ScreenShaker : MonoBehaviour
         if (shakeTimer > 0f)
         {
             shakeTimer -=
-                Time.deltaTime;
+                Time.unscaledDeltaTime;
 
 
             float t =
@@ -108,17 +149,25 @@ public class ScreenShaker : MonoBehaviour
                 shakeTimerTotal;
 
 
-            perlin.AmplitudeGain =
+            // Smooth fade out.
+            float intensity =
                 Mathf.Lerp(
                     0f,
                     startingIntensity,
                     t
                 );
+
+
+            perlin.AmplitudeGain =
+                intensity;
+
+            perlin.FrequencyGain =
+                1f;
         }
         else
         {
-            perlin.AmplitudeGain =
-                0f;
+            perlin.AmplitudeGain = 0f;
+            perlin.FrequencyGain = 0f;
         }
     }
 
@@ -134,10 +183,8 @@ public class ScreenShaker : MonoBehaviour
         if (perlin == null)
         {
             Debug.LogWarning(
-                "[ScreenShaker] " +
-                "Shake requested but no " +
-                "CinemachineBasicMultiChannelPerlin " +
-                "component was found."
+                "[ScreenShaker] Shake requested, " +
+                "but Perlin noise is not connected!"
             );
 
             return;
@@ -152,6 +199,7 @@ public class ScreenShaker : MonoBehaviour
         {
             Diagnostics.StackTrace trace =
                 new Diagnostics.StackTrace();
+
 
             string caller =
                 "Unknown Caller";
@@ -177,6 +225,14 @@ public class ScreenShaker : MonoBehaviour
                     }
                 }
             }
+
+
+            Debug.Log(
+                $"[ScreenShaker] Shake called by {caller} | " +
+                $"Intensity: {intensity} | " +
+                $"Duration: {duration}",
+                this
+            );
         }
 
 
@@ -216,6 +272,10 @@ public class ScreenShaker : MonoBehaviour
 
         perlin.AmplitudeGain =
             intensity;
+
+
+        perlin.FrequencyGain =
+            1f;
     }
 
 
@@ -230,8 +290,7 @@ public class ScreenShaker : MonoBehaviour
         if (Instance == null)
         {
             Debug.LogWarning(
-                "[ScreenShaker] " +
-                "Instance not found!"
+                "[ScreenShaker] Instance not found!"
             );
 
             return;

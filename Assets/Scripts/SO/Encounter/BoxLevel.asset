@@ -28,3 +28,11 @@ MonoBehaviour:
     enemyId: penis
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    enemyId: 

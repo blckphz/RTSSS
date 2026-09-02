@@ -17,6 +17,9 @@ public class transitionGameManager : MonoBehaviour
     [SerializeField]
     private EncounterManager encounterManager;
 
+    // Used to tell the transition what should happen at the peak
+    private bool returningToMap;
+
 
     // ============================================================
     // UNITY
@@ -39,12 +42,13 @@ public class transitionGameManager : MonoBehaviour
 
 
     // ============================================================
-    // START TRANSITION
+    // MAP -> COMBAT
     // ============================================================
 
     public void TransitionPeakProcess()
     {
-        // Make sure transition is visible
+        returningToMap = false;
+
         if (transitionObject != null)
         {
             transitionObject.SetActive(true);
@@ -56,13 +60,28 @@ public class transitionGameManager : MonoBehaviour
                 this
             );
         }
+    }
 
-        // IMPORTANT:
-        // We do NOT start the encounter here.
-        //
-        // The animation will call
-        // StartEncounterAtPeak()
-        // when it reaches the peak.
+
+    // ============================================================
+    // COMBAT -> MAP
+    // ============================================================
+
+    public void TransitionToMap()
+    {
+        returningToMap = true;
+
+        if (transitionObject != null)
+        {
+            transitionObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[transitionGameManager] Transition Object is not assigned!",
+                this
+            );
+        }
     }
 
 
@@ -76,9 +95,27 @@ public class transitionGameManager : MonoBehaviour
             "[transitionGameManager] Transition reached peak."
         );
 
+        // --------------------------------------------------------
+        // RETURNING TO MAP
+        // --------------------------------------------------------
+
+        if (returningToMap)
+        {
+            if (mapCanvas != null)
+            {
+                mapCanvas.SetActive(true);
+            }
+
+            Debug.Log(
+                "[transitionGameManager] Map enabled."
+            );
+
+            return;
+        }
+
 
         // --------------------------------------------------------
-        // HIDE MAP
+        // STARTING COMBAT
         // --------------------------------------------------------
 
         if (mapCanvas != null)
@@ -86,17 +123,11 @@ public class transitionGameManager : MonoBehaviour
             mapCanvas.SetActive(false);
         }
 
-
-        // --------------------------------------------------------
-        // START ENCOUNTER
-        // --------------------------------------------------------
-
         if (gameStateManager == null)
         {
             gameStateManager =
                 FindFirstObjectByType<GameStateManager>();
         }
-
 
         if (gameStateManager == null)
         {
@@ -107,7 +138,6 @@ public class transitionGameManager : MonoBehaviour
 
             return;
         }
-
 
         gameStateManager.StartCombat();
     }
@@ -122,7 +152,6 @@ public class transitionGameManager : MonoBehaviour
         Debug.Log(
             "[transitionGameManager] Transition ended."
         );
-
 
         if (transitionObject != null)
         {
