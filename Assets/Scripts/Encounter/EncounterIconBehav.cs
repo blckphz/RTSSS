@@ -13,9 +13,12 @@ public class IconBehav :
     [SerializeField]
     private EncounterDefinition encounter;
 
+    [SerializeField]
+    private EncounterManager encounterManager;
+
 
     // ============================================================
-    // MAP MANAGER
+    // MAP
     // ============================================================
 
     [Header("Map")]
@@ -36,7 +39,7 @@ public class IconBehav :
 
 
     // ============================================================
-    // OPTIONAL VISUALS
+    // VISUALS
     // ============================================================
 
     [Header("Visuals")]
@@ -51,6 +54,15 @@ public class IconBehav :
 
 
     // ============================================================
+    // TRANSITION
+    // ============================================================
+
+    [Header("Transition")]
+    [SerializeField]
+    private transitionGameManager transitionManager;
+
+
+    // ============================================================
     // CLICK PROTECTION
     // ============================================================
 
@@ -61,8 +73,12 @@ public class IconBehav :
     // UNITY
     // ============================================================
 
-    private void Awake()
+    private void Start()
     {
+        // --------------------------------------------------------
+        // MAP MANAGER
+        // --------------------------------------------------------
+
         if (mapManager == null)
         {
             mapManager =
@@ -70,19 +86,44 @@ public class IconBehav :
         }
 
 
+        // --------------------------------------------------------
+        // ENCOUNTER MANAGER
+        // --------------------------------------------------------
+
+        if (encounterManager == null)
+        {
+            encounterManager =
+                FindFirstObjectByType<EncounterManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // TRANSITION MANAGER
+        // --------------------------------------------------------
+
+        if (transitionManager == null)
+        {
+            transitionManager =
+                FindFirstObjectByType<transitionGameManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // VISUALS
+        // --------------------------------------------------------
+
         RefreshVisuals();
     }
 
 
     private void LateUpdate()
     {
-        clickedThisFrame =
-            false;
+        clickedThisFrame = false;
     }
 
 
     // ============================================================
-    // UI CLICK
+    // POINTER CLICK
     // ============================================================
 
     public void OnPointerClick(
@@ -93,7 +134,7 @@ public class IconBehav :
 
 
     // ============================================================
-    // WORLD SPACE CLICK
+    // MOUSE CLICK
     // ============================================================
 
     private void OnMouseDown()
@@ -108,88 +149,153 @@ public class IconBehav :
 
     public void StartLevel()
     {
+        // --------------------------------------------------------
+        // PREVENT DOUBLE CLICK
+        // --------------------------------------------------------
+
         if (clickedThisFrame)
-        {
             return;
-        }
 
-
-        clickedThisFrame =
-            true;
+        clickedThisFrame = true;
 
 
         // --------------------------------------------------------
-        // LOCKED
+        // CHECK UNLOCKED
         // --------------------------------------------------------
 
         if (!isUnlocked)
         {
+            Debug.Log(
+                "[IconBehav] Node is locked.",
+                this
+            );
+
             return;
         }
 
 
         // --------------------------------------------------------
-        // COMPLETED
+        // CHECK COMPLETED
         // --------------------------------------------------------
 
         if (isCompleted)
         {
+            Debug.Log(
+                "[IconBehav] Node is already completed.",
+                this
+            );
+
             return;
         }
 
 
         // --------------------------------------------------------
-        // MAP MANAGER
-        // --------------------------------------------------------
-
-        if (mapManager == null)
-        {
-            mapManager =
-                FindFirstObjectByType<LevelMapManager>();
-        }
-
-
-        if (mapManager == null)
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // ENCOUNTER
+        // CHECK ENCOUNTER
         // --------------------------------------------------------
 
         if (encounter == null)
         {
+            Debug.LogError(
+                "[IconBehav] No EncounterDefinition assigned!",
+                this
+            );
+
             return;
         }
 
 
         // --------------------------------------------------------
-        // SEND CLICK TO MAP MANAGER
+        // FIND ENCOUNTER MANAGER
         // --------------------------------------------------------
 
-        mapManager.HandleNodeClicked(
-            this
+        if (encounterManager == null)
+        {
+            encounterManager =
+                FindFirstObjectByType<EncounterManager>();
+        }
+
+
+        if (encounterManager == null)
+        {
+            Debug.LogError(
+                "[IconBehav] EncounterManager was not found in the scene!",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // SET CURRENT ENCOUNTER
+        // --------------------------------------------------------
+        //
+        // We do NOT start the encounter here.
+        //
+        // We only tell EncounterManager which encounter was
+        // selected.
+        //
+        // The actual encounter will start when the transition
+        // reaches its peak.
+        // --------------------------------------------------------
+
+        encounterManager.SetCurrentEncounter(
+            encounter
         );
+
+
+        // --------------------------------------------------------
+        // FIND TRANSITION MANAGER
+        // --------------------------------------------------------
+
+        if (transitionManager == null)
+        {
+            transitionManager =
+                FindFirstObjectByType<transitionGameManager>();
+        }
+
+
+        if (transitionManager == null)
+        {
+            Debug.LogError(
+                "[IconBehav] transitionGameManager was not found in the scene!",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // START TRANSITION
+        // --------------------------------------------------------
+        //
+        // IMPORTANT:
+        // This should ONLY start the transition animation.
+        //
+        // It should NOT start the encounter yet.
+        //
+        // The transition animation will call:
+        //
+        // StartEncounterAtPeak()
+        //
+        // using an Animation Event.
+        // --------------------------------------------------------
+
+        transitionManager.TransitionPeakProcess();
     }
 
 
     // ============================================================
-    // SET ENCOUNTER
+    // ENCOUNTER
     // ============================================================
 
     public void SetEncounter(
         EncounterDefinition newEncounter)
     {
-        encounter =
-            newEncounter;
+        encounter = newEncounter;
     }
 
-
-    // ============================================================
-    // GET ENCOUNTER
-    // ============================================================
 
     public EncounterDefinition GetEncounter()
     {
@@ -198,7 +304,19 @@ public class IconBehav :
 
 
     // ============================================================
-    // SET MAP MANAGER
+    // ENCOUNTER MANAGER
+    // ============================================================
+
+    public void SetEncounterManager(
+        EncounterManager newEncounterManager)
+    {
+        encounterManager =
+            newEncounterManager;
+    }
+
+
+    // ============================================================
+    // MAP MANAGER
     // ============================================================
 
     public void SetMapManager(
@@ -210,20 +328,15 @@ public class IconBehav :
 
 
     // ============================================================
-    // SET NODE STATE
+    // NODE STATE
     // ============================================================
 
     public void SetNodeState(
         bool unlocked,
         bool completed)
     {
-        isUnlocked =
-            unlocked;
-
-
-        isCompleted =
-            completed;
-
+        isUnlocked = unlocked;
+        isCompleted = completed;
 
         RefreshVisuals();
     }
@@ -235,6 +348,10 @@ public class IconBehav :
 
     private void RefreshVisuals()
     {
+        // --------------------------------------------------------
+        // LOCKED
+        // --------------------------------------------------------
+
         if (lockedVisual != null)
         {
             lockedVisual.SetActive(
@@ -244,6 +361,10 @@ public class IconBehav :
         }
 
 
+        // --------------------------------------------------------
+        // UNLOCKED
+        // --------------------------------------------------------
+
         if (unlockedVisual != null)
         {
             unlockedVisual.SetActive(
@@ -252,6 +373,10 @@ public class IconBehav :
             );
         }
 
+
+        // --------------------------------------------------------
+        // COMPLETED
+        // --------------------------------------------------------
 
         if (completedVisual != null)
         {
@@ -263,7 +388,7 @@ public class IconBehav :
 
 
     // ============================================================
-    // ACCESSORS
+    // GETTERS
     // ============================================================
 
     public bool IsUnlocked()
