@@ -6,7 +6,11 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    public static HoverInfoTrigger CurrentSelection { get; private set; }
+    public static HoverInfoTrigger CurrentSelection
+    {
+        get;
+        private set;
+    }
 
 
     // ============================================================
@@ -14,7 +18,9 @@ public class UIManager : MonoBehaviour
     // ============================================================
 
     [Header("Click Raycast")]
-    [SerializeField] private Camera clickCamera;
+
+    [SerializeField]
+    private Camera clickCamera;
 
     [SerializeField]
     private LayerMask clickLayers = ~0;
@@ -28,6 +34,7 @@ public class UIManager : MonoBehaviour
     // ============================================================
 
     [Header("Movement")]
+
     [SerializeField]
     private bool allowPlayerMovement = true;
 
@@ -37,6 +44,7 @@ public class UIManager : MonoBehaviour
     // ============================================================
 
     [Header("Chain Lightning")]
+
     [SerializeField]
     private GridChainHighlight gridChainHighlight;
 
@@ -54,24 +62,42 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (
+            Instance != null &&
+            Instance != this
+        )
         {
             Destroy(gameObject);
             return;
         }
 
+
         Instance = this;
 
 
-        if (clickCamera == null)
-            clickCamera = Camera.main;
+        // --------------------------------------------------------
+        // CAMERA
+        // --------------------------------------------------------
 
+        if (clickCamera == null)
+        {
+            clickCamera = Camera.main;
+        }
+
+
+        // --------------------------------------------------------
+        // CANVAS INFO
+        // --------------------------------------------------------
 
         canvasInfoManager =
             FindFirstObjectByType<
                 CanvasInfoManager
             >();
 
+
+        // --------------------------------------------------------
+        // CHAIN LIGHTNING
+        // --------------------------------------------------------
 
         if (gridChainHighlight == null)
         {
@@ -102,8 +128,10 @@ public class UIManager : MonoBehaviour
         if (Mouse.current == null)
             return;
 
+
         if (
-            !Mouse.current.rightButton
+            !Mouse.current
+                .rightButton
                 .wasPressedThisFrame
         )
         {
@@ -117,7 +145,12 @@ public class UIManager : MonoBehaviour
 
         if (HasSelectedAbility())
         {
-            ClearSelectedAbility();
+            // Right-clicking cancels the ability
+            // and returns the camera to the unit.
+
+            ClearSelectedAbility(
+                true
+            );
 
             return;
         }
@@ -146,7 +179,8 @@ public class UIManager : MonoBehaviour
 
 
         if (
-            !Mouse.current.leftButton
+            !Mouse.current
+                .leftButton
                 .wasPressedThisFrame
         )
         {
@@ -155,7 +189,9 @@ public class UIManager : MonoBehaviour
 
 
         Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
+            Mouse.current
+                .position
+                .ReadValue();
 
 
         // --------------------------------------------------------
@@ -163,7 +199,9 @@ public class UIManager : MonoBehaviour
         // --------------------------------------------------------
 
         if (TryHandleAbilityUI())
+        {
             return;
+        }
 
 
         // --------------------------------------------------------
@@ -185,7 +223,9 @@ public class UIManager : MonoBehaviour
 
 
         HoverInfoTrigger clickedTrigger =
-            GetClickedTrigger(hit);
+            GetClickedTrigger(
+                hit
+            );
 
 
         // --------------------------------------------------------
@@ -244,6 +284,10 @@ public class UIManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // ABILITY UI
+    // ============================================================
+
     private bool TryHandleAbilityUI()
     {
         if (canvasInfoManager == null)
@@ -263,6 +307,9 @@ public class UIManager : MonoBehaviour
         // ABILITY WAS SELECTED
         // ========================================================
 
+        // Move the camera to the overview
+        // so the player can see the battlefield.
+
         if (CanvasJuiceManager.Instance != null)
         {
             CanvasJuiceManager.Instance
@@ -281,10 +328,11 @@ public class UIManager : MonoBehaviour
             return null;
 
 
-        return hit.collider
-            .GetComponentInParent<
-                HoverInfoTrigger
-            >();
+        return
+            hit.collider
+                .GetComponentInParent<
+                    HoverInfoTrigger
+                >();
     }
 
 
@@ -382,17 +430,32 @@ public class UIManager : MonoBehaviour
     {
         return
             canvasInfoManager != null &&
-            canvasInfoManager.HasSelectedAbility();
+            canvasInfoManager
+                .HasSelectedAbility();
     }
 
 
-    private void ClearSelectedAbility()
+    // ============================================================
+    // CLEAR SELECTED ABILITY
+    // ============================================================
+
+    private void ClearSelectedAbility(
+        bool returnCameraToUnit = true)
     {
+        // --------------------------------------------------------
+        // CHAIN LIGHTNING PREVIEW
+        // --------------------------------------------------------
+
         if (gridChainHighlight != null)
         {
-            gridChainHighlight.EndPreview();
+            gridChainHighlight
+                .EndPreview();
         }
 
+
+        // --------------------------------------------------------
+        // CLEAR UI ABILITY
+        // --------------------------------------------------------
 
         if (canvasInfoManager != null)
         {
@@ -401,11 +464,24 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // ========================================================
-        // RETURN CAMERA TO SELECTED UNIT
-        // ========================================================
+        // --------------------------------------------------------
+        // CAMERA
+        // --------------------------------------------------------
+        //
+        // IMPORTANT:
+        //
+        // returnCameraToUnit = true
+        //      Used when canceling an ability.
+        //
+        // returnCameraToUnit = false
+        //      Used after successfully using an ability.
+        //
+        // This lets the camera remain on the
+        // battlefield so the attack can be seen.
+        //
 
         if (
+            returnCameraToUnit &&
             CurrentSelection != null &&
             CanvasJuiceManager.Instance != null
         )
@@ -554,6 +630,10 @@ public class UIManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // BOMB ABILITY
+    // ============================================================
+
     private bool UseBombAbility(
         AttackUnit attackUnit,
         AbilitySO ability,
@@ -570,12 +650,30 @@ public class UIManager : MonoBehaviour
             return false;
 
 
-        ClearSelectedAbility();
+        // ========================================================
+        // IMPORTANT
+        // ========================================================
+        //
+        // Clear the selected ability,
+        // but KEEP the camera at the
+        // ability overview position.
+        //
+        // This lets the player see
+        // the bomb attack.
+        //
+
+        ClearSelectedAbility(
+            false
+        );
 
 
         return true;
     }
 
+
+    // ============================================================
+    // NORMAL ABILITY
+    // ============================================================
 
     private bool UseNormalAbility(
         AttackUnit attackUnit,
@@ -617,7 +715,20 @@ public class UIManager : MonoBehaviour
             return false;
 
 
-        ClearSelectedAbility();
+        // ========================================================
+        // IMPORTANT
+        // ========================================================
+        //
+        // Keep the camera at the
+        // battlefield position.
+        //
+        // The attack animation can
+        // now be seen.
+        //
+
+        ClearSelectedAbility(
+            false
+        );
 
 
         return true;
@@ -647,10 +758,11 @@ public class UIManager : MonoBehaviour
             );
 
 
-        return gridManager
-            .WorldToGridPosition(
-                worldPosition
-            );
+        return
+            gridManager
+                .WorldToGridPosition(
+                    worldPosition
+                );
     }
 
 
@@ -663,9 +775,10 @@ public class UIManager : MonoBehaviour
 
 
         Vector3 worldPosition =
-            gridManager.GridToWorldPosition(
-                tile
-            );
+            gridManager
+                .GridToWorldPosition(
+                    tile
+                );
 
 
         Collider2D[] colliders =
@@ -686,13 +799,17 @@ public class UIManager : MonoBehaviour
 
 
             HoverInfoTrigger trigger =
-                collider.GetComponentInParent<
-                    HoverInfoTrigger
-                >();
+                collider
+                    .GetComponentInParent<
+                        HoverInfoTrigger
+                    >();
 
 
             if (trigger != null)
-                return trigger.gameObject;
+            {
+                return
+                    trigger.gameObject;
+            }
         }
 
 
@@ -816,8 +933,10 @@ public class UIManager : MonoBehaviour
         }
 
 
-        GridHighlightManager highlightManager =
-            gridManager.GetHighlightManager();
+        GridHighlightManager
+            highlightManager =
+                gridManager
+                    .GetHighlightManager();
 
 
         if (highlightManager == null)
@@ -905,7 +1024,9 @@ public class UIManager : MonoBehaviour
             trigger;
 
 
-        trigger.SetSelected(true);
+        trigger.SetSelected(
+            true
+        );
 
 
         ShowMovementRange(
@@ -916,10 +1037,6 @@ public class UIManager : MonoBehaviour
         // ========================================================
         // CAMERA
         // ========================================================
-        //
-        // Camera moves to the clicked unit.
-        // It does NOT move when hovering.
-        //
 
         if (CanvasJuiceManager.Instance != null)
         {
@@ -978,9 +1095,6 @@ public class UIManager : MonoBehaviour
         // ========================================================
         // CAMERA
         // ========================================================
-        //
-        // Return camera to normal position.
-        //
 
         if (CanvasJuiceManager.Instance != null)
         {
@@ -1053,8 +1167,10 @@ public class UIManager : MonoBehaviour
             return;
 
 
-        GridHighlightManager highlightManager =
-            gridManager.GetHighlightManager();
+        GridHighlightManager
+            highlightManager =
+                gridManager
+                    .GetHighlightManager();
 
 
         if (highlightManager == null)
@@ -1072,11 +1188,12 @@ public class UIManager : MonoBehaviour
             moveBrain.GetMoveRange();
 
 
-        highlightManager.ShowMovementRange(
-            position,
-            moveRange,
-            trigger.gameObject
-        );
+        highlightManager
+            .ShowMovementRange(
+                position,
+                moveRange,
+                trigger.gameObject
+            );
     }
 
 
@@ -1113,8 +1230,10 @@ public class UIManager : MonoBehaviour
             return;
 
 
-        GridHighlightManager highlightManager =
-            gridManager.GetHighlightManager();
+        GridHighlightManager
+            highlightManager =
+                gridManager
+                    .GetHighlightManager();
 
 
         if (highlightManager != null)
