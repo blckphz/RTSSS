@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -9,9 +9,9 @@ public class IconBehav :
     IPointerEnterHandler,
     IPointerExitHandler
 {
-    // =========================================================
+    // ============================================================
     // ENCOUNTER
-    // =========================================================
+    // ============================================================
 
     [Header("Encounter")]
     [SerializeField]
@@ -21,18 +21,18 @@ public class IconBehav :
     private EncounterManager encounterManager;
 
 
-    // =========================================================
+    // ============================================================
     // MAP
-    // =========================================================
+    // ============================================================
 
     [Header("Map")]
     [SerializeField]
     private LevelMapManager mapManager;
 
 
-    // =========================================================
+    // ============================================================
     // NODE STATE
-    // =========================================================
+    // ============================================================
 
     [Header("Node State")]
     [SerializeField]
@@ -42,9 +42,9 @@ public class IconBehav :
     private bool isCompleted;
 
 
-    // =========================================================
+    // ============================================================
     // VISUALS
-    // =========================================================
+    // ============================================================
 
     [Header("Visuals")]
     [SerializeField]
@@ -57,17 +57,17 @@ public class IconBehav :
     private GameObject completedVisual;
 
 
-    // =========================================================
+    // ============================================================
     // HOVER INFO
-    // =========================================================
+    // ============================================================
 
     [Header("Hover Info")]
     private TMP_Text hoverInfoText;
 
 
-    // =========================================================
+    // ============================================================
     // HOVER ANIMATION
-    // =========================================================
+    // ============================================================
 
     [Header("Hover Animation")]
     [SerializeField]
@@ -77,9 +77,9 @@ public class IconBehav :
     private float hoverSpeed = 8f;
 
 
-    // =========================================================
+    // ============================================================
     // CLICK ANIMATION
-    // =========================================================
+    // ============================================================
 
     [Header("Click Animation")]
     [SerializeField]
@@ -89,18 +89,30 @@ public class IconBehav :
     private float clickDuration = 0.12f;
 
 
-    // =========================================================
+    // ============================================================
     // TRANSITION
-    // =========================================================
+    // ============================================================
 
     [Header("Transition")]
     [SerializeField]
     private transitionGameManager transitionManager;
 
 
-    // =========================================================
+    // ============================================================
+    // AUDIO
+    // ============================================================
+
+    [Header("Audio")]
+    [SerializeField]
+    private AudioSource audioSource;
+
+    [SerializeField]
+    private AudioClip clickSound;
+
+
+    // ============================================================
     // INTERNAL
-    // =========================================================
+    // ============================================================
 
     private bool clickedThisFrame;
 
@@ -108,20 +120,33 @@ public class IconBehav :
 
     private Coroutine scaleCoroutine;
 
+    private bool isHovering;
 
-    // =========================================================
-    // START
-    // =========================================================
 
-    private void Start()
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
+    private void Awake()
     {
-        // Save the original scale of the icon.
+        // Save the original icon scale.
         originalScale = transform.localScale;
 
 
-        // -----------------------------------------------------
-        // FIND MANAGERS
-        // -----------------------------------------------------
+        // --------------------------------------------------------
+        // FIND ENCOUNTER MANAGER
+        // --------------------------------------------------------
+
+        if (encounterManager == null)
+        {
+            encounterManager =
+                FindFirstObjectByType<EncounterManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // FIND MAP MANAGER
+        // --------------------------------------------------------
 
         if (mapManager == null)
         {
@@ -130,10 +155,49 @@ public class IconBehav :
         }
 
 
+        // --------------------------------------------------------
+        // FIND TRANSITION MANAGER
+        // --------------------------------------------------------
+
+        if (transitionManager == null)
+        {
+            transitionManager =
+                FindFirstObjectByType<transitionGameManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // FIND AUDIO SOURCE
+        // --------------------------------------------------------
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
+    }
+
+
+    // ============================================================
+    // START
+    // ============================================================
+
+    private void Start()
+    {
+        // Managers may have been spawned after Awake,
+        // so try again if necessary.
+
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
+        }
+
+
+        if (mapManager == null)
+        {
+            mapManager =
+                FindFirstObjectByType<LevelMapManager>();
         }
 
 
@@ -144,65 +208,70 @@ public class IconBehav :
         }
 
 
-        // -----------------------------------------------------
-        // FIND LEVEL DESCRIPTION
-        // -----------------------------------------------------
-
+        // Find the LevelDesc TMP.
         FindLevelDescription();
 
 
-        // -----------------------------------------------------
-        // REFRESH NODE VISUAL
-        // -----------------------------------------------------
-
+        // Update locked/unlocked/completed visuals.
         RefreshVisuals();
 
 
-        // -----------------------------------------------------
-        // HIDE DESCRIPTION
-        // -----------------------------------------------------
-
+        // Hide hover description at startup.
         HideHoverInfo();
     }
 
 
-    // =========================================================
-    // LATE UPDATE
-    // =========================================================
-
-    private void LateUpdate()
-    {
-        clickedThisFrame = false;
-    }
-
-
-    // =========================================================
+    // ============================================================
     // POINTER CLICK
-    // =========================================================
+    // ============================================================
 
-    public void OnPointerClick(PointerEventData eventData)
+    public void OnPointerClick(
+        PointerEventData eventData)
     {
         StartLevel();
     }
 
 
-    // =========================================================
-    // POINTER ENTER
-    // =========================================================
+    // ============================================================
+    // MOUSE CLICK
+    // ============================================================
 
-    public void OnPointerEnter(PointerEventData eventData)
+    private void OnMouseDown()
     {
-        // Show encounter information.
+        StartLevel();
+    }
+
+
+    // ============================================================
+    // POINTER ENTER
+    // ============================================================
+
+    public void OnPointerEnter(
+        PointerEventData eventData)
+    {
+        isHovering = true;
+
+
+        // --------------------------------------------------------
+        // SHOW DESCRIPTION
+        // --------------------------------------------------------
+
         ShowHoverInfo();
 
 
-        // Scale icon up.
+        // --------------------------------------------------------
+        // HOVER SCALE
+        // --------------------------------------------------------
+
         StartScaleAnimation(
             originalScale * hoverScale
         );
 
 
-        // Play map node hover sound.
+        // --------------------------------------------------------
+        // HOVER SOUND
+        // --------------------------------------------------------
+
         if (AudioFXManager.Instance != null)
         {
             AudioFXManager.Instance.PlayMapNodeHover();
@@ -210,169 +279,286 @@ public class IconBehav :
     }
 
 
-    // =========================================================
+    // ============================================================
     // POINTER EXIT
-    // =========================================================
+    // ============================================================
 
-    public void OnPointerExit(PointerEventData eventData)
+    public void OnPointerExit(
+        PointerEventData eventData)
     {
-        // Hide encounter information.
+        isHovering = false;
+
+
+        // --------------------------------------------------------
+        // HIDE DESCRIPTION
+        // --------------------------------------------------------
+
         HideHoverInfo();
 
 
-        // Return icon to normal size.
+        // --------------------------------------------------------
+        // RETURN TO NORMAL SCALE
+        // --------------------------------------------------------
+
         StartScaleAnimation(
             originalScale
         );
     }
 
 
-    // =========================================================
-    // FIND LEVEL DESCRIPTION
-    // =========================================================
+    // ============================================================
+    // START LEVEL
+    // ============================================================
 
-    private void FindLevelDescription()
+    public void StartLevel()
     {
-        GameObject levelDesc =
-            GameObject.Find("LevelDesc");
+        // Prevent OnPointerClick + OnMouseDown
+        // from triggering twice.
 
-
-        if (levelDesc == null)
+        if (clickedThisFrame)
         {
-            Debug.LogError(
-                "[IconBehav] Could not find GameObject named 'LevelDesc'."
+            return;
+        }
+
+
+        clickedThisFrame = true;
+
+
+        CancelInvoke(
+            nameof(ResetClickGuard)
+        );
+
+
+        Invoke(
+            nameof(ResetClickGuard),
+            0.15f
+        );
+
+
+        // ========================================================
+        // CHECK UNLOCKED
+        // ========================================================
+
+        if (!isUnlocked)
+        {
+            Debug.Log(
+                "[IconBehav] Node is locked.",
+                this
             );
 
             return;
         }
 
 
-        // Try to find TMP directly on LevelDesc.
-        hoverInfoText =
-            levelDesc.GetComponent<TMP_Text>();
+        // ========================================================
+        // CHECK COMPLETED
+        // ========================================================
 
-
-        // If it isn't directly on LevelDesc,
-        // search its children.
-        if (hoverInfoText == null)
+        if (isCompleted)
         {
-            hoverInfoText =
-                levelDesc.GetComponentInChildren<TMP_Text>(true);
-        }
-
-
-        if (hoverInfoText == null)
-        {
-            Debug.LogError(
-                "[IconBehav] Could not find a TMP_Text component " +
-                "on or inside LevelDesc.",
-                levelDesc
+            Debug.Log(
+                "[IconBehav] Node is already completed.",
+                this
             );
-        }
-    }
 
-
-    // =========================================================
-    // SHOW HOVER INFO
-    // =========================================================
-
-    private void ShowHoverInfo()
-    {
-        if (hoverInfoText == null)
-        {
             return;
         }
 
+
+        // ========================================================
+        // CHECK ENCOUNTER
+        // ========================================================
 
         if (encounter == null)
         {
+            Debug.LogError(
+                "[IconBehav] Encounter is missing!",
+                this
+            );
+
             return;
         }
 
 
-        string objective =
-            GetObjectiveText();
+        // ========================================================
+        // FIND ENCOUNTER MANAGER
+        // ========================================================
+
+        if (encounterManager == null)
+        {
+            encounterManager =
+                FindFirstObjectByType<EncounterManager>();
+        }
 
 
-        hoverInfoText.text =
-            $"<b>{encounter.encounterName}</b>\n\n" +
-            $"{encounter.description}\n\n" +
-            $"<b>Objective:</b> {objective}";
+        if (encounterManager == null)
+        {
+            Debug.LogError(
+                "[IconBehav] EncounterManager was not found!",
+                this
+            );
+
+            return;
+        }
 
 
-        // Enable TMP instead of disabling LevelDesc.
+        // ========================================================
+        // MAKE SURE NO ENCOUNTER IS RUNNING
+        // ========================================================
+
+        if (encounterManager.IsEncounterRunning())
+        {
+            Debug.LogWarning(
+                "[IconBehav] An encounter is already running.",
+                this
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // FIND MAP MANAGER
+        // ========================================================
+
+        if (mapManager == null)
+        {
+            mapManager =
+                FindFirstObjectByType<LevelMapManager>();
+        }
+
+
+        if (mapManager == null)
+        {
+            Debug.LogError(
+                "[IconBehav] LevelMapManager was not found!",
+                this
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // SELECT NODE
+        // ========================================================
         //
-        // This is important because GameObject.Find()
-        // only finds active GameObjects.
-        hoverInfoText.enabled = true;
+        // IMPORTANT:
+        //
+        // SetCurrentNode() is VOID in your current
+        // LevelMapManager.
+        //
+        // It also calls SelectRoute().
+        //
+        // So if we have:
+        //
+        //        B       C
+        //         \     /
+        //           A
+        //
+        // and choose B:
+        //
+        //        B       C
+        //        🔓      🔒
+        //
+        // C becomes locked.
+        //
+        // ========================================================
+
+        mapManager.SetCurrentNode(this);
+
+
+        // ========================================================
+        // SET CURRENT ENCOUNTER
+        // ========================================================
+
+        encounterManager.SetCurrentEncounter(
+            encounter
+        );
+
+
+        // ========================================================
+        // CLICK SOUND
+        // ========================================================
+
+        PlayClickSound();
+
+
+        // ========================================================
+        // CLICK POP
+        // ========================================================
+
+        StartCoroutine(
+            ClickPop()
+        );
+
+
+        // ========================================================
+        // FIND TRANSITION MANAGER
+        // ========================================================
+
+        if (transitionManager == null)
+        {
+            transitionManager =
+                FindFirstObjectByType<transitionGameManager>();
+        }
+
+
+        if (transitionManager == null)
+        {
+            Debug.LogError(
+                "[IconBehav] transitionGameManager was not found!",
+                this
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // LEVEL ENTER SOUND
+        // ========================================================
+
+        if (AudioFXManager.Instance != null)
+        {
+            AudioFXManager.Instance.PlayLevelEnter();
+        }
+
+
+        // ========================================================
+        // DEBUG
+        // ========================================================
+
+        Debug.Log(
+            $"[IconBehav] Starting encounter: {encounter.encounterName}",
+            this
+        );
+
+
+        // ========================================================
+        // START TRANSITION
+        // ========================================================
+
+        transitionManager.TransitionPeakProcess();
     }
 
 
-    // =========================================================
-    // HIDE HOVER INFO
-    // =========================================================
+    // ============================================================
+    // CLICK GUARD RESET
+    // ============================================================
 
-    private void HideHoverInfo()
+    private void ResetClickGuard()
     {
-        if (hoverInfoText != null)
-        {
-            // Do NOT disable the LevelDesc GameObject.
-            // Only disable the TMP component.
-            hoverInfoText.enabled = false;
-        }
+        clickedThisFrame = false;
     }
 
 
-    // =========================================================
-    // OBJECTIVE TEXT
-    // =========================================================
+    // ============================================================
+    // HOVER SCALE ANIMATION
+    // ============================================================
 
-    private string GetObjectiveText()
-    {
-        if (encounter == null)
-        {
-            return string.Empty;
-        }
-
-
-        switch (encounter.victoryCondition)
-        {
-            case VictoryCondition.DefeatAllEnemies:
-
-                return "Defeat all enemies.";
-
-
-            case VictoryCondition.SurviveRounds:
-
-                return
-                    $"Survive {encounter.roundsToSurvive} rounds.";
-
-
-            case VictoryCondition.DefeatSpecificEnemy:
-
-                if (string.IsNullOrWhiteSpace(
-                    encounter.targetEnemyId))
-                {
-                    return "Defeat the target enemy.";
-                }
-
-
-                return
-                    $"Defeat {encounter.targetEnemyId}.";
-
-
-            default:
-
-                return "Unknown objective.";
-        }
-    }
-
-
-    // =========================================================
-    // SCALE ANIMATION
-    // =========================================================
-
-    private void StartScaleAnimation(Vector3 targetScale)
+    private void StartScaleAnimation(
+        Vector3 targetScale)
     {
         if (scaleCoroutine != null)
         {
@@ -387,7 +573,12 @@ public class IconBehav :
     }
 
 
-    private IEnumerator ScaleTo(Vector3 targetScale)
+    // ============================================================
+    // SCALE TO TARGET
+    // ============================================================
+
+    private IEnumerator ScaleTo(
+        Vector3 targetScale)
     {
         Vector3 startScale =
             transform.localScale;
@@ -431,35 +622,52 @@ public class IconBehav :
     }
 
 
-    // =========================================================
-    // CLICK POP
-    // =========================================================
+    // ============================================================
+    // CLICK POP ANIMATION
+    // ============================================================
 
     private IEnumerator ClickPop()
     {
         // Stop hover animation.
         if (scaleCoroutine != null)
         {
-            StopCoroutine(scaleCoroutine);
+            StopCoroutine(
+                scaleCoroutine
+            );
+
             scaleCoroutine = null;
         }
 
+
+        // --------------------------------------------------------
+        // START SCALE
+        // --------------------------------------------------------
 
         Vector3 startScale =
             transform.localScale;
 
 
-        Vector3 bigScale =
-            originalScale * clickScale;
+        // --------------------------------------------------------
+        // BIG SCALE
+        // --------------------------------------------------------
 
+        Vector3 bigScale =
+            originalScale *
+            clickScale;
+
+
+        // --------------------------------------------------------
+        // SMALL SCALE
+        // --------------------------------------------------------
 
         Vector3 smallScale =
-            originalScale * 0.9f;
+            originalScale *
+            0.9f;
 
 
-        // -----------------------------------------------------
+        // ========================================================
         // GROW
-        // -----------------------------------------------------
+        // ========================================================
 
         float time = 0f;
 
@@ -491,9 +699,9 @@ public class IconBehav :
         }
 
 
-        // -----------------------------------------------------
+        // ========================================================
         // SHRINK
-        // -----------------------------------------------------
+        // ========================================================
 
         time = 0f;
 
@@ -525,9 +733,9 @@ public class IconBehav :
         }
 
 
-        // -----------------------------------------------------
+        // ========================================================
         // RETURN TO NORMAL
-        // -----------------------------------------------------
+        // ========================================================
 
         time = 0f;
 
@@ -559,169 +767,188 @@ public class IconBehav :
         }
 
 
+        // --------------------------------------------------------
+        // FINAL SCALE
+        // --------------------------------------------------------
+
         transform.localScale =
             originalScale;
     }
 
 
-    // =========================================================
-    // MOUSE DOWN
-    // =========================================================
+    // ============================================================
+    // FIND LEVEL DESCRIPTION
+    // ============================================================
 
-    private void OnMouseDown()
+    private void FindLevelDescription()
     {
-        StartLevel();
+        GameObject levelDesc =
+            GameObject.Find("LevelDesc");
+
+
+        if (levelDesc == null)
+        {
+            Debug.LogError(
+                "[IconBehav] Could not find GameObject named 'LevelDesc'."
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // LOOK FOR TMP DIRECTLY
+        // --------------------------------------------------------
+
+        hoverInfoText =
+            levelDesc.GetComponent<TMP_Text>();
+
+
+        // --------------------------------------------------------
+        // OTHERWISE SEARCH CHILDREN
+        // --------------------------------------------------------
+
+        if (hoverInfoText == null)
+        {
+            hoverInfoText =
+                levelDesc.GetComponentInChildren<TMP_Text>(
+                    true
+                );
+        }
+
+
+        // --------------------------------------------------------
+        // FAILED
+        // --------------------------------------------------------
+
+        if (hoverInfoText == null)
+        {
+            Debug.LogError(
+                "[IconBehav] Could not find a TMP_Text component " +
+                "on or inside LevelDesc.",
+                levelDesc
+            );
+        }
     }
 
 
-    // =========================================================
-    // START LEVEL
-    // =========================================================
+    // ============================================================
+    // SHOW HOVER INFO
+    // ============================================================
 
-    public void StartLevel()
+    private void ShowHoverInfo()
     {
-        if (clickedThisFrame)
+        if (hoverInfoText == null)
         {
             return;
         }
 
-
-        clickedThisFrame = true;
-
-
-        // -----------------------------------------------------
-        // LOCKED CHECK
-        // -----------------------------------------------------
-
-        if (!isUnlocked)
-        {
-            Debug.Log(
-                "[IconBehav] Node is locked.",
-                this
-            );
-
-            return;
-        }
-
-
-        // -----------------------------------------------------
-        // COMPLETED CHECK
-        // -----------------------------------------------------
-
-        if (isCompleted)
-        {
-            Debug.Log(
-                "[IconBehav] Node is already completed.",
-                this
-            );
-
-            return;
-        }
-
-
-        // -----------------------------------------------------
-        // ENCOUNTER CHECK
-        // -----------------------------------------------------
 
         if (encounter == null)
         {
-            Debug.LogError(
-                "[IconBehav] No EncounterDefinition assigned!",
-                this
-            );
-
             return;
         }
 
 
-        // -----------------------------------------------------
-        // CLICK POP
-        // -----------------------------------------------------
-
-        StartCoroutine(
-            ClickPop()
-        );
+        string objective =
+            GetObjectiveText();
 
 
-        // -----------------------------------------------------
-        // LEVEL ENTER SOUND
-        // -----------------------------------------------------
-
-        if (AudioFXManager.Instance != null)
-        {
-            AudioFXManager.Instance.PlayLevelEnter();
-        }
+        hoverInfoText.text =
+            $"<b>{encounter.encounterName}</b>\n\n" +
+            $"{encounter.description}\n\n" +
+            $"<b>Objective:</b> {objective}";
 
 
-        // -----------------------------------------------------
-        // ENCOUNTER MANAGER
-        // -----------------------------------------------------
+        // Enable TMP only.
+        //
+        // Do NOT disable the LevelDesc GameObject.
+        //
+        // GameObject.Find() only finds active objects.
 
-        if (encounterManager == null)
-        {
-            encounterManager =
-                FindFirstObjectByType<EncounterManager>();
-        }
-
-
-        if (encounterManager == null)
-        {
-            Debug.LogError(
-                "[IconBehav] EncounterManager was not found in the scene!",
-                this
-            );
-
-            return;
-        }
-
-
-        // Set current encounter.
-        encounterManager.SetCurrentEncounter(
-            encounter
-        );
-
-
-        // -----------------------------------------------------
-        // TRANSITION MANAGER
-        // -----------------------------------------------------
-
-        if (transitionManager == null)
-        {
-            transitionManager =
-                FindFirstObjectByType<transitionGameManager>();
-        }
-
-
-        if (transitionManager == null)
-        {
-            Debug.LogError(
-                "[IconBehav] transitionGameManager was not found in the scene!",
-                this
-            );
-
-            return;
-        }
-
-
-        // Start level transition.
-        transitionManager.TransitionPeakProcess();
+        hoverInfoText.enabled = true;
     }
 
 
-    // =========================================================
+    // ============================================================
+    // HIDE HOVER INFO
+    // ============================================================
+
+    private void HideHoverInfo()
+    {
+        if (hoverInfoText != null)
+        {
+            hoverInfoText.enabled = false;
+        }
+    }
+
+
+    // ============================================================
+    // OBJECTIVE TEXT
+    // ============================================================
+
+    private string GetObjectiveText()
+    {
+        if (encounter == null)
+        {
+            return string.Empty;
+        }
+
+
+        switch (encounter.victoryCondition)
+        {
+            case VictoryCondition.DefeatAllEnemies:
+
+                return "Defeat all enemies.";
+
+
+            case VictoryCondition.SurviveRounds:
+
+                return
+                    $"Survive {encounter.roundsToSurvive} rounds.";
+
+
+            case VictoryCondition.DefeatSpecificEnemy:
+
+                if (
+                    string.IsNullOrWhiteSpace(
+                        encounter.targetEnemyId
+                    )
+                )
+                {
+                    return "Defeat the target enemy.";
+                }
+
+
+                return
+                    $"Defeat {encounter.targetEnemyId}.";
+
+
+            default:
+
+                return "Unknown objective.";
+        }
+    }
+
+
+    // ============================================================
     // SET ENCOUNTER
-    // =========================================================
+    // ============================================================
 
     public void SetEncounter(
         EncounterDefinition newEncounter)
     {
-        encounter = newEncounter;
+        encounter =
+            newEncounter;
+
+
+        FindLevelDescription();
     }
 
 
-    // =========================================================
+    // ============================================================
     // GET ENCOUNTER
-    // =========================================================
+    // ============================================================
 
     public EncounterDefinition GetEncounter()
     {
@@ -729,33 +956,45 @@ public class IconBehav :
     }
 
 
-    // =========================================================
+    // ============================================================
     // SET ENCOUNTER MANAGER
-    // =========================================================
+    // ============================================================
 
     public void SetEncounterManager(
-        EncounterManager newEncounterManager)
+        EncounterManager manager)
     {
         encounterManager =
-            newEncounterManager;
+            manager;
     }
 
 
-    // =========================================================
+    // ============================================================
     // SET MAP MANAGER
-    // =========================================================
+    // ============================================================
 
     public void SetMapManager(
-        LevelMapManager newMapManager)
+        LevelMapManager manager)
     {
         mapManager =
-            newMapManager;
+            manager;
     }
 
 
-    // =========================================================
+    // ============================================================
+    // SET TRANSITION MANAGER
+    // ============================================================
+
+    public void SetTransitionManager(
+        transitionGameManager manager)
+    {
+        transitionManager =
+            manager;
+    }
+
+
+    // ============================================================
     // SET NODE STATE
-    // =========================================================
+    // ============================================================
 
     public void SetNodeState(
         bool unlocked,
@@ -772,12 +1011,16 @@ public class IconBehav :
     }
 
 
-    // =========================================================
+    // ============================================================
     // REFRESH VISUALS
-    // =========================================================
+    // ============================================================
 
     private void RefreshVisuals()
     {
+        // --------------------------------------------------------
+        // LOCKED
+        // --------------------------------------------------------
+
         if (lockedVisual != null)
         {
             lockedVisual.SetActive(
@@ -786,6 +1029,10 @@ public class IconBehav :
             );
         }
 
+
+        // --------------------------------------------------------
+        // UNLOCKED
+        // --------------------------------------------------------
 
         if (unlockedVisual != null)
         {
@@ -796,6 +1043,10 @@ public class IconBehav :
         }
 
 
+        // --------------------------------------------------------
+        // COMPLETED
+        // --------------------------------------------------------
+
         if (completedVisual != null)
         {
             completedVisual.SetActive(
@@ -805,9 +1056,9 @@ public class IconBehav :
     }
 
 
-    // =========================================================
+    // ============================================================
     // STATE GETTERS
-    // =========================================================
+    // ============================================================
 
     public bool IsUnlocked()
     {
@@ -818,5 +1069,58 @@ public class IconBehav :
     public bool IsCompleted()
     {
         return isCompleted;
+    }
+
+
+    // ============================================================
+    // CLICK SOUND
+    // ============================================================
+
+    private void PlayClickSound()
+    {
+        if (
+            audioSource == null ||
+            clickSound == null
+        )
+        {
+            return;
+        }
+
+
+        audioSource.PlayOneShot(
+            clickSound
+        );
+    }
+
+
+    // ============================================================
+    // DISABLE
+    // ============================================================
+
+    private void OnDisable()
+    {
+        CancelInvoke(
+            nameof(ResetClickGuard)
+        );
+
+
+        if (scaleCoroutine != null)
+        {
+            StopCoroutine(
+                scaleCoroutine
+            );
+
+            scaleCoroutine = null;
+        }
+
+
+        StopAllCoroutines();
+
+
+        transform.localScale =
+            originalScale;
+
+
+        isHovering = false;
     }
 }

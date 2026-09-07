@@ -28,6 +28,9 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField]
     private string abilityName;
 
+    [SerializeField]
+    private Sprite abilityIcon;
+
     [TextArea]
     [SerializeField]
     private string description;
@@ -846,4 +849,7 @@ public abstract class AbilitySO : ScriptableObject
 
         return true;
     }
+
+    public Sprite GetAbilityIcon() { return abilityIcon; }
+
 }

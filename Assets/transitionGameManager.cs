@@ -1,14 +1,29 @@
+using System.Collections;
 using UnityEngine;
 
 public class transitionGameManager : MonoBehaviour
 {
+    // ============================================================
+    // MAP
+    // ============================================================
+
     [Header("Map")]
     [SerializeField]
     private GameObject mapCanvas;
 
+
+    // ============================================================
+    // TRANSITION
+    // ============================================================
+
     [Header("Transition")]
     [SerializeField]
     private GameObject transitionObject;
+
+
+    // ============================================================
+    // MANAGERS
+    // ============================================================
 
     [Header("Managers")]
     [SerializeField]
@@ -17,7 +32,15 @@ public class transitionGameManager : MonoBehaviour
     [SerializeField]
     private EncounterManager encounterManager;
 
-    // Used to tell the transition what should happen at the peak
+
+    // ============================================================
+    // INTERNAL
+    // ============================================================
+
+    // false = Map -> Combat
+    //
+    // true = Combat -> Map
+
     private bool returningToMap;
 
 
@@ -27,16 +50,53 @@ public class transitionGameManager : MonoBehaviour
 
     private void Awake()
     {
+        // --------------------------------------------------------
+        // FIND GAME STATE MANAGER
+        // --------------------------------------------------------
+
         if (gameStateManager == null)
         {
             gameStateManager =
                 FindFirstObjectByType<GameStateManager>();
         }
 
+
+        // --------------------------------------------------------
+        // FIND ENCOUNTER MANAGER
+        // --------------------------------------------------------
+
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // CHECK MAP
+        // --------------------------------------------------------
+
+        if (mapCanvas == null)
+        {
+            Debug.LogError(
+                "[transitionGameManager] " +
+                "Map Canvas is not assigned!",
+                this
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // CHECK TRANSITION
+        // --------------------------------------------------------
+
+        if (transitionObject == null)
+        {
+            Debug.LogError(
+                "[transitionGameManager] " +
+                "Transition Object is not assigned!",
+                this
+            );
         }
     }
 
@@ -49,14 +109,26 @@ public class transitionGameManager : MonoBehaviour
     {
         returningToMap = false;
 
+
+        Debug.Log(
+            "[transitionGameManager] " +
+            "Starting transition MAP -> COMBAT."
+        );
+
+
+        // --------------------------------------------------------
+        // START TRANSITION ANIMATION
+        // --------------------------------------------------------
+
         if (transitionObject != null)
         {
             transitionObject.SetActive(true);
         }
         else
         {
-            Debug.LogWarning(
-                "[transitionGameManager] Transition Object is not assigned!",
+            Debug.LogError(
+                "[transitionGameManager] " +
+                "Transition Object is not assigned!",
                 this
             );
         }
@@ -71,14 +143,26 @@ public class transitionGameManager : MonoBehaviour
     {
         returningToMap = true;
 
+
+        Debug.Log(
+            "[transitionGameManager] " +
+            "Starting transition COMBAT -> MAP."
+        );
+
+
+        // --------------------------------------------------------
+        // START TRANSITION ANIMATION
+        // --------------------------------------------------------
+
         if (transitionObject != null)
         {
             transitionObject.SetActive(true);
         }
         else
         {
-            Debug.LogWarning(
-                "[transitionGameManager] Transition Object is not assigned!",
+            Debug.LogError(
+                "[transitionGameManager] " +
+                "Transition Object is not assigned!",
                 this
             );
         }
@@ -86,42 +170,64 @@ public class transitionGameManager : MonoBehaviour
 
 
     // ============================================================
-    // CALLED BY TRANSITION ANIMATION AT PEAK
+    // TRANSITION PEAK
+    // ============================================================
+    //
+    // This method is called by the animation event through
+    // transitionLinkManager.
+    //
     // ============================================================
 
     public void StartEncounterAtPeak()
     {
         Debug.Log(
-            "[transitionGameManager] Transition reached peak."
+            "[transitionGameManager] " +
+            "Transition reached peak."
         );
 
-        // --------------------------------------------------------
+
+        // ========================================================
         // RETURNING TO MAP
-        // --------------------------------------------------------
+        // ========================================================
 
         if (returningToMap)
         {
-            if (mapCanvas != null)
+            EnableMap();
+
+
+            // ----------------------------------------------------
+            // MAKE SURE STATE IS MAP
+            // ----------------------------------------------------
+
+            if (gameStateManager == null)
             {
-                mapCanvas.SetActive(true);
+                gameStateManager =
+                    FindFirstObjectByType<GameStateManager>();
             }
 
-            Debug.Log(
-                "[transitionGameManager] Map enabled."
-            );
+
+            if (gameStateManager != null)
+            {
+                gameStateManager.SetGameState(
+                    GameStateManager.GameState.Map
+                );
+            }
+
 
             return;
         }
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // STARTING COMBAT
-        // --------------------------------------------------------
+        // ========================================================
 
-        if (mapCanvas != null)
-        {
-            mapCanvas.SetActive(false);
-        }
+        DisableMap();
+
+
+        // --------------------------------------------------------
+        // FIND GAME STATE MANAGER
+        // --------------------------------------------------------
 
         if (gameStateManager == null)
         {
@@ -129,17 +235,186 @@ public class transitionGameManager : MonoBehaviour
                 FindFirstObjectByType<GameStateManager>();
         }
 
+
         if (gameStateManager == null)
         {
             Debug.LogError(
-                "[transitionGameManager] GameStateManager not found!",
+                "[transitionGameManager] " +
+                "GameStateManager not found!",
                 this
             );
 
             return;
         }
 
+
+        // --------------------------------------------------------
+        // START COMBAT
+        // --------------------------------------------------------
+
+        Debug.Log(
+            "[transitionGameManager] " +
+            "Starting combat."
+        );
+
+
         gameStateManager.StartCombat();
+    }
+
+
+    // ============================================================
+    // ENABLE MAP
+    // ============================================================
+
+    private void EnableMap()
+    {
+        if (mapCanvas == null)
+        {
+            Debug.LogError(
+                "[transitionGameManager] " +
+                "Cannot enable map. " +
+                "mapCanvas is NULL!",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // ENABLE
+        // --------------------------------------------------------
+
+        mapCanvas.SetActive(true);
+
+
+        Debug.Log(
+            "[transitionGameManager] Map enabled.\n" +
+            "Object: " +
+            mapCanvas.name +
+            "\n" +
+            "activeSelf: " +
+            mapCanvas.activeSelf +
+            "\n" +
+            "activeInHierarchy: " +
+            mapCanvas.activeInHierarchy +
+            "\n" +
+            "Parent: " +
+            (
+                mapCanvas.transform.parent != null
+                    ? mapCanvas.transform.parent.name
+                    : "NONE"
+            ),
+            mapCanvas
+        );
+
+
+        // --------------------------------------------------------
+        // CHECK NEXT FRAME
+        // --------------------------------------------------------
+
+        StartCoroutine(
+            CheckMapNextFrame()
+        );
+    }
+
+
+    // ============================================================
+    // DISABLE MAP
+    // ============================================================
+
+    private void DisableMap()
+    {
+        if (mapCanvas == null)
+        {
+            Debug.LogWarning(
+                "[transitionGameManager] " +
+                "Cannot disable map. " +
+                "mapCanvas is NULL!",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // DISABLE
+        // --------------------------------------------------------
+
+        mapCanvas.SetActive(false);
+
+
+        Debug.Log(
+            "[transitionGameManager] Map disabled.\n" +
+            "activeSelf: " +
+            mapCanvas.activeSelf +
+            "\n" +
+            "activeInHierarchy: " +
+            mapCanvas.activeInHierarchy,
+            mapCanvas
+        );
+    }
+
+
+    // ============================================================
+    // MAP DEBUG CHECK
+    // ============================================================
+
+    private IEnumerator CheckMapNextFrame()
+    {
+        yield return null;
+
+
+        if (mapCanvas == null)
+        {
+            yield break;
+        }
+
+
+        Debug.Log(
+            "[transitionGameManager] " +
+            "MAP CHECK - NEXT FRAME\n" +
+            "Object: " +
+            mapCanvas.name +
+            "\n" +
+            "activeSelf: " +
+            mapCanvas.activeSelf +
+            "\n" +
+            "activeInHierarchy: " +
+            mapCanvas.activeInHierarchy,
+            mapCanvas
+        );
+
+
+        // --------------------------------------------------------
+        // CHECK ACTIVE SELF
+        // --------------------------------------------------------
+
+        if (!mapCanvas.activeSelf)
+        {
+            Debug.LogWarning(
+                "[transitionGameManager] WARNING: " +
+                "Map was turned OFF by another script!",
+                mapCanvas
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // CHECK HIERARCHY
+        // --------------------------------------------------------
+
+        if (!mapCanvas.activeInHierarchy)
+        {
+            Debug.LogWarning(
+                "[transitionGameManager] WARNING: " +
+                "Map is activeSelf TRUE but NOT active " +
+                "in hierarchy. Check the Map Canvas " +
+                "parent objects!",
+                mapCanvas
+            );
+        }
     }
 
 
@@ -153,9 +428,18 @@ public class transitionGameManager : MonoBehaviour
             "[transitionGameManager] Transition ended."
         );
 
+
         if (transitionObject != null)
         {
             transitionObject.SetActive(false);
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[transitionGameManager] " +
+                "Transition Object is not assigned!",
+                this
+            );
         }
     }
 }

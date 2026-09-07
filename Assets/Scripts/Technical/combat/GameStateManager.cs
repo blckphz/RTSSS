@@ -3,62 +3,172 @@ using UnityEngine;
 
 public class GameStateManager : MonoBehaviour
 {
+    // ============================================================
+    // GAME STATES
+    // ============================================================
+
     public enum GameState
     {
         MainMenu,
+
+        Map,
+
         PreparingEncounter,
+
         Combat,
+
         Victory,
+
         Defeat,
+
         Rewards,
+
         GameOver
     }
 
+
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
     [Header("References")]
-    [SerializeField] private EncounterManager encounterManager;
+    [SerializeField]
+    private EncounterManager encounterManager;
+
+
+    // ============================================================
+    // INITIAL STATE
+    // ============================================================
 
     [Header("Initial State")]
     [SerializeField]
     private GameState startingState =
         GameState.MainMenu;
 
+
+    // ============================================================
+    // INTERNAL STATE
+    // ============================================================
+
     private GameState currentState;
 
-    public GameState CurrentState => currentState;
 
-    public event Action<GameState> OnGameStateChanged;
+    // ============================================================
+    // PUBLIC STATE
+    // ============================================================
+
+    public GameState CurrentState =>
+        currentState;
+
+
+    // ============================================================
+    // EVENTS
+    // ============================================================
+
+    public event Action<GameState>
+        OnGameStateChanged;
+
+
+    // ============================================================
+    // UNITY
+    // ============================================================
 
     private void Awake()
     {
+        // --------------------------------------------------------
+        // FIND ENCOUNTER MANAGER
+        // --------------------------------------------------------
+
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
 
-        SetGameState(startingState);
+
+        // --------------------------------------------------------
+        // SET INITIAL STATE
+        // --------------------------------------------------------
+
+        currentState =
+            startingState;
+
+
+        Debug.Log(
+            $"[GameStateManager] Initial state: {currentState}"
+        );
     }
 
+
     // ============================================================
-    // STATE
+    // SET GAME STATE
     // ============================================================
 
-    public void SetGameState(GameState newState)
+    public void SetGameState(
+        GameState newState)
     {
+        // --------------------------------------------------------
+        // DON'T DO ANYTHING IF STATE IS ALREADY THE SAME
+        // --------------------------------------------------------
+
         if (currentState == newState)
+        {
             return;
+        }
 
-        currentState = newState;
 
-        OnGameStateChanged?.Invoke(currentState);
+        // --------------------------------------------------------
+        // SAVE NEW STATE
+        // --------------------------------------------------------
+
+        currentState =
+            newState;
+
+
+        Debug.Log(
+            $"[GameStateManager] Game state changed to: {currentState}"
+        );
+
+
+        // --------------------------------------------------------
+        // NOTIFY LISTENERS
+        // --------------------------------------------------------
+
+        OnGameStateChanged?.Invoke(
+            currentState
+        );
     }
 
+
     // ============================================================
-    // ENCOUNTER
+    // ENTER MAP
+    // ============================================================
+
+    public void EnterMap()
+    {
+        SetGameState(
+            GameState.Map
+        );
+    }
+
+
+    // ============================================================
+    // START COMBAT
     // ============================================================
 
     public void StartCombat()
     {
+        // --------------------------------------------------------
+        // CHECK ENCOUNTER MANAGER
+        // --------------------------------------------------------
+
+        if (encounterManager == null)
+        {
+            encounterManager =
+                FindFirstObjectByType<EncounterManager>();
+        }
+
+
         if (encounterManager == null)
         {
             Debug.LogError(
@@ -69,24 +179,60 @@ public class GameStateManager : MonoBehaviour
             return;
         }
 
-        if (currentState != GameState.MainMenu &&
+
+        // --------------------------------------------------------
+        // CHECK CURRENT STATE
+        // --------------------------------------------------------
+        //
+        // Combat can begin from:
+        //
+        // MainMenu
+        // Map
+        // Victory
+        // Defeat
+        //
+        // Normally the map will be the state used when
+        // selecting another node.
+        //
+        // --------------------------------------------------------
+
+        if (
+            currentState != GameState.MainMenu &&
+            currentState != GameState.Map &&
             currentState != GameState.Victory &&
-            currentState != GameState.Defeat)
+            currentState != GameState.Defeat
+        )
         {
             Debug.LogWarning(
-                $"[GameStateManager] Cannot start combat from state {currentState}",
+                $"[GameStateManager] Cannot start combat " +
+                $"from state {currentState}",
                 this
             );
 
             return;
         }
 
+
+        // --------------------------------------------------------
+        // PREPARING ENCOUNTER
+        // --------------------------------------------------------
+
         SetGameState(
             GameState.PreparingEncounter
         );
 
+
+        // --------------------------------------------------------
+        // START ENCOUNTER
+        // --------------------------------------------------------
+
         encounterManager.StartEncounter();
     }
+
+
+    // ============================================================
+    // ENCOUNTER STARTED
+    // ============================================================
 
     public void EncounterStarted()
     {
@@ -95,6 +241,11 @@ public class GameStateManager : MonoBehaviour
         );
     }
 
+
+    // ============================================================
+    // ENCOUNTER VICTORY
+    // ============================================================
+
     public void EncounterVictory()
     {
         SetGameState(
@@ -102,12 +253,18 @@ public class GameStateManager : MonoBehaviour
         );
     }
 
+
+    // ============================================================
+    // ENCOUNTER DEFEAT
+    // ============================================================
+
     public void EncounterDefeat()
     {
         SetGameState(
             GameState.Defeat
         );
     }
+
 
     // ============================================================
     // REWARDS
@@ -119,6 +276,7 @@ public class GameStateManager : MonoBehaviour
             GameState.Rewards
         );
     }
+
 
     // ============================================================
     // GAME OVER

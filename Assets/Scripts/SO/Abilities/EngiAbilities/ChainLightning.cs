@@ -215,7 +215,6 @@ public class ChainLightning : AbilitySO
             user,
             chain,
             projectileSpeed,
-            jumpDelay,
             GetDamage()
         );
 

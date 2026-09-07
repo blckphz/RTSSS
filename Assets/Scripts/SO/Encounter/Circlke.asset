@@ -22,7 +22,7 @@ MonoBehaviour:
   maxRadius: 5
   victoryCondition: 1
   targetEnemyId: 
-  roundsToSurvive: 10
+  roundsToSurvive: 3
   enemies:
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     enemyId: 

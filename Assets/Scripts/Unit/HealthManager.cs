@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class HealthManager : MonoBehaviour
 {
@@ -44,6 +45,55 @@ public class HealthManager : MonoBehaviour
 
     [SerializeField]
     private int health;
+
+
+    // ==================================================
+    // HEALTH BAR
+    // ==================================================
+
+    [Header("Health Bar")]
+    [Tooltip(
+        "UI Image used as the health bar fill. " +
+        "Set Image Type to Filled."
+    )]
+    [SerializeField]
+    private Image healthBarFill;
+
+    [Tooltip(
+        "TextMeshPro text used to display current and maximum health."
+    )]
+    [SerializeField]
+    private TMP_Text healthText;
+
+
+    // ==================================================
+    // HEALTH UI FEEDBACK
+    // ==================================================
+
+    [Header("Health UI Feedback")]
+    [Tooltip(
+        "How large the health number becomes when health changes."
+    )]
+    [SerializeField]
+    private float healthTextPopScale = 1.25f;
+
+    [Tooltip(
+        "Duration of the health number pop animation."
+    )]
+    [SerializeField]
+    private float healthTextPopDuration = 0.12f;
+
+    [Tooltip(
+        "How far the health bar moves during the shake."
+    )]
+    [SerializeField]
+    private float healthBarShakeAmount = 6f;
+
+    [Tooltip(
+        "Duration of the health bar shake."
+    )]
+    [SerializeField]
+    private float healthBarShakeDuration = 0.12f;
 
 
     // ==================================================
@@ -146,6 +196,10 @@ public class HealthManager : MonoBehaviour
 
     private Coroutine flashCoroutine;
 
+    private Coroutine healthTextPopCoroutine;
+
+    private Coroutine healthBarShakeCoroutine;
+
     private int pendingFlashes = 0;
 
     private bool isFlashing = false;
@@ -156,26 +210,20 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
-    // COMBINED DAMAGE BATCH
+    // HEALTH UI REFERENCES
     // ==================================================
-    //
-    // This is GLOBAL.
-    //
-    // Every HealthManager that receives damage while the
-    // batch is active collects its damage.
-    //
-    // Example:
-    //
-    // Player A gets 10
-    // Player A gets 10
-    // Player A gets 10
-    //
-    // Result:
-    //
-    // Player A displays 30
-    //
-    // This also works with AoE because we do not need to
-    // know which targets the ability will hit beforehand.
+
+    private RectTransform healthTextRect;
+
+    private RectTransform healthBarRect;
+
+    private Vector3 healthTextOriginalScale;
+
+    private Vector3 healthBarOriginalPosition;
+
+
+    // ==================================================
+    // COMBINED DAMAGE BATCH
     // ==================================================
 
     private static int combinedDamageBatchDepth = 0;
@@ -183,7 +231,6 @@ public class HealthManager : MonoBehaviour
     private static readonly HashSet<HealthManager>
         combinedDamageManagers =
         new HashSet<HealthManager>();
-
 
     private int combinedDamage = 0;
 
@@ -211,13 +258,72 @@ public class HealthManager : MonoBehaviour
         health =
             maxHealth;
 
+
+        // --------------------------------------------------
+        // MATERIAL
+        // --------------------------------------------------
+
         SetupMaterial();
+
+
+        // --------------------------------------------------
+        // MANAGERS
+        // --------------------------------------------------
 
         audioFXManager =
             AudioFXManager.Instance;
 
         playerDataManager =
             PlayerDataManager.Instance;
+
+
+        // --------------------------------------------------
+        // HEALTH UI REFERENCES
+        // --------------------------------------------------
+
+        SetupHealthUI();
+
+
+        // --------------------------------------------------
+        // INITIAL HEALTH UI
+        // --------------------------------------------------
+
+        UpdateHealthUI();
+    }
+
+
+    // ==================================================
+    // HEALTH UI SETUP
+    // ==================================================
+
+    private void SetupHealthUI()
+    {
+        // --------------------------------------------------
+        // HEALTH TEXT
+        // --------------------------------------------------
+
+        if (healthText != null)
+        {
+            healthTextRect =
+                healthText.rectTransform;
+
+            healthTextOriginalScale =
+                healthTextRect.localScale;
+        }
+
+
+        // --------------------------------------------------
+        // HEALTH BAR
+        // --------------------------------------------------
+
+        if (healthBarFill != null)
+        {
+            healthBarRect =
+                healthBarFill.rectTransform;
+
+            healthBarOriginalPosition =
+                healthBarRect.localPosition;
+        }
     }
 
 
@@ -233,10 +339,12 @@ public class HealthManager : MonoBehaviour
                 GetComponent<SpriteRenderer>();
         }
 
+
         if (spriteRenderer == null)
         {
             return;
         }
+
 
         if (material == null)
         {
@@ -339,6 +447,18 @@ public class HealthManager : MonoBehaviour
 
 
         // --------------------------------------------------
+        // CLAMP HEALTH
+        // --------------------------------------------------
+
+        health =
+            Mathf.Clamp(
+                health,
+                0,
+                maxHealth
+            );
+
+
+        // --------------------------------------------------
         // RESET COMBINED DAMAGE
         // --------------------------------------------------
 
@@ -346,10 +466,72 @@ public class HealthManager : MonoBehaviour
 
 
         // --------------------------------------------------
-        // NOTIFY UI
+        // RESET HEALTH UI TRANSFORMS
+        // --------------------------------------------------
+
+        SetupHealthUI();
+
+        ResetHealthUITransform();
+
+
+        // --------------------------------------------------
+        // UPDATE HEALTH UI
+        // --------------------------------------------------
+
+        UpdateHealthUI();
+
+
+        // --------------------------------------------------
+        // NOTIFY
         // --------------------------------------------------
 
         NotifyHealthChanged();
+    }
+
+
+    // ==================================================
+    // UPDATE HEALTH UI
+    // ==================================================
+
+    private void UpdateHealthUI()
+    {
+        // --------------------------------------------------
+        // HEALTH BAR
+        // --------------------------------------------------
+
+        if (healthBarFill != null)
+        {
+            if (maxHealth <= 0)
+            {
+                healthBarFill.fillAmount =
+                    0f;
+            }
+            else
+            {
+                float fillAmount =
+                    (float)health /
+                    maxHealth;
+
+
+                healthBarFill.fillAmount =
+                    Mathf.Clamp01(
+                        fillAmount
+                    );
+            }
+        }
+
+
+        // --------------------------------------------------
+        // HEALTH TEXT
+        // --------------------------------------------------
+
+        if (healthText != null)
+        {
+            healthText.text =
+                health +
+                " / " +
+                maxHealth;
+        }
     }
 
 
@@ -366,6 +548,7 @@ public class HealthManager : MonoBehaviour
                 0,
                 maxHealth
             );
+
 
         NotifyHealthChanged();
     }
@@ -576,6 +759,7 @@ public class HealthManager : MonoBehaviour
                 "without an active batch."
             );
 
+
             combinedDamageBatchDepth = 0;
 
             return;
@@ -592,19 +776,11 @@ public class HealthManager : MonoBehaviour
         );
 
 
-        // --------------------------------------------------
-        // STILL NESTED
-        // --------------------------------------------------
-
         if (combinedDamageBatchDepth > 0)
         {
             return;
         }
 
-
-        // --------------------------------------------------
-        // FLUSH
-        // --------------------------------------------------
 
         Debug.Log(
             DEBUG_PREFIX +
@@ -631,8 +807,6 @@ public class HealthManager : MonoBehaviour
         );
 
 
-        // Make a copy because spawning damage numbers or
-        // other callbacks should not modify our HashSet.
         List<HealthManager> managers =
             new List<HealthManager>(
                 combinedDamageManagers
@@ -674,7 +848,7 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
-    // FLUSH THIS UNIT'S COMBINED DAMAGE
+    // FLUSH COMBINED DAMAGE
     // ==================================================
 
     private void FlushCombinedDamage()
@@ -700,7 +874,7 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
-    // RESET COMBINED DAMAGE
+    // CANCEL COMBINED DAMAGE
     // ==================================================
 
     public void CancelCombinedDamage()
@@ -708,12 +882,14 @@ public class HealthManager : MonoBehaviour
         Debug.Log(
             DEBUG_PREFIX +
             name +
-            " CancelCombinedDamage(). Previous total = " +
+            " CancelCombinedDamage(). " +
+            "Previous total = " +
             combinedDamage
         );
 
 
         combinedDamage = 0;
+
 
         combinedDamageManagers.Remove(
             this
@@ -741,8 +917,8 @@ public class HealthManager : MonoBehaviour
 
 
         Vector3 spawnPosition =
-            transform.position
-            + damageNumberOffset;
+            transform.position +
+            damageNumberOffset;
 
 
         Transform parent =
@@ -859,8 +1035,30 @@ public class HealthManager : MonoBehaviour
 
     private void NotifyHealthChanged()
     {
+        // --------------------------------------------------
+        // UPDATE BAR + TEXT
+        // --------------------------------------------------
+
+        UpdateHealthUI();
+
+
+        // --------------------------------------------------
+        // POP TEXT + SHAKE BAR
+        // --------------------------------------------------
+
+        PlayHealthUIFeedback();
+
+
+        // --------------------------------------------------
+        // NOTIFY OTHER SYSTEMS
+        // --------------------------------------------------
+
         OnHealthChanged?.Invoke(this);
 
+
+        // --------------------------------------------------
+        // SAVE PLAYER HEALTH
+        // --------------------------------------------------
 
         if (isPlayerCharacter)
         {
@@ -877,6 +1075,273 @@ public class HealthManager : MonoBehaviour
                     health
                 );
             }
+        }
+    }
+
+
+    // ==================================================
+    // HEALTH UI FEEDBACK
+    // ==================================================
+
+    private void PlayHealthUIFeedback()
+    {
+        // --------------------------------------------------
+        // TEXT POP
+        // --------------------------------------------------
+
+        if (healthTextRect != null)
+        {
+            if (healthTextPopCoroutine != null)
+            {
+                StopCoroutine(
+                    healthTextPopCoroutine
+                );
+            }
+
+
+            healthTextPopCoroutine =
+                StartCoroutine(
+                    HealthTextPopCoroutine()
+                );
+        }
+
+
+        // --------------------------------------------------
+        // BAR SHAKE
+        // --------------------------------------------------
+
+        if (healthBarRect != null)
+        {
+            if (healthBarShakeCoroutine != null)
+            {
+                StopCoroutine(
+                    healthBarShakeCoroutine
+                );
+            }
+
+
+            healthBarShakeCoroutine =
+                StartCoroutine(
+                    HealthBarShakeCoroutine()
+                );
+        }
+    }
+
+
+    // ==================================================
+    // HEALTH TEXT POP
+    // ==================================================
+
+    private IEnumerator HealthTextPopCoroutine()
+    {
+        if (healthTextRect == null)
+        {
+            yield break;
+        }
+
+
+        float duration =
+            Mathf.Max(
+                0.01f,
+                healthTextPopDuration
+            );
+
+
+        Vector3 originalScale =
+            healthTextOriginalScale;
+
+
+        Vector3 poppedScale =
+            originalScale *
+            healthTextPopScale;
+
+
+        // --------------------------------------------------
+        // POP UP
+        // --------------------------------------------------
+
+        float timer = 0f;
+
+
+        while (timer < duration * 0.5f)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+
+            float t =
+                timer /
+                (duration * 0.5f);
+
+
+            t =
+                Mathf.Clamp01(t);
+
+
+            t =
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    t
+                );
+
+
+            healthTextRect.localScale =
+                Vector3.Lerp(
+                    originalScale,
+                    poppedScale,
+                    t
+                );
+
+
+            yield return null;
+        }
+
+
+        // --------------------------------------------------
+        // POP DOWN
+        // --------------------------------------------------
+
+        timer = 0f;
+
+
+        while (timer < duration * 0.5f)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+
+            float t =
+                timer /
+                (duration * 0.5f);
+
+
+            t =
+                Mathf.Clamp01(t);
+
+
+            t =
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    t
+                );
+
+
+            healthTextRect.localScale =
+                Vector3.Lerp(
+                    poppedScale,
+                    originalScale,
+                    t
+                );
+
+
+            yield return null;
+        }
+
+
+        healthTextRect.localScale =
+            originalScale;
+
+
+        healthTextPopCoroutine =
+            null;
+    }
+
+
+    // ==================================================
+    // HEALTH BAR SHAKE
+    // ==================================================
+
+    private IEnumerator HealthBarShakeCoroutine()
+    {
+        if (healthBarRect == null)
+        {
+            yield break;
+        }
+
+
+        float duration =
+            Mathf.Max(
+                0.01f,
+                healthBarShakeDuration
+            );
+
+
+        Vector3 originalPosition =
+            healthBarOriginalPosition;
+
+
+        float timer = 0f;
+
+
+        while (timer < duration)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+
+            float t =
+                Mathf.Clamp01(
+                    timer /
+                    duration
+                );
+
+
+            // Shake becomes weaker toward the end.
+            float strength =
+                Mathf.Lerp(
+                    1f,
+                    0f,
+                    t
+                );
+
+
+            Vector2 randomOffset =
+                UnityEngine.Random.insideUnitCircle *
+                healthBarShakeAmount *
+                strength;
+
+
+            healthBarRect.localPosition =
+                originalPosition +
+                new Vector3(
+                    randomOffset.x,
+                    randomOffset.y,
+                    0f
+                );
+
+
+            yield return null;
+        }
+
+
+        healthBarRect.localPosition =
+            originalPosition;
+
+
+        healthBarShakeCoroutine =
+            null;
+    }
+
+
+    // ==================================================
+    // RESET HEALTH UI TRANSFORM
+    // ==================================================
+
+    private void ResetHealthUITransform()
+    {
+        if (healthTextRect != null)
+        {
+            healthTextRect.localScale =
+                healthTextOriginalScale;
+        }
+
+
+        if (healthBarRect != null)
+        {
+            healthBarRect.localPosition =
+                healthBarOriginalPosition;
         }
     }
 
@@ -1166,7 +1631,7 @@ public class HealthManager : MonoBehaviour
 
 
         // --------------------------------------------------
-        // GET ENCOUNTER INFORMATION
+        // ENCOUNTER UNIT
         // --------------------------------------------------
 
         EncounterUnit encounterUnit =
@@ -1201,7 +1666,7 @@ public class HealthManager : MonoBehaviour
 
 
         // --------------------------------------------------
-        // GRID
+        // GRID MANAGER
         // --------------------------------------------------
 
         GridManager gridManager =
@@ -1291,7 +1756,8 @@ public class HealthManager : MonoBehaviour
     public void SetTeam(
         Team newTeam)
     {
-        team = newTeam;
+        team =
+            newTeam;
     }
 
 

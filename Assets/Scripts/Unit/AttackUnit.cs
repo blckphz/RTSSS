@@ -9,7 +9,10 @@ public class AttackUnit : MonoBehaviour
     // STATIC EVENTS
     // ============================================================
 
-    public static event Action<AttackUnit, AbilitySO> OnAbilityUsed;
+    public static event Action<
+        AttackUnit,
+        AbilitySO
+    > OnAbilityUsed;
 
 
     // ============================================================
@@ -27,7 +30,8 @@ public class AttackUnit : MonoBehaviour
 
     [Header("Abilities")]
     [SerializeField]
-    private List<AbilitySO> abilities = new();
+    private List<AbilityData> abilities =
+        new();
 
 
     // ============================================================
@@ -39,18 +43,8 @@ public class AttackUnit : MonoBehaviour
     private HealthManager healthManager;
 
     private UnitMoveBrain moveBrain;
+
     private IAttackAnimation attackAnimation;
-
-
-    // ============================================================
-    // ABILITY STATE
-    // ============================================================
-
-    private readonly Dictionary<AbilitySO, int> abilityCooldowns =
-        new();
-
-    private readonly Dictionary<AbilitySO, int> abilityUsesRemaining =
-        new();
 
 
     // ============================================================
@@ -85,26 +79,26 @@ public class AttackUnit : MonoBehaviour
 
         EnsureGridManager();
 
+
         if (
             !hasLogicalGridPosition &&
             cachedGridManager != null
         )
         {
             logicalGridPosition =
-                cachedGridManager.WorldToGridPosition(
-                    transform.position
-                );
+                cachedGridManager
+                    .WorldToGridPosition(
+                        transform.position
+                    );
 
-            hasLogicalGridPosition = true;
+            hasLogicalGridPosition =
+                true;
         }
+
 
         if (characterData != null)
         {
             Initialize(characterData);
-        }
-        else
-        {
-            InitializeCooldowns();
         }
     }
 
@@ -113,26 +107,51 @@ public class AttackUnit : MonoBehaviour
     // INITIALIZE
     // ============================================================
 
-    public void Initialize(CharacterSO data)
+    public void Initialize(
+        CharacterSO data
+    )
     {
         if (data == null)
         {
             return;
         }
 
+
+        // Reference only.
+        // We do NOT modify the CharacterSO.
         characterData =
             data;
 
+
+        // Remove references from this encounter's
+        // local list.
+        //
+        // The actual AbilityData objects for player
+        // characters are stored by PlayerDataManager.
         abilities.Clear();
+
 
         List<AbilitySO> characterAbilities =
             data.GetAbilities();
 
+
         if (characterAbilities == null)
         {
-            InitializeCooldowns();
             return;
         }
+
+
+        // ========================================================
+        // PLAYER DATA MANAGER
+        // ========================================================
+
+        PlayerDataManager playerDataManager =
+            PlayerDataManager.Instance;
+
+
+        // ========================================================
+        // CREATE / RESTORE ABILITIES
+        // ========================================================
 
         for (
             int i = 0;
@@ -140,30 +159,85 @@ public class AttackUnit : MonoBehaviour
             i++
         )
         {
-            AbilitySO ability =
+            AbilitySO abilitySO =
                 characterAbilities[i];
 
-            if (
-                ability != null &&
-                !abilities.Contains(ability)
-            )
+
+            if (abilitySO == null)
             {
-                abilities.Add(ability);
+                continue;
+            }
+
+
+            AbilityData runtimeAbility;
+
+
+            // ====================================================
+            // PERSISTENT ABILITY DATA
+            // ====================================================
+            //
+            // PlayerDataManager returns the existing AbilityData
+            // if this character/ability already exists.
+            //
+            // Therefore:
+            //
+            // Encounter 1:
+            //     new AbilityData
+            //
+            // Encounter 2:
+            //     same AbilityData
+            //
+            // Encounter 3:
+            //     same AbilityData
+            //
+            // The cooldown is NOT reset.
+            // ====================================================
+
+            if (playerDataManager != null)
+            {
+                runtimeAbility =
+                    playerDataManager
+                        .GetOrCreateAbilityData(
+                            data,
+                            abilitySO
+                        );
+            }
+            else
+            {
+                // Fallback for situations where there is
+                // no PlayerDataManager.
+                //
+                // This keeps the unit functional.
+                runtimeAbility =
+                    new AbilityData(
+                        abilitySO
+                    );
+            }
+
+
+            if (runtimeAbility != null)
+            {
+                abilities.Add(
+                    runtimeAbility
+                );
             }
         }
-
-        InitializeCooldowns();
     }
 
 
     // ============================================================
-    // INITIALIZE ABILITY STATE
+    // GET RUNTIME ABILITY
     // ============================================================
 
-    private void InitializeCooldowns()
+    private AbilityData GetAbilityData(
+        AbilitySO abilitySO
+    )
     {
-        abilityCooldowns.Clear();
-        abilityUsesRemaining.Clear();
+        if (abilitySO == null)
+        {
+            return null;
+        }
+
 
         for (
             int i = 0;
@@ -171,51 +245,44 @@ public class AttackUnit : MonoBehaviour
             i++
         )
         {
-            AbilitySO ability =
+            AbilityData abilityData =
                 abilities[i];
 
-            if (ability == null)
+
+            if (
+                abilityData == null
+            )
             {
                 continue;
             }
 
-            abilityCooldowns[ability] =
-                0;
 
-            abilityUsesRemaining[ability] =
-                ability.GetUsesPerTurn();
+            if (
+                abilityData.GetAbilitySO() ==
+                abilitySO
+            )
+            {
+                return abilityData;
+            }
         }
+
+
+        return null;
     }
 
 
     // ============================================================
-    // ENSURE ABILITY STATE
+    // HAS ABILITY
     // ============================================================
 
-    private bool EnsureAbilityState(
-        AbilitySO ability)
+    public bool HasAbility(
+        AbilitySO abilitySO
+    )
     {
-        if (
-            ability == null ||
-            !abilities.Contains(ability)
-        )
-        {
-            return false;
-        }
-
-        if (!abilityCooldowns.ContainsKey(ability))
-        {
-            abilityCooldowns[ability] =
-                0;
-        }
-
-        if (!abilityUsesRemaining.ContainsKey(ability))
-        {
-            abilityUsesRemaining[ability] =
-                ability.GetUsesPerTurn();
-        }
-
-        return true;
+        return
+            GetAbilityData(
+                abilitySO
+            ) != null;
     }
 
 
@@ -224,7 +291,8 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     public void SetLogicalGridPosition(
-        Vector2Int position)
+        Vector2Int position
+    )
     {
         logicalGridPosition =
             position;
@@ -232,38 +300,53 @@ public class AttackUnit : MonoBehaviour
         hasLogicalGridPosition =
             true;
 
-        if (cachedGridManager == null)
+
+        if (
+            cachedGridManager == null
+        )
         {
             EnsureGridManager();
         }
     }
 
 
-    public Vector2Int GetLogicalGridPosition()
+    public Vector2Int
+        GetLogicalGridPosition()
     {
-        if (!hasLogicalGridPosition)
+        if (
+            !hasLogicalGridPosition
+        )
         {
             EnsureGridManager();
 
-            if (cachedGridManager != null)
+
+            if (
+                cachedGridManager != null
+            )
             {
                 logicalGridPosition =
-                    cachedGridManager.WorldToGridPosition(
-                        transform.position
-                    );
+                    cachedGridManager
+                        .WorldToGridPosition(
+                            transform.position
+                        );
+
 
                 hasLogicalGridPosition =
                     true;
             }
         }
 
-        return logicalGridPosition;
+
+        return
+            logicalGridPosition;
     }
 
 
-    public bool HasLogicalGridPosition()
+    public bool
+        HasLogicalGridPosition()
     {
-        return hasLogicalGridPosition;
+        return
+            hasLogicalGridPosition;
     }
 
 
@@ -271,17 +354,22 @@ public class AttackUnit : MonoBehaviour
     // MOVEMENT STATE
     // ============================================================
 
-    public bool HasMovedThisTurn()
+    public bool
+        HasMovedThisTurn()
     {
         return
             moveBrain != null &&
-            moveBrain.HasConsumedMovement();
+            moveBrain
+                .HasConsumedMovement();
     }
 
 
     public void SetHasMovedThisTurn(
-        bool value)
+        bool value
+    )
     {
+        // Movement state is handled
+        // by UnitMoveBrain.
     }
 
 
@@ -290,27 +378,35 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     public int GetAbilityCooldown(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (!EnsureAbilityState(ability))
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
+
+
+        if (abilityData == null)
         {
             return -1;
         }
 
-        return abilityCooldowns.TryGetValue(
-            ability,
-            out int cooldown
-        )
-            ? cooldown
-            : 0;
+
+        return
+            abilityData
+                .GetCooldownRemaining();
     }
 
 
     public bool IsAbilityOnCooldown(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
         return
-            GetAbilityCooldown(ability) > 0;
+            GetAbilityCooldown(
+                abilitySO
+            ) > 0;
     }
 
 
@@ -319,50 +415,66 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     public int GetAbilityUsesRemaining(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (ability == null)
+        if (abilitySO == null)
         {
             return -1;
         }
 
-        int usesPerTurn =
-            ability.GetUsesPerTurn();
 
-        if (usesPerTurn <= 0)
+        if (
+            abilitySO
+                .GetUsesPerTurn() <= 0
+        )
         {
             return 0;
         }
 
-        if (!EnsureAbilityState(ability))
+
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
+
+
+        if (abilityData == null)
         {
             return -1;
         }
 
-        return abilityUsesRemaining.TryGetValue(
-            ability,
-            out int uses
-        )
-            ? uses
-            : usesPerTurn;
+
+        return
+            abilityData
+                .GetUsesRemaining();
     }
 
 
     public bool HasAbilityUsesRemaining(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (ability == null)
+        if (abilitySO == null)
         {
             return false;
         }
 
-        if (ability.GetUsesPerTurn() <= 0)
+
+        // 0 = unlimited
+        if (
+            abilitySO
+                .GetUsesPerTurn() <= 0
+        )
         {
             return true;
         }
 
+
         return
-            GetAbilityUsesRemaining(ability) > 0;
+            GetAbilityUsesRemaining(
+                abilitySO
+            ) > 0;
     }
 
 
@@ -371,34 +483,40 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     private bool ConsumeAbilityUse(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (ability == null)
+        if (abilitySO == null)
         {
             return false;
         }
 
-        int usesPerTurn =
-            ability.GetUsesPerTurn();
 
-        if (usesPerTurn <= 0)
+        // Unlimited uses.
+        if (
+            abilitySO
+                .GetUsesPerTurn() <= 0
+        )
         {
             return false;
         }
 
-        if (!EnsureAbilityState(ability))
-        {
-            return false;
-        }
 
-        abilityUsesRemaining[ability] =
-            Mathf.Max(
-                0,
-                abilityUsesRemaining[ability] - 1
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
             );
 
+
+        if (abilityData == null)
+        {
+            return false;
+        }
+
+
         return
-            abilityUsesRemaining[ability] <= 0;
+            abilityData
+                .ConsumeUse();
     }
 
 
@@ -407,25 +525,33 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     private bool CanUseAbilityAfterMovement(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (ability == null)
+        if (abilitySO == null)
         {
             return false;
         }
+
 
         if (moveBrain == null)
         {
             return true;
         }
 
-        if (!moveBrain.HasConsumedMovement())
+
+        if (
+            !moveBrain
+                .HasConsumedMovement()
+        )
         {
             return true;
         }
 
+
         return
-            ability.CanAttackWithThisAfterMove();
+            abilitySO
+                .CanAttackWithThisAfterMove();
     }
 
 
@@ -434,26 +560,42 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     public bool IsAbilityReady(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (!EnsureAbilityState(ability))
+        if (
+            !HasAbility(
+                abilitySO
+            )
+        )
         {
             return false;
         }
 
-        if (GetAbilityCooldown(ability) > 0)
+
+        if (
+            GetAbilityCooldown(
+                abilitySO
+            ) > 0
+        )
         {
             return false;
         }
 
-        if (!HasAbilityUsesRemaining(ability))
+
+        if (
+            !HasAbilityUsesRemaining(
+                abilitySO
+            )
+        )
         {
             return false;
         }
+
 
         return
             CanUseAbilityAfterMovement(
-                ability
+                abilitySO
             );
     }
 
@@ -463,10 +605,13 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     public bool CanUseAbility(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
         return
-            IsAbilityReady(ability);
+            IsAbilityReady(
+                abilitySO
+            );
     }
 
 
@@ -482,30 +627,25 @@ public class AttackUnit : MonoBehaviour
             i++
         )
         {
-            AbilitySO ability =
+            AbilityData abilityData =
                 abilities[i];
 
-            if (ability == null)
+
+            if (abilityData == null)
             {
                 continue;
             }
 
-            EnsureAbilityState(ability);
 
-            int currentCooldown =
-                abilityCooldowns[ability];
+            // Cooldown continues to count down
+            // normally between turns.
+            abilityData
+                .ReduceCooldown();
 
-            if (currentCooldown > 0)
-            {
-                abilityCooldowns[ability] =
-                    Mathf.Max(
-                        0,
-                        currentCooldown - 1
-                    );
-            }
 
-            abilityUsesRemaining[ability] =
-                ability.GetUsesPerTurn();
+            // Uses per turn reset normally.
+            abilityData
+                .ResetUses();
         }
     }
 
@@ -515,18 +655,25 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     private void StartAbilityCooldown(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (!EnsureAbilityState(ability))
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
+
+
+        if (abilityData == null)
         {
             return;
         }
 
-        abilityCooldowns[ability] =
-            Mathf.Max(
-                0,
-                ability.GetCooldown()
-            );
+
+        abilityData.SetCooldown(
+            abilitySO
+                .GetCooldown()
+        );
     }
 
 
@@ -536,53 +683,75 @@ public class AttackUnit : MonoBehaviour
 
     public bool Attack(
         GameObject target,
-        AbilitySO selectedAbility)
+        AbilitySO selectedAbility
+    )
     {
         if (!CanAttack())
         {
             return false;
         }
 
+
         if (target == null)
         {
             return false;
         }
+
 
         if (selectedAbility == null)
         {
             return false;
         }
 
-        if (!IsAbilityReady(selectedAbility))
+
+        if (
+            !IsAbilityReady(
+                selectedAbility
+            )
+        )
         {
             return false;
         }
+
 
         EnsureGridManager();
 
-        if (cachedGridManager == null)
+
+        if (
+            cachedGridManager == null
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.CanHit(
+
+        if (
+            !selectedAbility.CanHit(
                 cachedGridManager,
                 gameObject,
-                target))
+                target
+            )
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.Use(
+
+        if (
+            !selectedAbility.Use(
                 gameObject,
-                target))
+                target
+            )
+        )
         {
             return false;
         }
+
 
         CompleteAbilityUse(
             selectedAbility
         );
+
 
         return true;
     }
@@ -594,12 +763,19 @@ public class AttackUnit : MonoBehaviour
 
     public bool PlayerAttack(
         GameObject target,
-        AbilitySO selectedAbility)
+        AbilitySO selectedAbility
+    )
     {
-        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        if (
+            !CombatUtility
+                .IsPlayerTurnInputAllowed(
+                    this
+                )
+        )
         {
             return false;
         }
+
 
         return Attack(
             target,
@@ -614,60 +790,96 @@ public class AttackUnit : MonoBehaviour
 
     public bool AttackAtTile(
         Vector2Int targetTile,
-        AbilitySO selectedAbility)
+        AbilitySO selectedAbility
+    )
     {
-        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        if (
+            !CombatUtility
+                .IsPlayerTurnInputAllowed(
+                    this
+                )
+        )
         {
             return false;
         }
+
 
         if (!CanAttack())
         {
             return false;
         }
 
-        if (selectedAbility == null)
+
+        if (
+            selectedAbility == null
+        )
         {
             return false;
         }
 
-        if (!IsAbilityReady(selectedAbility))
+
+        if (
+            !IsAbilityReady(
+                selectedAbility
+            )
+        )
         {
             return false;
         }
+
 
         EnsureGridManager();
 
-        if (cachedGridManager == null)
+
+        if (
+            cachedGridManager == null
+        )
         {
             return false;
         }
 
-        if (!cachedGridManager.IsInsideGrid(
-                targetTile))
+
+        if (
+            !cachedGridManager
+                .IsInsideGrid(
+                    targetTile
+                )
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.CanHitTile(
-                cachedGridManager,
-                gameObject,
-                targetTile))
+
+        if (
+            !selectedAbility
+                .CanHitTile(
+                    cachedGridManager,
+                    gameObject,
+                    targetTile
+                )
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.UseAtTile(
-                gameObject,
-                cachedGridManager,
-                targetTile))
+
+        if (
+            !selectedAbility
+                .UseAtTile(
+                    gameObject,
+                    cachedGridManager,
+                    targetTile
+                )
+        )
         {
             return false;
         }
+
 
         CompleteAbilityUse(
             selectedAbility
         );
+
 
         return true;
     }
@@ -678,19 +890,26 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     private void CompleteAbilityUse(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
         bool usesExhausted =
-            ConsumeAbilityUse(ability);
+            ConsumeAbilityUse(
+                abilitySO
+            );
+
 
         if (usesExhausted)
         {
-            StartAbilityCooldown(ability);
+            StartAbilityCooldown(
+                abilitySO
+            );
         }
+
 
         OnAbilityUsed?.Invoke(
             this,
-            ability
+            abilitySO
         );
     }
 
@@ -701,63 +920,93 @@ public class AttackUnit : MonoBehaviour
 
     public IEnumerator AttackRoutine(
         GameObject target,
-        AbilitySO selectedAbility)
+        AbilitySO selectedAbility
+    )
     {
         if (!CanAttack())
         {
             yield break;
         }
 
+
         if (target == null)
         {
             yield break;
         }
 
-        if (selectedAbility == null)
+
+        if (
+            selectedAbility == null
+        )
         {
             yield break;
         }
 
-        if (!IsAbilityReady(selectedAbility))
+
+        if (
+            !IsAbilityReady(
+                selectedAbility
+            )
+        )
         {
             yield break;
         }
+
 
         EnsureGridManager();
 
-        if (cachedGridManager == null)
+
+        if (
+            cachedGridManager == null
+        )
         {
             yield break;
         }
 
-        if (!selectedAbility.CanHit(
+
+        if (
+            !selectedAbility.CanHit(
                 cachedGridManager,
                 gameObject,
-                target))
+                target
+            )
+        )
         {
             yield break;
         }
 
-        if (!selectedAbility.Use(
+
+        if (
+            !selectedAbility.Use(
                 gameObject,
-                target))
+                target
+            )
+        )
         {
             yield break;
         }
+
 
         CompleteAbilityUse(
             selectedAbility
         );
 
-        if (attackAnimation == null)
+
+        if (
+            attackAnimation == null
+        )
         {
             yield break;
         }
 
-        attackAnimation.PlayAttackAnimation();
+
+        attackAnimation
+            .PlayAttackAnimation();
+
 
         yield return StartCoroutine(
-            attackAnimation.WaitForAttackFinished()
+            attackAnimation
+                .WaitForAttackFinished()
         );
     }
 
@@ -767,7 +1016,8 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
 
     public bool IsValidTarget(
-        GameObject target)
+        GameObject target
+    )
     {
         if (
             target == null ||
@@ -777,13 +1027,20 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (healthManager == null)
+
+        if (
+            healthManager == null
+        )
         {
             return false;
         }
 
+
         HealthManager targetHealth =
-            target.GetComponent<HealthManager>();
+            target.GetComponent<
+                HealthManager
+            >();
+
 
         if (
             targetHealth == null ||
@@ -792,6 +1049,7 @@ public class AttackUnit : MonoBehaviour
         {
             return false;
         }
+
 
         return
             targetHealth.GetTeam() !=
@@ -813,17 +1071,26 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
+
         for (
             int i = 0;
             i < abilities.Count;
             i++
         )
         {
-            if (abilities[i] != null)
+            AbilityData abilityData =
+                abilities[i];
+
+
+            if (
+                abilityData != null &&
+                abilityData.GetAbilitySO() != null
+            )
             {
                 return true;
             }
         }
+
 
         return false;
     }
@@ -849,19 +1116,25 @@ public class AttackUnit : MonoBehaviour
     {
         EnsureGridManager();
 
-        return cachedGridManager;
+        return
+            cachedGridManager;
     }
 
 
     private void EnsureGridManager()
     {
-        if (cachedGridManager != null)
+        if (
+            cachedGridManager != null
+        )
         {
             return;
         }
 
+
         cachedGridManager =
-            FindFirstObjectByType<GridManager>();
+            FindFirstObjectByType<
+                GridManager
+            >();
     }
 
 
@@ -874,24 +1147,36 @@ public class AttackUnit : MonoBehaviour
     {
         EnsureGridManager();
 
-        if (cachedGridManager == null)
+
+        if (
+            cachedGridManager == null
+        )
         {
             return;
         }
+
 
         Vector2Int gridPosition =
             GetLogicalGridPosition();
 
-        if (!cachedGridManager.IsInsideGrid(
-                gridPosition))
+
+        if (
+            !cachedGridManager
+                .IsInsideGrid(
+                    gridPosition
+                )
+        )
         {
             return;
         }
 
+
         Vector3 targetPosition =
-            cachedGridManager.GridToWorldPosition(
-                gridPosition
-            );
+            cachedGridManager
+                .GridToWorldPosition(
+                    gridPosition
+                );
+
 
         transform.position =
             targetPosition;
@@ -902,12 +1187,11 @@ public class AttackUnit : MonoBehaviour
     // CURRENT GRID POSITION
     // ============================================================
 
-    public Vector2Int GetCurrentGridPosition()
+    public Vector2Int
+        GetCurrentGridPosition()
     {
-        Vector2Int position =
+        return
             GetLogicalGridPosition();
-
-        return position;
     }
 
 
@@ -915,19 +1199,26 @@ public class AttackUnit : MonoBehaviour
     // CURRENT WORLD-DETECTED POSITION
     // ============================================================
 
-    public Vector2Int GetWorldDetectedGridPosition()
+    public Vector2Int
+        GetWorldDetectedGridPosition()
     {
         EnsureGridManager();
 
-        if (cachedGridManager == null)
+
+        if (
+            cachedGridManager == null
+        )
         {
-            return Vector2Int.zero;
+            return
+                Vector2Int.zero;
         }
 
+
         return
-            cachedGridManager.WorldToGridPosition(
-                transform.position
-            );
+            cachedGridManager
+                .WorldToGridPosition(
+                    transform.position
+                );
     }
 
 
@@ -939,35 +1230,56 @@ public class AttackUnit : MonoBehaviour
     {
         int maxRange = 0;
 
+
         for (
             int i = 0;
             i < abilities.Count;
             i++
         )
         {
-            AbilitySO ability =
+            AbilityData abilityData =
                 abilities[i];
 
+
             if (
-                ability != null &&
-                IsAbilityReady(ability)
+                abilityData == null
+            )
+            {
+                continue;
+            }
+
+
+            AbilitySO abilitySO =
+                abilityData
+                    .GetAbilitySO();
+
+
+            if (
+                abilitySO != null &&
+                IsAbilityReady(
+                    abilitySO
+                )
             )
             {
                 maxRange =
                     Mathf.Max(
                         maxRange,
-                        ability.GetRange()
+                        abilitySO
+                            .GetRange()
                     );
             }
         }
+
 
         return maxRange;
     }
 
 
-    public int GetMaximumAttackRange()
+    public int
+        GetMaximumAttackRange()
     {
         int maxRange = 0;
+
 
         for (
             int i = 0;
@@ -975,18 +1287,34 @@ public class AttackUnit : MonoBehaviour
             i++
         )
         {
-            AbilitySO ability =
+            AbilityData abilityData =
                 abilities[i];
 
-            if (ability != null)
+
+            if (
+                abilityData == null
+            )
+            {
+                continue;
+            }
+
+
+            AbilitySO abilitySO =
+                abilityData
+                    .GetAbilitySO();
+
+
+            if (abilitySO != null)
             {
                 maxRange =
                     Mathf.Max(
                         maxRange,
-                        ability.GetRange()
+                        abilitySO
+                            .GetRange()
                     );
             }
         }
+
 
         return maxRange;
     }
@@ -996,9 +1324,55 @@ public class AttackUnit : MonoBehaviour
     // ABILITIES
     // ============================================================
 
-    public List<AbilitySO> GetAbilities()
+    public List<AbilityData>
+        GetRuntimeAbilities()
     {
         return abilities;
+    }
+
+
+    public List<AbilitySO>
+        GetAbilities()
+    {
+        List<AbilitySO> result =
+            new List<AbilitySO>();
+
+
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
+        {
+            AbilityData abilityData =
+                abilities[i];
+
+
+            if (
+                abilityData == null
+            )
+            {
+                continue;
+            }
+
+
+            AbilitySO abilitySO =
+                abilityData
+                    .GetAbilitySO();
+
+
+            if (
+                abilitySO != null
+            )
+            {
+                result.Add(
+                    abilitySO
+                );
+            }
+        }
+
+
+        return result;
     }
 
 
@@ -1009,42 +1383,88 @@ public class AttackUnit : MonoBehaviour
 
 
     public void AddAbility(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (ability == null)
+        if (abilitySO == null)
         {
             return;
         }
 
-        if (!abilities.Contains(ability))
+
+        if (
+            HasAbility(
+                abilitySO
+            )
+        )
         {
-            abilities.Add(ability);
+            return;
         }
 
-        abilityCooldowns[ability] =
-            0;
 
-        abilityUsesRemaining[ability] =
-            ability.GetUsesPerTurn();
+        AbilityData runtimeAbility;
+
+
+        // Use the persistent runtime data if
+        // PlayerDataManager exists.
+        PlayerDataManager playerDataManager =
+            PlayerDataManager.Instance;
+
+
+        if (playerDataManager != null &&
+            characterData != null)
+        {
+            runtimeAbility =
+                playerDataManager
+                    .GetOrCreateAbilityData(
+                        characterData,
+                        abilitySO
+                    );
+        }
+        else
+        {
+            runtimeAbility =
+                new AbilityData(
+                    abilitySO
+                );
+        }
+
+
+        if (runtimeAbility != null)
+        {
+            abilities.Add(
+                runtimeAbility
+            );
+        }
     }
 
 
     public void RemoveAbility(
-        AbilitySO ability)
+        AbilitySO abilitySO
+    )
     {
-        if (ability == null)
+        if (abilitySO == null)
         {
             return;
         }
 
-        abilities.Remove(ability);
 
-        abilityCooldowns.Remove(
-            ability
-        );
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
 
-        abilityUsesRemaining.Remove(
-            ability
+
+        if (
+            abilityData == null
+        )
+        {
+            return;
+        }
+
+
+        abilities.Remove(
+            abilityData
         );
     }
 
@@ -1062,13 +1482,15 @@ public class AttackUnit : MonoBehaviour
     }
 
 
-    public HealthManager GetHealthManager()
+    public HealthManager
+        GetHealthManager()
     {
         return healthManager;
     }
 
 
-    public CharacterSO GetCharacterData()
+    public CharacterSO
+        GetCharacterData()
     {
         return characterData;
     }

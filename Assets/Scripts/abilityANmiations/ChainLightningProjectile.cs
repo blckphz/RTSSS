@@ -34,7 +34,6 @@ public class ChainLightningProjectile : MonoBehaviour
         new List<GameObject>();
 
     private float speed;
-    private float jumpDelay;
     private int damage;
 
     private int currentTargetIndex;
@@ -56,28 +55,19 @@ public class ChainLightningProjectile : MonoBehaviour
         GameObject user,
         List<GameObject> chainTargets,
         float speed,
-        float jumpDelay,
         int damage)
     {
         this.user = user;
 
         this.chainTargets =
             chainTargets != null
-                ? new List<GameObject>(
-                    chainTargets
-                )
+                ? new List<GameObject>(chainTargets)
                 : new List<GameObject>();
 
         this.speed =
             Mathf.Max(
                 0.01f,
                 speed
-            );
-
-        this.jumpDelay =
-            Mathf.Max(
-                0f,
-                jumpDelay
             );
 
         this.damage = damage;
@@ -92,7 +82,6 @@ public class ChainLightningProjectile : MonoBehaviour
         )
         {
             Destroy(gameObject);
-
             return;
         }
 
@@ -148,12 +137,9 @@ public class ChainLightningProjectile : MonoBehaviour
             chainTargets.Count
         )
         {
-            DebugLog(
-                "Chain finished."
-            );
+            DebugLog("Chain finished.");
 
             Destroy(gameObject);
-
             return;
         }
 
@@ -187,8 +173,7 @@ public class ChainLightningProjectile : MonoBehaviour
         initialized = true;
 
         DebugLog(
-            $"Flying to " +
-            $"{currentTarget.name}"
+            $"Flying to {currentTarget.name}"
         );
     }
 
@@ -309,16 +294,8 @@ public class ChainLightningProjectile : MonoBehaviour
 
         currentTargetIndex++;
 
-        if (jumpDelay > 0f)
-        {
-            StartCoroutine(
-                ContinueChainAfterDelay()
-            );
-        }
-        else
-        {
-            StartNextTarget();
-        }
+        // IMMEDIATELY jump to the next target.
+        StartNextTarget();
     }
 
 
@@ -353,21 +330,6 @@ public class ChainLightningProjectile : MonoBehaviour
             $"Hit {target.name} " +
             $"for {damage} damage."
         );
-    }
-
-
-    // ============================================================
-    // CONTINUE CHAIN
-    // ============================================================
-
-    private IEnumerator
-        ContinueChainAfterDelay()
-    {
-        yield return new WaitForSeconds(
-            jumpDelay
-        );
-
-        StartNextTarget();
     }
 
 
