@@ -7,9 +7,9 @@ using UnityEngine;
 )]
 public class CharacterSO : ScriptableObject, ICharacterHolder
 {
-    // ==================================================
+    // ============================================================
     // CHARACTER INFO
-    // ==================================================
+    // ============================================================
 
     [Header("Character Info")]
 
@@ -18,18 +18,18 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     public Sprite icon;
 
 
-    // ==================================================
+    // ============================================================
     // PREFAB
-    // ==================================================
+    // ============================================================
 
     [Header("Prefab")]
 
     public GameObject prefabToSpawn;
 
 
-    // ==================================================
+    // ============================================================
     // COMBAT
-    // ==================================================
+    // ============================================================
 
     [Header("Combat")]
 
@@ -44,9 +44,9 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     public bool canwalkdiagonally;
 
 
-    // ==================================================
+    // ============================================================
     // ABILITIES
-    // ==================================================
+    // ============================================================
 
     [Header("Abilities")]
 
@@ -55,27 +55,30 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
         new List<AbilitySO>();
 
 
-    // ==================================================
+    // ============================================================
     // ATTACK TYPE
-    // ==================================================
+    // ============================================================
 
     [Header("Attack Type")]
 
     public bool RangedAttacker;
 
 
-    // ==================================================
+    // ============================================================
     // UPGRADES
-    // ==================================================
+    // ============================================================
 
-    [Header("Upgrades")]
+    [Header("Character Upgrades")]
 
+    [Tooltip(
+        "Only these upgrades can appear when this character levels up."
+    )]
     public UpgradeSO[] upgrades;
 
 
-    // ==================================================
+    // ============================================================
     // GETTERS
-    // ==================================================
+    // ============================================================
 
     public List<AbilitySO> GetAbilities()
     {
@@ -95,9 +98,44 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
     }
 
 
-    // ==================================================
+    // ============================================================
+    // GET UPGRADE COUNT
+    // ============================================================
+
+    public int GetUpgradeCount()
+    {
+        if (upgrades == null)
+        {
+            return 0;
+        }
+
+        return upgrades.Length;
+    }
+
+
+    // ============================================================
+    // GET UPGRADE
+    // ============================================================
+
+    public UpgradeSO GetUpgrade(int index)
+    {
+        if (upgrades == null)
+        {
+            return null;
+        }
+
+        if (index < 0 || index >= upgrades.Length)
+        {
+            return null;
+        }
+
+        return upgrades[index];
+    }
+
+
+    // ============================================================
     // FIND ABILITY
-    // ==================================================
+    // ============================================================
 
     public T GetAbility<T>()
         where T : AbilitySO
@@ -107,15 +145,9 @@ public class CharacterSO : ScriptableObject, ICharacterHolder
             return null;
         }
 
-        for (
-            int i = 0;
-            i < abilities.Count;
-            i++
-        )
+        for (int i = 0; i < abilities.Count; i++)
         {
-            if (
-                abilities[i] is T ability
-            )
+            if (abilities[i] is T ability)
             {
                 return ability;
             }

@@ -49,15 +49,6 @@ public class GridSpawner : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (Keyboard.current != null &&
-            Keyboard.current.spaceKey.wasPressedThisFrame)
-        {
-            SpawnAtMouse();
-        }
-    }
-
     private void SpawnAtMouse()
     {
         if (prefab == null ||

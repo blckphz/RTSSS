@@ -145,9 +145,6 @@ public class UIManager : MonoBehaviour
 
         if (HasSelectedAbility())
         {
-            // Right-clicking cancels the ability
-            // and returns the camera to the unit.
-
             ClearSelectedAbility(
                 true
             );
@@ -304,11 +301,41 @@ public class UIManager : MonoBehaviour
 
 
         // ========================================================
-        // ABILITY WAS SELECTED
+        // CHECK SELECTED UNIT
         // ========================================================
 
-        // Move the camera to the overview
-        // so the player can see the battlefield.
+        if (CurrentSelection != null)
+        {
+            AttackUnit attackUnit =
+                CurrentSelection.GetAttackUnit();
+
+
+            if (attackUnit != null)
+            {
+                Team team =
+                    attackUnit.GetTeam();
+
+
+                // ------------------------------------------------
+                // ENEMY ABILITY
+                // ------------------------------------------------
+                //
+                // Enemy abilities should NOT move the camera.
+                //
+                // The ability is still selected normally.
+                //
+
+                if (team == Team.Enemy)
+                {
+                    return true;
+                }
+            }
+        }
+
+
+        // ========================================================
+        // PLAYER / ALLY ABILITY
+        // ========================================================
 
         if (CanvasJuiceManager.Instance != null)
         {
@@ -467,18 +494,6 @@ public class UIManager : MonoBehaviour
         // --------------------------------------------------------
         // CAMERA
         // --------------------------------------------------------
-        //
-        // IMPORTANT:
-        //
-        // returnCameraToUnit = true
-        //      Used when canceling an ability.
-        //
-        // returnCameraToUnit = false
-        //      Used after successfully using an ability.
-        //
-        // This lets the camera remain on the
-        // battlefield so the attack can be seen.
-        //
 
         if (
             returnCameraToUnit &&
@@ -650,17 +665,7 @@ public class UIManager : MonoBehaviour
             return false;
 
 
-        // ========================================================
-        // IMPORTANT
-        // ========================================================
-        //
-        // Clear the selected ability,
-        // but KEEP the camera at the
-        // ability overview position.
-        //
-        // This lets the player see
-        // the bomb attack.
-        //
+        // Keep camera at ability overview position.
 
         ClearSelectedAbility(
             false
@@ -715,16 +720,7 @@ public class UIManager : MonoBehaviour
             return false;
 
 
-        // ========================================================
-        // IMPORTANT
-        // ========================================================
-        //
-        // Keep the camera at the
-        // battlefield position.
-        //
-        // The attack animation can
-        // now be seen.
-        //
+        // Keep camera at battlefield position.
 
         ClearSelectedAbility(
             false

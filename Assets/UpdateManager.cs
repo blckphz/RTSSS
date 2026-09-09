@@ -6,10 +6,78 @@ public class UpdateManager : MonoBehaviour
     // REFERENCES
     // ============================================================
 
-    [Header("Character")]
+    [Header("Current Character")]
 
     [SerializeField]
-    private CharacterSO CurrentCChar;
+    private CharacterSO currentCharacter;
+
+
+    // ============================================================
+    // GET CURRENT CHARACTER
+    // ============================================================
+
+    public CharacterSO GetCurrentCharacter()
+    {
+        return currentCharacter;
+    }
+
+
+    // ============================================================
+    // SET CURRENT CHARACTER
+    // ============================================================
+
+    public void SetCurrentCharacter(
+        CharacterSO character
+    )
+    {
+        if (character == null)
+        {
+            Debug.LogError(
+                "[UpdateManager] " +
+                "Cannot set current character to null."
+            );
+
+            return;
+        }
+
+        currentCharacter = character;
+
+        Debug.Log(
+            "[UpdateManager] Current character is now: " +
+            currentCharacter.characterName
+        );
+    }
+
+
+    // ============================================================
+    // GET CHARACTER UPGRADES
+    // ============================================================
+
+    public UpgradeSO[] GetCurrentCharacterUpgrades()
+    {
+        if (currentCharacter == null)
+        {
+            Debug.LogError(
+                "[UpdateManager] " +
+                "Current character is null."
+            );
+
+            return null;
+        }
+
+        if (currentCharacter.upgrades == null)
+        {
+            Debug.LogWarning(
+                "[UpdateManager] " +
+                currentCharacter.characterName +
+                " has no upgrades."
+            );
+
+            return null;
+        }
+
+        return currentCharacter.upgrades;
+    }
 
 
     // ============================================================
@@ -17,7 +85,8 @@ public class UpdateManager : MonoBehaviour
     // ============================================================
 
     public void ApplyUpgrade(
-        UpgradeSO upgrade)
+        UpgradeSO upgrade
+    )
     {
         if (upgrade == null)
         {
@@ -28,28 +97,26 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        if (CurrentCChar == null)
+        if (currentCharacter == null)
         {
             Debug.LogError(
-                "[UpdateManager] Rusty is null."
+                "[UpdateManager] Current character is null."
             );
 
             return;
         }
 
-        if (
-            upgrade is RustyUpgrades rustyUpgrade
-        )
+        if (upgrade is RustyUpgrades rustyUpgrade)
         {
             rustyUpgrade.Apply(
-                CurrentCChar
+                currentCharacter
             );
 
             Debug.Log(
                 "[UpdateManager] Applied " +
                 upgrade.name +
                 " to " +
-                CurrentCChar.characterName
+                currentCharacter.characterName
             );
 
             OnUpgradeRefresh();
@@ -57,8 +124,9 @@ public class UpdateManager : MonoBehaviour
         else
         {
             Debug.LogWarning(
-                "[UpdateManager] Upgrade is not " +
-                "a Rusty upgrade."
+                "[UpdateManager] Upgrade " +
+                upgrade.name +
+                " is not a Rusty upgrade."
             );
         }
     }

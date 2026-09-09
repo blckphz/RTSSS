@@ -1,25 +1,57 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class VictoryManager : MonoBehaviour
 {
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
     [Header("References")]
+
     [SerializeField]
     private GameStateManager gameStateManager;
 
     [SerializeField]
     private transitionGameManager transitionManager;
 
+    [SerializeField]
+    private UpgradeChoiceUI upgradeChoiceUI;
+
+
+    // ============================================================
+    // UI
+    // ============================================================
+
     [Header("UI")]
+
     [SerializeField]
     private GameObject victoryCanvas;
 
+    [SerializeField]
+    private Button continueButton;
+
+
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
     private void Awake()
     {
+        // --------------------------------------------------------
+        // FIND GAME STATE MANAGER
+        // --------------------------------------------------------
+
         if (gameStateManager == null)
         {
             gameStateManager =
                 FindFirstObjectByType<GameStateManager>();
         }
+
+
+        // --------------------------------------------------------
+        // FIND TRANSITION MANAGER
+        // --------------------------------------------------------
 
         if (transitionManager == null)
         {
@@ -27,12 +59,42 @@ public class VictoryManager : MonoBehaviour
                 FindFirstObjectByType<transitionGameManager>();
         }
 
-        // Always start hidden.
+
+        // --------------------------------------------------------
+        // FIND UPGRADE UI
+        // --------------------------------------------------------
+
+        if (upgradeChoiceUI == null)
+        {
+            upgradeChoiceUI =
+                FindFirstObjectByType<UpgradeChoiceUI>();
+        }
+
+
+        // --------------------------------------------------------
+        // START VICTORY UI HIDDEN
+        // --------------------------------------------------------
+
         if (victoryCanvas != null)
         {
             victoryCanvas.SetActive(false);
         }
+
+
+        // --------------------------------------------------------
+        // START CONTINUE DISABLED
+        // --------------------------------------------------------
+
+        if (continueButton != null)
+        {
+            continueButton.interactable = false;
+        }
     }
+
+
+    // ============================================================
+    // ENABLE
+    // ============================================================
 
     private void OnEnable()
     {
@@ -42,12 +104,18 @@ public class VictoryManager : MonoBehaviour
                 FindFirstObjectByType<GameStateManager>();
         }
 
+
         if (gameStateManager != null)
         {
             gameStateManager.OnGameStateChanged +=
                 HandleGameStateChanged;
         }
     }
+
+
+    // ============================================================
+    // DISABLE
+    // ============================================================
 
     private void OnDisable()
     {
@@ -58,6 +126,11 @@ public class VictoryManager : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // GAME STATE CHANGED
+    // ============================================================
+
     private void HandleGameStateChanged(
         GameStateManager.GameState newState)
     {
@@ -65,10 +138,9 @@ public class VictoryManager : MonoBehaviour
             $"[VictoryManager] Handling state change: {newState}"
         );
 
-        if (
-            newState ==
-            GameStateManager.GameState.Victory
-        )
+
+        if (newState ==
+            GameStateManager.GameState.Victory)
         {
             ShowVictoryCanvas();
         }
@@ -77,6 +149,11 @@ public class VictoryManager : MonoBehaviour
             HideVictoryCanvas();
         }
     }
+
+
+    // ============================================================
+    // SHOW VICTORY
+    // ============================================================
 
     private void ShowVictoryCanvas()
     {
@@ -90,12 +167,78 @@ public class VictoryManager : MonoBehaviour
             return;
         }
 
+
+        // --------------------------------------------------------
+        // RESET CONTINUE BUTTON
+        // --------------------------------------------------------
+
+        if (continueButton != null)
+        {
+            continueButton.interactable = false;
+        }
+
+
+        // --------------------------------------------------------
+        // SHOW VICTORY CANVAS
+        // --------------------------------------------------------
+
         victoryCanvas.SetActive(true);
+
 
         Debug.Log(
             "[VictoryManager] Victory screen shown."
         );
+
+
+        // --------------------------------------------------------
+        // SHOW UPGRADE CHOICES
+        // --------------------------------------------------------
+
+        if (upgradeChoiceUI != null)
+        {
+            upgradeChoiceUI.ShowUpgradeChoices();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[VictoryManager] " +
+                "UpgradeChoiceUI not found!",
+                this
+            );
+
+            // If there is no upgrade UI,
+            // don't permanently lock Continue.
+
+            if (continueButton != null)
+            {
+                continueButton.interactable = true;
+            }
+        }
     }
+
+
+    // ============================================================
+    // UPGRADE SELECTED
+    // ============================================================
+
+    public void OnUpgradeSelected()
+    {
+        Debug.Log(
+            "[VictoryManager] Upgrade selected. " +
+            "Continue button enabled."
+        );
+
+
+        if (continueButton != null)
+        {
+            continueButton.interactable = true;
+        }
+    }
+
+
+    // ============================================================
+    // HIDE VICTORY
+    // ============================================================
 
     private void HideVictoryCanvas()
     {
@@ -104,17 +247,25 @@ public class VictoryManager : MonoBehaviour
             return;
         }
 
+
         if (!victoryCanvas.activeSelf)
         {
             return;
         }
 
+
         victoryCanvas.SetActive(false);
+
 
         Debug.Log(
             "[VictoryManager] Victory screen hidden."
         );
     }
+
+
+    // ============================================================
+    // CONTINUE
+    // ============================================================
 
     public void ContinueButton()
     {
@@ -123,10 +274,28 @@ public class VictoryManager : MonoBehaviour
             "Returning to map."
         );
 
-        // Immediately hide Victory UI.
+
+        // --------------------------------------------------------
+        // HIDE UPGRADE UI
+        // --------------------------------------------------------
+
+        if (upgradeChoiceUI != null)
+        {
+            upgradeChoiceUI.HideUpgradeChoices();
+        }
+
+
+        // --------------------------------------------------------
+        // HIDE VICTORY UI
+        // --------------------------------------------------------
+
         HideVictoryCanvas();
 
-        // Change the logical game state back to Map.
+
+        // --------------------------------------------------------
+        // CHANGE GAME STATE TO MAP
+        // --------------------------------------------------------
+
         if (gameStateManager != null)
         {
             gameStateManager.SetGameState(
@@ -136,12 +305,17 @@ public class VictoryManager : MonoBehaviour
         else
         {
             Debug.LogError(
-                "[VictoryManager] GameStateManager not found!",
+                "[VictoryManager] " +
+                "GameStateManager not found!",
                 this
             );
         }
 
-        // Start the visual transition back to the map.
+
+        // --------------------------------------------------------
+        // TRANSITION BACK TO MAP
+        // --------------------------------------------------------
+
         if (transitionManager != null)
         {
             transitionManager.TransitionToMap();
