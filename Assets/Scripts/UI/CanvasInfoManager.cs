@@ -14,7 +14,7 @@ public class CanvasInfoManager : MonoBehaviour
     [SerializeField] private Image backgroundImage;
     [SerializeField] private Graphic secondPulsingGraphic;
 
-    [Header("Background Pulse Settings")]
+[Header("Background Pulse Settings")]
     [SerializeField] private bool enablePulse = true;
     [SerializeField] private float pulseSpeed = 2f;
     [SerializeField] private float minPulseScale = 0.98f;
@@ -54,8 +54,6 @@ public class CanvasInfoManager : MonoBehaviour
     private int selectedAbilityIndex = -1;
     private AbilitySO selectedAbility;
 
-    // Stores the normal character sprite.
-    // This allows us to restore it after an ability is deselected.
     private Sprite currentCharacterIcon;
 
     private Camera eventCamera;
@@ -98,7 +96,6 @@ public class CanvasInfoManager : MonoBehaviour
                 secondPulsingGraphic.color.a;
         }
 
-        // Remember the icon's original scale.
         if (characterIcon != null)
         {
             initialCharacterIconScale =
@@ -109,13 +106,11 @@ public class CanvasInfoManager : MonoBehaviour
     private void OnEnable()
     {
         AttackUnit.OnAbilityUsed += HandleAbilityUsed;
-        HealthManager.OnHealthChanged += HandleHealthChanged;
     }
 
     private void OnDisable()
     {
         AttackUnit.OnAbilityUsed -= HandleAbilityUsed;
-        HealthManager.OnHealthChanged -= HandleHealthChanged;
     }
 
     private void Update()
@@ -455,34 +450,8 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
     // =========================================================
-    // HEALTH / ABILITY EVENTS
+    // ABILITY EVENTS
     // =========================================================
-
-    private void HandleHealthChanged(
-        HealthManager changedHealthManager)
-    {
-        if (changedHealthManager == null ||
-            UIManager.CurrentSelection == null)
-            return;
-
-        AttackUnit selectedAttackUnit =
-            UIManager.CurrentSelection.GetAttackUnit();
-
-        if (selectedAttackUnit == null)
-            return;
-
-        HealthManager selectedHealthManager =
-            selectedAttackUnit.GetComponent<HealthManager>();
-
-        if (selectedHealthManager != changedHealthManager)
-            return;
-
-        CharacterSO character =
-            selectedAttackUnit.GetCharacterData();
-
-        if (character != null)
-            RefreshCharacter(character);
-    }
 
     private void HandleAbilityUsed(
         AttackUnit attackUnit,
@@ -589,7 +558,6 @@ public class CanvasInfoManager : MonoBehaviour
         if (character == null)
             return;
 
-        // Store the normal character icon.
         currentCharacterIcon = character.icon;
 
         textBuilder.Clear();
@@ -599,55 +567,7 @@ public class CanvasInfoManager : MonoBehaviour
         );
 
         textBuilder.AppendLine(
-            $"Team: {character.team}"
-        );
-
-        int currentHealth =
-            character.maxHealth;
-
-        int maxHealth =
-            character.maxHealth;
-
-        AttackUnit selectedAttackUnit =
-            UIManager.CurrentSelection?.GetAttackUnit();
-
-        HealthManager selectedHealthManager =
-            selectedAttackUnit?.GetComponent<HealthManager>();
-
-        if (selectedHealthManager == null ||
-            selectedAttackUnit == null ||
-            selectedAttackUnit.GetCharacterData() != character)
-        {
-            AttackUnit[] attackUnits =
-                FindObjectsByType<AttackUnit>(
-                    FindObjectsInactive.Include,
-                    FindObjectsSortMode.None
-                );
-
-            foreach (AttackUnit attackUnit in attackUnits)
-            {
-                if (attackUnit != null &&
-                    attackUnit.GetCharacterData() == character)
-                {
-                    selectedHealthManager =
-                        attackUnit.GetComponent<HealthManager>();
-
-                    break;
-                }
-            }
-        }
-
-        if (selectedHealthManager != null)
-        {
-            currentHealth =
-                selectedHealthManager.GetHealth();
-
-            maxHealth =
-                selectedHealthManager.GetMaxHealth();
-        }
-
-        textBuilder.AppendLine(
-            $"Health: {currentHealth}/{maxHealth}\n"
+            $"Team: {character.team}\n"
         );
 
         List<AbilitySO> abilities =
@@ -778,9 +698,6 @@ public class CanvasInfoManager : MonoBehaviour
             );
         }
 
-        // Update the icon last.
-        // This makes sure the ability icon is not overwritten
-        // by RefreshCurrentSelection().
         UpdateCharacterIcon();
     }
 
@@ -796,7 +713,6 @@ public class CanvasInfoManager : MonoBehaviour
         Sprite newSprite =
             currentCharacterIcon;
 
-        // If an ability is selected, try to use its icon.
         if (selectedAbility != null)
         {
             Sprite abilityIcon =
@@ -808,7 +724,6 @@ public class CanvasInfoManager : MonoBehaviour
             }
         }
 
-        // Only pop if the actual sprite changed.
         bool spriteChanged =
             characterIcon.sprite != newSprite;
 
@@ -1125,8 +1040,6 @@ public class CanvasInfoManager : MonoBehaviour
         selectedAbility =
             ability;
 
-        // Change character icon to ability icon
-        // and play the pop animation.
         UpdateCharacterIcon();
 
         if (AudioFXManager.Instance != null)
@@ -1326,7 +1239,6 @@ public class CanvasInfoManager : MonoBehaviour
         ClearAbilityHighlights();
         HideStatusTooltip();
 
-        // Restore character icon.
         UpdateCharacterIcon();
 
         RefreshCurrentSelection();
@@ -1343,7 +1255,6 @@ public class CanvasInfoManager : MonoBehaviour
         ClearAbilityHighlights();
         HideStatusTooltip();
 
-        // Restore character icon.
         UpdateCharacterIcon();
 
         RefreshCurrentSelection();
@@ -1361,7 +1272,6 @@ public class CanvasInfoManager : MonoBehaviour
         selectedAbilityIndex = -1;
         selectedAbility = null;
 
-        // Forget the current character icon.
         currentCharacterIcon = null;
 
         if (iconPopCoroutine != null)
@@ -1385,4 +1295,5 @@ public class CanvasInfoManager : MonoBehaviour
         if (infoText != null)
             infoText.text = string.Empty;
     }
+
 }
