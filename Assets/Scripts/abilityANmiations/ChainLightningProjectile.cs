@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,10 +17,10 @@ public class ChainLightningProjectile : MonoBehaviour
     // DEBUG
     // ============================================================
 
-    [Header("Debug")]
+    [Header("Stun Debug")]
 
     [SerializeField]
-    private bool enableDebugLogs = false;
+    private bool enableStunDebugLogs = true;
 
 
     // ============================================================
@@ -34,14 +33,22 @@ public class ChainLightningProjectile : MonoBehaviour
         new List<GameObject>();
 
     private float speed;
+
     private int damage;
+
+    private float stunPercentage;
+
+    // Number of turns the target remains stunned.
+    private int stunDuration;
 
     private int currentTargetIndex;
 
     private Vector3 startPosition;
+
     private Vector3 targetPosition;
 
     private float flightTime;
+
     private float elapsedTime;
 
     private bool initialized;
@@ -55,13 +62,17 @@ public class ChainLightningProjectile : MonoBehaviour
         GameObject user,
         List<GameObject> chainTargets,
         float speed,
-        int damage)
+        int damage,
+        float stunPercentage,
+        int stunDuration)
     {
         this.user = user;
 
         this.chainTargets =
             chainTargets != null
-                ? new List<GameObject>(chainTargets)
+                ? new List<GameObject>(
+                    chainTargets
+                )
                 : new List<GameObject>();
 
         this.speed =
@@ -71,6 +82,19 @@ public class ChainLightningProjectile : MonoBehaviour
             );
 
         this.damage = damage;
+
+        this.stunPercentage =
+            Mathf.Clamp(
+                stunPercentage,
+                0f,
+                100f
+            );
+
+        this.stunDuration =
+            Mathf.Max(
+                0,
+                stunDuration
+            );
 
         currentTargetIndex = 0;
 
@@ -84,11 +108,6 @@ public class ChainLightningProjectile : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
-        DebugLog(
-            $"Projectile initialized. " +
-            $"Targets={this.chainTargets.Count}"
-        );
 
         StartNextTarget();
     }
@@ -137,8 +156,6 @@ public class ChainLightningProjectile : MonoBehaviour
             chainTargets.Count
         )
         {
-            DebugLog("Chain finished.");
-
             Destroy(gameObject);
             return;
         }
@@ -171,10 +188,6 @@ public class ChainLightningProjectile : MonoBehaviour
         RefreshRotation();
 
         initialized = true;
-
-        DebugLog(
-            $"Flying to {currentTarget.name}"
-        );
     }
 
 
@@ -290,11 +303,12 @@ public class ChainLightningProjectile : MonoBehaviour
         if (target != null)
         {
             DealDamage(target);
+
+            TryApplyStun(target);
         }
 
         currentTargetIndex++;
 
-        // IMMEDIATELY jump to the next target.
         StartNextTarget();
     }
 
@@ -316,37 +330,105 @@ public class ChainLightningProjectile : MonoBehaviour
 
         if (health == null)
         {
-            DebugLog(
-                $"No HealthManager on " +
-                $"{target.name}"
-            );
-
             return;
         }
 
-        health.TakeDamage(damage);
-
-        DebugLog(
-            $"Hit {target.name} " +
-            $"for {damage} damage."
+        health.TakeDamage(
+            damage
         );
     }
 
 
     // ============================================================
-    // DEBUG
+    // STUN
     // ============================================================
 
-    private void DebugLog(string message)
+    private void TryApplyStun(
+        GameObject target)
     {
-        if (!enableDebugLogs)
+        if (
+            target == null ||
+            stunPercentage <= 0f ||
+            stunDuration <= 0
+        )
         {
             return;
         }
 
-        Debug.Log(
-            $"[ChainLightningProjectile] " +
-            $"{message}"
-        );
+        AttackUnit targetUnit =
+            target.GetComponent<AttackUnit>();
+
+        if (targetUnit == null)
+        {
+            return;
+        }
+
+        if (targetUnit.IsDead())
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // ROLL STUN CHANCE
+        // --------------------------------------------------------
+
+        float roll =
+            Random.Range(
+                0f,
+                100f
+            );
+
+        bool stunSucceeded =
+            roll <= stunPercentage;
+
+
+        if (enableStunDebugLogs)
+        {
+            Debug.Log(
+                $"[STUN] {target.name} | " +
+                $"Roll: {roll:F1} | " +
+                $"Chance: {stunPercentage:F1}% | " +
+                $"Result: " +
+                $"{(stunSucceeded ? "SUCCESS" : "FAILED")}"
+            );
+        }
+
+
+        if (!stunSucceeded)
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // APPLY STUN
+        // --------------------------------------------------------
+
+        bool stunned =
+            ConditionManager.ApplyStun(
+                target,
+                stunDuration
+            );
+
+
+        if (enableStunDebugLogs)
+        {
+            if (stunned)
+            {
+                Debug.Log(
+                    $"[STUN] {target.name} " +
+                    $"STUN APPLIED | " +
+                    $"Duration: {stunDuration} turn(s)"
+                );
+            }
+            else
+            {
+                Debug.Log(
+                    $"[STUN] Failed to apply stun to " +
+                    $"{target.name}."
+                );
+            }
+        }
     }
 }

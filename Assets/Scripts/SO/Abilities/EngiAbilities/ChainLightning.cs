@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(
     fileName = "ChainLightning",
@@ -7,10 +8,6 @@ using UnityEngine;
 )]
 public class ChainLightning : AbilitySO
 {
-    // ============================================================
-    // CHAIN LIGHTNING
-    // ============================================================
-
     [Header("Chain Lightning")]
 
     [SerializeField, Min(1)]
@@ -23,9 +20,16 @@ public class ChainLightning : AbilitySO
     private float maxJumpDistance = 4f;
 
 
-    // ============================================================
-    // PROJECTILE
-    // ============================================================
+    [Header("Stun")]
+
+    [FormerlySerializedAs("stunprercenatge")]
+    [SerializeField, Range(0f, 100f)]
+    private float stunPercentage = 0f;
+
+    [FormerlySerializedAs("stunduration")]
+    [SerializeField, Min(0)]
+    private int stunDuration = 1;
+
 
     [Header("Projectile")]
 
@@ -40,21 +44,9 @@ public class ChainLightning : AbilitySO
         "AbilitySpawnPoint";
 
 
-    // ============================================================
-    // RUNTIME UPGRADES
-    // ============================================================
+    [Header("Runtime Upgrades")]
 
     private int bonusJumps;
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-
-    [SerializeField]
-    private bool enableDebugLogs = false;
 
 
     // ============================================================
@@ -69,11 +61,6 @@ public class ChainLightning : AbilitySO
         }
 
         bonusJumps += amount;
-
-        DebugLog(
-            $"Added {amount} bonus jumps. " +
-            $"Total = {GetMaxJumps()}"
-        );
     }
 
 
@@ -98,6 +85,22 @@ public class ChainLightning : AbilitySO
     public void ResetUpgrades()
     {
         bonusJumps = 0;
+    }
+
+
+    // ============================================================
+    // STUN
+    // ============================================================
+
+    public float GetStunPercentage()
+    {
+        return stunPercentage;
+    }
+
+
+    public int GetStunDuration()
+    {
+        return stunDuration;
     }
 
 
@@ -168,8 +171,6 @@ public class ChainLightning : AbilitySO
             chain.Count == 0
         )
         {
-            DebugLog("No valid chain.");
-
             return false;
         }
 
@@ -215,13 +216,9 @@ public class ChainLightning : AbilitySO
             user,
             chain,
             projectileSpeed,
-            GetDamage()
-        );
-
-        DebugLog(
-            $"Chain created. " +
-            $"Targets={chain.Count}, " +
-            $"MaxJumps={GetMaxJumps()}"
+            GetDamage(),
+            stunPercentage,
+            stunDuration
         );
 
         return true;
@@ -301,12 +298,9 @@ public class ChainLightning : AbilitySO
 
         int jump = 0;
 
-        int totalJumps =
-            GetMaxJumps();
-
         while (
             currentTarget != null &&
-            jump < totalJumps
+            jump < GetMaxJumps()
         )
         {
             if (
@@ -326,11 +320,6 @@ public class ChainLightning : AbilitySO
 
             chain.Add(
                 currentTarget
-            );
-
-            DebugLog(
-                $"Chain {jump + 1}: " +
-                currentTarget.name
             );
 
             currentTarget =
@@ -425,11 +414,11 @@ public class ChainLightning : AbilitySO
                     candidate
                 );
 
-            Vector2 difference =
-                candidatePosition - origin;
-
             float distance =
-                difference.magnitude;
+                Vector2.Distance(
+                    origin,
+                    candidatePosition
+                );
 
             if (
                 maxJumpDistance > 0f &&
@@ -484,20 +473,10 @@ public class ChainLightning : AbilitySO
     {
         if (
             user == null ||
-            target == null
+            target == null ||
+            hitTargets.Contains(target) ||
+            !target.activeInHierarchy
         )
-        {
-            return false;
-        }
-
-        if (
-            hitTargets.Contains(target)
-        )
-        {
-            return false;
-        }
-
-        if (!target.activeInHierarchy)
         {
             return false;
         }
@@ -516,24 +495,6 @@ public class ChainLightning : AbilitySO
         return CanTargetObject(
             user,
             target
-        );
-    }
-
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void DebugLog(
-        string message)
-    {
-        if (!enableDebugLogs)
-        {
-            return;
-        }
-
-        Debug.Log(
-            $"[ChainLightning] {message}"
         );
     }
 }

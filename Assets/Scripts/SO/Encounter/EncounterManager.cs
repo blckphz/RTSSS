@@ -108,7 +108,6 @@ public class EncounterManager : MonoBehaviour
                 return VictoryCondition.DefeatAllEnemies;
             }
 
-
             return currentEncounter.victoryCondition;
         }
     }
@@ -123,7 +122,6 @@ public class EncounterManager : MonoBehaviour
                 return string.Empty;
             }
 
-
             return currentEncounter.targetEnemyId;
         }
     }
@@ -137,7 +135,6 @@ public class EncounterManager : MonoBehaviour
             {
                 return 1;
             }
-
 
             return Mathf.Max(
                 1,
@@ -326,6 +323,16 @@ public class EncounterManager : MonoBehaviour
             );
 
             yield break;
+        }
+
+
+        // ==================================================
+        // RESET ROUNDS FOR NEW ENCOUNTER
+        // ==================================================
+
+        if (roundManager != null)
+        {
+            roundManager.ResetRounds();
         }
 
 

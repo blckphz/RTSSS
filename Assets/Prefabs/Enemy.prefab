@@ -555,6 +555,7 @@ GameObject:
   - component: {fileID: 4653433185496737857}
   - component: {fileID: 2879961967551686256}
   - component: {fileID: 1265849680894574295}
+  - component: {fileID: 8379538594534882917}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -628,7 +629,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: -369667016252776906, guid: 02b16d672e790b24d85dd328e2b9acba, type: 3}
-  m_Color: {r: 1, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -896,3 +897,15 @@ MonoBehaviour:
   walkDownState: basicEnemyWalkDown
   walkUpState: basicEnemyWalkUp
   idleState: Idle
+--- !u!114 &8379538594534882917
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5869547761387176993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a97ace68f90fdc94b84bc9e7dbd777c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'

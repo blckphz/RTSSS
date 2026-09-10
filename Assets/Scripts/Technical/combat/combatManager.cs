@@ -36,6 +36,10 @@ public class CombatManager : MonoBehaviour
         new HashSet<AttackUnit>();
 
 
+    // ============================================================
+    // UNITY
+    // ============================================================
+
     private void Awake()
     {
         FindReferences();
@@ -51,6 +55,10 @@ public class CombatManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
     private void FindReferences()
     {
         if (gridManager == null)
@@ -60,6 +68,10 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // ENEMY ROUND
+    // ============================================================
 
     public IEnumerator RunEnemyRound()
     {
@@ -114,6 +126,10 @@ public class CombatManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // ENEMY LOCKS
+    // ============================================================
+
     public void LockEnemyForCurrentRound(
         AttackUnit enemy
     )
@@ -128,9 +144,7 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        lockedEnemies.Add(
-            enemy
-        );
+        lockedEnemies.Add(enemy);
     }
 
 
@@ -161,9 +175,7 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
-        lockedEnemies.Remove(
-            enemy
-        );
+        lockedEnemies.Remove(enemy);
     }
 
 
@@ -182,9 +194,7 @@ public class CombatManager : MonoBehaviour
             return false;
         }
 
-        return lockedEnemies.Contains(
-            enemy
-        );
+        return lockedEnemies.Contains(enemy);
     }
 
 
@@ -193,6 +203,10 @@ public class CombatManager : MonoBehaviour
         return lockedEnemies.Count;
     }
 
+
+    // ============================================================
+    // ENEMY TURN SETTINGS
+    // ============================================================
 
     public bool EnemiesMoveAfterRound
     {
@@ -211,6 +225,10 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // ENEMY CHECKS
+    // ============================================================
 
     public void CheckForEnemies()
     {
@@ -249,6 +267,10 @@ public class CombatManager : MonoBehaviour
         );
     }
 
+
+    // ============================================================
+    // SPAWN
+    // ============================================================
 
     public void SpawnTestEnemiesNow()
     {
@@ -331,7 +353,6 @@ public class CombatManager : MonoBehaviour
             return false;
         }
 
-
         GameObject enemy =
             Instantiate(enemyPrefab);
 
@@ -356,7 +377,6 @@ public class CombatManager : MonoBehaviour
         )
         {
             Destroy(enemy);
-
             return false;
         }
 
@@ -369,7 +389,6 @@ public class CombatManager : MonoBehaviour
         )
         {
             Destroy(enemy);
-
             return false;
         }
 
@@ -390,6 +409,10 @@ public class CombatManager : MonoBehaviour
         return true;
     }
 
+
+    // ============================================================
+    // AVAILABLE GRID CELLS
+    // ============================================================
 
     private List<Vector2Int> GetAvailableCells()
     {
@@ -441,9 +464,7 @@ public class CombatManager : MonoBehaviour
                     continue;
                 }
 
-                cells.Add(
-                    position
-                );
+                cells.Add(position);
             }
         }
 
@@ -488,6 +509,10 @@ public class CombatManager : MonoBehaviour
         return true;
     }
 
+
+    // ============================================================
+    // ACCESSORS
+    // ============================================================
 
     public GridManager GetGridManager()
     {
