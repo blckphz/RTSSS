@@ -95,15 +95,23 @@ public class AudioFXManager : MonoBehaviour
 
 
     // ============================================================
+    // TURN BANNER
+    // ============================================================
+
+    [Header("Turn Banner")]
+    [SerializeField]
+    private AudioClip turnBannerClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float turnBannerVolume = 0.8f;
+
+
+    // ============================================================
     // UNITY
     // ============================================================
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // SINGLETON
-        // --------------------------------------------------------
-
         if (
             Instance != null &&
             Instance != this
@@ -113,13 +121,7 @@ public class AudioFXManager : MonoBehaviour
             return;
         }
 
-
         Instance = this;
-
-
-        // --------------------------------------------------------
-        // AUDIO SOURCE
-        // --------------------------------------------------------
 
         if (audioSource == null)
         {
@@ -127,13 +129,11 @@ public class AudioFXManager : MonoBehaviour
                 GetComponent<AudioSource>();
         }
 
-
         if (audioSource == null)
         {
             audioSource =
                 gameObject.AddComponent<AudioSource>();
         }
-
 
         audioSource.playOnAwake = false;
     }
@@ -152,7 +152,6 @@ public class AudioFXManager : MonoBehaviour
         {
             return;
         }
-
 
         audioSource.PlayOneShot(
             unitHoverClip,
@@ -175,7 +174,6 @@ public class AudioFXManager : MonoBehaviour
             return;
         }
 
-
         audioSource.PlayOneShot(
             unitClickClip,
             unitClickVolume
@@ -196,7 +194,6 @@ public class AudioFXManager : MonoBehaviour
         {
             return;
         }
-
 
         audioSource.PlayOneShot(
             abilitySelectClip,
@@ -219,7 +216,6 @@ public class AudioFXManager : MonoBehaviour
             return;
         }
 
-
         audioSource.PlayOneShot(
             unitDeselectClip,
             unitDeselectVolume
@@ -240,7 +236,6 @@ public class AudioFXManager : MonoBehaviour
         {
             return;
         }
-
 
         audioSource.PlayOneShot(
             unitDamageClip,
@@ -263,7 +258,6 @@ public class AudioFXManager : MonoBehaviour
             return;
         }
 
-
         audioSource.PlayOneShot(
             mapNodeHoverClip,
             mapNodeHoverVolume
@@ -285,10 +279,30 @@ public class AudioFXManager : MonoBehaviour
             return;
         }
 
-
         audioSource.PlayOneShot(
             levelEnterClip,
             levelEnterVolume
+        );
+    }
+
+
+    // ============================================================
+    // TURN BANNER
+    // ============================================================
+
+    public void PlayTurnBanner()
+    {
+        if (
+            turnBannerClip == null ||
+            audioSource == null
+        )
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            turnBannerClip,
+            turnBannerVolume
         );
     }
 }

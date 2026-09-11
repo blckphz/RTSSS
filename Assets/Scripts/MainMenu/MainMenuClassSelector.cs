@@ -51,11 +51,6 @@ public class MainMenuClassSelector : MonoBehaviour
         selectedSquad =
             clickedSquad;
 
-
-        Debug.Log(
-            "[MainMenuClassSelector] Selected Squad: " +
-            selectedSquad.name
-        );
     }
 
 

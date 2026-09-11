@@ -94,9 +94,6 @@ public class GameStateManager : MonoBehaviour
             startingState;
 
 
-        Debug.Log(
-            $"[GameStateManager] Initial state: {currentState}"
-        );
     }
 
 

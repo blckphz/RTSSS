@@ -69,6 +69,18 @@ public class CanvasJuiceManager : MonoBehaviour
 
 
     // ============================================================
+    // ENEMY FOLLOW
+    // ============================================================
+
+    [Header("Unit Camera Follow")]
+    [Tooltip(
+        "How quickly the camera follows a moving unit."
+    )]
+    [SerializeField]
+    private float unitFollowSpeed = 10f;
+
+
+    // ============================================================
     // INTERNAL
     // ============================================================
 
@@ -76,6 +88,9 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private Coroutine fadeCoroutine;
     private Coroutine cameraCoroutine;
+    private Coroutine followCoroutine;
+
+    private Transform currentFollowTarget;
 
 
     // ============================================================
@@ -197,6 +212,10 @@ public class CanvasJuiceManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // MOVE CAMERA TO UNIT
+    // ============================================================
+
     public void MoveCameraToUnit(Transform unit)
     {
         if (unit == null)
@@ -205,6 +224,25 @@ public class CanvasJuiceManager : MonoBehaviour
         if (cameraTarget == null)
             return;
 
+
+        // --------------------------------------------------------
+        // Stop following the previous unit.
+        // --------------------------------------------------------
+
+        StopFollowingUnit();
+
+
+        // --------------------------------------------------------
+        // Set new follow target.
+        // --------------------------------------------------------
+
+        currentFollowTarget = unit;
+
+
+        // --------------------------------------------------------
+        // Calculate initial camera position.
+        // --------------------------------------------------------
+
         Vector3 targetPosition =
             unit.position +
             unitCameraOffset;
@@ -212,10 +250,127 @@ public class CanvasJuiceManager : MonoBehaviour
         Quaternion targetRotation =
             cameraTarget.rotation;
 
-        MoveCameraTargetTo(
-            targetPosition,
-            targetRotation
-        );
+
+        // --------------------------------------------------------
+        // Smoothly move camera to the enemy first.
+        // --------------------------------------------------------
+
+        if (cameraCoroutine != null)
+        {
+            StopCoroutine(
+                cameraCoroutine
+            );
+        }
+
+        if (!gameObject.activeInHierarchy)
+        {
+            cameraTarget.position = targetPosition;
+            cameraTarget.rotation = targetRotation;
+            return;
+        }
+
+        cameraCoroutine =
+            StartCoroutine(
+                MoveCameraTargetCoroutine(
+                    targetPosition,
+                    targetRotation
+                )
+            );
+
+
+        // --------------------------------------------------------
+        // Start continuous follow.
+        // --------------------------------------------------------
+
+        if (gameObject.activeInHierarchy)
+        {
+            followCoroutine =
+                StartCoroutine(
+                    FollowUnitCoroutine(unit)
+                );
+        }
+    }
+
+
+    // ============================================================
+    // FOLLOW UNIT
+    // ============================================================
+
+    private IEnumerator FollowUnitCoroutine(
+        Transform unit
+    )
+    {
+        if (unit == null)
+            yield break;
+
+
+        // Wait for the initial camera movement to finish.
+        if (cameraCoroutine != null)
+        {
+            yield return cameraCoroutine;
+        }
+
+
+        cameraCoroutine = null;
+
+
+        // --------------------------------------------------------
+        // CONTINUOUS FOLLOW
+        // --------------------------------------------------------
+
+        while (
+            currentFollowTarget == unit &&
+            unit != null &&
+            cameraTarget != null
+        )
+        {
+            Vector3 desiredPosition =
+                unit.position +
+                unitCameraOffset;
+
+
+            // Smooth camera movement.
+            float smoothAmount =
+                1f -
+                Mathf.Exp(
+                    -unitFollowSpeed *
+                    Time.deltaTime
+                );
+
+
+            cameraTarget.position =
+                Vector3.Lerp(
+                    cameraTarget.position,
+                    desiredPosition,
+                    smoothAmount
+                );
+
+
+            yield return null;
+        }
+
+
+        followCoroutine = null;
+    }
+
+
+    // ============================================================
+    // STOP FOLLOWING
+    // ============================================================
+
+    public void StopFollowingUnit()
+    {
+        currentFollowTarget = null;
+
+
+        if (followCoroutine != null)
+        {
+            StopCoroutine(
+                followCoroutine
+            );
+
+            followCoroutine = null;
+        }
     }
 
 
@@ -225,11 +380,16 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void MoveCameraToAbilityPosition()
     {
+        // Stop following the current unit.
+        StopFollowingUnit();
+
+
         if (cameraTarget == null)
             return;
 
         if (abilityCameraPosition == null)
             return;
+
 
         MoveCameraTargetTo(
             abilityCameraPosition.position,
@@ -244,11 +404,16 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void MoveCameraToNormalPosition()
     {
+        // Stop following the current enemy.
+        StopFollowingUnit();
+
+
         if (cameraTarget == null)
             return;
 
         if (normalPosition == null)
             return;
+
 
         MoveCameraTargetTo(
             normalPosition.position,
@@ -280,12 +445,22 @@ public class CanvasJuiceManager : MonoBehaviour
         if (cameraTarget == null)
             return;
 
+
         if (cameraCoroutine != null)
         {
             StopCoroutine(
                 cameraCoroutine
             );
         }
+
+        if (!gameObject.activeInHierarchy)
+        {
+            cameraTarget.position = targetPosition;
+            cameraTarget.rotation = targetRotation;
+            cameraCoroutine = null;
+            return;
+        }
+
 
         cameraCoroutine =
             StartCoroutine(
@@ -304,6 +479,7 @@ public class CanvasJuiceManager : MonoBehaviour
         if (cameraTarget == null)
             yield break;
 
+
         Vector3 startPosition =
             cameraTarget.position;
 
@@ -313,15 +489,32 @@ public class CanvasJuiceManager : MonoBehaviour
         float elapsed = 0f;
 
 
+        // Prevent division by zero.
+        if (cameraMoveDuration <= 0f)
+        {
+            cameraTarget.position =
+                targetPosition;
+
+            cameraTarget.rotation =
+                targetRotation;
+
+            cameraCoroutine = null;
+
+            yield break;
+        }
+
+
         while (elapsed < cameraMoveDuration)
         {
             elapsed += Time.deltaTime;
+
 
             float t =
                 Mathf.Clamp01(
                     elapsed /
                     cameraMoveDuration
                 );
+
 
             // SmoothStep
             t =
@@ -370,12 +563,21 @@ public class CanvasJuiceManager : MonoBehaviour
         if (hoverInfoCanvas == null)
             return;
 
+
         if (fadeCoroutine != null)
         {
             StopCoroutine(
                 fadeCoroutine
             );
         }
+
+        if (!gameObject.activeInHierarchy)
+        {
+            hoverInfoCanvas.alpha = targetAlpha;
+            fadeCoroutine = null;
+            return;
+        }
+
 
         fadeCoroutine =
             StartCoroutine(
@@ -395,9 +597,21 @@ public class CanvasJuiceManager : MonoBehaviour
         float elapsed = 0f;
 
 
+        if (fadeDuration <= 0f)
+        {
+            hoverInfoCanvas.alpha =
+                targetAlpha;
+
+            fadeCoroutine = null;
+
+            yield break;
+        }
+
+
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
+
 
             float t =
                 Mathf.Clamp01(

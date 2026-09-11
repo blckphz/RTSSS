@@ -13,7 +13,6 @@ public class RoundManager : MonoBehaviour
         EnemyTurn
     }
 
-
     [Serializable]
     public struct AbilityLogEntry
     {
@@ -21,7 +20,6 @@ public class RoundManager : MonoBehaviour
         public string unitName;
         public string abilityName;
     }
-
 
     // ============================================================
     // ROUND STATE
@@ -33,30 +31,21 @@ public class RoundManager : MonoBehaviour
     private int currentRound = 1;
 
     [SerializeField]
-    private RoundState currentState =
-        RoundState.Setup;
+    private RoundState currentState = RoundState.Setup;
 
     [SerializeField]
     private bool autoBattle = false;
-
 
     // ============================================================
     // EVENTS
     // ============================================================
 
-    /// <summary>
-    /// Fired whenever the round number changes.
-    /// Sends the new round number.
-    /// </summary>
     public event Action<int> OnRoundChanged;
 
-
-    /// <summary>
-    /// Fired whenever the round state changes.
-    /// Sends the new RoundState.
-    /// </summary>
     public event Action<RoundState> OnRoundStateChanged;
 
+    // Fires when the enemy turn begins.
+    public event Action OnEnemyTurnStarted;
 
     // ============================================================
     // DEPENDENCIES
@@ -73,9 +62,17 @@ public class RoundManager : MonoBehaviour
     [SerializeField]
     private EncounterManager encounterManager;
 
+    [SerializeField]
+    private CanvasInfoManager canvasInfoManager;
+
+    [SerializeField]
+    private CanvasJuiceManager canvasJuiceManager;
+
+    [SerializeField]
+    private NextRoundTextManager nextRoundTextManager;
 
     // ============================================================
-    // UI & SETTINGS
+    // UI / SETTINGS
     // ============================================================
 
     [Header("UI & Settings")]
@@ -86,35 +83,16 @@ public class RoundManager : MonoBehaviour
     [SerializeField]
     private float delayBetweenUnits = 0.1f;
 
-
     // ============================================================
     // INTERNAL
     // ============================================================
 
-    private readonly List<AbilityLogEntry> roundAbilityLogs =
-        new List<AbilityLogEntry>();
-
-    private readonly List<AttackUnit> cachedUnits =
-        new List<AttackUnit>();
-
-
-    // ============================================================
-    // ENEMY SPAWN LOCK
-    // ============================================================
-
-    private readonly HashSet<AttackUnit> enemyTurnLockedUnits =
-        new HashSet<AttackUnit>();
-
+    private readonly List<AbilityLogEntry> roundAbilityLogs = new List<AbilityLogEntry>();
+    private readonly List<AttackUnit> cachedUnits = new List<AttackUnit>();
+    private readonly HashSet<AttackUnit> enemyTurnLockedUnits = new HashSet<AttackUnit>();
 
     private WaitForSeconds unitDelay;
-
     private bool roundRunning;
-
-    private CanvasInfoManager canvasInfoManager;
-
-
-    public event Action<AbilityLogEntry> OnAbilityUsed;
-
 
     // ============================================================
     // UNITY
@@ -124,107 +102,88 @@ public class RoundManager : MonoBehaviour
     {
         if (combatManager == null)
         {
-            combatManager =
-                FindFirstObjectByType<CombatManager>();
+            combatManager = FindFirstObjectByType<CombatManager>();
         }
 
         if (gridManager == null)
         {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
+            gridManager = FindFirstObjectByType<GridManager>();
         }
 
         if (encounterManager == null)
         {
-            encounterManager =
-                FindFirstObjectByType<EncounterManager>();
+            encounterManager = FindFirstObjectByType<EncounterManager>();
         }
 
-        canvasInfoManager =
-            FindFirstObjectByType<CanvasInfoManager>();
+        if (canvasInfoManager == null)
+        {
+            canvasInfoManager = FindFirstObjectByType<CanvasInfoManager>();
+        }
 
-        unitDelay =
-            new WaitForSeconds(
-                Mathf.Max(
-                    0f,
-                    delayBetweenUnits
-                )
-            );
+        if (canvasJuiceManager == null)
+        {
+            canvasJuiceManager = FindFirstObjectByType<CanvasJuiceManager>();
+        }
+
+        if (nextRoundTextManager == null)
+        {
+            nextRoundTextManager = FindFirstObjectByType<NextRoundTextManager>();
+        }
+
+        unitDelay = new WaitForSeconds(Mathf.Max(0f, delayBetweenUnits));
 
         if (autoBattleToggle != null)
         {
-            autoBattleToggle.isOn =
-                autoBattle;
-
-            autoBattleToggle.onValueChanged.AddListener(
-                SetAutoBattle
-            );
+            autoBattleToggle.isOn = autoBattle;
+            autoBattleToggle.onValueChanged.AddListener(SetAutoBattle);
         }
 
-        // Player can interact during Setup.
         CombatUtility.SetPlayerInputLocked(false);
     }
-
 
     private void OnDestroy()
     {
         if (autoBattleToggle != null)
         {
-            autoBattleToggle.onValueChanged.RemoveListener(
-                SetAutoBattle
-            );
+            autoBattleToggle.onValueChanged.RemoveListener(SetAutoBattle);
         }
 
-        // Safety.
         CombatUtility.SetPlayerInputLocked(false);
     }
 
-
     private void Update()
     {
-        if (
-            autoBattle &&
-            currentState == RoundState.Setup &&
-            !roundRunning
-        )
+        if (autoBattle && currentState == RoundState.Setup && !roundRunning)
         {
             StartRound();
         }
     }
 
-
     // ============================================================
-    // RESET ROUNDS
+    // RESET
     // ============================================================
 
     public void ResetRounds()
     {
         StopAllCoroutines();
 
-        // First round is Round 1.
         currentRound = 1;
-
-        SetRoundState(
-            RoundState.Setup
-        );
-
+        SetRoundState(RoundState.Setup);
         roundRunning = false;
 
         enemyTurnLockedUnits.Clear();
-
         roundAbilityLogs.Clear();
-
         cachedUnits.Clear();
 
         CombatUtility.SetPlayerInputLocked(false);
 
+        OnRoundChanged?.Invoke(currentRound);
 
-        // Notify UI that the round has returned to Round 1.
-        OnRoundChanged?.Invoke(
-            currentRound
-        );
+        if (canvasJuiceManager != null)
+        {
+            canvasJuiceManager.MoveCameraToNormalPosition();
+        }
     }
-
 
     // ============================================================
     // START ROUND
@@ -232,85 +191,39 @@ public class RoundManager : MonoBehaviour
 
     public void StartRound()
     {
-        if (roundRunning)
-        {
-            return;
-        }
-
-        if (currentState != RoundState.Setup)
-        {
-            return;
-        }
-
-        if (!IsPlayerOnField())
-        {
-            return;
-        }
-
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
-        {
-            return;
-        }
-
-
-        // ========================================================
-        // IMPORTANT
-        // ========================================================
-        //
-        // currentRound is already the round that is about to run.
-        //
-        // Round 1 starts as Round 1.
-        // Round 2 starts as Round 2.
-        // Round 3 starts as Round 3.
-        //
-        // The number is incremented in EndRound().
-        // ========================================================
-
-
-        // ========================================================
-        // START ROUND
-        // ========================================================
+        if (roundRunning) return;
+        if (currentState != RoundState.Setup) return;
+        if (!IsPlayerOnField()) return;
+        if (encounterManager != null && encounterManager.IsFinished()) return;
 
         roundRunning = true;
 
         CombatUtility.SetPlayerInputLocked(false);
-
         enemyTurnLockedUnits.Clear();
 
-        HashSet<AttackUnit> enemiesExistingBeforeSpawn =
-            CaptureLivingEnemies();
+        HashSet<AttackUnit> enemiesExistingBeforeSpawn = CaptureLivingEnemies();
 
         RefreshCachedUnits();
-
         ResetAllUnitMovement();
-
         UpdateAllUnitCooldowns();
 
+        // ========================================================
+        // SPAWN NEXT ROUND ENEMIES
+        // ========================================================
 
-        if (
-            encounterManager != null &&
+        if (encounterManager != null &&
             currentRound > 1 &&
-            encounterManager.IsEncounterRunning()
-        )
+            encounterManager.IsEncounterRunning())
         {
             encounterManager.SpawnNextRoundEnemies();
 
             RefreshCachedUnits();
 
-            LockNewlySpawnedEnemies(
-                enemiesExistingBeforeSpawn
-            );
+            LockNewlySpawnedEnemies(enemiesExistingBeforeSpawn);
         }
 
-
-        StartCoroutine(
-            RunRoundPipeline()
-        );
+        StartCoroutine(RunRoundPipeline());
     }
-
 
     // ============================================================
     // PLAYER ON FIELD
@@ -318,33 +231,17 @@ public class RoundManager : MonoBehaviour
 
     private bool IsPlayerOnField()
     {
-        List<AttackUnit> players =
-            CombatUtility.GetUnitsByTeam(
-                Team.Player
-            );
+        List<AttackUnit> players = CombatUtility.GetUnitsByTeam(Team.Player);
 
-        if (
-            players == null ||
-            players.Count == 0
-        )
-        {
+        if (players == null || players.Count == 0)
             return false;
-        }
 
         for (int i = 0; i < players.Count; i++)
         {
-            AttackUnit player =
-                players[i];
+            AttackUnit player = players[i];
 
-            if (player == null)
-            {
-                continue;
-            }
-
-            if (!CombatUtility.IsAlive(player))
-            {
-                continue;
-            }
+            if (player == null) continue;
+            if (!CombatUtility.IsAlive(player)) continue;
 
             return true;
         }
@@ -352,40 +249,26 @@ public class RoundManager : MonoBehaviour
         return false;
     }
 
-
     // ============================================================
     // CAPTURE LIVING ENEMIES
     // ============================================================
 
     private HashSet<AttackUnit> CaptureLivingEnemies()
     {
-        HashSet<AttackUnit> enemies =
-            new HashSet<AttackUnit>();
+        HashSet<AttackUnit> enemies = new HashSet<AttackUnit>();
 
         List<AttackUnit> units =
-            CombatUtility.GetUnitsByTeam(
-                Team.Enemy
-            );
+            CombatUtility.GetUnitsByTeam(Team.Enemy);
 
         if (units == null)
-        {
             return enemies;
-        }
 
         for (int i = 0; i < units.Count; i++)
         {
-            AttackUnit unit =
-                units[i];
+            AttackUnit unit = units[i];
 
-            if (unit == null)
-            {
-                continue;
-            }
-
-            if (!CombatUtility.IsAlive(unit))
-            {
-                continue;
-            }
+            if (unit == null) continue;
+            if (!CombatUtility.IsAlive(unit)) continue;
 
             enemies.Add(unit);
         }
@@ -393,79 +276,45 @@ public class RoundManager : MonoBehaviour
         return enemies;
     }
 
-
     // ============================================================
     // LOCK NEW ENEMIES
     // ============================================================
 
     private void LockNewlySpawnedEnemies(
-        HashSet<AttackUnit> enemiesExistingBeforeSpawn
-    )
+        HashSet<AttackUnit> enemiesExistingBeforeSpawn)
     {
         if (enemiesExistingBeforeSpawn == null)
-        {
             return;
-        }
 
         List<AttackUnit> currentEnemies =
-            CombatUtility.GetUnitsByTeam(
-                Team.Enemy
-            );
+            CombatUtility.GetUnitsByTeam(Team.Enemy);
 
         if (currentEnemies == null)
-        {
             return;
-        }
 
         for (int i = 0; i < currentEnemies.Count; i++)
         {
-            AttackUnit enemy =
-                currentEnemies[i];
+            AttackUnit enemy = currentEnemies[i];
 
-            if (enemy == null)
-            {
-                continue;
-            }
+            if (enemy == null) continue;
+            if (!CombatUtility.IsAlive(enemy)) continue;
+            if (enemiesExistingBeforeSpawn.Contains(enemy)) continue;
 
-            if (!CombatUtility.IsAlive(enemy))
-            {
-                continue;
-            }
-
-            if (
-                enemiesExistingBeforeSpawn.Contains(
-                    enemy
-                )
-            )
-            {
-                continue;
-            }
-
-            enemyTurnLockedUnits.Add(
-                enemy
-            );
+            enemyTurnLockedUnits.Add(enemy);
         }
     }
 
-
     // ============================================================
-    // ENEMY LOCK
+    // ENEMY TURN LOCK
     // ============================================================
 
-    private bool IsEnemyTurnLocked(
-        AttackUnit enemy
-    )
+    private bool IsEnemyTurnLocked(AttackUnit enemy)
     {
         if (enemy == null)
-        {
             return true;
-        }
 
-        return enemyTurnLockedUnits.Contains(
-            enemy
-        );
+        return enemyTurnLockedUnits.Contains(enemy);
     }
-
 
     // ============================================================
     // RESET MOVEMENT
@@ -475,13 +324,10 @@ public class RoundManager : MonoBehaviour
     {
         for (int i = 0; i < cachedUnits.Count; i++)
         {
-            AttackUnit unit =
-                cachedUnits[i];
+            AttackUnit unit = cachedUnits[i];
 
             if (unit == null)
-            {
                 continue;
-            }
 
             UnitMoveBrain moveBrain =
                 unit.GetComponent<UnitMoveBrain>();
@@ -492,7 +338,6 @@ public class RoundManager : MonoBehaviour
             }
         }
     }
-
 
     // ============================================================
     // ROUND PIPELINE
@@ -507,14 +352,11 @@ public class RoundManager : MonoBehaviour
 
         EnsureEnemiesExist();
 
-
         // ========================================================
         // PLAYER / ALLY TURN
         // ========================================================
 
-        SetRoundState(
-            RoundState.PlayerAndAllyTurn
-        );
+        SetRoundState(RoundState.PlayerAndAllyTurn);
 
         CombatUtility.SetPlayerInputLocked(false);
 
@@ -527,118 +369,67 @@ public class RoundManager : MonoBehaviour
             ExecutePlayerAndAllyTurn()
         );
 
+        // ========================================================
+        // ENCOUNTER FINISHED
+        // ========================================================
 
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
+        if (encounterManager != null &&
+            encounterManager.IsFinished())
         {
             EndRound();
-
             yield break;
         }
-
 
         // ========================================================
         // ENEMY TURN
         // ========================================================
 
-        SetRoundState(
-            RoundState.EnemyTurn
-        );
+        SetRoundState(RoundState.EnemyTurn);
+
+        // Tell anything listening that the enemy turn has officially started.
+        // RoundUIManager receives this state change first, activates
+        // the cinematic GameObject and starts
+        // NextRoundTextManager.ShowEnemyTurn().
+        OnEnemyTurnStarted?.Invoke();
 
         CombatUtility.SetPlayerInputLocked(true);
+
+        // ========================================================
+        // WAIT FOR ENEMY TURN UI
+        // ========================================================
+
+        if (nextRoundTextManager != null)
+        {
+            while (nextRoundTextManager.IsAnimating)
+            {
+                yield return null;
+            }
+        }
+
+        // ========================================================
+        // ENEMIES CAN NOW ACT
+        // ========================================================
 
         yield return StartCoroutine(
             ExecuteEnemyTurn()
         );
 
-
-        // Enemy turn finished.
         EndRound();
     }
-
 
     // ============================================================
     // SET ROUND STATE
     // ============================================================
 
-    private void SetRoundState(
-        RoundState newState
-    )
+    private void SetRoundState(RoundState newState)
     {
         if (currentState == newState)
-        {
             return;
-        }
 
-        currentState =
-            newState;
+        currentState = newState;
 
-        OnRoundStateChanged?.Invoke(
-            currentState
-        );
+        OnRoundStateChanged?.Invoke(currentState);
     }
-
-
-    // ============================================================
-    // END ROUND
-    // ============================================================
-
-    private void EndRound()
-    {
-        CombatUtility.SetPlayerInputLocked(false);
-
-
-        if (encounterManager != null)
-        {
-            encounterManager.CheckVictoryAfterRound();
-
-            if (encounterManager.IsFinished())
-            {
-                roundRunning = false;
-
-                SetRoundState(
-                    RoundState.Setup
-                );
-
-                return;
-            }
-        }
-
-
-        // ========================================================
-        // MOVE TO NEXT ROUND
-        // ========================================================
-        //
-        // Round 1 has now finished.
-        // The next round is therefore Round 2.
-        //
-        // Round 2 has finished.
-        // The next round is Round 3.
-        // ========================================================
-
-        currentRound++;
-
-
-        // Notify UI immediately.
-        OnRoundChanged?.Invoke(
-            currentRound
-        );
-
-
-        SetRoundState(
-            RoundState.Setup
-        );
-
-        roundRunning = false;
-
-
-        // Do NOT clear enemyTurnLockedUnits here.
-        //
-        // They remain locked until the next round starts.
-    }
-
 
     // ============================================================
     // PLAYER / ALLY TURN
@@ -650,21 +441,15 @@ public class RoundManager : MonoBehaviour
 
         for (int i = 0; i < cachedUnits.Count; i++)
         {
-            AttackUnit unit =
-                cachedUnits[i];
+            AttackUnit unit = cachedUnits[i];
 
             if (!IsValidUnit(unit))
-            {
                 continue;
-            }
 
-            Team team =
-                unit.GetTeam();
+            Team team = unit.GetTeam();
 
-            if (
-                team != Team.Player &&
-                team != Team.Ally
-            )
+            if (team != Team.Player &&
+                team != Team.Ally)
             {
                 continue;
             }
@@ -681,16 +466,13 @@ public class RoundManager : MonoBehaviour
                 yield return unitDelay;
             }
 
-            if (
-                encounterManager != null &&
-                encounterManager.IsFinished()
-            )
+            if (encounterManager != null &&
+                encounterManager.IsFinished())
             {
                 yield break;
             }
         }
     }
-
 
     // ============================================================
     // ENEMY TURN
@@ -699,48 +481,34 @@ public class RoundManager : MonoBehaviour
     private IEnumerator ExecuteEnemyTurn()
     {
         if (combatManager == null)
-        {
             yield break;
-        }
 
         List<AttackUnit> enemies =
-            CombatUtility.GetUnitsByTeam(
-                Team.Enemy
-            );
+            CombatUtility.GetUnitsByTeam(Team.Enemy);
 
-        if (
-            enemies == null ||
-            enemies.Count == 0
-        )
-        {
+        if (enemies == null || enemies.Count == 0)
             yield break;
-        }
 
         for (int i = 0; i < enemies.Count; i++)
         {
-            AttackUnit enemy =
-                enemies[i];
-
-            if (enemy == null)
-            {
-                continue;
-            }
-
-            if (!CombatUtility.IsAlive(enemy))
-            {
-                continue;
-            }
-
+            AttackUnit enemy = enemies[i];
 
             // ====================================================
-            // NEW ENEMY SPAWN LOCK
+            // VALIDATION
+            // ====================================================
+
+            if (enemy == null)
+                continue;
+
+            if (!CombatUtility.IsAlive(enemy))
+                continue;
+
+            // ====================================================
+            // NEWLY SPAWNED ENEMY
             // ====================================================
 
             if (IsEnemyTurnLocked(enemy))
-            {
                 continue;
-            }
-
 
             // ====================================================
             // STUN
@@ -749,20 +517,14 @@ public class RoundManager : MonoBehaviour
             if (ConditionManager.IsStunned(enemy))
             {
                 int remainingTurns =
-                    ConditionManager.GetStunRemaining(
-                        enemy
-                    );
+                    ConditionManager.GetStunRemaining(enemy);
 
                 Debug.Log(
                     $"[STUN] {enemy.name} skips its turn. " +
-                    $"Remaining before skip: " +
-                    $"{remainingTurns}"
+                    $"Remaining before skip: {remainingTurns}"
                 );
 
-                ConditionManager.ConsumeStunTurn(
-                    enemy
-                );
-
+                ConditionManager.ConsumeStunTurn(enemy);
 
                 if (delayBetweenUnits > 0f)
                 {
@@ -772,9 +534,22 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
+            // ====================================================
+            // CAMERA FOLLOW
+            // ====================================================
+
+            if (canvasJuiceManager != null)
+            {
+                canvasJuiceManager.MoveCameraToUnit(
+                    enemy.transform
+                );
+            }
+
+            // Let the camera begin moving.
+            yield return null;
 
             // ====================================================
-            // NORMAL ENEMY TURN
+            // ENEMY ACTION
             // ====================================================
 
             yield return StartCoroutine(
@@ -787,33 +562,127 @@ public class RoundManager : MonoBehaviour
 
             yield return null;
 
-
             // ====================================================
             // ENCOUNTER FINISHED
             // ====================================================
 
-            if (
-                encounterManager != null &&
-                encounterManager.IsFinished()
-            )
+            if (encounterManager != null &&
+                encounterManager.IsFinished())
             {
+                if (nextRoundTextManager != null)
+                {
+                    yield return StartCoroutine(
+                        nextRoundTextManager.HideCinematicBars()
+                    );
+                }
+
                 yield break;
+            }
+
+            // ====================================================
+            // DELAY
+            // ====================================================
+
+            if (delayBetweenUnits > 0f)
+            {
+                yield return unitDelay;
+            }
+        }
+
+        // ========================================================
+        // ENEMY TURN FINISHED
+        // ========================================================
+
+        if (nextRoundTextManager != null)
+        {
+            // First hide/retract the cinematic bars.
+            yield return StartCoroutine(
+                nextRoundTextManager.HideCinematicBars()
+            );
+
+            // ====================================================
+            // SHOW PLAYER TURN
+            // ====================================================
+
+            nextRoundTextManager.ShowPlayerTurn();
+
+            // Wait until the PLAYER TURN banner animation finishes.
+            while (nextRoundTextManager.IsAnimating)
+            {
+                yield return null;
             }
         }
     }
 
-
     // ============================================================
-    // VALIDATION
+    // END ROUND
     // ============================================================
 
-    private bool IsValidUnit(
-        AttackUnit unit
-    )
+    private void EndRound()
     {
-        return CombatUtility.IsAlive(unit);
+        CombatUtility.SetPlayerInputLocked(false);
+
+        // Stop enemy camera follow and return to normal position.
+        if (canvasJuiceManager != null)
+        {
+            canvasJuiceManager.MoveCameraToNormalPosition();
+        }
+
+        // ========================================================
+        // VICTORY
+        // ========================================================
+
+        if (encounterManager != null)
+        {
+            encounterManager.CheckVictoryAfterRound();
+
+            if (encounterManager.IsFinished())
+            {
+                roundRunning = false;
+
+                SetRoundState(RoundState.Setup);
+
+                return;
+            }
+        }
+
+        // ========================================================
+        // NEXT ROUND
+        // ========================================================
+
+        currentRound++;
+
+        OnRoundChanged?.Invoke(currentRound);
+
+        SetRoundState(RoundState.Setup);
+
+        roundRunning = false;
     }
 
+    // ============================================================
+    // ENSURE ENEMIES
+    // ============================================================
+
+    private bool EnsureEnemiesExist()
+    {
+        if (encounterManager != null &&
+            encounterManager.IsEncounterRunning())
+        {
+            return false;
+        }
+
+        if (combatManager == null)
+            return false;
+
+        if (CombatUtility.GetUnitCount(Team.Enemy) == 0)
+        {
+            combatManager.CheckForEnemies();
+
+            return true;
+        }
+
+        return false;
+    }
 
     // ============================================================
     // REFRESH UNITS
@@ -827,55 +696,16 @@ public class RoundManager : MonoBehaviour
             CombatUtility.GetAllAliveUnits();
 
         if (units == null)
-        {
             return;
-        }
 
         for (int i = 0; i < units.Count; i++)
         {
             if (units[i] != null)
             {
-                cachedUnits.Add(
-                    units[i]
-                );
+                cachedUnits.Add(units[i]);
             }
         }
     }
-
-
-    // ============================================================
-    // ENEMIES
-    // ============================================================
-
-    private bool EnsureEnemiesExist()
-    {
-        if (
-            encounterManager != null &&
-            encounterManager.IsEncounterRunning()
-        )
-        {
-            return false;
-        }
-
-        if (combatManager == null)
-        {
-            return false;
-        }
-
-        if (
-            CombatUtility.GetUnitCount(
-                Team.Enemy
-            ) == 0
-        )
-        {
-            combatManager.CheckForEnemies();
-
-            return true;
-        }
-
-        return false;
-    }
-
 
     // ============================================================
     // COOLDOWNS
@@ -885,53 +715,32 @@ public class RoundManager : MonoBehaviour
     {
         for (int i = 0; i < cachedUnits.Count; i++)
         {
-            AttackUnit unit =
-                cachedUnits[i];
+            AttackUnit unit = cachedUnits[i];
 
             if (unit == null)
-            {
                 continue;
-            }
 
             unit.StartNewRound();
         }
     }
 
-
     // ============================================================
-    // LOGGING
+    // VALID UNIT
     // ============================================================
 
-    private void LogAbilityUse(
-        string unitName,
-        string abilityName
-    )
+    private bool IsValidUnit(AttackUnit unit)
     {
-        AbilityLogEntry entry =
-            new AbilityLogEntry
-            {
-                round = currentRound,
-                unitName = unitName,
-                abilityName = abilityName
-            };
-
-        roundAbilityLogs.Add(entry);
-
-        OnAbilityUsed?.Invoke(entry);
+        return CombatUtility.IsAlive(unit);
     }
-
 
     // ============================================================
     // AUTO BATTLE
     // ============================================================
 
-    public void SetAutoBattle(
-        bool enabled
-    )
+    public void SetAutoBattle(bool enabled)
     {
         autoBattle = enabled;
     }
-
 
     public void ToggleAutoBattle()
     {
@@ -939,59 +748,63 @@ public class RoundManager : MonoBehaviour
 
         if (autoBattleToggle != null)
         {
-            autoBattleToggle.SetIsOnWithoutNotify(
-                autoBattle
-            );
+            autoBattleToggle.SetIsOnWithoutNotify(autoBattle);
         }
     }
 
+    // ============================================================
+    // ABILITY LOGGING
+    // ============================================================
+
+    private void LogAbilityUse(
+        string unitName,
+        string abilityName)
+    {
+        AbilityLogEntry entry = new AbilityLogEntry
+        {
+            round = currentRound,
+            unitName = unitName,
+            abilityName = abilityName
+        };
+
+        roundAbilityLogs.Add(entry);
+    }
 
     // ============================================================
     // ACCESSORS
     // ============================================================
 
-    public List<AbilityLogEntry>
-        GetAbilityLogsForRound(
-            int round
-        )
+    public List<AbilityLogEntry> GetAbilityLogsForRound(int round)
     {
         return roundAbilityLogs.FindAll(
             log => log.round == round
         );
     }
 
-
-    public List<AbilityLogEntry>
-        GetAllAbilityLogs()
+    public List<AbilityLogEntry> GetAllAbilityLogs()
     {
         return roundAbilityLogs;
     }
 
-
     public bool IsSetupPhase()
     {
-        return currentState ==
-               RoundState.Setup;
+        return currentState == RoundState.Setup;
     }
-
 
     public bool IsRoundRunning()
     {
         return roundRunning;
     }
 
-
     public int GetCurrentRound()
     {
         return currentRound;
     }
 
-
     public RoundState GetCurrentState()
     {
         return currentState;
     }
-
 
     public bool HasPlayerOnField()
     {

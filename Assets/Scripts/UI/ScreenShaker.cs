@@ -114,11 +114,6 @@ public class ScreenShaker : MonoBehaviour
         }
 
 
-        Debug.Log(
-            "[ScreenShaker] Successfully connected to Cinemachine noise.",
-            this
-        );
-
 
         // Make sure it starts with no shake.
         perlin.AmplitudeGain = 0f;

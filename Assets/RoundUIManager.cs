@@ -11,9 +11,6 @@ public class RoundUIManager : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI currentRoundText;
 
-    [SerializeField]
-    private GameObject enemyTurnGameObject;
-
 
     [Header("Display")]
 
@@ -42,15 +39,8 @@ public class RoundUIManager : MonoBehaviour
             return;
         }
 
-
-        // Listen for round number changes.
         roundManager.OnRoundChanged +=
             UpdateRoundText;
-
-
-        // Listen for Player/Enemy turn changes.
-        roundManager.OnRoundStateChanged +=
-            UpdateTurnUI;
     }
 
 
@@ -59,30 +49,11 @@ public class RoundUIManager : MonoBehaviour
         if (roundManager == null)
         {
             UpdateRoundText(1);
-
-            UpdateTurnUI(
-                RoundManager.RoundState.Setup
-            );
-
             return;
         }
 
-
-        // ========================================================
-        // INITIAL ROUND TEXT
-        // ========================================================
-
         UpdateRoundText(
             roundManager.GetCurrentRound()
-        );
-
-
-        // ========================================================
-        // INITIAL TURN UI
-        // ========================================================
-
-        UpdateTurnUI(
-            roundManager.GetCurrentState()
         );
     }
 
@@ -94,15 +65,8 @@ public class RoundUIManager : MonoBehaviour
             return;
         }
 
-
-        // Stop listening to round changes.
         roundManager.OnRoundChanged -=
             UpdateRoundText;
-
-
-        // Stop listening to state changes.
-        roundManager.OnRoundStateChanged -=
-            UpdateTurnUI;
     }
 
 
@@ -110,9 +74,7 @@ public class RoundUIManager : MonoBehaviour
     // ROUND TEXT
     // ============================================================
 
-    private void UpdateRoundText(
-        int round
-    )
+    private void UpdateRoundText(int round)
     {
         if (currentRoundText == null)
         {
@@ -120,32 +82,6 @@ public class RoundUIManager : MonoBehaviour
         }
 
         currentRoundText.text =
-            roundPrefix +
-            round;
-    }
-
-
-    // ============================================================
-    // TURN UI
-    // ============================================================
-
-    private void UpdateTurnUI(
-        RoundManager.RoundState state
-    )
-    {
-        if (enemyTurnGameObject == null)
-        {
-            return;
-        }
-
-
-        bool isEnemyTurn =
-            state ==
-            RoundManager.RoundState.EnemyTurn;
-
-
-        enemyTurnGameObject.SetActive(
-            isEnemyTurn
-        );
+            roundPrefix + round;
     }
 }
