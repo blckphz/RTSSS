@@ -47,10 +47,6 @@ public class transitionLinkManager : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            "[transitionLinkManager] Transition peak reached."
-        );
-
         // Let transitionGameManager decide whether
         // we are going to combat or returning to the map.
         transitionManager.StartEncounterAtPeak();
@@ -79,10 +75,6 @@ public class transitionLinkManager : MonoBehaviour
 
             return;
         }
-
-        Debug.Log(
-            "[transitionLinkManager] Ending transition."
-        );
 
         transitionManager.EndTransition();
     }

@@ -221,13 +221,6 @@ public class ScreenShaker : MonoBehaviour
                 }
             }
 
-
-            Debug.Log(
-                $"[ScreenShaker] Shake called by {caller} | " +
-                $"Intensity: {intensity} | " +
-                $"Duration: {duration}",
-                this
-            );
         }
 
 

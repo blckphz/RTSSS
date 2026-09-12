@@ -517,13 +517,6 @@ public class GridManager : MonoBehaviour
 
         NotifyGridChanged();
 
-
-        Debug.Log(
-            "[GridManager] Grid changed. " +
-            $"Shape: {gridShape}, " +
-            $"Size: {width}x{height}",
-            this
-        );
     }
 
 

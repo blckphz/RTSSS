@@ -1,8 +1,17 @@
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
 public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 {
+    // ============================================================
+    // STATIC SELECTION EVENT
+    // ============================================================
+
+    public static event Action<HoverInfoTrigger, bool>
+        SelectionChanged;
+
+
     // ============================================================
     // TOOLTIP CONTENT
     // ============================================================
@@ -198,6 +207,7 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             FindFirstObjectByType<GridHighlightManager>();
     }
 
+
     private void Update()
     {
         UpdateScale();
@@ -260,26 +270,22 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             return;
         }
 
+
         // ========================================================
         // ABILITY OUTLINE HAS PRIORITY
         // ========================================================
-        //
-        // If this unit is a valid damage/heal target, its RED/GREEN
-        // outline must remain visible even when the unit is
-        // deselected.
-        //
+
         if (isAbilityRangeOutlined)
         {
             hoverShaderSprite.enabled = true;
             return;
         }
 
+
         // ========================================================
         // NORMAL WHITE OUTLINE
         // ========================================================
-        //
-        // This is the regular mouse-hover / selection outline.
-        //
+
         hoverShaderSprite.enabled =
             isHovered ||
             isSelected;
@@ -290,17 +296,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     // ABILITY RANGE OUTLINE
     // ============================================================
 
-    /// <summary>
-    /// Controls the persistent RED/GREEN ability-range outline.
-    ///
-    /// This is intentionally separate from normal hover/selection.
-    ///
-    /// When enabled:
-    ///     RED/GREEN outline stays visible after deselection.
-    ///
-    /// When disabled:
-    ///     Normal white hover/selection behavior resumes.
-    /// </summary>
     public void SetAbilityRangeOutline(
         bool enabled,
         Color outlineColor)
@@ -328,10 +323,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     }
 
 
-    /// <summary>
-    /// Returns true if this unit currently has a
-    /// RED/GREEN ability-range outline.
-    /// </summary>
     public bool HasAbilityRangeOutline()
     {
         return isAbilityRangeOutlined;
@@ -531,9 +522,15 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         return isSelected;
     }
 
+
     public void SetSelected(
         bool selected)
     {
+        // Nothing changed.
+        if (isSelected == selected)
+            return;
+
+
         bool becomingSelected =
             selected &&
             !isSelected;
@@ -541,6 +538,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         bool becomingDeselected =
             !selected &&
             isSelected;
+
+
+        // ========================================================
+        // AUDIO MANAGER
+        // ========================================================
 
         if (
             audioFXManager == null &&
@@ -553,6 +555,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             audioFXManager =
                 AudioFXManager.Instance;
         }
+
+
+        // ========================================================
+        // SELECT
+        // ========================================================
 
         if (becomingSelected)
         {
@@ -570,22 +577,29 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             }
         }
 
+
+        // ========================================================
+        // DESELECT
+        // ========================================================
+
         if (becomingDeselected)
         {
             audioFXManager?.PlayUnitDeselect();
         }
 
+
+        // ========================================================
+        // SET STATE
+        // ========================================================
+
         isSelected =
             selected;
 
-        // IMPORTANT:
-        //
-        // If isAbilityRangeOutlined is true,
-        // UpdateHoverOutline() will keep the RED/GREEN
-        // outline visible.
-        //
-        // If it is false, the normal WHITE outline
-        // disappears when deselected.
+
+        // ========================================================
+        // UPDATE VISUAL
+        // ========================================================
+
         UpdateHoverOutline();
 
         if (selectedChildSprite != null)
@@ -593,6 +607,11 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             selectedChildSprite.enabled =
                 selected;
         }
+
+
+        // ========================================================
+        // UI
+        // ========================================================
 
         if (canvasInfoManager != null)
         {
@@ -607,6 +626,24 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
                 canvasInfoManager.ClearInfo();
             }
         }
+
+
+        // ========================================================
+        // SELECTION EVENT
+        // ========================================================
+        //
+        // IMPORTANT:
+        //
+        // EnemyHologramManager listens to this event.
+        //
+        // true  = this unit was selected
+        // false = this unit was deselected
+        //
+
+        SelectionChanged?.Invoke(
+            this,
+            selected
+        );
     }
 
 
@@ -616,12 +653,13 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
     private void OnDisable()
     {
+        bool wasSelected =
+            isSelected;
+
         isSelected = false;
         isHovered = false;
         isAbilityTargetHovered = false;
 
-        // Reset ability-range outline state when the
-        // entire unit is disabled/destroyed.
         isAbilityRangeOutlined = false;
 
         currentHoverScale = 0f;
@@ -630,15 +668,31 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         currentAbilityTargetScale = 0f;
         abilityTargetScaleVelocity = 0f;
 
+
         if (selectedChildSprite != null)
         {
             selectedChildSprite.enabled = false;
         }
 
+
         if (hoverShaderSprite != null)
         {
             hoverShaderSprite.enabled = false;
         }
+
+
+        // ========================================================
+        // TELL HOLOGRAM MANAGER
+        // ========================================================
+
+        if (wasSelected)
+        {
+            SelectionChanged?.Invoke(
+                this,
+                false
+            );
+        }
+
 
         if (UIManager.CurrentSelection == this)
         {
@@ -696,6 +750,7 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             : -1;
     }
 
+
     public bool IsAbilityOnCooldown(
         AbilitySO ability)
     {
@@ -706,6 +761,7 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             );
     }
 
+
     public int GetAbilityUsesRemaining(
         AbilitySO ability)
     {
@@ -715,6 +771,7 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             )
             : -1;
     }
+
 
     public bool IsAbilityReady(
         AbilitySO ability)

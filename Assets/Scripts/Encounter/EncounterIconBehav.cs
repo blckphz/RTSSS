@@ -529,12 +529,6 @@ public class IconBehav :
         // DEBUG
         // ========================================================
 
-        Debug.Log(
-            $"[IconBehav] Starting encounter: {encounter.encounterName}",
-            this
-        );
-
-
         // ========================================================
         // START TRANSITION
         // ========================================================

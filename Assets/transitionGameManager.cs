@@ -110,12 +110,6 @@ public class transitionGameManager : MonoBehaviour
         returningToMap = false;
 
 
-        Debug.Log(
-            "[transitionGameManager] " +
-            "Starting transition MAP -> COMBAT."
-        );
-
-
         // --------------------------------------------------------
         // START TRANSITION ANIMATION
         // --------------------------------------------------------
@@ -180,10 +174,6 @@ public class transitionGameManager : MonoBehaviour
 
     public void StartEncounterAtPeak()
     {
-        Debug.Log(
-            "[transitionGameManager] " +
-            "Transition reached peak."
-        );
 
 
         // ========================================================
@@ -343,17 +333,6 @@ public class transitionGameManager : MonoBehaviour
         // --------------------------------------------------------
 
         mapCanvas.SetActive(false);
-
-
-        Debug.Log(
-            "[transitionGameManager] Map disabled.\n" +
-            "activeSelf: " +
-            mapCanvas.activeSelf +
-            "\n" +
-            "activeInHierarchy: " +
-            mapCanvas.activeInHierarchy,
-            mapCanvas
-        );
     }
 
 
@@ -424,10 +403,6 @@ public class transitionGameManager : MonoBehaviour
 
     public void EndTransition()
     {
-        Debug.Log(
-            "[transitionGameManager] Transition ended."
-        );
-
 
         if (transitionObject != null)
         {

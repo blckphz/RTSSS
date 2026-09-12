@@ -134,9 +134,6 @@ public class VictoryManager : MonoBehaviour
     private void HandleGameStateChanged(
         GameStateManager.GameState newState)
     {
-        Debug.Log(
-            $"[VictoryManager] Handling state change: {newState}"
-        );
 
 
         if (newState ==

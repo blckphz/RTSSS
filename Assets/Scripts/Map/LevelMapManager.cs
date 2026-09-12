@@ -1092,11 +1092,6 @@ public class LevelMapManager : MonoBehaviour
         SelectRoute(node);
 
         currentNode = node;
-
-        Debug.Log(
-            $"[LevelMapManager] Selected node: Row {node.Row}, Column {node.Column}",
-            this
-        );
     }
 
     // ============================================================
@@ -1140,10 +1135,7 @@ public class LevelMapManager : MonoBehaviour
 
         UpdateIconState(selectedNode);
 
-        Debug.Log(
-            $"[LevelMapManager] Route selected: Row {selectedNode.Row}, Column {selectedNode.Column}. Other nodes locked.",
-            this
-        );
+
     }
 
     // ============================================================
