@@ -52,105 +52,21 @@ public class UnitTilePin : MonoBehaviour
 
 
     // ==================================================
-    // DEBUG
-    // ==================================================
-
-    [Header("DEBUG")]
-    [SerializeField]
-    private bool debugLogging = true;
-
-    private Vector2Int lastLoggedTile;
-    private Vector3 lastLoggedWorldPosition;
-
-
-    // ==================================================
-    // DEBUG HELPERS
-    // ==================================================
-
-    private string DebugName()
-    {
-        return string.IsNullOrEmpty(unitId)
-            ? gameObject.name
-            : gameObject.name + " [" + unitId + "]";
-    }
-
-
-    private void Log(string message)
-    {
-        if (!debugLogging)
-        {
-            return;
-        }
-
-        Debug.Log(
-            "[UnitTilePin] " +
-            DebugName() +
-            " | " +
-            message,
-            this
-        );
-    }
-
-
-    private void LogState(string source)
-    {
-        if (!debugLogging)
-        {
-            return;
-        }
-
-        Vector2Int worldGrid = logicalTile;
-
-        if (gridManager != null)
-        {
-            worldGrid =
-                gridManager.WorldToGridPosition(
-                    transform.position
-                );
-        }
-
-        Log(
-            source +
-            " | " +
-            "logicalTile=" + logicalTile +
-            " | " +
-            "transform.position=" + transform.position +
-            " | " +
-            "WorldToGrid(transform)=" + worldGrid +
-            " | " +
-            "hasTile=" + hasTile
-        );
-    }
-
-
-    // ==================================================
     // UNITY
     // ==================================================
 
     private void Awake()
     {
         GenerateUniqueId();
-
         FindGridManager();
-
-        LogState("Awake BEFORE ForceRotation");
-
         ForceRotation();
-
-        LogState("Awake AFTER ForceRotation");
     }
 
 
     private void Start()
     {
         FindGridManager();
-
-        LogState("Start BEFORE RegisterCurrentTile");
-
         RegisterCurrentTile();
-
-        LogState("Start AFTER RegisterCurrentTile");
-
         ForceRotation();
     }
 
@@ -199,15 +115,7 @@ public class UnitTilePin : MonoBehaviour
 
             if (!isMoving)
             {
-                LogState(
-                    "LateUpdate BEFORE PinToTile"
-                );
-
                 PinToTile();
-
-                LogState(
-                    "LateUpdate AFTER PinToTile"
-                );
             }
         }
 
@@ -261,15 +169,6 @@ public class UnitTilePin : MonoBehaviour
 
         gridManager =
             FindFirstObjectByType<GridManager>();
-
-        Log(
-            "FindGridManager | gridManager=" +
-            (
-                gridManager != null
-                    ? gridManager.name
-                    : "NULL"
-            )
-        );
     }
 
 
@@ -286,11 +185,6 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
-            Log(
-                "RegisterCurrentTile ABORTED | " +
-                "gridManager=NULL"
-            );
-
             return;
         }
 
@@ -302,26 +196,12 @@ public class UnitTilePin : MonoBehaviour
                 worldBefore
             );
 
-        Log(
-            "RegisterCurrentTile | " +
-            "worldBefore=" + worldBefore +
-            " | calculatedTile=" + calculatedTile
-        );
-
         logicalTile =
             calculatedTile;
 
         hasTile = true;
 
-        LogState(
-            "RegisterCurrentTile AFTER logicalTile assignment"
-        );
-
         PinToTile();
-
-        LogState(
-            "RegisterCurrentTile AFTER PinToTile"
-        );
     }
 
 
@@ -333,13 +213,6 @@ public class UnitTilePin : MonoBehaviour
         Vector2Int tile
     )
     {
-        Log(
-            "SetTile CALLED | " +
-            "requestedTile=" + tile +
-            " | previousLogicalTile=" + logicalTile +
-            " | transform.position=" + transform.position
-        );
-
         if (gridManager == null)
         {
             FindGridManager();
@@ -347,20 +220,11 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
-            Log(
-                "SetTile ABORTED | gridManager=NULL"
-            );
-
             return;
         }
 
         if (!gridManager.IsInsideGrid(tile))
         {
-            Log(
-                "SetTile REJECTED | " +
-                "tile outside grid=" + tile
-            );
-
             return;
         }
 
@@ -370,15 +234,7 @@ public class UnitTilePin : MonoBehaviour
         hasTile =
             true;
 
-        LogState(
-            "SetTile AFTER assignment"
-        );
-
         PinToTile();
-
-        LogState(
-            "SetTile AFTER PinToTile"
-        );
     }
 
 
@@ -390,13 +246,6 @@ public class UnitTilePin : MonoBehaviour
         Vector2Int newTile
     )
     {
-        Log(
-            "UpdateTileAfterMovement CALLED | " +
-            "newTile=" + newTile +
-            " | previousLogicalTile=" + logicalTile +
-            " | transform.position=" + transform.position
-        );
-
         if (gridManager == null)
         {
             FindGridManager();
@@ -404,21 +253,11 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
-            Log(
-                "UpdateTileAfterMovement ABORTED | " +
-                "gridManager=NULL"
-            );
-
             return;
         }
 
         if (!gridManager.IsInsideGrid(newTile))
         {
-            Log(
-                "UpdateTileAfterMovement REJECTED | " +
-                "tile outside grid=" + newTile
-            );
-
             return;
         }
 
@@ -428,29 +267,13 @@ public class UnitTilePin : MonoBehaviour
         hasTile =
             true;
 
-        LogState(
-            "UpdateTileAfterMovement AFTER logicalTile assignment"
-        );
-
         Vector3 targetPosition =
             gridManager.GridToWorldPosition(
                 newTile
             );
 
-        Log(
-            "UpdateTileAfterMovement | " +
-            "GridToWorldPosition(" +
-            newTile +
-            ")=" +
-            targetPosition
-        );
-
         transform.position =
             targetPosition;
-
-        LogState(
-            "UpdateTileAfterMovement AFTER transform.position"
-        );
 
         ForceRotation();
     }
@@ -469,19 +292,11 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
-            Log(
-                "PinToTile ABORTED | gridManager=NULL"
-            );
-
             return;
         }
 
         if (!hasTile)
         {
-            Log(
-                "PinToTile ABORTED | hasTile=false"
-            );
-
             return;
         }
 
@@ -493,48 +308,16 @@ public class UnitTilePin : MonoBehaviour
             board.IsRotating()
         )
         {
-            Log(
-                "PinToTile SKIPPED | board is rotating"
-            );
-
             return;
         }
-
-        Vector3 worldBefore =
-            transform.position;
 
         Vector3 targetPosition =
             gridManager.GridToWorldPosition(
                 logicalTile
             );
 
-        Log(
-            "PinToTile | " +
-            "logicalTile=" + logicalTile +
-            " | worldBefore=" + worldBefore +
-            " | targetWorld=" + targetPosition
-        );
-
         transform.position =
             targetPosition;
-
-        Vector3 worldAfter =
-            transform.position;
-
-        if (worldBefore != worldAfter)
-        {
-            Log(
-                "PinToTile MOVED TRANSFORM | " +
-                "before=" + worldBefore +
-                " | after=" + worldAfter
-            );
-        }
-
-        lastLoggedTile =
-            logicalTile;
-
-        lastLoggedWorldPosition =
-            worldAfter;
     }
 
 
@@ -568,11 +351,6 @@ public class UnitTilePin : MonoBehaviour
 
     public Vector2Int GetTile()
     {
-        if (debugLogging)
-        {
-            LogState("GetTile");
-        }
-
         return logicalTile;
     }
 
@@ -583,11 +361,6 @@ public class UnitTilePin : MonoBehaviour
 
     public Vector2Int GetGridPosition()
     {
-        if (debugLogging)
-        {
-            LogState("GetGridPosition");
-        }
-
         return logicalTile;
     }
 
@@ -650,11 +423,6 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
-            Log(
-                "RefreshTileFromWorldPosition ABORTED | " +
-                "gridManager=NULL"
-            );
-
             return;
         }
 
@@ -666,20 +434,9 @@ public class UnitTilePin : MonoBehaviour
                 worldBefore
             );
 
-        Log(
-            "RefreshTileFromWorldPosition | " +
-            "world=" + worldBefore +
-            " | calculatedTile=" + calculatedTile +
-            " | previousLogicalTile=" + logicalTile
-        );
-
         logicalTile =
             calculatedTile;
 
         hasTile = true;
-
-        LogState(
-            "RefreshTileFromWorldPosition AFTER assignment"
-        );
     }
 }

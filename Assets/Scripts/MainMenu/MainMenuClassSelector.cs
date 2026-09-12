@@ -104,13 +104,6 @@ public class MainMenuClassSelector : MonoBehaviour
         // LOAD GAME SCENE
         // --------------------------------------------------------
 
-        Debug.Log(
-            "[MainMenuClassSelector] " +
-            "Loading game scene: " +
-            gameSceneName
-        );
-
-
         SceneManager.LoadScene(
             gameSceneName
         );

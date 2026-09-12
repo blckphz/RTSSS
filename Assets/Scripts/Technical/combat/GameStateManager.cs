@@ -149,11 +149,6 @@ public class GameStateManager : MonoBehaviour
             newState;
 
 
-        Debug.Log(
-            $"[GameStateManager] Game state changed to: {currentState}"
-        );
-
-
         // --------------------------------------------------------
         // NOTIFY LISTENERS
         // --------------------------------------------------------
@@ -187,12 +182,6 @@ public class GameStateManager : MonoBehaviour
 
         if (upgradeChoiceUI == null)
         {
-            Debug.LogError(
-                "[GameStateManager] " +
-                "UpgradeChoiceUI is missing!",
-                this
-            );
-
             return;
         }
 
@@ -200,11 +189,6 @@ public class GameStateManager : MonoBehaviour
         // --------------------------------------------------------
         // SHOW STARTING UPGRADES
         // --------------------------------------------------------
-
-        Debug.Log(
-            "[GameStateManager] Showing starting upgrades."
-        );
-
 
         upgradeChoiceUI.ShowStartingUpgradeChoice(
             OnStartingUpgradeSelected
@@ -218,11 +202,6 @@ public class GameStateManager : MonoBehaviour
 
     private void OnStartingUpgradeSelected()
     {
-        Debug.Log(
-            "[GameStateManager] Starting upgrade selected."
-        );
-
-
         // --------------------------------------------------------
         // TELL GAME SESSION
         // --------------------------------------------------------
@@ -274,11 +253,6 @@ public class GameStateManager : MonoBehaviour
 
         if (encounterManager == null)
         {
-            Debug.LogError(
-                "[GameStateManager] EncounterManager is missing!",
-                this
-            );
-
             return;
         }
 
@@ -294,12 +268,6 @@ public class GameStateManager : MonoBehaviour
             currentState != GameState.Defeat
         )
         {
-            Debug.LogWarning(
-                $"[GameStateManager] Cannot start combat " +
-                $"from state {currentState}",
-                this
-            );
-
             return;
         }
 

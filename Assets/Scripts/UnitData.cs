@@ -15,8 +15,6 @@ public class UnitData : MonoBehaviour
     // RUNTIME ABILITY DATA
     // ============================================================
     //
-    // IMPORTANT:
-    //
     // The AbilitySO is shared.
     //
     // The AbilityData is NOT shared.
@@ -43,18 +41,27 @@ public class UnitData : MonoBehaviour
     public void Initialize(
         CharacterSO characterData)
     {
-        character =
-            characterData;
+        character = characterData;
 
-        ResetRuntimeData();
+
+        // IMPORTANT:
+        //
+        // Do NOT call ResetRuntimeData() here.
+        //
+        // Initialize() may be called again when a card/unit is
+        // placed or recreated.
+        //
+        // ResetRuntimeData() clears purchased runtime upgrades,
+        // which would cause Chain Lightning bonuses to disappear.
+        //
+        // We only rebuild the AbilityData here.
+        abilityData.Clear();
 
 
         if (character == null)
         {
             Debug.LogWarning(
-                "[UnitData] " +
-                name +
-                " initialized with NULL CharacterSO.",
+                "[UnitData] Initialize called with NULL character.",
                 this
             );
 
@@ -108,11 +115,13 @@ public class UnitData : MonoBehaviour
 
         Debug.Log(
             "[UnitData] Initialized " +
-            name +
-            " with character " +
-            character.characterName +
-            " | Runtime abilities = " +
-            abilityData.Count,
+            gameObject.name +
+            " | Character=" +
+            character.name +
+            " | Runtime abilities=" +
+            abilityData.Count +
+            " | Bonus jump entries=" +
+            abilityBonusJumps.Count,
             this
         );
     }
@@ -336,8 +345,7 @@ public class UnitData : MonoBehaviour
         if (ability == null)
         {
             Debug.LogWarning(
-                "[UnitData] Cannot add bonus jumps. " +
-                "Ability is null.",
+                "[UnitData] AddBonusJumps failed: ability is NULL.",
                 this
             );
 
@@ -347,6 +355,11 @@ public class UnitData : MonoBehaviour
 
         if (amount <= 0)
         {
+            Debug.LogWarning(
+                "[UnitData] AddBonusJumps failed: amount <= 0.",
+                this
+            );
+
             return;
         }
 
@@ -368,13 +381,17 @@ public class UnitData : MonoBehaviour
 
         Debug.Log(
             "[UnitData] " +
-            name +
+            gameObject.name +
             " received +" +
             amount +
             " bonus jumps for " +
             ability.name +
-            ". Total bonus = " +
-            abilityBonusJumps[ability],
+            " | Ability ID=" +
+            ability.GetInstanceID() +
+            " | Total Bonus=" +
+            abilityBonusJumps[ability] +
+            " | Unit ID=" +
+            GetInstanceID(),
             this
         );
     }
@@ -405,33 +422,89 @@ public class UnitData : MonoBehaviour
 
 
     // ============================================================
-    // RESET
+    // DEBUG
     // ============================================================
 
-    public void ResetRuntimeUpgrades()
+    public void DebugBonusJumps(
+        AbilitySO ability)
     {
-        abilityBonusJumps.Clear();
+        if (ability == null)
+        {
+            Debug.Log(
+                "[UnitData] " +
+                gameObject.name +
+                " | No ability supplied.",
+                this
+            );
+
+            return;
+        }
+
+
+        int bonus =
+            GetBonusJumps(
+                ability
+            );
 
 
         Debug.Log(
-            "[UnitData] Runtime upgrades reset for " +
-            name,
+            "[UnitData] DEBUG | " +
+            "Unit=" +
+            gameObject.name +
+            " | Unit ID=" +
+            GetInstanceID() +
+            " | Ability=" +
+            ability.name +
+            " | Ability ID=" +
+            ability.GetInstanceID() +
+            " | Bonus Jumps=" +
+            bonus,
             this
         );
     }
 
 
-    public void ResetRuntimeData()
+    // ============================================================
+    // RESET RUNTIME UPGRADES
+    // ============================================================
+
+    public void ResetRuntimeUpgrades()
     {
-        abilityData.Clear();
-
-        abilityBonusJumps.Clear();
-
-
         Debug.Log(
-            "[UnitData] Runtime data reset for " +
-            name,
+            "[UnitData] ResetRuntimeUpgrades | " +
+            gameObject.name +
+            " | Unit ID=" +
+            GetInstanceID(),
             this
         );
+
+
+        abilityBonusJumps.Clear();
+    }
+
+
+    // ============================================================
+    // RESET EVERYTHING
+    // ============================================================
+    //
+    // Use this ONLY when you intentionally want to completely
+    // wipe the unit's runtime state.
+    //
+    // DO NOT call this from Initialize().
+    // ============================================================
+
+    public void ResetRuntimeData()
+    {
+        Debug.Log(
+            "[UnitData] ResetRuntimeData | " +
+            gameObject.name +
+            " | Unit ID=" +
+            GetInstanceID(),
+            this
+        );
+
+
+        abilityData.Clear();
+        abilityBonusJumps.Clear();
     }
 }

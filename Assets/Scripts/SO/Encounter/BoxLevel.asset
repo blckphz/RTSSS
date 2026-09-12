@@ -27,3 +27,6 @@ MonoBehaviour:
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
     enemyId: penis
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+    enemyId: penis

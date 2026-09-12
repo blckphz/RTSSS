@@ -61,20 +61,12 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // FIND UPDATE MANAGER
-        // --------------------------------------------------------
-
         if (updateManager == null)
         {
             updateManager =
                 FindFirstObjectByType<UpdateManager>();
         }
 
-
-        // --------------------------------------------------------
-        // FIND VICTORY MANAGER
-        // --------------------------------------------------------
 
         if (victoryManager == null)
         {
@@ -83,17 +75,9 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // CREATE CHOICE ARRAY
-        // --------------------------------------------------------
-
         currentChoices =
             new UpgradeSO[CHOICE_COUNT];
 
-
-        // --------------------------------------------------------
-        // VALIDATE BUTTONS
-        // --------------------------------------------------------
 
         if (
             upgradeButtons == null ||
@@ -108,10 +92,6 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // VALIDATE TEXTS
-        // --------------------------------------------------------
-
         if (
             upgradeTexts == null ||
             upgradeTexts.Length != CHOICE_COUNT
@@ -124,10 +104,6 @@ public class UpgradeChoiceUI : MonoBehaviour
             );
         }
 
-
-        // --------------------------------------------------------
-        // SET BUTTON LISTENERS
-        // --------------------------------------------------------
 
         if (upgradeButtons != null)
         {
@@ -146,19 +122,19 @@ public class UpgradeChoiceUI : MonoBehaviour
                 }
 
 
-                upgradeButtons[i].onClick.RemoveAllListeners();
+                upgradeButtons[i]
+                    .onClick
+                    .RemoveAllListeners();
 
 
-                upgradeButtons[i].onClick.AddListener(
-                    () => SelectUpgrade(index)
-                );
+                upgradeButtons[i]
+                    .onClick
+                    .AddListener(
+                        () => SelectUpgrade(index)
+                    );
             }
         }
 
-
-        // --------------------------------------------------------
-        // HIDE CANVAS
-        // --------------------------------------------------------
 
         if (upgradeCanvas != null)
         {
@@ -175,17 +151,9 @@ public class UpgradeChoiceUI : MonoBehaviour
         Action onSelected = null
     )
     {
-        // --------------------------------------------------------
-        // SAVE CALLBACK
-        // --------------------------------------------------------
-
         onUpgradeSelected =
             onSelected;
 
-
-        // --------------------------------------------------------
-        // CHECK UPDATE MANAGER
-        // --------------------------------------------------------
 
         if (updateManager == null)
         {
@@ -196,21 +164,11 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (updateManager == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] " +
-                "UpdateManager is missing!",
-                this
-            );
-
             CompleteSelection();
 
             return;
         }
 
-
-        // --------------------------------------------------------
-        // GET CURRENT CHARACTER
-        // --------------------------------------------------------
 
         CharacterSO character =
             updateManager.GetCurrentCharacter();
@@ -218,83 +176,40 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (character == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] " +
-                "Current character is missing!",
-                this
-            );
-
             CompleteSelection();
 
             return;
         }
 
 
-        Debug.Log(
-            "[UpgradeChoiceUI] Showing starting upgrades for " +
-            character.characterName
-        );
-
-
-        // --------------------------------------------------------
-        // GET CHARACTER UPGRADES
-        // --------------------------------------------------------
-
         UpgradeSO[] availableUpgrades =
-            updateManager.GetCurrentCharacterUpgrades();
+            updateManager
+                .GetCurrentCharacterUpgrades();
 
-
-        // --------------------------------------------------------
-        // CHECK UPGRADES
-        // --------------------------------------------------------
 
         if (
             availableUpgrades == null ||
             availableUpgrades.Length == 0
         )
         {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] " +
-                "Current character has no upgrades.",
-                this
-            );
-
             CompleteSelection();
 
             return;
         }
 
 
-        // --------------------------------------------------------
-        // CLEAR OLD CHOICES
-        // --------------------------------------------------------
-
         ClearCurrentChoices();
 
-
-        // --------------------------------------------------------
-        // GENERATE CHOICES
-        // --------------------------------------------------------
 
         GenerateChoices(
             availableUpgrades
         );
 
 
-        // --------------------------------------------------------
-        // SET BUTTONS
-        // --------------------------------------------------------
-
         SetupButtons();
 
 
-        // --------------------------------------------------------
-        // SHOW CANVAS
-        // --------------------------------------------------------
-
-        ShowUpgradeCanvas(
-            "Starting upgrades"
-        );
+        ShowUpgradeCanvas();
     }
 
 
@@ -306,17 +221,9 @@ public class UpgradeChoiceUI : MonoBehaviour
         Action onSelected = null
     )
     {
-        // --------------------------------------------------------
-        // SAVE CALLBACK
-        // --------------------------------------------------------
-
         onUpgradeSelected =
             onSelected;
 
-
-        // --------------------------------------------------------
-        // CHECK UPDATE MANAGER
-        // --------------------------------------------------------
 
         if (updateManager == null)
         {
@@ -327,21 +234,11 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (updateManager == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] " +
-                "UpdateManager is missing!",
-                this
-            );
-
             CompleteSelection();
 
             return;
         }
 
-
-        // --------------------------------------------------------
-        // GET CURRENT CHARACTER
-        // --------------------------------------------------------
 
         CharacterSO character =
             updateManager.GetCurrentCharacter();
@@ -349,83 +246,40 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (character == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] " +
-                "Current character is missing!",
-                this
-            );
-
             CompleteSelection();
 
             return;
         }
 
 
-        Debug.Log(
-            "[UpgradeChoiceUI] Showing victory upgrades for " +
-            character.characterName
-        );
-
-
-        // --------------------------------------------------------
-        // GET CHARACTER UPGRADES
-        // --------------------------------------------------------
-
         UpgradeSO[] availableUpgrades =
-            updateManager.GetCurrentCharacterUpgrades();
+            updateManager
+                .GetCurrentCharacterUpgrades();
 
-
-        // --------------------------------------------------------
-        // CHECK UPGRADES
-        // --------------------------------------------------------
 
         if (
             availableUpgrades == null ||
             availableUpgrades.Length == 0
         )
         {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] " +
-                "Current character has no upgrades.",
-                this
-            );
-
             CompleteSelection();
 
             return;
         }
 
 
-        // --------------------------------------------------------
-        // CLEAR OLD CHOICES
-        // --------------------------------------------------------
-
         ClearCurrentChoices();
 
-
-        // --------------------------------------------------------
-        // GENERATE CHOICES
-        // --------------------------------------------------------
 
         GenerateChoices(
             availableUpgrades
         );
 
 
-        // --------------------------------------------------------
-        // SET BUTTONS
-        // --------------------------------------------------------
-
         SetupButtons();
 
 
-        // --------------------------------------------------------
-        // SHOW CANVAS
-        // --------------------------------------------------------
-
-        ShowUpgradeCanvas(
-            "Victory upgrades"
-        );
+        ShowUpgradeCanvas();
     }
 
 
@@ -480,10 +334,6 @@ public class UpgradeChoiceUI : MonoBehaviour
         );
 
 
-        // --------------------------------------------------------
-        // SHUFFLE
-        // --------------------------------------------------------
-
         for (
             int i = shuffled.Length - 1;
             i > 0;
@@ -509,10 +359,6 @@ public class UpgradeChoiceUI : MonoBehaviour
                 temp;
         }
 
-
-        // --------------------------------------------------------
-        // SELECT THREE
-        // --------------------------------------------------------
 
         int count =
             Mathf.Min(
@@ -574,10 +420,6 @@ public class UpgradeChoiceUI : MonoBehaviour
             }
 
 
-            // ----------------------------------------------------
-            // EMPTY SLOT
-            // ----------------------------------------------------
-
             if (upgrade == null)
             {
                 button.gameObject.SetActive(false);
@@ -598,16 +440,8 @@ public class UpgradeChoiceUI : MonoBehaviour
             }
 
 
-            // ----------------------------------------------------
-            // ENABLE BUTTON
-            // ----------------------------------------------------
-
             button.gameObject.SetActive(true);
 
-
-            // ----------------------------------------------------
-            // SET TEXT
-            // ----------------------------------------------------
 
             if (
                 upgradeTexts != null &&
@@ -626,42 +460,15 @@ public class UpgradeChoiceUI : MonoBehaviour
     // SHOW UPGRADE CANVAS
     // ============================================================
 
-    private void ShowUpgradeCanvas(
-        string context
-    )
+    private void ShowUpgradeCanvas()
     {
         if (upgradeCanvas == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] " +
-                "Upgrade Canvas is not assigned!",
-                this
-            );
-
             return;
         }
 
 
-        // --------------------------------------------------------
-        // ENABLE CANVAS
-        // --------------------------------------------------------
-
         upgradeCanvas.SetActive(true);
-
-
-        // --------------------------------------------------------
-        // CHECK CANVAS STATE
-        // --------------------------------------------------------
-
-        Debug.Log(
-            "[UpgradeChoiceUI] " +
-            context +
-            " canvas state: activeSelf=" +
-            upgradeCanvas.activeSelf +
-            ", activeInHierarchy=" +
-            upgradeCanvas.activeInHierarchy,
-            upgradeCanvas
-        );
     }
 
 
@@ -673,28 +480,15 @@ public class UpgradeChoiceUI : MonoBehaviour
         int index
     )
     {
-        // --------------------------------------------------------
-        // CHECK INDEX
-        // --------------------------------------------------------
-
         if (
             currentChoices == null ||
             index < 0 ||
             index >= currentChoices.Length
         )
         {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] " +
-                "Invalid upgrade index."
-            );
-
             return;
         }
 
-
-        // --------------------------------------------------------
-        // GET SELECTED UPGRADE
-        // --------------------------------------------------------
 
         UpgradeSO selectedUpgrade =
             currentChoices[index];
@@ -702,49 +496,31 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (selectedUpgrade == null)
         {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] " +
-                "Selected upgrade is null."
-            );
-
             return;
         }
 
-
-        // --------------------------------------------------------
-        // CHECK UPDATE MANAGER
-        // --------------------------------------------------------
 
         if (updateManager == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] " +
-                "UpdateManager is missing!",
-                this
-            );
-
             return;
         }
 
 
-        // --------------------------------------------------------
-        // APPLY UPGRADE
-        // --------------------------------------------------------
-
         Debug.Log(
-            "[UpgradeChoiceUI] Selected upgrade: " +
+            "[UpgradeChoiceUI] " +
+            "Selected upgrade: " +
             selectedUpgrade.name
         );
 
+
+        // ========================================================
+        // UPDATE MANAGER STORES THE UPGRADE
+        // ========================================================
 
         updateManager.ApplyUpgrade(
             selectedUpgrade
         );
 
-
-        // --------------------------------------------------------
-        // COMPLETE
-        // --------------------------------------------------------
 
         CompleteSelection();
     }
@@ -756,16 +532,8 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     private void CompleteSelection()
     {
-        // --------------------------------------------------------
-        // HIDE UI
-        // --------------------------------------------------------
-
         HideUpgradeChoices();
 
-
-        // --------------------------------------------------------
-        // SAVE CALLBACK
-        // --------------------------------------------------------
 
         Action callback =
             onUpgradeSelected;
@@ -775,10 +543,6 @@ public class UpgradeChoiceUI : MonoBehaviour
             null;
 
 
-        // --------------------------------------------------------
-        // INVOKE CALLBACK
-        // --------------------------------------------------------
-
         if (callback != null)
         {
             callback();
@@ -786,10 +550,6 @@ public class UpgradeChoiceUI : MonoBehaviour
             return;
         }
 
-
-        // --------------------------------------------------------
-        // DEFAULT VICTORY CALLBACK
-        // --------------------------------------------------------
 
         if (victoryManager != null)
         {
@@ -804,17 +564,9 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     public void HideUpgradeChoices()
     {
-        // --------------------------------------------------------
-        // CLEAR CALLBACK
-        // --------------------------------------------------------
-
         onUpgradeSelected =
             null;
 
-
-        // --------------------------------------------------------
-        // HIDE CANVAS
-        // --------------------------------------------------------
 
         if (upgradeCanvas != null)
         {

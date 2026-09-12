@@ -242,12 +242,6 @@ public class transitionGameManager : MonoBehaviour
         // START COMBAT
         // --------------------------------------------------------
 
-        Debug.Log(
-            "[transitionGameManager] " +
-            "Starting combat."
-        );
-
-
         gameStateManager.StartCombat();
     }
 

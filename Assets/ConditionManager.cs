@@ -139,21 +139,11 @@ public class ConditionManager : MonoBehaviour
 
         if (attackUnit == null)
         {
-            Debug.LogWarning(
-                $"[STUN] Cannot stun {target.name}: " +
-                "AttackUnit not found."
-            );
-
             return false;
         }
 
         if (attackUnit.IsDead())
         {
-            Debug.Log(
-                $"[STUN] {target.name} is dead. " +
-                "Stun ignored."
-            );
-
             return false;
         }
 
@@ -170,21 +160,11 @@ public class ConditionManager : MonoBehaviour
             )
         )
         {
-            int oldTurns =
-                existingStun.remainingTurns;
-
-            // Refresh to the larger value.
             existingStun.remainingTurns =
                 Mathf.Max(
                     existingStun.remainingTurns,
                     duration
                 );
-
-            Debug.Log(
-                $"[STUN] {target.name} stun refreshed. " +
-                $"Old={oldTurns} turns | " +
-                $"New={existingStun.remainingTurns} turns"
-            );
 
             ConditionManager manager =
                 target.GetComponent<ConditionManager>();
@@ -230,12 +210,6 @@ public class ConditionManager : MonoBehaviour
 
         conditionManager.SetStunVisualImmediate(
             StunIntensityOn
-        );
-
-
-        Debug.Log(
-            $"[STUN] {target.name} STUNNED. " +
-            $"Duration={duration} turn(s)"
         );
 
         return true;
@@ -415,11 +389,6 @@ public class ConditionManager : MonoBehaviour
 
         stunData.remainingTurns--;
 
-        Debug.Log(
-            $"[STUN] {target.name} consumed a stun turn. " +
-            $"Remaining={stunData.remainingTurns}"
-        );
-
 
         // --------------------------------------------------------
         // STUN FINISHED
@@ -440,10 +409,6 @@ public class ConditionManager : MonoBehaviour
                     StunIntensityOff
                 );
             }
-
-            Debug.Log(
-                $"[STUN] {target.name} STUN EXPIRED."
-            );
         }
 
         return true;
@@ -480,10 +445,9 @@ public class ConditionManager : MonoBehaviour
             return;
         }
 
-        bool wasStunned =
-            stunnedObjects.Remove(
-                target
-            );
+        stunnedObjects.Remove(
+            target
+        );
 
         ConditionManager manager =
             target.GetComponent<ConditionManager>();
@@ -492,13 +456,6 @@ public class ConditionManager : MonoBehaviour
         {
             manager.SetStunVisualImmediate(
                 StunIntensityOff
-            );
-        }
-
-        if (wasStunned)
-        {
-            Debug.Log(
-                $"[STUN] {target.name} STUN CLEARED."
             );
         }
     }

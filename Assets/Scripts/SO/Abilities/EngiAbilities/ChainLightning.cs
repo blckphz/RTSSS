@@ -54,18 +54,6 @@ public class ChainLightning : AbilitySO
     }
 
 
-    public int GetMaxJumps(UnitData unitData)
-    {
-        if (unitData == null)
-        {
-            return maxJumps;
-        }
-
-        return maxJumps +
-               unitData.GetBonusJumps(this);
-    }
-
-
     public int GetBonusJumps(UnitData unitData)
     {
         if (unitData == null)
@@ -74,6 +62,32 @@ public class ChainLightning : AbilitySO
         }
 
         return unitData.GetBonusJumps(this);
+    }
+
+
+    public int GetMaxJumps(UnitData unitData)
+    {
+        int bonus = GetBonusJumps(unitData);
+
+        int total =
+            maxJumps +
+            bonus;
+
+        Debug.Log(
+            "[ChainLightning] " +
+            "GetMaxJumps | " +
+            "Ability=" + name +
+            " | ID=" + GetInstanceID() +
+            " | Unit=" +
+            (unitData != null
+                ? unitData.name
+                : "NULL") +
+            " | Base=" + maxJumps +
+            " | Bonus=" + bonus +
+            " | Total=" + total
+        );
+
+        return total;
     }
 
 
@@ -109,78 +123,89 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
 
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
+
 
         if (targetUnit == null)
         {
             return false;
         }
 
+
         if (!CanTargetObject(user, target))
         {
             return false;
         }
 
+
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
+
 
         if (gridManager == null)
         {
             Debug.LogError(
-                "[ChainLightning] GridManager not found."
+                "[ChainLightning] " +
+                "GridManager not found."
             );
 
             return false;
         }
+
 
         if (projectilePrefab == null)
         {
             Debug.LogError(
-                "[ChainLightning] Projectile prefab is missing."
+                "[ChainLightning] " +
+                "Projectile prefab is missing."
             );
 
             return false;
         }
 
 
-        // --------------------------------------------------------
-        // GET THE CASTER'S UNIT DATA
-        // --------------------------------------------------------
+        // ========================================================
+        // GET UNIT DATA
+        // ========================================================
 
         UnitData unitData =
-            user.GetComponent<UnitData>();
+            FindUnitData(user);
 
-        if (unitData == null)
-        {
-            unitData =
-                user.GetComponentInChildren<UnitData>();
-        }
-
-        if (unitData == null)
-        {
-            unitData =
-                user.GetComponentInParent<UnitData>();
-        }
 
         if (unitData == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] UnitData not found on " +
+                "[ChainLightning] " +
+                "UnitData not found on " +
                 user.name +
                 ". Using base jump count."
             );
         }
+        else
+        {
+            Debug.Log(
+                "[ChainLightning] " +
+                "Using UnitData: " +
+                unitData.name +
+                " | ID=" +
+                unitData.GetInstanceID() +
+                " | Bonus=" +
+                GetBonusJumps(unitData)
+            );
+        }
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // BUILD CHAIN
-        // --------------------------------------------------------
+        // ========================================================
 
         List<GameObject> chain =
             GetChainPreview(
@@ -189,6 +214,7 @@ public class ChainLightning : AbilitySO
                 gridManager,
                 unitData
             );
+
 
         if (
             chain == null ||
@@ -199,12 +225,21 @@ public class ChainLightning : AbilitySO
         }
 
 
-        // --------------------------------------------------------
-        // SPAWN PROJECTILE
-        // --------------------------------------------------------
+        Debug.Log(
+            "[ChainLightning] " +
+            "Chain created with " +
+            chain.Count +
+            " target(s)."
+        );
+
+
+        // ========================================================
+        // SPAWN POINT
+        // ========================================================
 
         Transform spawnPoint =
             FindAbilitySpawnPoint(user);
+
 
         Vector3 spawnPosition =
             spawnPoint != null
@@ -212,12 +247,17 @@ public class ChainLightning : AbilitySO
                 : user.transform.position;
 
 
+        // ========================================================
+        // PROJECTILE
+        // ========================================================
+
         GameObject projectile =
             Instantiate(
                 projectilePrefab,
                 spawnPosition,
                 Quaternion.identity
             );
+
 
         if (projectile == null)
         {
@@ -231,10 +271,12 @@ public class ChainLightning : AbilitySO
                     ChainLightningProjectile
                 >();
 
+
         if (projectileComponent == null)
         {
             Debug.LogError(
-                "[ChainLightning] Projectile prefab requires " +
+                "[ChainLightning] " +
+                "Projectile prefab requires " +
                 "ChainLightningProjectile."
             );
 
@@ -253,7 +295,49 @@ public class ChainLightning : AbilitySO
             stunDuration
         );
 
+
         return true;
+    }
+
+
+    // ============================================================
+    // FIND UNIT DATA
+    // ============================================================
+
+    private UnitData FindUnitData(
+        GameObject user)
+    {
+        if (user == null)
+        {
+            return null;
+        }
+
+
+        UnitData unitData =
+            user.GetComponent<UnitData>();
+
+
+        if (unitData != null)
+        {
+            return unitData;
+        }
+
+
+        unitData =
+            user.GetComponentInChildren<UnitData>();
+
+
+        if (unitData != null)
+        {
+            return unitData;
+        }
+
+
+        unitData =
+            user.GetComponentInParent<UnitData>();
+
+
+        return unitData;
     }
 
 
@@ -269,10 +353,12 @@ public class ChainLightning : AbilitySO
             return null;
         }
 
+
         Transform[] children =
             user.GetComponentsInChildren<Transform>(
                 true
             );
+
 
         for (
             int i = 0;
@@ -283,10 +369,12 @@ public class ChainLightning : AbilitySO
             Transform child =
                 children[i];
 
+
             if (child == null)
             {
                 continue;
             }
+
 
             if (
                 child.name ==
@@ -296,6 +384,7 @@ public class ChainLightning : AbilitySO
                 return child;
             }
         }
+
 
         return null;
     }
@@ -310,25 +399,9 @@ public class ChainLightning : AbilitySO
         GameObject firstTarget,
         GridManager gridManager)
     {
-        UnitData unitData = null;
+        UnitData unitData =
+            FindUnitData(user);
 
-        if (user != null)
-        {
-            unitData =
-                user.GetComponent<UnitData>();
-
-            if (unitData == null)
-            {
-                unitData =
-                    user.GetComponentInChildren<UnitData>();
-            }
-
-            if (unitData == null)
-            {
-                unitData =
-                    user.GetComponentInParent<UnitData>();
-            }
-        }
 
         return GetChainPreview(
             user,
@@ -348,6 +421,7 @@ public class ChainLightning : AbilitySO
         List<GameObject> chain =
             new List<GameObject>();
 
+
         if (
             user == null ||
             firstTarget == null ||
@@ -361,11 +435,13 @@ public class ChainLightning : AbilitySO
         HashSet<GameObject> hitTargets =
             new HashSet<GameObject>();
 
+
         GameObject currentTarget =
             firstTarget;
 
 
         int jump = 0;
+
 
         int maximumJumps =
             GetMaxJumps(unitData);
@@ -392,6 +468,7 @@ public class ChainLightning : AbilitySO
                 currentTarget
             );
 
+
             chain.Add(
                 currentTarget
             );
@@ -404,6 +481,7 @@ public class ChainLightning : AbilitySO
                     gridManager,
                     hitTargets
                 );
+
 
             jump++;
         }
@@ -441,6 +519,7 @@ public class ChainLightning : AbilitySO
 
         GameObject closestEnemy = null;
 
+
         float closestDistance =
             float.MaxValue;
 
@@ -459,6 +538,7 @@ public class ChainLightning : AbilitySO
         {
             AttackUnit candidateUnit =
                 allUnits[i];
+
 
             if (candidateUnit == null)
             {
@@ -522,6 +602,7 @@ public class ChainLightning : AbilitySO
             {
                 closestDistance =
                     distance;
+
 
                 closestEnemy =
                     candidate;

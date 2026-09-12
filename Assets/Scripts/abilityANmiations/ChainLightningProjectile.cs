@@ -14,16 +14,6 @@ public class ChainLightningProjectile : MonoBehaviour
 
 
     // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Stun Debug")]
-
-    [SerializeField]
-    private bool enableStunDebugLogs = true;
-
-
-    // ============================================================
     // STATE
     // ============================================================
 
@@ -368,7 +358,6 @@ public class ChainLightningProjectile : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // ROLL STUN CHANCE
         // --------------------------------------------------------
@@ -382,53 +371,18 @@ public class ChainLightningProjectile : MonoBehaviour
         bool stunSucceeded =
             roll <= stunPercentage;
 
-
-        if (enableStunDebugLogs)
-        {
-            Debug.Log(
-                $"[STUN] {target.name} | " +
-                $"Roll: {roll:F1} | " +
-                $"Chance: {stunPercentage:F1}% | " +
-                $"Result: " +
-                $"{(stunSucceeded ? "SUCCESS" : "FAILED")}"
-            );
-        }
-
-
         if (!stunSucceeded)
         {
             return;
         }
 
-
         // --------------------------------------------------------
         // APPLY STUN
         // --------------------------------------------------------
 
-        bool stunned =
-            ConditionManager.ApplyStun(
-                target,
-                stunDuration
-            );
-
-
-        if (enableStunDebugLogs)
-        {
-            if (stunned)
-            {
-                Debug.Log(
-                    $"[STUN] {target.name} " +
-                    $"STUN APPLIED | " +
-                    $"Duration: {stunDuration} turn(s)"
-                );
-            }
-            else
-            {
-                Debug.Log(
-                    $"[STUN] Failed to apply stun to " +
-                    $"{target.name}."
-                );
-            }
-        }
+        ConditionManager.ApplyStun(
+            target,
+            stunDuration
+        );
     }
 }

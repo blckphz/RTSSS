@@ -69,24 +69,11 @@ public class GameSession : MonoBehaviour
     {
         if (squad == null)
         {
-            Debug.LogError(
-                "[GameSession] " +
-                "Cannot set selected squad to null.",
-                this
-            );
-
             return;
         }
 
-
         SelectedSquad =
             squad;
-
-
-        Debug.Log(
-            "[GameSession] Selected squad: " +
-            squad.name
-        );
     }
 
 
@@ -113,29 +100,21 @@ public class GameSession : MonoBehaviour
         NewRunPending = true;
 
 
-        Debug.Log(
-            "[GameSession] Starting new run. " +
-            "NewRunPending = " +
-            NewRunPending
-        );
-
-
         // --------------------------------------------------------
         // LOAD GAMEPLAY SCENE
         // --------------------------------------------------------
-        //
+        // 
         // KEEP YOUR EXISTING SCENE-LOADING CODE HERE.
-        //
+        // 
         // Example:
-        //
-        // SceneManager.LoadScene("Gameplay");
-        //
+        // 
+        // SceneManager.LoadScene("Gameplay"); 
+        // 
         // OR:
-        //
+        // 
         // Your existing transition manager call.
-        //
+        // 
         // --------------------------------------------------------
-
     }
 
 
@@ -150,12 +129,5 @@ public class GameSession : MonoBehaviour
         // --------------------------------------------------------
 
         NewRunPending = false;
-
-
-        Debug.Log(
-            "[GameSession] Starting upgrades complete. " +
-            "NewRunPending = " +
-            NewRunPending
-        );
     }
 }

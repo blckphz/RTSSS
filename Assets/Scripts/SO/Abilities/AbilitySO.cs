@@ -18,7 +18,6 @@ public abstract class AbilitySO : ScriptableObject
         Any
     }
 
-
     // ============================================================
     // ABILITY
     // ============================================================
@@ -162,62 +161,13 @@ public abstract class AbilitySO : ScriptableObject
         GameObject user
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] GetUserGridPosition START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            )
-        );
-
         if (
             gridManager == null ||
             user == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] GetUserGridPosition FAILED | " +
-                "GridManager=" + (
-                    gridManager != null
-                        ? "VALID"
-                        : "NULL"
-                ) +
-                " | User=" + (
-                    user != null
-                        ? "VALID"
-                        : "NULL"
-                )
-            );
-
             return Vector2Int.zero;
         }
-
-
-        // ========================================================
-        // AUTHORITATIVE POSITION
-        // ========================================================
-        //
-        // The actual transform position is converted through the
-        // GridManager.
-        //
-        // This is intentionally NOT:
-        //
-        //     pin.GetTile()
-        //
-        // because UnitTilePin can become stale if another system
-        // changes transform.position without updating the pin.
-        //
-        // Example of the bug this prevents:
-        //
-        // UnitTilePin = (-1,-3)
-        // Transform   = (-3.90,-3.90,0)
-        // WorldToGrid  = (-3,-3)
-        //
-        // In that situation (-3,-3) is the position that the
-        // ability system should use.
-        // ========================================================
 
         Vector3 worldPosition =
             user.transform.position;
@@ -226,62 +176,6 @@ public abstract class AbilitySO : ScriptableObject
             gridManager.WorldToGridPosition(
                 worldPosition
             );
-
-
-        // ========================================================
-        // UNIT TILE PIN DEBUG
-        // ========================================================
-
-        UnitTilePin pin =
-            user.GetComponent<UnitTilePin>();
-
-        if (
-            pin != null &&
-            pin.HasTile()
-        )
-        {
-            Vector2Int pinnedTile =
-                pin.GetTile();
-
-            if (pinnedTile != worldTile)
-            {
-                Debug.LogWarning(
-                    "[AbilitySO DEBUG] GetUserGridPosition | " +
-                    "UNIT TILE DESYNC DETECTED | " +
-                    "User=" + user.name +
-                    " | UnitTilePin=" + pinnedTile +
-                    " | WorldToGrid=" + worldTile +
-                    " | WorldPosition=" + worldPosition +
-                    " | USING WorldToGrid"
-                );
-            }
-            else
-            {
-                Debug.Log(
-                    "[AbilitySO DEBUG] GetUserGridPosition | " +
-                    "UnitTilePin agrees with WorldToGrid | " +
-                    "User=" + user.name +
-                    " | Tile=" + worldTile
-                );
-            }
-        }
-        else
-        {
-            Debug.Log(
-                "[AbilitySO DEBUG] GetUserGridPosition | " +
-                "No valid UnitTilePin | " +
-                "User=" + user.name +
-                " | Tile=" + worldTile
-            );
-        }
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] GetUserGridPosition RESULT | " +
-            "User=" + user.name +
-            " | World=" + worldPosition +
-            " | Grid=" + worldTile
-        );
 
         return worldTile;
     }
@@ -295,25 +189,8 @@ public abstract class AbilitySO : ScriptableObject
         GameObject user
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] CanUseAfterMovement START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | canAttackWithThisAfterMove=" +
-            canAttackWithThisAfterMove
-        );
-
         if (user == null)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanUseAfterMovement FALSE | " +
-                "Reason=User is NULL"
-            );
-
             return false;
         }
 
@@ -322,44 +199,18 @@ public abstract class AbilitySO : ScriptableObject
 
         if (moveBrain == null)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanUseAfterMovement TRUE | " +
-                "Reason=No UnitMoveBrain found"
-            );
-
             return true;
         }
 
         bool canMove =
             moveBrain.CanMoveThisTurn();
 
-        Debug.Log(
-            "[AbilitySO DEBUG] CanUseAfterMovement | " +
-            "CanMoveThisTurn=" + canMove +
-            " | canAttackWithThisAfterMove=" +
-            canAttackWithThisAfterMove
-        );
-
         if (canMove)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanUseAfterMovement TRUE | " +
-                "Reason=Unit can still move this turn"
-            );
-
             return true;
         }
 
-        bool result =
-            canAttackWithThisAfterMove;
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanUseAfterMovement RESULT | " +
-            "Result=" + result +
-            " | Reason=Unit already moved"
-        );
-
-        return result;
+        return canAttackWithThisAfterMove;
     }
 
 
@@ -372,45 +223,16 @@ public abstract class AbilitySO : ScriptableObject
         GameObject user
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] GetRangeTiles START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | Range=" + range +
-            " | MinDistance=" + minDistance +
-            " | Shape=" + rangeShape
-        );
-
         List<Vector2Int> tiles =
             new List<Vector2Int>();
-
 
         if (
             gridManager == null ||
             user == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] GetRangeTiles RETURN EMPTY | " +
-                "GridManager=" + (
-                    gridManager != null
-                        ? "VALID"
-                        : "NULL"
-                ) +
-                " | User=" + (
-                    user != null
-                        ? "VALID"
-                        : "NULL"
-                )
-            );
-
             return tiles;
         }
-
 
         Vector2Int origin =
             GetUserGridPosition(
@@ -418,13 +240,11 @@ public abstract class AbilitySO : ScriptableObject
                 user
             );
 
-
         int abilityRange =
             Mathf.Max(
                 1,
                 range
             );
-
 
         int minimumDistance =
             Mathf.Clamp(
@@ -432,19 +252,6 @@ public abstract class AbilitySO : ScriptableObject
                 0,
                 abilityRange
             );
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] GetRangeTiles PARAMETERS | " +
-            "Ability=" + abilityName +
-            " | Origin=" + origin +
-            " | RawRange=" + range +
-            " | EffectiveRange=" + abilityRange +
-            " | RawMinDistance=" + minDistance +
-            " | EffectiveMinDistance=" + minimumDistance +
-            " | Shape=" + rangeShape
-        );
-
 
         switch (rangeShape)
         {
@@ -474,11 +281,9 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
-
                         int distance =
                             Mathf.Abs(x) +
                             Mathf.Abs(y);
-
 
                         if (
                             distance >
@@ -488,7 +293,6 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
-
                         if (
                             distance <
                             minimumDistance
@@ -496,7 +300,6 @@ public abstract class AbilitySO : ScriptableObject
                         {
                             continue;
                         }
-
 
                         AddValidTile(
                             gridManager,
@@ -539,13 +342,11 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
-
                         int distance =
                             Mathf.Max(
                                 Mathf.Abs(x),
                                 Mathf.Abs(y)
                             );
-
 
                         if (
                             distance >
@@ -555,7 +356,6 @@ public abstract class AbilitySO : ScriptableObject
                             continue;
                         }
 
-
                         if (
                             distance <
                             minimumDistance
@@ -563,7 +363,6 @@ public abstract class AbilitySO : ScriptableObject
                         {
                             continue;
                         }
-
 
                         AddValidTile(
                             gridManager,
@@ -600,14 +399,12 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
-
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
                         Vector2Int.up * i
                     );
-
 
                     AddValidTile(
                         gridManager,
@@ -616,14 +413,12 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.down * i
                     );
 
-
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
                         Vector2Int.left * i
                     );
-
 
                     AddValidTile(
                         gridManager,
@@ -656,7 +451,6 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
-
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -666,7 +460,6 @@ public abstract class AbilitySO : ScriptableObject
                             i
                         )
                     );
-
 
                     AddValidTile(
                         gridManager,
@@ -678,7 +471,6 @@ public abstract class AbilitySO : ScriptableObject
                         )
                     );
 
-
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -688,7 +480,6 @@ public abstract class AbilitySO : ScriptableObject
                             -i
                         )
                     );
-
 
                     AddValidTile(
                         gridManager,
@@ -704,18 +495,6 @@ public abstract class AbilitySO : ScriptableObject
                 break;
         }
 
-
-        Debug.Log(
-            "[AbilitySO DEBUG] GetRangeTiles RESULT | " +
-            "Ability=" + abilityName +
-            " | Origin=" + origin +
-            " | TileCount=" + tiles.Count +
-            " | Tiles=" + string.Join(
-                ", ",
-                tiles
-            )
-        );
-
         return tiles;
     }
 
@@ -730,21 +509,6 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target = null
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] GetHitboxTiles | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | Target=" + (
-                target != null
-                    ? target.name
-                    : "NULL"
-            )
-        );
-
         return GetRangeTiles(
             gridManager,
             user
@@ -764,15 +528,8 @@ public abstract class AbilitySO : ScriptableObject
     {
         if (gridManager == null)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] AddValidTile SKIPPED | " +
-                "Reason=GridManager NULL | " +
-                "Position=" + position
-            );
-
             return;
         }
-
 
         if (
             !gridManager.IsInsideGrid(
@@ -782,7 +539,6 @@ public abstract class AbilitySO : ScriptableObject
         {
             return;
         }
-
 
         if (
             !tiles.Contains(
@@ -805,65 +561,22 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] ============================="
-        );
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHit START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | Target=" + (
-                target != null
-                    ? target.name
-                    : "NULL"
-            ) +
-            " | Range=" + range +
-            " | MinDistance=" + minDistance +
-            " | Shape=" + rangeShape +
-            " | TargetType=" + targetType +
-            " | CanAttackAfterMove=" +
-            canAttackWithThisAfterMove
-        );
-
         if (
             gridManager == null ||
             user == null ||
             target == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHit FALSE | " +
-                "Reason=GridManager/User/Target NULL"
-            );
-
             return false;
         }
-
 
         bool canUseAfterMovement =
             CanUseAfterMovement(user);
 
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHit | " +
-            "CanUseAfterMovement=" +
-            canUseAfterMovement
-        );
-
         if (!canUseAfterMovement)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHit FALSE | " +
-                "Reason=CanUseAfterMovement returned FALSE"
-            );
-
             return false;
         }
-
 
         bool canTarget =
             CanTargetObject(
@@ -871,36 +584,15 @@ public abstract class AbilitySO : ScriptableObject
                 target
             );
 
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHit | " +
-            "CanTargetObject=" +
-            canTarget
-        );
-
         if (!canTarget)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHit FALSE | " +
-                "Reason=CanTargetObject returned FALSE"
-            );
-
             return false;
         }
-
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHit | " +
-            "TargetWorldPosition=" +
-            target.transform.position +
-            " | TargetGridPosition=" +
-            targetPosition
-        );
-
 
         bool canHitTile =
             CanHitTile(
@@ -908,14 +600,6 @@ public abstract class AbilitySO : ScriptableObject
                 user,
                 targetPosition
             );
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHit RESULT | " +
-            "CanHitTile=" +
-            canHitTile +
-            " | TargetGridPosition=" +
-            targetPosition
-        );
 
         return canHitTile;
     }
@@ -930,35 +614,13 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] CanTargetObject START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | Target=" + (
-                target != null
-                    ? target.name
-                    : "NULL"
-            ) +
-            " | TargetType=" + targetType
-        );
-
         if (
             user == null ||
             target == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanTargetObject FALSE | " +
-                "Reason=User or Target NULL"
-            );
-
             return false;
         }
-
 
         AttackUnit userUnit =
             user.GetComponent<AttackUnit>();
@@ -966,47 +628,19 @@ public abstract class AbilitySO : ScriptableObject
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
-
         if (
             userUnit == null ||
             targetUnit == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanTargetObject FALSE | " +
-                "Reason=Missing AttackUnit | " +
-                "UserAttackUnit=" + (
-                    userUnit != null
-                        ? "VALID"
-                        : "NULL"
-                ) +
-                " | TargetAttackUnit=" + (
-                    targetUnit != null
-                        ? "VALID"
-                        : "NULL"
-                )
-            );
-
             return false;
         }
-
 
         Team userTeam =
             userUnit.GetTeam();
 
         Team targetTeam =
             targetUnit.GetTeam();
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanTargetObject TEAMS | " +
-            "User=" + user.name +
-            " | UserTeam=" + userTeam +
-            " | Target=" + target.name +
-            " | TargetTeam=" + targetTeam +
-            " | RequiredTargetType=" + targetType
-        );
-
 
         // ========================================================
         // ENEMY
@@ -1022,42 +656,17 @@ public abstract class AbilitySO : ScriptableObject
                 userTeam == Team.Ally
             )
             {
-                bool result =
-                    targetTeam == Team.Enemy;
-
-                Debug.Log(
-                    "[AbilitySO DEBUG] CanTargetObject RESULT | " +
-                    "Enemy targeting from Player/Ally | " +
-                    "Result=" + result
-                );
-
-                return result;
+                return targetTeam == Team.Enemy;
             }
-
 
             if (
                 userTeam ==
                 Team.Enemy
             )
             {
-                bool result =
-                    targetTeam == Team.Player ||
-                    targetTeam == Team.Ally;
-
-                Debug.Log(
-                    "[AbilitySO DEBUG] CanTargetObject RESULT | " +
-                    "Enemy targeting from Enemy | " +
-                    "Result=" + result
-                );
-
-                return result;
+                return targetTeam == Team.Player ||
+                       targetTeam == Team.Ally;
             }
-
-
-            Debug.Log(
-                "[AbilitySO DEBUG] CanTargetObject FALSE | " +
-                "Reason=Unsupported user team"
-            );
 
             return false;
         }
@@ -1077,42 +686,17 @@ public abstract class AbilitySO : ScriptableObject
                 userTeam == Team.Ally
             )
             {
-                bool result =
-                    targetTeam == Team.Player ||
-                    targetTeam == Team.Ally;
-
-                Debug.Log(
-                    "[AbilitySO DEBUG] CanTargetObject RESULT | " +
-                    "Ally targeting from Player/Ally | " +
-                    "Result=" + result
-                );
-
-                return result;
+                return targetTeam == Team.Player ||
+                       targetTeam == Team.Ally;
             }
-
 
             if (
                 userTeam ==
                 Team.Enemy
             )
             {
-                bool result =
-                    targetTeam == Team.Enemy;
-
-                Debug.Log(
-                    "[AbilitySO DEBUG] CanTargetObject RESULT | " +
-                    "Ally targeting from Enemy | " +
-                    "Result=" + result
-                );
-
-                return result;
+                return targetTeam == Team.Enemy;
             }
-
-
-            Debug.Log(
-                "[AbilitySO DEBUG] CanTargetObject FALSE | " +
-                "Reason=Unsupported user team"
-            );
 
             return false;
         }
@@ -1127,19 +711,8 @@ public abstract class AbilitySO : ScriptableObject
             TargetType.Any
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanTargetObject TRUE | " +
-                "TargetType=Any"
-            );
-
             return true;
         }
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanTargetObject FALSE | " +
-            "Reason=Unsupported TargetType"
-        );
 
         return false;
     }
@@ -1155,75 +728,31 @@ public abstract class AbilitySO : ScriptableObject
         Vector2Int targetPosition
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHitTile START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | TargetPosition=" + targetPosition +
-            " | Range=" + range +
-            " | MinDistance=" + minDistance +
-            " | Shape=" + rangeShape
-        );
-
         if (
             gridManager == null ||
             user == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHitTile FALSE | " +
-                "Reason=GridManager or User NULL"
-            );
-
             return false;
         }
-
 
         bool canUseAfterMovement =
             CanUseAfterMovement(user);
 
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHitTile | " +
-            "CanUseAfterMovement=" +
-            canUseAfterMovement
-        );
-
         if (!canUseAfterMovement)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHitTile FALSE | " +
-                "Reason=CanUseAfterMovement returned FALSE"
-            );
-
             return false;
         }
-
 
         bool insideGrid =
             gridManager.IsInsideGrid(
                 targetPosition
             );
 
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHitTile | " +
-            "TargetPosition=" + targetPosition +
-            " | IsInsideGrid=" + insideGrid
-        );
-
         if (!insideGrid)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHitTile FALSE | " +
-                "Reason=Target tile is outside grid"
-            );
-
             return false;
         }
-
 
         List<Vector2Int> rangeTiles =
             GetRangeTiles(
@@ -1231,45 +760,20 @@ public abstract class AbilitySO : ScriptableObject
                 user
             );
 
-
         if (rangeTiles == null)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHitTile FALSE | " +
-                "Reason=GetRangeTiles returned NULL"
-            );
-
             return false;
         }
-
 
         bool containsTarget =
             rangeTiles.Contains(
                 targetPosition
             );
 
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHitTile | " +
-            "RangeTileCount=" + rangeTiles.Count +
-            " | TargetPosition=" + targetPosition +
-            " | ContainsTarget=" + containsTarget
-        );
-
         if (!containsTarget)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] CanHitTile FALSE | " +
-                "Reason=Target tile is NOT in ability range"
-            );
-
             return false;
         }
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] CanHitTile TRUE | " +
-            "Target tile is inside ability range"
-        );
 
         return true;
     }
@@ -1284,59 +788,21 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] Use START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | Target=" + (
-                target != null
-                    ? target.name
-                    : "NULL"
-            )
-        );
-
         if (
             user == null ||
             target == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] Use FALSE | " +
-                "Reason=User or Target NULL"
-            );
-
             return false;
         }
-
 
         bool canUseAfterMovement =
             CanUseAfterMovement(user);
 
-        Debug.Log(
-            "[AbilitySO DEBUG] Use | " +
-            "CanUseAfterMovement=" +
-            canUseAfterMovement
-        );
-
         if (!canUseAfterMovement)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] Use FALSE | " +
-                "Reason=CanUseAfterMovement returned FALSE"
-            );
-
             return false;
         }
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] Use TRUE | " +
-            "Ability=" + abilityName
-        );
 
         return true;
     }
@@ -1352,50 +818,21 @@ public abstract class AbilitySO : ScriptableObject
         Vector2Int targetTile
     )
     {
-        Debug.Log(
-            "[AbilitySO DEBUG] UseAtTile START | " +
-            "Ability=" + abilityName +
-            " | User=" + (
-                user != null
-                    ? user.name
-                    : "NULL"
-            ) +
-            " | TargetTile=" + targetTile
-        );
-
         if (
             user == null ||
             gridManager == null
         )
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] UseAtTile FALSE | " +
-                "Reason=User or GridManager NULL"
-            );
-
             return false;
         }
-
 
         bool canUseAfterMovement =
             CanUseAfterMovement(user);
 
-        Debug.Log(
-            "[AbilitySO DEBUG] UseAtTile | " +
-            "CanUseAfterMovement=" +
-            canUseAfterMovement
-        );
-
         if (!canUseAfterMovement)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] UseAtTile FALSE | " +
-                "Reason=CanUseAfterMovement returned FALSE"
-            );
-
             return false;
         }
-
 
         bool canHitTile =
             CanHitTile(
@@ -1404,27 +841,10 @@ public abstract class AbilitySO : ScriptableObject
                 targetTile
             );
 
-        Debug.Log(
-            "[AbilitySO DEBUG] UseAtTile | " +
-            "CanHitTile=" + canHitTile
-        );
-
         if (!canHitTile)
         {
-            Debug.Log(
-                "[AbilitySO DEBUG] UseAtTile FALSE | " +
-                "Reason=CanHitTile returned FALSE"
-            );
-
             return false;
         }
-
-
-        Debug.Log(
-            "[AbilitySO DEBUG] UseAtTile TRUE | " +
-            "Ability=" + abilityName +
-            " | TargetTile=" + targetTile
-        );
 
         return true;
     }

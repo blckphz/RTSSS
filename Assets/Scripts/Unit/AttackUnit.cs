@@ -25,22 +25,23 @@ public class AttackUnit : MonoBehaviour
 
 
     // ============================================================
-    // ABILITIES
+    // UNIT DATA
     // ============================================================
-    //
-    // AbilitySO is shared.
-    //
-    // AbilityData is NOT shared.
-    //
-    // Every AttackUnit creates its own AbilityData objects.
-    //
-    // Example:
-    //
-    // Enemy 1 -> ChainLightning SO -> AbilityData 1
-    // Enemy 2 -> ChainLightning SO -> AbilityData 2
-    // Enemy 3 -> ChainLightning SO -> AbilityData 3
-    //
-    // Therefore cooldowns and uses are independent.
+
+    [Header("Unit Data")]
+    [SerializeField]
+    private UnitData unitData;
+
+
+    // ============================================================
+    // UPDATE MANAGER
+    // ============================================================
+
+    private UpdateManager updateManager;
+
+
+    // ============================================================
+    // ABILITIES
     // ============================================================
 
     [Header("Abilities")]
@@ -95,6 +96,25 @@ public class AttackUnit : MonoBehaviour
             GetComponent<IAttackAnimation>();
 
 
+        // --------------------------------------------------------
+        // FIND UNIT DATA
+        // --------------------------------------------------------
+
+        FindUnitData();
+
+
+        // --------------------------------------------------------
+        // FIND UPDATE MANAGER
+        // --------------------------------------------------------
+
+        updateManager =
+            FindFirstObjectByType<UpdateManager>();
+
+
+        // --------------------------------------------------------
+        // GRID
+        // --------------------------------------------------------
+
         EnsureGridManager();
 
 
@@ -109,15 +129,73 @@ public class AttackUnit : MonoBehaviour
                         transform.position
                     );
 
+
             hasLogicalGridPosition =
                 true;
         }
 
 
+        // --------------------------------------------------------
+        // INITIALIZE CHARACTER
+        // --------------------------------------------------------
+
         if (characterData != null)
         {
             Initialize(
                 characterData
+            );
+        }
+    }
+
+
+    // ============================================================
+    // FIND UNIT DATA
+    // ============================================================
+
+    private void FindUnitData()
+    {
+        // --------------------------------------------------------
+        // SAME GAMEOBJECT
+        // --------------------------------------------------------
+
+        if (unitData == null)
+        {
+            unitData =
+                GetComponent<UnitData>();
+        }
+
+
+        // --------------------------------------------------------
+        // CHILD
+        // --------------------------------------------------------
+
+        if (unitData == null)
+        {
+            unitData =
+                GetComponentInChildren<UnitData>();
+        }
+
+
+        // --------------------------------------------------------
+        // PARENT
+        // --------------------------------------------------------
+
+        if (unitData == null)
+        {
+            unitData =
+                GetComponentInParent<UnitData>();
+        }
+
+
+        if (unitData == null)
+        {
+            Debug.LogWarning(
+                "[AttackUnit] " +
+                "No UnitData found on this object, " +
+                "its children, or its parent. | " +
+                "Unit=" +
+                name,
+                this
             );
         }
     }
@@ -137,14 +215,18 @@ public class AttackUnit : MonoBehaviour
         }
 
 
-        // Reference only.
-        //
-        // We do NOT modify the CharacterSO.
+        // --------------------------------------------------------
+        // CHARACTER REFERENCE
+        // --------------------------------------------------------
+
         characterData =
             data;
 
 
-        // Clear this unit's old runtime abilities.
+        // --------------------------------------------------------
+        // CLEAR OLD RUNTIME ABILITIES
+        // --------------------------------------------------------
+
         abilities.Clear();
 
 
@@ -152,62 +234,123 @@ public class AttackUnit : MonoBehaviour
             data.GetAbilities();
 
 
-        if (characterAbilities == null)
+        if (characterAbilities != null)
         {
-            return;
+            // ====================================================
+            // CREATE THIS UNIT'S OWN ABILITY DATA
+            // ====================================================
+
+            for (
+                int i = 0;
+                i < characterAbilities.Count;
+                i++
+            )
+            {
+                AbilitySO abilitySO =
+                    characterAbilities[i];
+
+
+                if (abilitySO == null)
+                {
+                    continue;
+                }
+
+
+                AbilityData runtimeAbility =
+                    new AbilityData(
+                        abilitySO
+                    );
+
+
+                abilities.Add(
+                    runtimeAbility
+                );
+            }
         }
 
 
         // ========================================================
-        // CREATE THIS UNIT'S OWN RUNTIME ABILITY DATA
+        // INITIALIZE UNIT DATA
         // ========================================================
 
-        for (
-            int i = 0;
-            i < characterAbilities.Count;
-            i++
-        )
+        if (unitData != null)
         {
-            AbilitySO abilitySO =
-                characterAbilities[i];
-
-
-            if (abilitySO == null)
-            {
-                continue;
-            }
-
-
-            // IMPORTANT:
-            //
-            // Every unit gets its own AbilityData.
-            //
-            // This means:
-            //
-            // Enemy 1's cooldown != Enemy 2's cooldown
-            //
-            // Enemy 1's uses != Enemy 2's uses
-            //
-            AbilityData runtimeAbility =
-                new AbilityData(
-                    abilitySO
-                );
-
-
-            abilities.Add(
-                runtimeAbility
+            unitData.Initialize(
+                data
             );
         }
 
 
+        // ========================================================
+        // REGISTER WITH UPDATE MANAGER
+        // ========================================================
+        //
+        // At this point the AttackUnit prefab exists.
+        //
+        // UpdateManager can now apply any upgrades that were
+        // purchased before this prefab was spawned.
+        // ========================================================
+
+        RegisterWithUpdateManager();
+    }
+
+
+    // ============================================================
+    // REGISTER WITH UPDATE MANAGER
+    // ============================================================
+
+    private void RegisterWithUpdateManager()
+    {
+        if (unitData == null)
+        {
+            Debug.LogWarning(
+                "[AttackUnit] " +
+                "Cannot register with UpdateManager. " +
+                "UnitData is NULL. | " +
+                "Unit=" +
+                name,
+                this
+            );
+
+
+            return;
+        }
+
+
+        if (updateManager == null)
+        {
+            updateManager =
+                FindFirstObjectByType<UpdateManager>();
+        }
+
+
+        if (updateManager == null)
+        {
+            Debug.LogWarning(
+                "[AttackUnit] " +
+                "UpdateManager not found. | " +
+                "Unit=" +
+                name,
+                this
+            );
+
+
+            return;
+        }
+
+
         Debug.Log(
-            "[AttackUnit] Initialized " +
+            "[AttackUnit] " +
+            "Registering UnitData with UpdateManager. | " +
+            "Unit=" +
             name +
-            " with character " +
-            data.characterName +
-            " | Runtime abilities = " +
-            abilities.Count,
-            this
+            " | UnitData ID=" +
+            unitData.GetInstanceID()
+        );
+
+
+        updateManager.SetCurrentUnit(
+            unitData
         );
     }
 
@@ -283,6 +426,7 @@ public class AttackUnit : MonoBehaviour
     {
         logicalGridPosition =
             position;
+
 
         hasLogicalGridPosition =
             true;
@@ -412,9 +556,7 @@ public class AttackUnit : MonoBehaviour
 
 
         // 0 = unlimited.
-        //
-        // We return 0 here to preserve
-        // the existing API.
+
         if (
             abilitySO.GetUsesPerTurn() <= 0
         )
@@ -452,6 +594,7 @@ public class AttackUnit : MonoBehaviour
 
 
         // 0 = unlimited.
+
         if (
             abilitySO.GetUsesPerTurn() <= 0
         )
@@ -469,31 +612,6 @@ public class AttackUnit : MonoBehaviour
 
     // ============================================================
     // CONSUME ABILITY USE
-    // ============================================================
-    //
-    // IMPORTANT:
-    //
-    // This returns TRUE only when the ability
-    // has exhausted ALL of its uses for the turn.
-    //
-    // Example:
-    //
-    // UsesPerTurn = 3
-    //
-    // First use:
-    // Uses = 2
-    // Returns FALSE
-    //
-    // Second use:
-    // Uses = 1
-    // Returns FALSE
-    //
-    // Third use:
-    // Uses = 0
-    // Returns TRUE
-    //
-    // The TRUE result is what allows
-    // CompleteAbilityUse() to start cooldown.
     // ============================================================
 
     private bool ConsumeAbilityUse(
@@ -577,10 +695,6 @@ public class AttackUnit : MonoBehaviour
         }
 
 
-        // ========================================================
-        // COOLDOWN CHECK
-        // ========================================================
-
         if (
             GetAbilityCooldown(
                 abilitySO
@@ -591,10 +705,6 @@ public class AttackUnit : MonoBehaviour
         }
 
 
-        // ========================================================
-        // USE COUNT CHECK
-        // ========================================================
-
         if (
             !HasAbilityUsesRemaining(
                 abilitySO
@@ -604,10 +714,6 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-
-        // ========================================================
-        // MOVEMENT CHECK
-        // ========================================================
 
         return
             CanUseAbilityAfterMovement(
@@ -653,12 +759,10 @@ public class AttackUnit : MonoBehaviour
             }
 
 
-            // Cooldown decreases for THIS UNIT only.
             abilityData
                 .ReduceCooldown();
 
 
-            // Uses reset for THIS UNIT only.
             abilityData
                 .ResetUses();
         }
@@ -667,16 +771,6 @@ public class AttackUnit : MonoBehaviour
 
     // ============================================================
     // COOLDOWN START
-    // ============================================================
-    //
-    // IMPORTANT:
-    //
-    // This method is NOT called immediately
-    // after every ability use.
-    //
-    // It is called ONLY after
-    // ConsumeAbilityUse() reports that
-    // the final use has been consumed.
     // ============================================================
 
     private void StartAbilityCooldown(
@@ -918,21 +1012,6 @@ public class AttackUnit : MonoBehaviour
     // ============================================================
     // COMPLETE ABILITY USE
     // ============================================================
-    //
-    // THIS IS THE IMPORTANT PART.
-    //
-    // Cooldown does NOT automatically start here.
-    //
-    // We first consume ONE use.
-    //
-    // If uses remain:
-    //
-    //     No cooldown.
-    //
-    // If this was the final use:
-    //
-    //     Start cooldown.
-    // ============================================================
 
     private void CompleteAbilityUse(
         AbilitySO abilitySO
@@ -948,10 +1027,6 @@ public class AttackUnit : MonoBehaviour
             false;
 
 
-        // ========================================================
-        // FINITE USE ABILITY
-        // ========================================================
-
         if (
             abilitySO.GetUsesPerTurn() > 0
         )
@@ -963,10 +1038,6 @@ public class AttackUnit : MonoBehaviour
         }
 
 
-        // ========================================================
-        // ONLY START COOLDOWN AFTER FINAL USE
-        // ========================================================
-
         if (usesExhausted)
         {
             StartAbilityCooldown(
@@ -974,10 +1045,6 @@ public class AttackUnit : MonoBehaviour
             );
         }
 
-
-        // ========================================================
-        // NOTIFY LISTENERS
-        // ========================================================
 
         OnAbilityUsed?.Invoke(
             this,
@@ -1474,8 +1541,6 @@ public class AttackUnit : MonoBehaviour
         }
 
 
-        // Always create a NEW runtime
-        // AbilityData for this unit.
         AbilityData runtimeAbility =
             new AbilityData(
                 abilitySO
@@ -1542,5 +1607,12 @@ public class AttackUnit : MonoBehaviour
         GetCharacterData()
     {
         return characterData;
+    }
+
+
+    public UnitData
+        GetUnitData()
+    {
+        return unitData;
     }
 }
