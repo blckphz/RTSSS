@@ -3,10 +3,10 @@ using UnityEngine;
 
 public enum GridShapeType
 {
-    Box,        // Standard rectangle / square
-    Manhattan,  // Diamond shape based on Manhattan distance from center (0,0)
-    Pyramid,    // Triangle tapering upward from the bottom base row to the top
-    Donut       // Ring shape with a hollow center (min/max radius)
+    Box,
+    Manhattan,
+    Pyramid,
+    Donut
 }
 
 
@@ -194,19 +194,6 @@ public class GridManager : MonoBehaviour
     // ============================================================
     // ORIGINAL GRID TRANSFORM POSITION
     // ============================================================
-    //
-    // The old CenterGrid() implementation did:
-    //
-    //     gridTransform.position -= centerWorld;
-    //
-    // every time the grid was rebuilt.
-    //
-    // That means changing the encounter multiple times could
-    // progressively move the grid.
-    //
-    // We now remember the original transform position and always
-    // calculate the desired position from that.
-    // ============================================================
 
     private Vector3 originalGridLocalPosition;
 
@@ -215,12 +202,6 @@ public class GridManager : MonoBehaviour
 
     // ============================================================
     // GRID CHANGED EVENT
-    // ============================================================
-    //
-    // Other systems can listen to this if necessary.
-    //
-    // GridHighlightBrain also receives a direct refresh through
-    // NotifyGridChanged().
     // ============================================================
 
     public event Action OnGridChanged;
@@ -244,7 +225,6 @@ public class GridManager : MonoBehaviour
                 GetComponent<Grid>();
         }
 
-
         if (grid == null)
         {
             Debug.LogError(
@@ -255,10 +235,8 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         gridTransform =
             grid.transform;
-
 
         if (!originalGridPositionCached)
         {
@@ -267,7 +245,6 @@ public class GridManager : MonoBehaviour
 
             originalGridPositionCached = true;
         }
-
 
         if (
             width < 1 ||
@@ -282,13 +259,11 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         occupiedCells =
             new GameObject[
                 width,
                 height
             ];
-
 
         floorTiles =
             new GameObject[
@@ -296,20 +271,17 @@ public class GridManager : MonoBehaviour
                 height
             ];
 
-
         if (floorParent == null)
         {
             floorParent =
                 transform;
         }
 
-
         if (highlightManager == null)
         {
             highlightManager =
                 GetComponent<GridHighlightManager>();
         }
-
 
         CenterGrid();
 
@@ -364,48 +336,34 @@ public class GridManager : MonoBehaviour
         int newMaxRadius = -1,
         bool destroyInvalidUnits = true)
     {
-        // ========================================================
-        // VALIDATE
-        // ========================================================
-
         if (newWidth > 0)
         {
             width = newWidth;
         }
-
 
         if (newHeight > 0)
         {
             height = newHeight;
         }
 
-
         if (newMinRadius >= 0)
         {
             minRadius = newMinRadius;
         }
-
 
         if (newMaxRadius > 0)
         {
             maxRadius = newMaxRadius;
         }
 
-
         gridShape =
             newShape;
-
-
-        // ========================================================
-        // MAKE SURE REFERENCES EXIST
-        // ========================================================
 
         if (grid == null)
         {
             grid =
                 GetComponent<Grid>();
         }
-
 
         if (grid == null)
         {
@@ -418,13 +376,11 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         if (gridTransform == null)
         {
             gridTransform =
                 grid.transform;
         }
-
 
         if (!originalGridPositionCached)
         {
@@ -434,38 +390,12 @@ public class GridManager : MonoBehaviour
             originalGridPositionCached = true;
         }
 
-
-        // ========================================================
-        // CLEAR OLD HIGHLIGHTS FIRST
-        // ========================================================
-        //
-        // This is important.
-        //
-        // If the old encounter has movement tiles displayed,
-        // they must disappear before the new grid is constructed.
-        // ========================================================
-
         ClearGridHighlights();
-
-
-        // ========================================================
-        // SAVE OLD OCCUPANTS
-        // ========================================================
 
         GameObject[,] previousOccupants =
             occupiedCells;
 
-
-        // ========================================================
-        // DESTROY OLD FLOOR
-        // ========================================================
-
         ClearFloorTiles();
-
-
-        // ========================================================
-        // CREATE NEW ARRAYS
-        // ========================================================
 
         occupiedCells =
             new GameObject[
@@ -473,31 +403,15 @@ public class GridManager : MonoBehaviour
                 height
             ];
 
-
         floorTiles =
             new GameObject[
                 width,
                 height
             ];
 
-
-        // ========================================================
-        // RECENTER GRID
-        // ========================================================
-
         CenterGrid();
 
-
-        // ========================================================
-        // CREATE NEW FLOOR
-        // ========================================================
-
         CreateFloor();
-
-
-        // ========================================================
-        // RESTORE VALID OLD OCCUPANTS
-        // ========================================================
 
         if (previousOccupants != null)
         {
@@ -507,16 +421,9 @@ public class GridManager : MonoBehaviour
             );
         }
 
-
         initialized = true;
 
-
-        // ========================================================
-        // TELL HIGHLIGHT SYSTEM THAT THE GRID CHANGED
-        // ========================================================
-
         NotifyGridChanged();
-
     }
 
 
@@ -533,20 +440,17 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         int oldWidth =
             previousOccupants.GetLength(0);
 
         int oldHeight =
             previousOccupants.GetLength(1);
 
-
         int oldMinX =
             -(oldWidth / 2);
 
         int oldMinY =
             -(oldHeight / 2);
-
 
         for (int x = 0; x < oldWidth; x++)
         {
@@ -555,12 +459,10 @@ public class GridManager : MonoBehaviour
                 GameObject unit =
                     previousOccupants[x, y];
 
-
                 if (unit == null)
                 {
                     continue;
                 }
-
 
                 Vector2Int logicalPos =
                     new Vector2Int(
@@ -580,17 +482,28 @@ public class GridManager : MonoBehaviour
                             logicalPos
                         );
 
-
                     occupiedCells[
                         newArrayPos.x,
                         newArrayPos.y
                     ] = unit;
 
 
-                    unit.transform.position =
-                        GridToWorldPosition(
-                            logicalPos
-                        );
+                    // IMPORTANT:
+                    // Synchronize UnitTilePin as well.
+                    UnitTilePin pin =
+                        unit.GetComponent<UnitTilePin>();
+
+                    if (pin != null)
+                    {
+                        pin.SetTile(logicalPos);
+                    }
+                    else
+                    {
+                        unit.transform.position =
+                            GridToWorldPosition(
+                                logicalPos
+                            );
+                    }
                 }
 
 
@@ -625,13 +538,11 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         int lenX =
             floorTiles.GetLength(0);
 
         int lenY =
             floorTiles.GetLength(1);
-
 
         for (int x = 0; x < lenX; x++)
         {
@@ -667,16 +578,13 @@ public class GridManager : MonoBehaviour
             }
         }
 
-
         if (highlightManager != null)
         {
             highlightManager.ClearAllHighlights();
         }
 
-
         GridHighlightBrain highlightBrain =
             FindFirstObjectByType<GridHighlightBrain>();
-
 
         if (highlightBrain != null)
         {
@@ -693,10 +601,8 @@ public class GridManager : MonoBehaviour
     {
         OnGridChanged?.Invoke();
 
-
         GridHighlightBrain highlightBrain =
             FindFirstObjectByType<GridHighlightBrain>();
-
 
         if (highlightBrain != null)
         {
@@ -716,12 +622,10 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         if (grid == null)
         {
             return;
         }
-
 
         if (!originalGridPositionCached)
         {
@@ -731,18 +635,8 @@ public class GridManager : MonoBehaviour
             originalGridPositionCached = true;
         }
 
-
-        // ========================================================
-        // RESET TO ORIGINAL POSITION FIRST
-        // ========================================================
-        //
-        // This prevents cumulative movement when SetGridShape()
-        // is called multiple times.
-        // ========================================================
-
         gridTransform.localPosition =
             originalGridLocalPosition;
-
 
         Vector3 centerWorld =
             grid.GetCellCenterWorld(
@@ -753,15 +647,10 @@ public class GridManager : MonoBehaviour
                 )
             );
 
-
-        // Convert world-space offset to the grid transform's
-        // local space so parent transforms remain correct.
-
         Vector3 localOffset =
             gridTransform.InverseTransformVector(
                 centerWorld
             );
-
 
         gridTransform.localPosition =
             originalGridLocalPosition -
@@ -855,11 +744,9 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         Transform board =
             BoardViewController.Instance
                 .GetBoardTransform();
-
 
         return
             board != null &&
@@ -878,23 +765,19 @@ public class GridManager : MonoBehaviour
             return worldPosition;
         }
 
-
         Vector3 center =
             BoardViewController.Instance
                 .GetRotationCenter();
 
-
         int rotation =
             BoardViewController.Instance
                 .GetCurrentRotation();
-
 
         Quaternion inverseRotation =
             Quaternion.AngleAxis(
                 -rotation,
                 Vector3.forward
             );
-
 
         return
             center +
@@ -916,23 +799,19 @@ public class GridManager : MonoBehaviour
             return gridWorldPosition;
         }
 
-
         Vector3 center =
             BoardViewController.Instance
                 .GetRotationCenter();
 
-
         int rotation =
             BoardViewController.Instance
                 .GetCurrentRotation();
-
 
         Quaternion rotationQuaternion =
             Quaternion.AngleAxis(
                 rotation,
                 Vector3.forward
             );
-
 
         return
             center +
@@ -951,18 +830,15 @@ public class GridManager : MonoBehaviour
             return Vector2Int.zero;
         }
 
-
         Vector3 gridSpace =
             ConvertWorldToGridSpace(
                 worldPosition
             );
 
-
         Vector3Int unityCell =
             grid.WorldToCell(
                 gridSpace
             );
-
 
         return UnityCellToLogical(
             unityCell
@@ -978,18 +854,15 @@ public class GridManager : MonoBehaviour
             return Vector3.zero;
         }
 
-
         Vector3Int unityCell =
             LogicalToUnityCell(
                 gridPosition
             );
 
-
         Vector3 unrotatedWorld =
             grid.GetCellCenterWorld(
                 unityCell
             );
-
 
         return ConvertGridToWorldSpace(
             unrotatedWorld
@@ -1022,7 +895,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         int minX =
             GetMinX();
 
@@ -1035,7 +907,6 @@ public class GridManager : MonoBehaviour
         int maxY =
             GetMaxY();
 
-
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
@@ -1046,18 +917,15 @@ public class GridManager : MonoBehaviour
                         y
                     );
 
-
                 if (!IsInsideGrid(logicalPos))
                 {
                     continue;
                 }
 
-
                 Vector3 worldPos =
                     GridToWorldPosition(
                         logicalPos
                     );
-
 
                 GameObject tile =
                     Instantiate(
@@ -1067,16 +935,13 @@ public class GridManager : MonoBehaviour
                         floorParent
                     );
 
-
                 tile.name =
                     $"Floor_{x}_{y}";
-
 
                 Vector2Int arrayPos =
                     LogicalToArrayPosition(
                         logicalPos
                     );
-
 
                 floorTiles[
                     arrayPos.x,
@@ -1100,7 +965,6 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         if (!occupant.activeInHierarchy)
         {
             RemoveUnit(position);
@@ -1108,10 +972,8 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         HealthManager health =
             occupant.GetComponent<HealthManager>();
-
 
         if (
             health != null &&
@@ -1122,7 +984,6 @@ public class GridManager : MonoBehaviour
 
             return false;
         }
-
 
         return true;
     }
@@ -1136,12 +997,10 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         Vector2Int array =
             LogicalToArrayPosition(
                 position
             );
-
 
         return IsOccupantValid(
             occupiedCells[
@@ -1161,19 +1020,16 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
-
         Vector2Int array =
             LogicalToArrayPosition(
                 position
             );
-
 
         GameObject unit =
             occupiedCells[
                 array.x,
                 array.y
             ];
-
 
         return IsOccupantValid(
             unit,
@@ -1192,6 +1048,16 @@ public class GridManager : MonoBehaviour
             return Vector2Int.zero;
         }
 
+        UnitTilePin pin =
+            unit.GetComponent<UnitTilePin>();
+
+        if (
+            pin != null &&
+            pin.HasTile()
+        )
+        {
+            return pin.GetTile();
+        }
 
         return WorldToGridPosition(
             unit.transform.position
@@ -1211,16 +1077,18 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         GameObject occupant =
             GetUnitAt(position);
-
 
         return
             occupant == null ||
             occupant == unit;
     }
 
+
+    // ============================================================
+    // PLACE UNIT
+    // ============================================================
 
     public bool PlaceUnit(
         GameObject unit,
@@ -1236,12 +1104,10 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         Vector2Int array =
             LogicalToArrayPosition(
                 position
             );
-
 
         occupiedCells[
             array.x,
@@ -1249,15 +1115,30 @@ public class GridManager : MonoBehaviour
         ] = unit;
 
 
-        unit.transform.position =
-            GridToWorldPosition(
-                position
-            );
+        // IMPORTANT:
+        // Synchronize UnitTilePin with GridManager.
+        UnitTilePin pin =
+            unit.GetComponent<UnitTilePin>();
 
+        if (pin != null)
+        {
+            pin.SetTile(position);
+        }
+        else
+        {
+            unit.transform.position =
+                GridToWorldPosition(
+                    position
+                );
+        }
 
         return true;
     }
 
+
+    // ============================================================
+    // REMOVE UNIT
+    // ============================================================
 
     public void RemoveUnit(
         Vector2Int position)
@@ -1267,12 +1148,10 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         Vector2Int array =
             LogicalToArrayPosition(
                 position
             );
-
 
         occupiedCells[
             array.x,
@@ -1288,7 +1167,6 @@ public class GridManager : MonoBehaviour
         {
             return;
         }
-
 
         for (int x = 0; x < width; x++)
         {
@@ -1314,7 +1192,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -1322,12 +1199,10 @@ public class GridManager : MonoBehaviour
                 GameObject unit =
                     occupiedCells[x, y];
 
-
                 if (unit == null)
                 {
                     continue;
                 }
-
 
                 Vector2Int logical =
                     ArrayToLogicalPosition(
@@ -1336,7 +1211,6 @@ public class GridManager : MonoBehaviour
                             y
                         )
                     );
-
 
                 IsOccupantValid(
                     unit,
@@ -1366,18 +1240,15 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         Vector2Int oldArray =
             LogicalToArrayPosition(
                 oldPosition
             );
 
-
         Vector2Int newArray =
             LogicalToArrayPosition(
                 newPosition
             );
-
 
         if (
             occupiedCells[
@@ -1390,22 +1261,23 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         occupiedCells[
             oldArray.x,
             oldArray.y
         ] = null;
-
 
         occupiedCells[
             newArray.x,
             newArray.y
         ] = unit;
 
-
         return true;
     }
 
+
+    // ============================================================
+    // FINISH MOVE
+    // ============================================================
 
     public void FinishMoveUnit(
         GameObject unit,
@@ -1419,12 +1291,10 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         Vector2Int array =
             LogicalToArrayPosition(
                 position
             );
-
 
         if (
             occupiedCells[
@@ -1437,10 +1307,28 @@ public class GridManager : MonoBehaviour
         }
 
 
-        unit.transform.position =
-            GridToWorldPosition(
+        // IMPORTANT:
+        // UnitTilePin must receive the final logical tile.
+        //
+        // Do NOT directly move transform.position when a pin
+        // exists, because that leaves UnitTilePin.logicalTile
+        // stale.
+        UnitTilePin pin =
+            unit.GetComponent<UnitTilePin>();
+
+        if (pin != null)
+        {
+            pin.UpdateTileAfterMovement(
                 position
             );
+        }
+        else
+        {
+            unit.transform.position =
+                GridToWorldPosition(
+                    position
+                );
+        }
     }
 
 
@@ -1460,12 +1348,10 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
         FinishMoveUnit(
             unit,
             newPosition
         );
-
 
         return true;
     }
@@ -1481,7 +1367,6 @@ public class GridManager : MonoBehaviour
         position =
             Vector2Int.zero;
 
-
         if (occupiedCells == null)
         {
             Debug.LogError(
@@ -1491,7 +1376,6 @@ public class GridManager : MonoBehaviour
 
             return false;
         }
-
 
         int minX =
             GetMinX();
@@ -1505,13 +1389,7 @@ public class GridManager : MonoBehaviour
         int maxY =
             GetMaxY();
 
-
-        // ========================================================
-        // COUNT FREE CELLS
-        // ========================================================
-
         int freeCellCount = 0;
-
 
         for (int x = minX; x <= maxX; x++)
         {
@@ -1523,23 +1401,19 @@ public class GridManager : MonoBehaviour
                         y
                     );
 
-
                 if (!IsInsideGrid(cell))
                 {
                     continue;
                 }
-
 
                 if (IsCellOccupied(cell))
                 {
                     continue;
                 }
 
-
                 freeCellCount++;
             }
         }
-
 
         if (freeCellCount == 0)
         {
@@ -1551,17 +1425,11 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-
-        // ========================================================
-        // PICK RANDOM FREE CELL
-        // ========================================================
-
         int randomIndex =
             UnityEngine.Random.Range(
                 0,
                 freeCellCount
             );
-
 
         for (int x = minX; x <= maxX; x++)
         {
@@ -1573,18 +1441,15 @@ public class GridManager : MonoBehaviour
                         y
                     );
 
-
                 if (!IsInsideGrid(cell))
                 {
                     continue;
                 }
 
-
                 if (IsCellOccupied(cell))
                 {
                     continue;
                 }
-
 
                 if (randomIndex == 0)
                 {
@@ -1594,11 +1459,9 @@ public class GridManager : MonoBehaviour
                     return true;
                 }
 
-
                 randomIndex--;
             }
         }
-
 
         return false;
     }
@@ -1616,12 +1479,10 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
-
         Vector2Int array =
             LogicalToArrayPosition(
                 position
             );
-
 
         return floorTiles[
             array.x,
@@ -1699,23 +1560,19 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
         if (grid == null)
         {
             grid =
                 GetComponent<Grid>();
         }
 
-
         if (grid == null)
         {
             return;
         }
 
-
         Gizmos.color =
             Color.gray;
-
 
         int minX =
             GetMinX();
@@ -1728,7 +1585,6 @@ public class GridManager : MonoBehaviour
 
         int maxY =
             GetMaxY();
-
 
         for (int x = minX; x <= maxX; x++)
         {
@@ -1746,13 +1602,11 @@ public class GridManager : MonoBehaviour
                     continue;
                 }
 
-
                 Vector3 bl =
                     GetLogicalGridCorner(
                         x,
                         y
                     );
-
 
                 Vector3 br =
                     GetLogicalGridCorner(
@@ -1760,20 +1614,17 @@ public class GridManager : MonoBehaviour
                         y
                     );
 
-
                 Vector3 tr =
                     GetLogicalGridCorner(
                         x + 1,
                         y + 1
                     );
 
-
                 Vector3 tl =
                     GetLogicalGridCorner(
                         x,
                         y + 1
                     );
-
 
                 Gizmos.DrawLine(
                     bl,
@@ -1797,30 +1648,25 @@ public class GridManager : MonoBehaviour
             }
         }
 
-
         if (showCenterGizmo)
         {
             Gizmos.color =
                 Color.yellow;
-
 
             Vector3 center =
                 GridToWorldPosition(
                     Vector2Int.zero
                 );
 
-
             Gizmos.DrawSphere(
                 center,
                 0.15f
             );
 
-
             Gizmos.DrawLine(
                 center + Vector3.left * 0.5f,
                 center + Vector3.right * 0.5f
             );
-
 
             Gizmos.DrawLine(
                 center + Vector3.down * 0.5f,
@@ -1840,7 +1686,6 @@ public class GridManager : MonoBehaviour
                 y + height / 2,
                 0
             );
-
 
         return ConvertGridToWorldSpace(
             grid.CellToWorld(cell)

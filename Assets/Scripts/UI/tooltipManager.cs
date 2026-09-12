@@ -113,16 +113,6 @@ public class tooltipManager : MonoBehaviour
                 tooltipObject.GetComponent<CanvasGroup>();
         }
 
-
-        if (tooltipCanvasGroup == null)
-        {
-            Debug.LogWarning(
-                "[TooltipManager] " +
-                "Tooltip GameObject does not have a CanvasGroup!"
-            );
-        }
-
-
         // --------------------------------------------------------
         // TEXT
         // --------------------------------------------------------

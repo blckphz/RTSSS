@@ -10,19 +10,12 @@ public class GameStateManager : MonoBehaviour
     public enum GameState
     {
         MainMenu,
-
         Map,
-
         PreparingEncounter,
-
         Combat,
-
         Victory,
-
         Defeat,
-
         Rewards,
-
         GameOver
     }
 
@@ -32,8 +25,12 @@ public class GameStateManager : MonoBehaviour
     // ============================================================
 
     [Header("References")]
+
     [SerializeField]
     private EncounterManager encounterManager;
+
+    [SerializeField]
+    private UpgradeChoiceUI upgradeChoiceUI;
 
 
     // ============================================================
@@ -41,6 +38,7 @@ public class GameStateManager : MonoBehaviour
     // ============================================================
 
     [Header("Initial State")]
+
     [SerializeField]
     private GameState startingState =
         GameState.MainMenu;
@@ -70,7 +68,7 @@ public class GameStateManager : MonoBehaviour
 
 
     // ============================================================
-    // UNITY
+    // AWAKE
     // ============================================================
 
     private void Awake()
@@ -87,13 +85,42 @@ public class GameStateManager : MonoBehaviour
 
 
         // --------------------------------------------------------
+        // FIND UPGRADE UI
+        // --------------------------------------------------------
+
+        if (upgradeChoiceUI == null)
+        {
+            upgradeChoiceUI =
+                FindFirstObjectByType<UpgradeChoiceUI>();
+        }
+
+
+        // --------------------------------------------------------
         // SET INITIAL STATE
         // --------------------------------------------------------
 
         currentState =
             startingState;
+    }
 
 
+    // ============================================================
+    // START
+    // ============================================================
+
+    private void Start()
+    {
+        // --------------------------------------------------------
+        // CHECK FOR NEW RUN
+        // --------------------------------------------------------
+
+        if (
+            GameSession.Instance != null &&
+            GameSession.Instance.NewRunPending
+        )
+        {
+            ShowStartingUpgrades();
+        }
     }
 
 
@@ -133,6 +160,85 @@ public class GameStateManager : MonoBehaviour
 
         OnGameStateChanged?.Invoke(
             currentState
+        );
+    }
+
+
+    // ============================================================
+    // STARTING UPGRADES
+    // ============================================================
+
+    private void ShowStartingUpgrades()
+    {
+        // --------------------------------------------------------
+        // FIND UPGRADE UI
+        // --------------------------------------------------------
+
+        if (upgradeChoiceUI == null)
+        {
+            upgradeChoiceUI =
+                FindFirstObjectByType<UpgradeChoiceUI>();
+        }
+
+
+        // --------------------------------------------------------
+        // CHECK UPGRADE UI
+        // --------------------------------------------------------
+
+        if (upgradeChoiceUI == null)
+        {
+            Debug.LogError(
+                "[GameStateManager] " +
+                "UpgradeChoiceUI is missing!",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // SHOW STARTING UPGRADES
+        // --------------------------------------------------------
+
+        Debug.Log(
+            "[GameStateManager] Showing starting upgrades."
+        );
+
+
+        upgradeChoiceUI.ShowStartingUpgradeChoice(
+            OnStartingUpgradeSelected
+        );
+    }
+
+
+    // ============================================================
+    // STARTING UPGRADE SELECTED
+    // ============================================================
+
+    private void OnStartingUpgradeSelected()
+    {
+        Debug.Log(
+            "[GameStateManager] Starting upgrade selected."
+        );
+
+
+        // --------------------------------------------------------
+        // TELL GAME SESSION
+        // --------------------------------------------------------
+
+        if (GameSession.Instance != null)
+        {
+            GameSession.Instance.StartingUpgradesComplete();
+        }
+
+
+        // --------------------------------------------------------
+        // ENTER MAP
+        // --------------------------------------------------------
+
+        SetGameState(
+            GameState.Map
         );
     }
 
@@ -179,18 +285,6 @@ public class GameStateManager : MonoBehaviour
 
         // --------------------------------------------------------
         // CHECK CURRENT STATE
-        // --------------------------------------------------------
-        //
-        // Combat can begin from:
-        //
-        // MainMenu
-        // Map
-        // Victory
-        // Defeat
-        //
-        // Normally the map will be the state used when
-        // selecting another node.
-        //
         // --------------------------------------------------------
 
         if (

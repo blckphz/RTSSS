@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
   characterName: Sentry
   icon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
-  prefabToSpawn: {fileID: 0}
+  prefabToSpawn: {fileID: 2871373498883412824, guid: 19609389b5d1dd34ab85a61ed83be898, type: 3}
   team: 0
-  isPlayerCharacter: 0
+  isPlayerCharacter: 1
   maxHealth: 100
   moveRange: 0
   canwalkdiagonally: 0

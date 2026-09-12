@@ -25,17 +25,9 @@ public class UnitTilePin : MonoBehaviour
     // ==================================================
 
     [Header("Rotation")]
-
-    [Tooltip(
-        "The rotation the unit should ALWAYS have. " +
-        "The unit will never inherit board rotation."
-    )]
     [SerializeField]
     private Vector3 fixedRotation = Vector3.zero;
 
-    [Tooltip(
-        "If enabled, the unit's rotation is corrected every frame."
-    )]
     [SerializeField]
     private bool lockRotationEveryFrame = true;
 
@@ -55,20 +47,80 @@ public class UnitTilePin : MonoBehaviour
     // TILE STATE
     // ==================================================
 
-    // This is the authoritative logical grid position
-    // of this unit.
-    //
-    // Other systems such as:
-    //
-    // GridHighlightBrain
-    // GridManager
-    // UnitMoveBrain
-    //
-    // should use this logical position instead of
-    // converting transform.position whenever possible.
     private Vector2Int logicalTile;
-
     private bool hasTile;
+
+
+    // ==================================================
+    // DEBUG
+    // ==================================================
+
+    [Header("DEBUG")]
+    [SerializeField]
+    private bool debugLogging = true;
+
+    private Vector2Int lastLoggedTile;
+    private Vector3 lastLoggedWorldPosition;
+
+
+    // ==================================================
+    // DEBUG HELPERS
+    // ==================================================
+
+    private string DebugName()
+    {
+        return string.IsNullOrEmpty(unitId)
+            ? gameObject.name
+            : gameObject.name + " [" + unitId + "]";
+    }
+
+
+    private void Log(string message)
+    {
+        if (!debugLogging)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "[UnitTilePin] " +
+            DebugName() +
+            " | " +
+            message,
+            this
+        );
+    }
+
+
+    private void LogState(string source)
+    {
+        if (!debugLogging)
+        {
+            return;
+        }
+
+        Vector2Int worldGrid = logicalTile;
+
+        if (gridManager != null)
+        {
+            worldGrid =
+                gridManager.WorldToGridPosition(
+                    transform.position
+                );
+        }
+
+        Log(
+            source +
+            " | " +
+            "logicalTile=" + logicalTile +
+            " | " +
+            "transform.position=" + transform.position +
+            " | " +
+            "WorldToGrid(transform)=" + worldGrid +
+            " | " +
+            "hasTile=" + hasTile
+        );
+    }
 
 
     // ==================================================
@@ -81,26 +133,37 @@ public class UnitTilePin : MonoBehaviour
 
         FindGridManager();
 
+        LogState("Awake BEFORE ForceRotation");
+
         ForceRotation();
+
+        LogState("Awake AFTER ForceRotation");
     }
+
 
     private void Start()
     {
         FindGridManager();
 
+        LogState("Start BEFORE RegisterCurrentTile");
+
         RegisterCurrentTile();
+
+        LogState("Start AFTER RegisterCurrentTile");
 
         ForceRotation();
     }
+
 
     private void LateUpdate()
     {
         BoardViewController board =
             BoardViewController.Instance;
 
-        // --------------------------------------------------
+
+        // ==================================================
         // BOARD ROTATION
-        // --------------------------------------------------
+        // ==================================================
 
         if (
             board != null &&
@@ -115,18 +178,43 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
-        // --------------------------------------------------
-        // KEEP UNIT PINNED TO ITS LOGICAL TILE
-        // --------------------------------------------------
+
+        // ==================================================
+        // IMPORTANT:
+        // DO NOT PIN WHILE THE UNIT IS MOVING.
+        //
+        // UnitMoveBrain animates transform.position.
+        // If we call PinToTile() every LateUpdate while
+        // moving, the old logicalTile can fight the animation.
+        // ==================================================
 
         if (pinEveryFrame)
         {
-            PinToTile();
+            UnitMoveBrain moveBrain =
+                GetComponent<UnitMoveBrain>();
+
+            bool isMoving =
+                moveBrain != null &&
+                moveBrain.IsMoving();
+
+            if (!isMoving)
+            {
+                LogState(
+                    "LateUpdate BEFORE PinToTile"
+                );
+
+                PinToTile();
+
+                LogState(
+                    "LateUpdate AFTER PinToTile"
+                );
+            }
         }
 
-        // --------------------------------------------------
-        // KEEP UNIT ROTATION FIXED
-        // --------------------------------------------------
+
+        // ==================================================
+        // KEEP ROTATION FIXED
+        // ==================================================
 
         if (lockRotationEveryFrame)
         {
@@ -153,6 +241,7 @@ public class UnitTilePin : MonoBehaviour
         nextUnitId++;
     }
 
+
     public string GetUnitId()
     {
         return unitId;
@@ -172,6 +261,15 @@ public class UnitTilePin : MonoBehaviour
 
         gridManager =
             FindFirstObjectByType<GridManager>();
+
+        Log(
+            "FindGridManager | gridManager=" +
+            (
+                gridManager != null
+                    ? gridManager.name
+                    : "NULL"
+            )
+        );
     }
 
 
@@ -188,22 +286,42 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
+            Log(
+                "RegisterCurrentTile ABORTED | " +
+                "gridManager=NULL"
+            );
+
             return;
         }
 
-        // Convert the current world position into the
-        // logical grid position ONCE when registering.
-        //
-        // After this, logicalTile becomes the authoritative
-        // position for this unit.
-        logicalTile =
+        Vector3 worldBefore =
+            transform.position;
+
+        Vector2Int calculatedTile =
             gridManager.WorldToGridPosition(
-                transform.position
+                worldBefore
             );
+
+        Log(
+            "RegisterCurrentTile | " +
+            "worldBefore=" + worldBefore +
+            " | calculatedTile=" + calculatedTile
+        );
+
+        logicalTile =
+            calculatedTile;
 
         hasTile = true;
 
+        LogState(
+            "RegisterCurrentTile AFTER logicalTile assignment"
+        );
+
         PinToTile();
+
+        LogState(
+            "RegisterCurrentTile AFTER PinToTile"
+        );
     }
 
 
@@ -215,6 +333,13 @@ public class UnitTilePin : MonoBehaviour
         Vector2Int tile
     )
     {
+        Log(
+            "SetTile CALLED | " +
+            "requestedTile=" + tile +
+            " | previousLogicalTile=" + logicalTile +
+            " | transform.position=" + transform.position
+        );
+
         if (gridManager == null)
         {
             FindGridManager();
@@ -222,11 +347,20 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
+            Log(
+                "SetTile ABORTED | gridManager=NULL"
+            );
+
             return;
         }
 
         if (!gridManager.IsInsideGrid(tile))
         {
+            Log(
+                "SetTile REJECTED | " +
+                "tile outside grid=" + tile
+            );
+
             return;
         }
 
@@ -236,7 +370,15 @@ public class UnitTilePin : MonoBehaviour
         hasTile =
             true;
 
+        LogState(
+            "SetTile AFTER assignment"
+        );
+
         PinToTile();
+
+        LogState(
+            "SetTile AFTER PinToTile"
+        );
     }
 
 
@@ -248,6 +390,13 @@ public class UnitTilePin : MonoBehaviour
         Vector2Int newTile
     )
     {
+        Log(
+            "UpdateTileAfterMovement CALLED | " +
+            "newTile=" + newTile +
+            " | previousLogicalTile=" + logicalTile +
+            " | transform.position=" + transform.position
+        );
+
         if (gridManager == null)
         {
             FindGridManager();
@@ -255,17 +404,23 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
+            Log(
+                "UpdateTileAfterMovement ABORTED | " +
+                "gridManager=NULL"
+            );
+
             return;
         }
 
         if (!gridManager.IsInsideGrid(newTile))
         {
+            Log(
+                "UpdateTileAfterMovement REJECTED | " +
+                "tile outside grid=" + newTile
+            );
+
             return;
         }
-
-        // --------------------------------------------------
-        // UPDATE AUTHORITATIVE LOGICAL TILE
-        // --------------------------------------------------
 
         logicalTile =
             newTile;
@@ -273,21 +428,29 @@ public class UnitTilePin : MonoBehaviour
         hasTile =
             true;
 
-        // --------------------------------------------------
-        // UPDATE WORLD POSITION
-        // --------------------------------------------------
+        LogState(
+            "UpdateTileAfterMovement AFTER logicalTile assignment"
+        );
 
         Vector3 targetPosition =
             gridManager.GridToWorldPosition(
                 newTile
             );
 
+        Log(
+            "UpdateTileAfterMovement | " +
+            "GridToWorldPosition(" +
+            newTile +
+            ")=" +
+            targetPosition
+        );
+
         transform.position =
             targetPosition;
 
-        // --------------------------------------------------
-        // KEEP ROTATION FIXED
-        // --------------------------------------------------
+        LogState(
+            "UpdateTileAfterMovement AFTER transform.position"
+        );
 
         ForceRotation();
     }
@@ -306,34 +469,72 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
+            Log(
+                "PinToTile ABORTED | gridManager=NULL"
+            );
+
             return;
         }
 
         if (!hasTile)
         {
+            Log(
+                "PinToTile ABORTED | hasTile=false"
+            );
+
             return;
         }
 
         BoardViewController board =
             BoardViewController.Instance;
 
-        // Do not reposition the unit while the board itself
-        // is rotating.
         if (
             board != null &&
             board.IsRotating()
         )
         {
+            Log(
+                "PinToTile SKIPPED | board is rotating"
+            );
+
             return;
         }
+
+        Vector3 worldBefore =
+            transform.position;
 
         Vector3 targetPosition =
             gridManager.GridToWorldPosition(
                 logicalTile
             );
 
+        Log(
+            "PinToTile | " +
+            "logicalTile=" + logicalTile +
+            " | worldBefore=" + worldBefore +
+            " | targetWorld=" + targetPosition
+        );
+
         transform.position =
             targetPosition;
+
+        Vector3 worldAfter =
+            transform.position;
+
+        if (worldBefore != worldAfter)
+        {
+            Log(
+                "PinToTile MOVED TRANSFORM | " +
+                "before=" + worldBefore +
+                " | after=" + worldAfter
+            );
+        }
+
+        lastLoggedTile =
+            logicalTile;
+
+        lastLoggedWorldPosition =
+            worldAfter;
     }
 
 
@@ -367,6 +568,11 @@ public class UnitTilePin : MonoBehaviour
 
     public Vector2Int GetTile()
     {
+        if (debugLogging)
+        {
+            LogState("GetTile");
+        }
+
         return logicalTile;
     }
 
@@ -375,20 +581,13 @@ public class UnitTilePin : MonoBehaviour
     // GET GRID POSITION
     // ==================================================
 
-    // This is an alias for GetTile().
-    //
-    // GridHighlightBrain can therefore safely call:
-    //
-    // pin.GetGridPosition()
-    //
-    // while older scripts can continue using:
-    //
-    // pin.GetTile()
-    //
-    // Both return the exact same logical tile.
-
     public Vector2Int GetGridPosition()
     {
+        if (debugLogging)
+        {
+            LogState("GetGridPosition");
+        }
+
         return logicalTile;
     }
 
@@ -439,12 +638,9 @@ public class UnitTilePin : MonoBehaviour
 
 
     // ==================================================
-    // FORCE REGISTER TILE
+    // REFRESH TILE FROM WORLD
     // ==================================================
 
-    // Useful if another system has moved this unit and
-    // you want UnitTilePin to immediately recognize the
-    // new logical tile.
     public void RefreshTileFromWorldPosition()
     {
         if (gridManager == null)
@@ -454,14 +650,36 @@ public class UnitTilePin : MonoBehaviour
 
         if (gridManager == null)
         {
+            Log(
+                "RefreshTileFromWorldPosition ABORTED | " +
+                "gridManager=NULL"
+            );
+
             return;
         }
 
-        logicalTile =
+        Vector3 worldBefore =
+            transform.position;
+
+        Vector2Int calculatedTile =
             gridManager.WorldToGridPosition(
-                transform.position
+                worldBefore
             );
 
+        Log(
+            "RefreshTileFromWorldPosition | " +
+            "world=" + worldBefore +
+            " | calculatedTile=" + calculatedTile +
+            " | previousLogicalTile=" + logicalTile
+        );
+
+        logicalTile =
+            calculatedTile;
+
         hasTile = true;
+
+        LogState(
+            "RefreshTileFromWorldPosition AFTER assignment"
+        );
     }
 }

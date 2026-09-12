@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c6d099015cba4640a0dc8c827616f4d, type: 3}
   m_Name: ChainBounceUpgrade
   m_EditorClassIdentifier: Assembly-CSharp::ChainBounceUpgrade
-  additionalBounces: 2
+  Description: increases the bounce by 1
+  additionalBounces: 1

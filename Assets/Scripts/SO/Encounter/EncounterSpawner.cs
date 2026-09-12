@@ -22,11 +22,13 @@ public class EncounterSpawner : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
 
+
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
+
 
         if (combatManager == null)
         {
@@ -35,6 +37,10 @@ public class EncounterSpawner : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // SPAWN ENCOUNTER
+    // ============================================================
 
     public void SpawnEncounter(
         EncounterDefinition encounter)
@@ -47,14 +53,22 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
+
         if (encounter == null)
         {
             return;
         }
 
-        SpawnEnemies(encounter);
+
+        SpawnEnemies(
+            encounter
+        );
     }
 
+
+    // ============================================================
+    // SPAWN ENEMIES
+    // ============================================================
 
     public void SpawnEnemies(
         EncounterDefinition encounter)
@@ -67,6 +81,7 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
+
         if (
             encounter == null ||
             encounter.enemies == null ||
@@ -75,6 +90,7 @@ public class EncounterSpawner : MonoBehaviour
         {
             return;
         }
+
 
         for (
             int i = 0;
@@ -85,6 +101,7 @@ public class EncounterSpawner : MonoBehaviour
             EnemySpawnData data =
                 encounter.enemies[i];
 
+
             if (
                 data == null ||
                 data.prefab == null
@@ -93,8 +110,10 @@ public class EncounterSpawner : MonoBehaviour
                 continue;
             }
 
+
             string enemyId =
                 data.enemyId;
+
 
             if (
                 string.IsNullOrWhiteSpace(
@@ -106,6 +125,7 @@ public class EncounterSpawner : MonoBehaviour
                     $"Enemy_{i}";
             }
 
+
             GameObject spawnedEnemy =
                 SpawnRandomUnit(
                     data.prefab,
@@ -113,12 +133,14 @@ public class EncounterSpawner : MonoBehaviour
                     enemyId
                 );
 
+
             if (spawnedEnemy != null)
             {
                 AttackUnit attackUnit =
                     spawnedEnemy.GetComponent<
                         AttackUnit
                     >();
+
 
                 if (attackUnit != null)
                 {
@@ -129,6 +151,7 @@ public class EncounterSpawner : MonoBehaviour
                                 CombatManager
                             >();
                     }
+
 
                     if (combatManager != null)
                     {
@@ -143,6 +166,10 @@ public class EncounterSpawner : MonoBehaviour
     }
 
 
+    // ============================================================
+    // SPAWN RANDOM UNIT
+    // ============================================================
+
     private GameObject SpawnRandomUnit(
         GameObject prefab,
         string identifier,
@@ -156,10 +183,12 @@ public class EncounterSpawner : MonoBehaviour
             return null;
         }
 
+
         if (gridManager == null)
         {
             return null;
         }
+
 
         if (
             !gridManager.TryGetRandomFreeCell(
@@ -170,24 +199,79 @@ public class EncounterSpawner : MonoBehaviour
             return null;
         }
 
+
+        // ========================================================
+        // CREATE UNIT
+        // ========================================================
+
         GameObject unit =
             Instantiate(
                 prefab
             );
+
 
         if (unit == null)
         {
             return null;
         }
 
+
         unit.name =
             $"{identifier}_{prefab.name}";
 
+
+        // ========================================================
+        // UNIT DATA
+        // ========================================================
+
+        UnitData unitData =
+            unit.GetComponent<UnitData>();
+
+
+        if (unitData != null)
+        {
+            CharacterSO character =
+                unitData.GetCharacter();
+
+
+            if (character != null)
+            {
+                unitData.Initialize(
+                    character
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[EncounterSpawner] " +
+                    "UnitData exists on " +
+                    unit.name +
+                    " but has no CharacterSO.",
+                    unit
+                );
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[EncounterSpawner] " +
+                "Spawned unit " +
+                unit.name +
+                " has no UnitData component.",
+                unit
+            );
+        }
+
+
+        // ========================================================
+        // ENCOUNTER UNIT
+        // ========================================================
 
         EncounterUnit encounterUnit =
             unit.GetComponent<
                 EncounterUnit
             >();
+
 
         if (encounterUnit == null)
         {
@@ -197,10 +281,15 @@ public class EncounterSpawner : MonoBehaviour
                 >();
         }
 
+
         encounterUnit.SetEncounterUnitId(
             encounterUnitId
         );
 
+
+        // ========================================================
+        // PLACE ON GRID
+        // ========================================================
 
         if (
             !gridManager.PlaceUnit(
@@ -210,8 +299,10 @@ public class EncounterSpawner : MonoBehaviour
         )
         {
             Destroy(unit);
+
             return null;
         }
+
 
         return unit;
     }

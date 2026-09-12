@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -72,7 +73,7 @@ public class VictoryManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // START VICTORY UI HIDDEN
+        // HIDE VICTORY CANVAS
         // --------------------------------------------------------
 
         if (victoryCanvas != null)
@@ -82,7 +83,7 @@ public class VictoryManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // START CONTINUE DISABLED
+        // DISABLE CONTINUE
         // --------------------------------------------------------
 
         if (continueButton != null)
@@ -132,13 +133,16 @@ public class VictoryManager : MonoBehaviour
     // ============================================================
 
     private void HandleGameStateChanged(
-        GameStateManager.GameState newState)
+        GameStateManager.GameState newState
+    )
     {
-
-
         if (newState ==
             GameStateManager.GameState.Victory)
         {
+            Debug.Log(
+                "[VictoryManager] Victory state reached."
+            );
+
             ShowVictoryCanvas();
         }
         else
@@ -157,7 +161,8 @@ public class VictoryManager : MonoBehaviour
         if (victoryCanvas == null)
         {
             Debug.LogWarning(
-                "[VictoryManager] Victory Canvas is not assigned!",
+                "[VictoryManager] " +
+                "Victory Canvas is not assigned!",
                 this
             );
 
@@ -183,7 +188,8 @@ public class VictoryManager : MonoBehaviour
 
 
         Debug.Log(
-            "[VictoryManager] Victory screen shown."
+            "[VictoryManager] Victory screen shown. " +
+            "Waiting for upgrade selection."
         );
 
 
@@ -193,7 +199,9 @@ public class VictoryManager : MonoBehaviour
 
         if (upgradeChoiceUI != null)
         {
-            upgradeChoiceUI.ShowUpgradeChoices();
+            upgradeChoiceUI.ShowUpgradeChoices(
+                OnUpgradeSelected
+            );
         }
         else
         {
@@ -203,8 +211,10 @@ public class VictoryManager : MonoBehaviour
                 this
             );
 
-            // If there is no upgrade UI,
-            // don't permanently lock Continue.
+
+            // ----------------------------------------------------
+            // NO UPGRADE UI
+            // ----------------------------------------------------
 
             if (continueButton != null)
             {
@@ -222,7 +232,7 @@ public class VictoryManager : MonoBehaviour
     {
         Debug.Log(
             "[VictoryManager] Upgrade selected. " +
-            "Continue button enabled."
+            "Continue enabled."
         );
 
 
@@ -252,11 +262,6 @@ public class VictoryManager : MonoBehaviour
 
 
         victoryCanvas.SetActive(false);
-
-
-        Debug.Log(
-            "[VictoryManager] Victory screen hidden."
-        );
     }
 
 
@@ -310,7 +315,7 @@ public class VictoryManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // TRANSITION BACK TO MAP
+        // TRANSITION TO MAP
         // --------------------------------------------------------
 
         if (transitionManager != null)

@@ -183,31 +183,6 @@ public class GridHighlightManager : MonoBehaviour
         }
     }
 
-    private void DebugWarning(string message)
-    {
-        if (enableWarningLogs)
-        {
-            Debug.LogWarning(
-                "[GridHighlightManager] " +
-                message,
-                this
-            );
-        }
-    }
-
-    private void DebugError(string message)
-    {
-        if (enableErrorLogs)
-        {
-            Debug.LogError(
-                "[GridHighlightManager] " +
-                message,
-                this
-            );
-        }
-    }
-
-
     // ============================================================
     // REFERENCES
     // ============================================================
@@ -226,19 +201,6 @@ public class GridHighlightManager : MonoBehaviour
                 FindFirstObjectByType<GridHighlightBrain>();
         }
 
-        if (gridManager == null)
-        {
-            DebugError(
-                "GridManager reference could not be found."
-            );
-        }
-
-        if (brain == null)
-        {
-            DebugWarning(
-                "GridHighlightBrain reference could not be found."
-            );
-        }
     }
 
 
@@ -252,10 +214,6 @@ public class GridHighlightManager : MonoBehaviour
 
         if (gridManager == null)
         {
-            DebugError(
-                "RefreshGrid failed because GridManager is missing."
-            );
-
             return;
         }
 
@@ -326,16 +284,6 @@ public class GridHighlightManager : MonoBehaviour
         GameObject tile =
             gridManager.GetFloorTile(position);
 
-        if (tile == null)
-        {
-            DebugWarning(
-                "No floor tile found at " +
-                position +
-                "."
-            );
-
-            return null;
-        }
 
         if (
             !tile.TryGetComponent(
@@ -489,15 +437,6 @@ public class GridHighlightManager : MonoBehaviour
             FindReferences();
         }
 
-        if (brain == null)
-        {
-            DebugError(
-                "ShowMovementRange failed because " +
-                "GridHighlightBrain is missing."
-            );
-
-            return;
-        }
 
         brain.ShowMovementRange(
             centerPosition,
@@ -526,14 +465,6 @@ public class GridHighlightManager : MonoBehaviour
 
         SetCurrentRangeUser(user);
 
-        if (cells == null)
-        {
-            DebugWarning(
-                "ShowMovementTiles received a null cell list."
-            );
-
-            return;
-        }
 
         for (
             int i = 0;
@@ -742,15 +673,6 @@ public class GridHighlightManager : MonoBehaviour
             gridManager == null ||
             !gridManager.IsInsideGrid(position)
         )
-        {
-            DebugWarning(
-                "Attempted to show ability cell " +
-                position +
-                " outside the grid."
-            );
-
-            return;
-        }
 
         if (!abilityCells.Add(position))
         {
@@ -1130,15 +1052,6 @@ public class GridHighlightManager : MonoBehaviour
         HoverInfoTrigger hoverInfo =
             targetUnit.GetComponent<HoverInfoTrigger>();
 
-        if (hoverInfo == null)
-        {
-            DebugWarning(
-                "Target has no HoverInfoTrigger: " +
-                targetUnit.name
-            );
-
-            return;
-        }
 
         hoverInfo.SetAbilityRangeOutline(
             true,
@@ -1505,10 +1418,6 @@ public class GridHighlightManager : MonoBehaviour
             !gridManager.IsInsideGrid(position)
         )
         {
-            DebugWarning(
-                "Explosion requested outside the grid: " +
-                position
-            );
 
             return;
         }

@@ -28,8 +28,9 @@ public class HealthManager : MonoBehaviour
     // ==================================================
 
     [Tooltip(
-        "If enabled, this unit's health is saved in PlayerDataManager " +
-        "and restored when the next encounter starts."
+        "If enabled, this unit is the main player character. " +
+        "If the main player character reaches 0 HP, the game enters Game Over. " +
+        "Allies and enemies should have this disabled."
     )]
     [SerializeField]
     private bool isPlayerCharacter;
@@ -193,19 +194,14 @@ public class HealthManager : MonoBehaviour
     // ==================================================
 
     private Material material;
-
     private Coroutine flashCoroutine;
-
     private Coroutine healthTextPopCoroutine;
-
     private Coroutine healthBarShakeCoroutine;
 
     private int pendingFlashes = 0;
-
     private bool isFlashing = false;
 
     private AudioFXManager audioFXManager;
-
     private PlayerDataManager playerDataManager;
 
 
@@ -214,11 +210,9 @@ public class HealthManager : MonoBehaviour
     // ==================================================
 
     private RectTransform healthTextRect;
-
     private RectTransform healthBarRect;
 
     private Vector3 healthTextOriginalScale;
-
     private Vector3 healthBarOriginalPosition;
 
 
@@ -236,14 +230,6 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
-    // DEBUG
-    // ==================================================
-
-    private const string DEBUG_PREFIX =
-        "[HealthManager] ";
-
-
-    // ==================================================
     // UNITY
     // ==================================================
 
@@ -258,17 +244,7 @@ public class HealthManager : MonoBehaviour
         health =
             maxHealth;
 
-
-        // --------------------------------------------------
-        // MATERIAL
-        // --------------------------------------------------
-
         SetupMaterial();
-
-
-        // --------------------------------------------------
-        // MANAGERS
-        // --------------------------------------------------
 
         audioFXManager =
             AudioFXManager.Instance;
@@ -276,17 +252,7 @@ public class HealthManager : MonoBehaviour
         playerDataManager =
             PlayerDataManager.Instance;
 
-
-        // --------------------------------------------------
-        // HEALTH UI REFERENCES
-        // --------------------------------------------------
-
         SetupHealthUI();
-
-
-        // --------------------------------------------------
-        // INITIAL HEALTH UI
-        // --------------------------------------------------
 
         UpdateHealthUI();
     }
@@ -298,10 +264,6 @@ public class HealthManager : MonoBehaviour
 
     private void SetupHealthUI()
     {
-        // --------------------------------------------------
-        // HEALTH TEXT
-        // --------------------------------------------------
-
         if (healthText != null)
         {
             healthTextRect =
@@ -310,11 +272,6 @@ public class HealthManager : MonoBehaviour
             healthTextOriginalScale =
                 healthTextRect.localScale;
         }
-
-
-        // --------------------------------------------------
-        // HEALTH BAR
-        // --------------------------------------------------
 
         if (healthBarFill != null)
         {
@@ -339,12 +296,10 @@ public class HealthManager : MonoBehaviour
                 GetComponent<SpriteRenderer>();
         }
 
-
         if (spriteRenderer == null)
         {
             return;
         }
-
 
         if (material == null)
         {
@@ -366,11 +321,6 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
-
-        // --------------------------------------------------
-        // CHARACTER DATA
-        // --------------------------------------------------
-
         team =
             character.team;
 
@@ -383,30 +333,15 @@ public class HealthManager : MonoBehaviour
         isPlayerCharacter =
             character.isPlayerCharacter;
 
-
-        // --------------------------------------------------
-        // MATERIAL
-        // --------------------------------------------------
-
         SetupMaterial();
 
         StopDamageFlash();
-
-
-        // --------------------------------------------------
-        // AUDIO
-        // --------------------------------------------------
 
         if (audioFXManager == null)
         {
             audioFXManager =
                 AudioFXManager.Instance;
         }
-
-
-        // --------------------------------------------------
-        // PLAYER HEALTH
-        // --------------------------------------------------
 
         if (isPlayerCharacter)
         {
@@ -416,13 +351,11 @@ public class HealthManager : MonoBehaviour
                     PlayerDataManager.Instance;
             }
 
-
             if (playerDataManager != null)
             {
                 playerDataManager.Initialize(
                     character
                 );
-
 
                 health =
                     playerDataManager.GetHealth();
@@ -433,22 +366,11 @@ public class HealthManager : MonoBehaviour
                     maxHealth;
             }
         }
-
-
-        // --------------------------------------------------
-        // NORMAL UNIT
-        // --------------------------------------------------
-
         else
         {
             health =
                 maxHealth;
         }
-
-
-        // --------------------------------------------------
-        // CLAMP HEALTH
-        // --------------------------------------------------
 
         health =
             Mathf.Clamp(
@@ -457,33 +379,13 @@ public class HealthManager : MonoBehaviour
                 maxHealth
             );
 
-
-        // --------------------------------------------------
-        // RESET COMBINED DAMAGE
-        // --------------------------------------------------
-
         combinedDamage = 0;
-
-
-        // --------------------------------------------------
-        // RESET HEALTH UI TRANSFORMS
-        // --------------------------------------------------
 
         SetupHealthUI();
 
         ResetHealthUITransform();
 
-
-        // --------------------------------------------------
-        // UPDATE HEALTH UI
-        // --------------------------------------------------
-
         UpdateHealthUI();
-
-
-        // --------------------------------------------------
-        // NOTIFY
-        // --------------------------------------------------
 
         NotifyHealthChanged();
     }
@@ -495,10 +397,6 @@ public class HealthManager : MonoBehaviour
 
     private void UpdateHealthUI()
     {
-        // --------------------------------------------------
-        // HEALTH BAR
-        // --------------------------------------------------
-
         if (healthBarFill != null)
         {
             if (maxHealth <= 0)
@@ -512,18 +410,12 @@ public class HealthManager : MonoBehaviour
                     (float)health /
                     maxHealth;
 
-
                 healthBarFill.fillAmount =
                     Mathf.Clamp01(
                         fillAmount
                     );
             }
         }
-
-
-        // --------------------------------------------------
-        // HEALTH TEXT
-        // --------------------------------------------------
 
         if (healthText != null)
         {
@@ -549,7 +441,6 @@ public class HealthManager : MonoBehaviour
                 maxHealth
             );
 
-
         NotifyHealthChanged();
     }
 
@@ -563,116 +454,39 @@ public class HealthManager : MonoBehaviour
     {
         if (damage <= 0)
         {
-            Debug.LogWarning(
-                DEBUG_PREFIX +
-                name +
-                " received invalid damage: " +
-                damage
-            );
-
             return;
         }
-
 
         if (IsDead())
         {
-            Debug.Log(
-                DEBUG_PREFIX +
-                name +
-                " is already dead. " +
-                "Ignoring damage: " +
-                damage
-            );
-
             return;
         }
 
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            name +
-            " TakeDamage(" +
-            damage +
-            ")" +
-            " | HP before = " +
-            health +
-            " | Combined batch active = " +
-            IsCombinedDamageBatchActive()
-        );
-
-
-        // --------------------------------------------------
-        // APPLY DAMAGE
-        // --------------------------------------------------
-
         health -=
             damage;
-
 
         if (health < 0)
         {
             health = 0;
         }
 
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            name +
-            " HP after = " +
-            health
-        );
-
-
-        // --------------------------------------------------
-        // COMBINED DAMAGE
-        // --------------------------------------------------
-
         if (IsCombinedDamageBatchActive())
         {
             combinedDamage +=
                 damage;
 
-
             combinedDamageManagers.Add(
                 this
-            );
-
-
-            Debug.Log(
-                DEBUG_PREFIX +
-                name +
-                " COMBINED DAMAGE +" +
-                damage +
-                " | TOTAL = " +
-                combinedDamage
             );
         }
         else
         {
-            Debug.Log(
-                DEBUG_PREFIX +
-                name +
-                " spawning normal damage number: " +
-                damage
-            );
-
-
             SpawnDamageNumber(
                 damage
             );
         }
 
-
-        // --------------------------------------------------
-        // SAVE PLAYER HP
-        // --------------------------------------------------
-
         SavePlayerHealth();
-
-
-        // --------------------------------------------------
-        // DAMAGE FEEDBACK
-        // --------------------------------------------------
 
         PlayDamageSound();
 
@@ -682,21 +496,8 @@ public class HealthManager : MonoBehaviour
 
         FlashDamage();
 
-
-        // --------------------------------------------------
-        // DEATH
-        // --------------------------------------------------
-
         if (health <= 0)
         {
-            Debug.Log(
-                DEBUG_PREFIX +
-                name +
-                " DIED during damage batch = " +
-                IsCombinedDamageBatchActive()
-            );
-
-
             Die();
         }
     }
@@ -710,37 +511,9 @@ public class HealthManager : MonoBehaviour
     {
         combinedDamageBatchDepth++;
 
-
         if (combinedDamageBatchDepth == 1)
         {
             combinedDamageManagers.Clear();
-
-
-            Debug.Log(
-                DEBUG_PREFIX +
-                "========================================"
-            );
-
-
-            Debug.Log(
-                DEBUG_PREFIX +
-                "BEGIN COMBINED DAMAGE BATCH"
-            );
-
-
-            Debug.Log(
-                DEBUG_PREFIX +
-                "========================================"
-            );
-        }
-        else
-        {
-            Debug.Log(
-                DEBUG_PREFIX +
-                "Nested combined damage batch started. " +
-                "Depth = " +
-                combinedDamageBatchDepth
-            );
         }
     }
 
@@ -753,65 +526,21 @@ public class HealthManager : MonoBehaviour
     {
         if (combinedDamageBatchDepth <= 0)
         {
-            Debug.LogWarning(
-                DEBUG_PREFIX +
-                "EndCombinedDamageBatch() called " +
-                "without an active batch."
-            );
-
-
             combinedDamageBatchDepth = 0;
-
             return;
         }
 
-
         combinedDamageBatchDepth--;
-
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            "EndCombinedDamageBatch() | Depth = " +
-            combinedDamageBatchDepth
-        );
-
 
         if (combinedDamageBatchDepth > 0)
         {
             return;
         }
 
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            "========================================"
-        );
-
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            "FLUSHING COMBINED DAMAGE"
-        );
-
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            "Targets hit = " +
-            combinedDamageManagers.Count
-        );
-
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            "========================================"
-        );
-
-
         List<HealthManager> managers =
             new List<HealthManager>(
                 combinedDamageManagers
             );
-
 
         for (
             int i = 0;
@@ -822,16 +551,13 @@ public class HealthManager : MonoBehaviour
             HealthManager manager =
                 managers[i];
 
-
             if (manager == null)
             {
                 continue;
             }
 
-
             manager.FlushCombinedDamage();
         }
-
 
         combinedDamageManagers.Clear();
     }
@@ -853,21 +579,12 @@ public class HealthManager : MonoBehaviour
 
     private void FlushCombinedDamage()
     {
-        Debug.Log(
-            DEBUG_PREFIX +
-            name +
-            " FLUSH COMBINED DAMAGE = " +
-            combinedDamage
-        );
-
-
         if (combinedDamage > 0)
         {
             SpawnDamageNumber(
                 combinedDamage
             );
         }
-
 
         combinedDamage = 0;
     }
@@ -879,17 +596,7 @@ public class HealthManager : MonoBehaviour
 
     public void CancelCombinedDamage()
     {
-        Debug.Log(
-            DEBUG_PREFIX +
-            name +
-            " CancelCombinedDamage(). " +
-            "Previous total = " +
-            combinedDamage
-        );
-
-
         combinedDamage = 0;
-
 
         combinedDamageManagers.Remove(
             this
@@ -906,34 +613,15 @@ public class HealthManager : MonoBehaviour
     {
         if (damageNumberPrefab == null)
         {
-            Debug.LogWarning(
-                DEBUG_PREFIX +
-                name +
-                " has no DamageNumber prefab assigned!"
-            );
-
             return;
         }
-
 
         Vector3 spawnPosition =
             transform.position +
             damageNumberOffset;
 
-
         Transform parent =
             damageNumberParent;
-
-
-        Debug.Log(
-            DEBUG_PREFIX +
-            name +
-            " SPAWN DAMAGE NUMBER = " +
-            damage +
-            " at " +
-            spawnPosition
-        );
-
 
         DamageNumber damageNumber =
             Instantiate(
@@ -942,7 +630,6 @@ public class HealthManager : MonoBehaviour
                 Quaternion.identity,
                 parent
             );
-
 
         damageNumber.Setup(
             damage
@@ -961,13 +648,11 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
-
         if (playerDataManager == null)
         {
             playerDataManager =
                 PlayerDataManager.Instance;
         }
-
 
         if (playerDataManager != null)
         {
@@ -989,13 +674,11 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
-
         if (audioFXManager == null)
         {
             audioFXManager =
                 AudioFXManager.Instance;
         }
-
 
         if (audioFXManager != null)
         {
@@ -1015,12 +698,10 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
-
         if (ScreenShaker.Instance == null)
         {
             return;
         }
-
 
         ScreenShaker.Instance.Shake(
             damageScreenShakeMagnitude,
@@ -1035,30 +716,11 @@ public class HealthManager : MonoBehaviour
 
     private void NotifyHealthChanged()
     {
-        // --------------------------------------------------
-        // UPDATE BAR + TEXT
-        // --------------------------------------------------
-
         UpdateHealthUI();
-
-
-        // --------------------------------------------------
-        // POP TEXT + SHAKE BAR
-        // --------------------------------------------------
 
         PlayHealthUIFeedback();
 
-
-        // --------------------------------------------------
-        // NOTIFY OTHER SYSTEMS
-        // --------------------------------------------------
-
         OnHealthChanged?.Invoke(this);
-
-
-        // --------------------------------------------------
-        // SAVE PLAYER HEALTH
-        // --------------------------------------------------
 
         if (isPlayerCharacter)
         {
@@ -1067,7 +729,6 @@ public class HealthManager : MonoBehaviour
                 playerDataManager =
                     PlayerDataManager.Instance;
             }
-
 
             if (playerDataManager != null)
             {
@@ -1085,10 +746,6 @@ public class HealthManager : MonoBehaviour
 
     private void PlayHealthUIFeedback()
     {
-        // --------------------------------------------------
-        // TEXT POP
-        // --------------------------------------------------
-
         if (healthTextRect != null)
         {
             if (healthTextPopCoroutine != null)
@@ -1098,17 +755,11 @@ public class HealthManager : MonoBehaviour
                 );
             }
 
-
             healthTextPopCoroutine =
                 StartCoroutine(
                     HealthTextPopCoroutine()
                 );
         }
-
-
-        // --------------------------------------------------
-        // BAR SHAKE
-        // --------------------------------------------------
 
         if (healthBarRect != null)
         {
@@ -1118,7 +769,6 @@ public class HealthManager : MonoBehaviour
                     healthBarShakeCoroutine
                 );
             }
-
 
             healthBarShakeCoroutine =
                 StartCoroutine(
@@ -1139,44 +789,32 @@ public class HealthManager : MonoBehaviour
             yield break;
         }
 
-
         float duration =
             Mathf.Max(
                 0.01f,
                 healthTextPopDuration
             );
 
-
         Vector3 originalScale =
             healthTextOriginalScale;
-
 
         Vector3 poppedScale =
             originalScale *
             healthTextPopScale;
 
-
-        // --------------------------------------------------
-        // POP UP
-        // --------------------------------------------------
-
         float timer = 0f;
-
 
         while (timer < duration * 0.5f)
         {
             timer +=
                 Time.unscaledDeltaTime;
 
-
             float t =
                 timer /
                 (duration * 0.5f);
 
-
             t =
                 Mathf.Clamp01(t);
-
 
             t =
                 Mathf.SmoothStep(
@@ -1185,7 +823,6 @@ public class HealthManager : MonoBehaviour
                     t
                 );
 
-
             healthTextRect.localScale =
                 Vector3.Lerp(
                     originalScale,
@@ -1193,32 +830,22 @@ public class HealthManager : MonoBehaviour
                     t
                 );
 
-
             yield return null;
         }
-
-
-        // --------------------------------------------------
-        // POP DOWN
-        // --------------------------------------------------
 
         timer = 0f;
 
-
         while (timer < duration * 0.5f)
         {
             timer +=
                 Time.unscaledDeltaTime;
 
-
             float t =
                 timer /
                 (duration * 0.5f);
 
-
             t =
                 Mathf.Clamp01(t);
-
 
             t =
                 Mathf.SmoothStep(
@@ -1227,7 +854,6 @@ public class HealthManager : MonoBehaviour
                     t
                 );
 
-
             healthTextRect.localScale =
                 Vector3.Lerp(
                     poppedScale,
@@ -1235,14 +861,11 @@ public class HealthManager : MonoBehaviour
                     t
                 );
 
-
             yield return null;
         }
 
-
         healthTextRect.localScale =
             originalScale;
-
 
         healthTextPopCoroutine =
             null;
@@ -1260,26 +883,21 @@ public class HealthManager : MonoBehaviour
             yield break;
         }
 
-
         float duration =
             Mathf.Max(
                 0.01f,
                 healthBarShakeDuration
             );
 
-
         Vector3 originalPosition =
             healthBarOriginalPosition;
 
-
         float timer = 0f;
-
 
         while (timer < duration)
         {
             timer +=
                 Time.unscaledDeltaTime;
-
 
             float t =
                 Mathf.Clamp01(
@@ -1287,8 +905,6 @@ public class HealthManager : MonoBehaviour
                     duration
                 );
 
-
-            // Shake becomes weaker toward the end.
             float strength =
                 Mathf.Lerp(
                     1f,
@@ -1296,12 +912,10 @@ public class HealthManager : MonoBehaviour
                     t
                 );
 
-
             Vector2 randomOffset =
                 UnityEngine.Random.insideUnitCircle *
                 healthBarShakeAmount *
                 strength;
-
 
             healthBarRect.localPosition =
                 originalPosition +
@@ -1311,14 +925,11 @@ public class HealthManager : MonoBehaviour
                     0f
                 );
 
-
             yield return null;
         }
 
-
         healthBarRect.localPosition =
             originalPosition;
-
 
         healthBarShakeCoroutine =
             null;
@@ -1337,7 +948,6 @@ public class HealthManager : MonoBehaviour
                 healthTextOriginalScale;
         }
 
-
         if (healthBarRect != null)
         {
             healthBarRect.localPosition =
@@ -1354,23 +964,19 @@ public class HealthManager : MonoBehaviour
     {
         SetupMaterial();
 
-
         if (material == null)
         {
             return;
         }
-
 
         if (!material.HasProperty("_Intensity"))
         {
             return;
         }
 
-
         if (queueDamageFlashes)
         {
             pendingFlashes++;
-
 
             if (!isFlashing)
             {
@@ -1380,10 +986,8 @@ public class HealthManager : MonoBehaviour
                     );
             }
 
-
             return;
         }
-
 
         if (flashCoroutine != null)
         {
@@ -1391,7 +995,6 @@ public class HealthManager : MonoBehaviour
                 flashCoroutine
             );
         }
-
 
         flashCoroutine =
             StartCoroutine(
@@ -1408,16 +1011,13 @@ public class HealthManager : MonoBehaviour
     {
         isFlashing = true;
 
-
         while (pendingFlashes > 0)
         {
             pendingFlashes--;
 
-
             yield return StartCoroutine(
                 SingleDamageFlashCoroutine()
             );
-
 
             if (
                 pendingFlashes > 0 &&
@@ -1429,7 +1029,6 @@ public class HealthManager : MonoBehaviour
                 );
             }
         }
-
 
         isFlashing = false;
 
@@ -1445,7 +1044,6 @@ public class HealthManager : MonoBehaviour
     {
         SetupMaterial();
 
-
         if (
             material == null ||
             !material.HasProperty("_Intensity")
@@ -1454,34 +1052,27 @@ public class HealthManager : MonoBehaviour
             yield break;
         }
 
-
         material.SetFloat(
             "_Intensity",
             flashIntensity
         );
 
-
         yield return null;
 
-
         float timer = 0f;
-
 
         while (timer < flashDuration)
         {
             timer +=
                 Time.deltaTime;
 
-
             float t =
                 flashDuration <= 0f
                     ? 1f
                     : timer / flashDuration;
 
-
             t =
                 Mathf.Clamp01(t);
-
 
             float intensity =
                 Mathf.Lerp(
@@ -1489,7 +1080,6 @@ public class HealthManager : MonoBehaviour
                     0f,
                     t
                 );
-
 
             if (
                 material != null &&
@@ -1502,10 +1092,8 @@ public class HealthManager : MonoBehaviour
                 );
             }
 
-
             yield return null;
         }
-
 
         if (
             material != null &&
@@ -1517,7 +1105,6 @@ public class HealthManager : MonoBehaviour
                 0f
             );
         }
-
 
         yield return null;
     }
@@ -1535,15 +1122,12 @@ public class HealthManager : MonoBehaviour
                 flashCoroutine
             );
 
-
             flashCoroutine = null;
         }
-
 
         pendingFlashes = 0;
 
         isFlashing = false;
-
 
         if (
             material != null &&
@@ -1570,23 +1154,19 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
-
         if (IsDead())
         {
             return;
         }
 
-
         health +=
             amount;
-
 
         if (health > maxHealth)
         {
             health =
                 maxHealth;
         }
-
 
         NotifyHealthChanged();
     }
@@ -1603,10 +1183,8 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
-
         health =
             maxHealth;
-
 
         NotifyHealthChanged();
     }
@@ -1618,28 +1196,31 @@ public class HealthManager : MonoBehaviour
 
     private void Die()
     {
-        // IMPORTANT:
-        // Do NOT end the global damage batch here.
-        //
-        // The enemy may have more attacks remaining.
-        // The batch must stay active until the entire
-        // multi-attack sequence is finished.
-
         SavePlayerHealth();
 
+        if (isPlayerCharacter)
+        {
+            GameStateManager gameStateManager =
+                FindFirstObjectByType<GameStateManager>();
+
+            if (gameStateManager != null)
+            {
+                gameStateManager.GameOver();
+            }
+
+            StopDamageFlash();
+
+            gameObject.SetActive(false);
+
+            return;
+        }
+
         StopDamageFlash();
-
-
-        // --------------------------------------------------
-        // ENCOUNTER UNIT
-        // --------------------------------------------------
 
         EncounterUnit encounterUnit =
             GetComponent<EncounterUnit>();
 
-
         string encounterUnitId = null;
-
 
         if (encounterUnit != null)
         {
@@ -1647,14 +1228,8 @@ public class HealthManager : MonoBehaviour
                 encounterUnit.GetEncounterUnitId();
         }
 
-
-        // --------------------------------------------------
-        // ENCOUNTER MANAGER
-        // --------------------------------------------------
-
         EncounterManager encounterManager =
             FindFirstObjectByType<EncounterManager>();
-
 
         if (encounterManager != null)
         {
@@ -1664,14 +1239,8 @@ public class HealthManager : MonoBehaviour
             );
         }
 
-
-        // --------------------------------------------------
-        // GRID MANAGER
-        // --------------------------------------------------
-
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
-
 
         if (gridManager != null)
         {
@@ -1680,30 +1249,18 @@ public class HealthManager : MonoBehaviour
                     transform.position
                 );
 
-
             gridManager.RemoveUnit(
                 gridPosition
             );
 
-
-            // --------------------------------------------------
-            // REFRESH HIGHLIGHTS
-            // --------------------------------------------------
-
             GridHighlightBrain highlightBrain =
                 FindFirstObjectByType<GridHighlightBrain>();
-
 
             if (highlightBrain != null)
             {
                 highlightBrain.RefreshAfterUnitStateChanged();
             }
         }
-
-
-        // --------------------------------------------------
-        // DISABLE
-        // --------------------------------------------------
 
         gameObject.SetActive(false);
     }
@@ -1770,7 +1327,6 @@ public class HealthManager : MonoBehaviour
                 newMaxHealth
             );
 
-
         health =
             Mathf.Clamp(
                 health,
@@ -1778,11 +1334,11 @@ public class HealthManager : MonoBehaviour
                 maxHealth
             );
 
-
         SavePlayerHealth();
 
         StopDamageFlash();
 
         NotifyHealthChanged();
     }
+
 }

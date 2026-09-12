@@ -44,31 +44,9 @@ public class ChainLightning : AbilitySO
         "AbilitySpawnPoint";
 
 
-    [Header("Runtime Upgrades")]
-
-    private int bonusJumps;
-
-
     // ============================================================
-    // UPGRADES
+    // JUMPS
     // ============================================================
-
-    public void AddBonusJumps(int amount)
-    {
-        if (amount <= 0)
-        {
-            return;
-        }
-
-        bonusJumps += amount;
-    }
-
-
-    public int GetMaxJumps()
-    {
-        return maxJumps + bonusJumps;
-    }
-
 
     public int GetBaseMaxJumps()
     {
@@ -76,15 +54,26 @@ public class ChainLightning : AbilitySO
     }
 
 
-    public int GetBonusJumps()
+    public int GetMaxJumps(UnitData unitData)
     {
-        return bonusJumps;
+        if (unitData == null)
+        {
+            return maxJumps;
+        }
+
+        return maxJumps +
+               unitData.GetBonusJumps(this);
     }
 
 
-    public void ResetUpgrades()
+    public int GetBonusJumps(UnitData unitData)
     {
-        bonusJumps = 0;
+        if (unitData == null)
+        {
+            return 0;
+        }
+
+        return unitData.GetBonusJumps(this);
     }
 
 
@@ -159,11 +148,46 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // GET THE CASTER'S UNIT DATA
+        // --------------------------------------------------------
+
+        UnitData unitData =
+            user.GetComponent<UnitData>();
+
+        if (unitData == null)
+        {
+            unitData =
+                user.GetComponentInChildren<UnitData>();
+        }
+
+        if (unitData == null)
+        {
+            unitData =
+                user.GetComponentInParent<UnitData>();
+        }
+
+        if (unitData == null)
+        {
+            Debug.LogWarning(
+                "[ChainLightning] UnitData not found on " +
+                user.name +
+                ". Using base jump count."
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // BUILD CHAIN
+        // --------------------------------------------------------
+
         List<GameObject> chain =
             GetChainPreview(
                 user,
                 target,
-                gridManager
+                gridManager,
+                unitData
             );
 
         if (
@@ -174,6 +198,11 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // SPAWN PROJECTILE
+        // --------------------------------------------------------
+
         Transform spawnPoint =
             FindAbilitySpawnPoint(user);
 
@@ -181,6 +210,7 @@ public class ChainLightning : AbilitySO
             spawnPoint != null
                 ? spawnPoint.position
                 : user.transform.position;
+
 
         GameObject projectile =
             Instantiate(
@@ -193,6 +223,7 @@ public class ChainLightning : AbilitySO
         {
             return false;
         }
+
 
         ChainLightningProjectile
             projectileComponent =
@@ -211,6 +242,7 @@ public class ChainLightning : AbilitySO
 
             return false;
         }
+
 
         projectileComponent.Initialize(
             user,
@@ -278,6 +310,41 @@ public class ChainLightning : AbilitySO
         GameObject firstTarget,
         GridManager gridManager)
     {
+        UnitData unitData = null;
+
+        if (user != null)
+        {
+            unitData =
+                user.GetComponent<UnitData>();
+
+            if (unitData == null)
+            {
+                unitData =
+                    user.GetComponentInChildren<UnitData>();
+            }
+
+            if (unitData == null)
+            {
+                unitData =
+                    user.GetComponentInParent<UnitData>();
+            }
+        }
+
+        return GetChainPreview(
+            user,
+            firstTarget,
+            gridManager,
+            unitData
+        );
+    }
+
+
+    public List<GameObject> GetChainPreview(
+        GameObject user,
+        GameObject firstTarget,
+        GridManager gridManager,
+        UnitData unitData)
+    {
         List<GameObject> chain =
             new List<GameObject>();
 
@@ -290,17 +357,23 @@ public class ChainLightning : AbilitySO
             return chain;
         }
 
+
         HashSet<GameObject> hitTargets =
             new HashSet<GameObject>();
 
         GameObject currentTarget =
             firstTarget;
 
+
         int jump = 0;
+
+        int maximumJumps =
+            GetMaxJumps(unitData);
+
 
         while (
             currentTarget != null &&
-            jump < GetMaxJumps()
+            jump < maximumJumps
         )
         {
             if (
@@ -314,6 +387,7 @@ public class ChainLightning : AbilitySO
                 break;
             }
 
+
             hitTargets.Add(
                 currentTarget
             );
@@ -321,6 +395,7 @@ public class ChainLightning : AbilitySO
             chain.Add(
                 currentTarget
             );
+
 
             currentTarget =
                 FindClosestEnemy(
@@ -332,6 +407,7 @@ public class ChainLightning : AbilitySO
 
             jump++;
         }
+
 
         return chain;
     }
@@ -356,20 +432,24 @@ public class ChainLightning : AbilitySO
             return null;
         }
 
+
         Vector2Int origin =
             gridManager.GetUnitGridPosition(
                 currentTarget
             );
+
 
         GameObject closestEnemy = null;
 
         float closestDistance =
             float.MaxValue;
 
+
         AttackUnit[] allUnits =
             FindObjectsByType<AttackUnit>(
                 FindObjectsSortMode.None
             );
+
 
         for (
             int i = 0;
@@ -385,8 +465,10 @@ public class ChainLightning : AbilitySO
                 continue;
             }
 
+
             GameObject candidate =
                 candidateUnit.gameObject;
+
 
             if (
                 candidate == null ||
@@ -399,6 +481,7 @@ public class ChainLightning : AbilitySO
                 continue;
             }
 
+
             if (
                 !CanTargetObject(
                     user,
@@ -409,16 +492,19 @@ public class ChainLightning : AbilitySO
                 continue;
             }
 
+
             Vector2Int candidatePosition =
                 gridManager.GetUnitGridPosition(
                     candidate
                 );
+
 
             float distance =
                 Vector2.Distance(
                     origin,
                     candidatePosition
                 );
+
 
             if (
                 maxJumpDistance > 0f &&
@@ -427,6 +513,7 @@ public class ChainLightning : AbilitySO
             {
                 continue;
             }
+
 
             if (
                 distance <
@@ -458,6 +545,7 @@ public class ChainLightning : AbilitySO
             }
         }
 
+
         return closestEnemy;
     }
 
@@ -481,8 +569,10 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
         AttackUnit attackUnit =
             target.GetComponent<AttackUnit>();
+
 
         if (
             attackUnit == null ||
@@ -491,6 +581,7 @@ public class ChainLightning : AbilitySO
         {
             return false;
         }
+
 
         return CanTargetObject(
             user,

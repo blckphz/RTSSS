@@ -142,7 +142,7 @@ GameObject:
   - component: {fileID: 4311614880979553229}
   - component: {fileID: 1515985943545374419}
   m_Layer: 0
-  m_Name: RUSTYSENTRY
+  m_Name: rustyTurret
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

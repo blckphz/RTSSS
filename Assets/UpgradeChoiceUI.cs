@@ -1,307 +1,824 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UpgradeChoiceUI : MonoBehaviour
 {
-    [Header("Update Manager")]
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
+    [Header("References")]
+
     [SerializeField]
     private UpdateManager updateManager;
 
-    [Header("Victory Manager")]
     [SerializeField]
     private VictoryManager victoryManager;
 
-    [Header("Upgrade Canvas")]
+
+    // ============================================================
+    // UI
+    // ============================================================
+
+    [Header("UI")]
+
     [SerializeField]
     private GameObject upgradeCanvas;
 
-    [Header("Buttons")]
     [SerializeField]
     private Button[] upgradeButtons;
 
-    [Header("Button Text")]
     [SerializeField]
     private TMP_Text[] upgradeTexts;
 
+
+    // ============================================================
+    // CURRENT CHOICES
+    // ============================================================
+
     private UpgradeSO[] currentChoices;
+
+
+    // ============================================================
+    // CALLBACK
+    // ============================================================
+
+    private Action onUpgradeSelected;
+
+
+    // ============================================================
+    // CONSTANTS
+    // ============================================================
 
     private const int CHOICE_COUNT = 3;
 
+
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
     private void Awake()
     {
-        // Start with the upgrade canvas hidden.
+        // --------------------------------------------------------
+        // FIND UPDATE MANAGER
+        // --------------------------------------------------------
+
+        if (updateManager == null)
+        {
+            updateManager =
+                FindFirstObjectByType<UpdateManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // FIND VICTORY MANAGER
+        // --------------------------------------------------------
+
+        if (victoryManager == null)
+        {
+            victoryManager =
+                FindFirstObjectByType<VictoryManager>();
+        }
+
+
+        // --------------------------------------------------------
+        // CREATE CHOICE ARRAY
+        // --------------------------------------------------------
+
+        currentChoices =
+            new UpgradeSO[CHOICE_COUNT];
+
+
+        // --------------------------------------------------------
+        // VALIDATE BUTTONS
+        // --------------------------------------------------------
+
+        if (
+            upgradeButtons == null ||
+            upgradeButtons.Length != CHOICE_COUNT
+        )
+        {
+            Debug.LogError(
+                "[UpgradeChoiceUI] " +
+                "Exactly 3 upgrade buttons are required.",
+                this
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // VALIDATE TEXTS
+        // --------------------------------------------------------
+
+        if (
+            upgradeTexts == null ||
+            upgradeTexts.Length != CHOICE_COUNT
+        )
+        {
+            Debug.LogError(
+                "[UpgradeChoiceUI] " +
+                "Exactly 3 upgrade texts are required.",
+                this
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // SET BUTTON LISTENERS
+        // --------------------------------------------------------
+
+        if (upgradeButtons != null)
+        {
+            for (
+                int i = 0;
+                i < upgradeButtons.Length;
+                i++
+            )
+            {
+                int index = i;
+
+
+                if (upgradeButtons[i] == null)
+                {
+                    continue;
+                }
+
+
+                upgradeButtons[i].onClick.RemoveAllListeners();
+
+
+                upgradeButtons[i].onClick.AddListener(
+                    () => SelectUpgrade(index)
+                );
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // HIDE CANVAS
+        // --------------------------------------------------------
+
         if (upgradeCanvas != null)
         {
             upgradeCanvas.SetActive(false);
         }
-        else
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Upgrade Canvas is not assigned."
-            );
-        }
-
-        // Validate buttons.
-        if (upgradeButtons == null ||
-            upgradeButtons.Length != CHOICE_COUNT)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] You need exactly 3 upgrade buttons."
-            );
-
-            return;
-        }
-
-        // Validate text.
-        if (upgradeTexts == null ||
-            upgradeTexts.Length != CHOICE_COUNT)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] You need exactly 3 TMP text components."
-            );
-
-            return;
-        }
-
-        // Create choice array.
-        currentChoices = new UpgradeSO[CHOICE_COUNT];
-
-        // Find VictoryManager if it hasn't been assigned.
-        if (victoryManager == null)
-        {
-            victoryManager = FindFirstObjectByType<VictoryManager>();
-        }
-
-        // Add button listeners.
-        for (int i = 0; i < CHOICE_COUNT; i++)
-        {
-            int buttonIndex = i;
-
-            upgradeButtons[i].onClick.AddListener(
-                () => SelectUpgrade(buttonIndex)
-            );
-        }
     }
 
-    public void ShowUpgradeChoices()
+
+    // ============================================================
+    // STARTING UPGRADE CHOICE
+    // ============================================================
+
+    public void ShowStartingUpgradeChoice(
+        Action onSelected = null
+    )
     {
+        // --------------------------------------------------------
+        // SAVE CALLBACK
+        // --------------------------------------------------------
+
+        onUpgradeSelected =
+            onSelected;
+
+
+        // --------------------------------------------------------
+        // CHECK UPDATE MANAGER
+        // --------------------------------------------------------
+
         if (updateManager == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] UpdateManager is not assigned."
-            );
-
-            return;
+            updateManager =
+                FindFirstObjectByType<UpdateManager>();
         }
 
-        if (upgradeCanvas == null)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Upgrade Canvas is not assigned."
-            );
-
-            return;
-        }
-
-        CharacterSO character = updateManager.GetCurrentCharacter();
-
-        if (character == null)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] There is no current character."
-            );
-
-            return;
-        }
-
-        UpgradeSO[] availableUpgrades =
-            updateManager.GetCurrentCharacterUpgrades();
-
-        if (availableUpgrades == null ||
-            availableUpgrades.Length == 0)
-        {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] " +
-                character.characterName +
-                " has no available upgrades."
-            );
-
-            if (victoryManager != null)
-            {
-                victoryManager.OnUpgradeSelected();
-            }
-
-            return;
-        }
-
-        Debug.Log(
-            "[UpgradeChoiceUI] Showing upgrades for " +
-            character.characterName
-        );
-
-        // Reset choices.
-        for (int i = 0; i < CHOICE_COUNT; i++)
-        {
-            currentChoices[i] = null;
-        }
-
-        // Generate random unique choices.
-        GenerateChoices(availableUpgrades);
-
-        // Display choices.
-        for (int i = 0; i < CHOICE_COUNT; i++)
-        {
-            if (currentChoices[i] == null)
-            {
-                upgradeButtons[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            upgradeButtons[i].gameObject.SetActive(true);
-
-            upgradeTexts[i].text = currentChoices[i].name;
-        }
-
-        // Turn the upgrade canvas ON.
-        upgradeCanvas.SetActive(true);
-    }
-
-    private void GenerateChoices(UpgradeSO[] availableUpgrades)
-    {
-        int availableCount = availableUpgrades.Length;
-
-        if (availableCount < CHOICE_COUNT)
-        {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] " +
-                "Character has fewer than 3 upgrades. " +
-                "Showing all available upgrades."
-            );
-        }
-
-        // Make a copy so we don't modify the original array.
-        UpgradeSO[] pool = new UpgradeSO[availableCount];
-
-        for (int i = 0; i < availableCount; i++)
-        {
-            pool[i] = availableUpgrades[i];
-        }
-
-        // Shuffle the pool.
-        for (int i = 0; i < pool.Length; i++)
-        {
-            int randomIndex = Random.Range(i, pool.Length);
-
-            UpgradeSO temp = pool[i];
-
-            pool[i] = pool[randomIndex];
-            pool[randomIndex] = temp;
-        }
-
-        // Take the first 3 upgrades.
-        int choiceCount = Mathf.Min(
-            CHOICE_COUNT,
-            pool.Length
-        );
-
-        for (int i = 0; i < choiceCount; i++)
-        {
-            currentChoices[i] = pool[i];
-        }
-    }
-
-    private void SelectUpgrade(int index)
-    {
-        if (currentChoices == null)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Current choices array is null."
-            );
-
-            return;
-        }
-
-        if (index < 0 ||
-            index >= currentChoices.Length)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Invalid upgrade index."
-            );
-
-            return;
-        }
-
-        UpgradeSO selectedUpgrade = currentChoices[index];
-
-        if (selectedUpgrade == null)
-        {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Selected upgrade is null."
-            );
-
-            return;
-        }
 
         if (updateManager == null)
         {
             Debug.LogError(
-                "[UpgradeChoiceUI] UpdateManager is not assigned."
+                "[UpgradeChoiceUI] " +
+                "UpdateManager is missing!",
+                this
             );
+
+            CompleteSelection();
 
             return;
         }
+
+
+        // --------------------------------------------------------
+        // GET CURRENT CHARACTER
+        // --------------------------------------------------------
 
         CharacterSO character =
             updateManager.GetCurrentCharacter();
 
+
         if (character == null)
         {
             Debug.LogError(
-                "[UpgradeChoiceUI] Current character is null."
+                "[UpgradeChoiceUI] " +
+                "Current character is missing!",
+                this
             );
+
+            CompleteSelection();
 
             return;
         }
 
+
         Debug.Log(
-            "[UpgradeChoiceUI] Player selected " +
-            selectedUpgrade.name +
-            " for " +
+            "[UpgradeChoiceUI] Showing starting upgrades for " +
             character.characterName
         );
 
-        // Apply the selected upgrade.
-        updateManager.ApplyUpgrade(selectedUpgrade);
 
-        // Hide the upgrade canvas.
-        HideUpgradeChoices();
+        // --------------------------------------------------------
+        // GET CHARACTER UPGRADES
+        // --------------------------------------------------------
 
-        // Tell VictoryManager that an upgrade was selected.
-        if (victoryManager != null)
-        {
-            victoryManager.OnUpgradeSelected();
-        }
-        else
+        UpgradeSO[] availableUpgrades =
+            updateManager.GetCurrentCharacterUpgrades();
+
+
+        // --------------------------------------------------------
+        // CHECK UPGRADES
+        // --------------------------------------------------------
+
+        if (
+            availableUpgrades == null ||
+            availableUpgrades.Length == 0
+        )
         {
             Debug.LogWarning(
-                "[UpgradeChoiceUI] VictoryManager is not assigned."
+                "[UpgradeChoiceUI] " +
+                "Current character has no upgrades.",
+                this
             );
+
+            CompleteSelection();
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // CLEAR OLD CHOICES
+        // --------------------------------------------------------
+
+        ClearCurrentChoices();
+
+
+        // --------------------------------------------------------
+        // GENERATE CHOICES
+        // --------------------------------------------------------
+
+        GenerateChoices(
+            availableUpgrades
+        );
+
+
+        // --------------------------------------------------------
+        // SET BUTTONS
+        // --------------------------------------------------------
+
+        SetupButtons();
+
+
+        // --------------------------------------------------------
+        // SHOW CANVAS
+        // --------------------------------------------------------
+
+        ShowUpgradeCanvas(
+            "Starting upgrades"
+        );
+    }
+
+
+    // ============================================================
+    // VICTORY UPGRADE CHOICE
+    // ============================================================
+
+    public void ShowUpgradeChoices(
+        Action onSelected = null
+    )
+    {
+        // --------------------------------------------------------
+        // SAVE CALLBACK
+        // --------------------------------------------------------
+
+        onUpgradeSelected =
+            onSelected;
+
+
+        // --------------------------------------------------------
+        // CHECK UPDATE MANAGER
+        // --------------------------------------------------------
+
+        if (updateManager == null)
+        {
+            updateManager =
+                FindFirstObjectByType<UpdateManager>();
+        }
+
+
+        if (updateManager == null)
+        {
+            Debug.LogError(
+                "[UpgradeChoiceUI] " +
+                "UpdateManager is missing!",
+                this
+            );
+
+            CompleteSelection();
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // GET CURRENT CHARACTER
+        // --------------------------------------------------------
+
+        CharacterSO character =
+            updateManager.GetCurrentCharacter();
+
+
+        if (character == null)
+        {
+            Debug.LogError(
+                "[UpgradeChoiceUI] " +
+                "Current character is missing!",
+                this
+            );
+
+            CompleteSelection();
+
+            return;
+        }
+
+
+        Debug.Log(
+            "[UpgradeChoiceUI] Showing victory upgrades for " +
+            character.characterName
+        );
+
+
+        // --------------------------------------------------------
+        // GET CHARACTER UPGRADES
+        // --------------------------------------------------------
+
+        UpgradeSO[] availableUpgrades =
+            updateManager.GetCurrentCharacterUpgrades();
+
+
+        // --------------------------------------------------------
+        // CHECK UPGRADES
+        // --------------------------------------------------------
+
+        if (
+            availableUpgrades == null ||
+            availableUpgrades.Length == 0
+        )
+        {
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] " +
+                "Current character has no upgrades.",
+                this
+            );
+
+            CompleteSelection();
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // CLEAR OLD CHOICES
+        // --------------------------------------------------------
+
+        ClearCurrentChoices();
+
+
+        // --------------------------------------------------------
+        // GENERATE CHOICES
+        // --------------------------------------------------------
+
+        GenerateChoices(
+            availableUpgrades
+        );
+
+
+        // --------------------------------------------------------
+        // SET BUTTONS
+        // --------------------------------------------------------
+
+        SetupButtons();
+
+
+        // --------------------------------------------------------
+        // SHOW CANVAS
+        // --------------------------------------------------------
+
+        ShowUpgradeCanvas(
+            "Victory upgrades"
+        );
+    }
+
+
+    // ============================================================
+    // CLEAR CURRENT CHOICES
+    // ============================================================
+
+    private void ClearCurrentChoices()
+    {
+        if (currentChoices == null)
+        {
+            currentChoices =
+                new UpgradeSO[CHOICE_COUNT];
+        }
+
+
+        for (
+            int i = 0;
+            i < currentChoices.Length;
+            i++
+        )
+        {
+            currentChoices[i] = null;
         }
     }
 
-    public void HideUpgradeChoices()
+
+    // ============================================================
+    // GENERATE CHOICES
+    // ============================================================
+
+    private void GenerateChoices(
+        UpgradeSO[] availableUpgrades
+    )
+    {
+        if (availableUpgrades == null)
+        {
+            return;
+        }
+
+
+        UpgradeSO[] shuffled =
+            new UpgradeSO[
+                availableUpgrades.Length
+            ];
+
+
+        Array.Copy(
+            availableUpgrades,
+            shuffled,
+            availableUpgrades.Length
+        );
+
+
+        // --------------------------------------------------------
+        // SHUFFLE
+        // --------------------------------------------------------
+
+        for (
+            int i = shuffled.Length - 1;
+            i > 0;
+            i--
+        )
+        {
+            int randomIndex =
+                UnityEngine.Random.Range(
+                    0,
+                    i + 1
+                );
+
+
+            UpgradeSO temp =
+                shuffled[i];
+
+
+            shuffled[i] =
+                shuffled[randomIndex];
+
+
+            shuffled[randomIndex] =
+                temp;
+        }
+
+
+        // --------------------------------------------------------
+        // SELECT THREE
+        // --------------------------------------------------------
+
+        int count =
+            Mathf.Min(
+                CHOICE_COUNT,
+                shuffled.Length
+            );
+
+
+        for (
+            int i = 0;
+            i < count;
+            i++
+        )
+        {
+            currentChoices[i] =
+                shuffled[i];
+        }
+    }
+
+
+    // ============================================================
+    // SETUP BUTTONS
+    // ============================================================
+
+    private void SetupButtons()
+    {
+        if (upgradeButtons == null)
+        {
+            return;
+        }
+
+
+        for (
+            int i = 0;
+            i < upgradeButtons.Length;
+            i++
+        )
+        {
+            Button button =
+                upgradeButtons[i];
+
+
+            if (button == null)
+            {
+                continue;
+            }
+
+
+            UpgradeSO upgrade = null;
+
+
+            if (
+                currentChoices != null &&
+                i < currentChoices.Length
+            )
+            {
+                upgrade =
+                    currentChoices[i];
+            }
+
+
+            // ----------------------------------------------------
+            // EMPTY SLOT
+            // ----------------------------------------------------
+
+            if (upgrade == null)
+            {
+                button.gameObject.SetActive(false);
+
+
+                if (
+                    upgradeTexts != null &&
+                    i < upgradeTexts.Length &&
+                    upgradeTexts[i] != null
+                )
+                {
+                    upgradeTexts[i].text =
+                        string.Empty;
+                }
+
+
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // ENABLE BUTTON
+            // ----------------------------------------------------
+
+            button.gameObject.SetActive(true);
+
+
+            // ----------------------------------------------------
+            // SET TEXT
+            // ----------------------------------------------------
+
+            if (
+                upgradeTexts != null &&
+                i < upgradeTexts.Length &&
+                upgradeTexts[i] != null
+            )
+            {
+                upgradeTexts[i].text =
+                    upgrade.name;
+            }
+        }
+    }
+
+
+    // ============================================================
+    // SHOW UPGRADE CANVAS
+    // ============================================================
+
+    private void ShowUpgradeCanvas(
+        string context
+    )
     {
         if (upgradeCanvas == null)
         {
             Debug.LogError(
-                "[UpgradeChoiceUI] Upgrade Canvas is not assigned."
+                "[UpgradeChoiceUI] " +
+                "Upgrade Canvas is not assigned!",
+                this
             );
 
             return;
         }
 
-        // Turn the upgrade canvas OFF.
-        upgradeCanvas.SetActive(false);
+
+        // --------------------------------------------------------
+        // ENABLE CANVAS
+        // --------------------------------------------------------
+
+        upgradeCanvas.SetActive(true);
+
+
+        // --------------------------------------------------------
+        // CHECK CANVAS STATE
+        // --------------------------------------------------------
+
+        Debug.Log(
+            "[UpgradeChoiceUI] " +
+            context +
+            " canvas state: activeSelf=" +
+            upgradeCanvas.activeSelf +
+            ", activeInHierarchy=" +
+            upgradeCanvas.activeInHierarchy,
+            upgradeCanvas
+        );
+    }
+
+
+    // ============================================================
+    // SELECT UPGRADE
+    // ============================================================
+
+    private void SelectUpgrade(
+        int index
+    )
+    {
+        // --------------------------------------------------------
+        // CHECK INDEX
+        // --------------------------------------------------------
+
+        if (
+            currentChoices == null ||
+            index < 0 ||
+            index >= currentChoices.Length
+        )
+        {
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] " +
+                "Invalid upgrade index."
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // GET SELECTED UPGRADE
+        // --------------------------------------------------------
+
+        UpgradeSO selectedUpgrade =
+            currentChoices[index];
+
+
+        if (selectedUpgrade == null)
+        {
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] " +
+                "Selected upgrade is null."
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // CHECK UPDATE MANAGER
+        // --------------------------------------------------------
+
+        if (updateManager == null)
+        {
+            Debug.LogError(
+                "[UpgradeChoiceUI] " +
+                "UpdateManager is missing!",
+                this
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // APPLY UPGRADE
+        // --------------------------------------------------------
+
+        Debug.Log(
+            "[UpgradeChoiceUI] Selected upgrade: " +
+            selectedUpgrade.name
+        );
+
+
+        updateManager.ApplyUpgrade(
+            selectedUpgrade
+        );
+
+
+        // --------------------------------------------------------
+        // COMPLETE
+        // --------------------------------------------------------
+
+        CompleteSelection();
+    }
+
+
+    // ============================================================
+    // COMPLETE SELECTION
+    // ============================================================
+
+    private void CompleteSelection()
+    {
+        // --------------------------------------------------------
+        // HIDE UI
+        // --------------------------------------------------------
+
+        HideUpgradeChoices();
+
+
+        // --------------------------------------------------------
+        // SAVE CALLBACK
+        // --------------------------------------------------------
+
+        Action callback =
+            onUpgradeSelected;
+
+
+        onUpgradeSelected =
+            null;
+
+
+        // --------------------------------------------------------
+        // INVOKE CALLBACK
+        // --------------------------------------------------------
+
+        if (callback != null)
+        {
+            callback();
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // DEFAULT VICTORY CALLBACK
+        // --------------------------------------------------------
+
+        if (victoryManager != null)
+        {
+            victoryManager.OnUpgradeSelected();
+        }
+    }
+
+
+    // ============================================================
+    // HIDE UPGRADE CHOICES
+    // ============================================================
+
+    public void HideUpgradeChoices()
+    {
+        // --------------------------------------------------------
+        // CLEAR CALLBACK
+        // --------------------------------------------------------
+
+        onUpgradeSelected =
+            null;
+
+
+        // --------------------------------------------------------
+        // HIDE CANVAS
+        // --------------------------------------------------------
+
+        if (upgradeCanvas != null)
+        {
+            upgradeCanvas.SetActive(false);
+        }
     }
 }

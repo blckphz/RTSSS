@@ -2,18 +2,17 @@ using UnityEngine;
 
 public class UpdateManager : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
+    [Header("Current Unit")]
+    [SerializeField]
+    private UnitData currentUnit;
 
     [Header("Current Character")]
-
     [SerializeField]
     private CharacterSO currentCharacter;
 
 
     // ============================================================
-    // GET CURRENT CHARACTER
+    // GETTERS
     // ============================================================
 
     public CharacterSO GetCurrentCharacter()
@@ -22,13 +21,18 @@ public class UpdateManager : MonoBehaviour
     }
 
 
+    public UnitData GetCurrentUnit()
+    {
+        return currentUnit;
+    }
+
+
     // ============================================================
     // SET CURRENT CHARACTER
     // ============================================================
 
     public void SetCurrentCharacter(
-        CharacterSO character
-    )
+        CharacterSO character)
     {
         if (character == null)
         {
@@ -40,11 +44,64 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        currentCharacter = character;
+
+        currentCharacter =
+            character;
+
 
         Debug.Log(
-            "[UpdateManager] Current character is now: " +
+            "[UpdateManager] " +
+            "Current character is now: " +
             currentCharacter.characterName
+        );
+    }
+
+
+    // ============================================================
+    // SET CURRENT UNIT
+    // ============================================================
+
+    public void SetCurrentUnit(
+        UnitData unit)
+    {
+        if (unit == null)
+        {
+            Debug.LogError(
+                "[UpdateManager] " +
+                "Cannot set current unit to null."
+            );
+
+            return;
+        }
+
+
+        currentUnit =
+            unit;
+
+
+        currentCharacter =
+            unit.GetCharacter();
+
+
+        if (currentCharacter == null)
+        {
+            Debug.LogError(
+                "[UpdateManager] " +
+                "Current unit has no CharacterSO.",
+                unit
+            );
+
+            return;
+        }
+
+
+        Debug.Log(
+            "[UpdateManager] " +
+            "Current unit is now: " +
+            unit.name +
+            " (" +
+            currentCharacter.characterName +
+            ")"
         );
     }
 
@@ -65,6 +122,7 @@ public class UpdateManager : MonoBehaviour
             return null;
         }
 
+
         if (currentCharacter.upgrades == null)
         {
             Debug.LogWarning(
@@ -76,6 +134,7 @@ public class UpdateManager : MonoBehaviour
             return null;
         }
 
+
         return currentCharacter.upgrades;
     }
 
@@ -85,32 +144,83 @@ public class UpdateManager : MonoBehaviour
     // ============================================================
 
     public void ApplyUpgrade(
-        UpgradeSO upgrade
-    )
+        UpgradeSO upgrade)
     {
         if (upgrade == null)
         {
             Debug.LogError(
-                "[UpdateManager] Upgrade is null."
+                "[UpdateManager] " +
+                "Upgrade is null."
             );
 
             return;
         }
+
 
         if (currentCharacter == null)
         {
             Debug.LogError(
-                "[UpdateManager] Current character is null."
+                "[UpdateManager] " +
+                "Current character is null."
             );
 
             return;
         }
 
-        if (upgrade is RustyUpgrades rustyUpgrade)
+
+        // --------------------------------------------------------
+        // CHAIN BOUNCE
+        // --------------------------------------------------------
+
+        if (
+            upgrade is
+            ChainBounceUpgrade chainBounceUpgrade
+        )
+        {
+            if (currentUnit == null)
+            {
+                Debug.LogError(
+                    "[UpdateManager] " +
+                    "Current UnitData is null. " +
+                    "Cannot apply per-unit upgrade."
+                );
+
+                return;
+            }
+
+
+            chainBounceUpgrade.ApplyToUnit(
+                currentUnit
+            );
+
+
+            Debug.Log(
+                "[UpdateManager] Applied " +
+                upgrade.name +
+                " to unit " +
+                currentUnit.name
+            );
+
+
+            OnUpgradeRefresh();
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // OTHER RUSTY UPGRADES
+        // --------------------------------------------------------
+
+        if (
+            upgrade is
+            RustyUpgrades rustyUpgrade
+        )
         {
             rustyUpgrade.Apply(
                 currentCharacter
             );
+
 
             Debug.Log(
                 "[UpdateManager] Applied " +
@@ -119,16 +229,61 @@ public class UpdateManager : MonoBehaviour
                 currentCharacter.characterName
             );
 
+
             OnUpgradeRefresh();
+
+            return;
         }
-        else
+
+
+        // --------------------------------------------------------
+        // UNKNOWN UPGRADE
+        // --------------------------------------------------------
+
+        Debug.LogWarning(
+            "[UpdateManager] Upgrade " +
+            upgrade.name +
+            " is not a Rusty upgrade."
+        );
+    }
+
+
+    // ============================================================
+    // RESET ALL UPGRADES
+    // ============================================================
+
+    public void ResetAllUpgrades()
+    {
+        if (currentUnit == null)
         {
             Debug.LogWarning(
-                "[UpdateManager] Upgrade " +
-                upgrade.name +
-                " is not a Rusty upgrade."
+                "[UpdateManager] " +
+                "Current unit is null. " +
+                "Nothing to reset."
             );
+
+            return;
         }
+
+
+        currentUnit.ResetRuntimeUpgrades();
+
+
+        Debug.Log(
+            "[UpdateManager] " +
+            "All runtime upgrades reset for " +
+            currentUnit.name
+        );
+    }
+
+
+    // ============================================================
+    // RESET CURRENT UNIT UPGRADES
+    // ============================================================
+
+    public void ResetCurrentUnitUpgrades()
+    {
+        ResetAllUpgrades();
     }
 
 
@@ -139,7 +294,8 @@ public class UpdateManager : MonoBehaviour
     private void OnUpgradeRefresh()
     {
         Debug.Log(
-            "[UpdateManager] Upgrade refresh completed."
+            "[UpdateManager] " +
+            "Upgrade refresh completed."
         );
     }
 }

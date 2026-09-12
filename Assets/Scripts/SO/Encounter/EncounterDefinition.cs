@@ -122,8 +122,31 @@ public class EncounterDefinition : ScriptableObject
 [Serializable]
 public class EnemySpawnData
 {
+    // ============================================================
+    // PREFAB
+    // ============================================================
+
+    [Header("Prefab")]
     public GameObject prefab;
 
+
+    // ============================================================
+    // CHARACTER DATA
+    // ============================================================
+
+    [Header("Character")]
+    [Tooltip(
+        "CharacterSO containing the stats, abilities, team, " +
+        "movement, upgrades, and other data for this enemy."
+    )]
+    public CharacterSO character;
+
+
+    // ============================================================
+    // ENCOUNTER ID
+    // ============================================================
+
+    [Header("Encounter ID")]
     [Tooltip(
         "Unique ID for this specific encounter unit. " +
         "Example: boss_01"
