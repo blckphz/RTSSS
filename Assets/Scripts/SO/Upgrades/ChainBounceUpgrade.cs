@@ -82,14 +82,5 @@ public class ChainBounceUpgrade : RustyUpgrades
         );
 
 
-        Debug.Log(
-            "[ChainBounceUpgrade] " +
-            character.characterName +
-            " (" +
-            unitData.name +
-            ") gained +" +
-            additionalBounces +
-            " Chain Lightning bounce(s)."
-        );
     }
 }

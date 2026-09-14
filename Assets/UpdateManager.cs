@@ -10,7 +10,8 @@ public class UpdateManager : MonoBehaviour
     [SerializeField] private CharacterSO currentCharacter;
 
     [Header("Purchased Upgrades")]
-    private readonly List<UpgradeSO> purchasedUpgrades = new List<UpgradeSO>();
+    private readonly List<UpgradeSO> purchasedUpgrades =
+        new List<UpgradeSO>();
 
     private void Awake()
     {
@@ -66,7 +67,6 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        // Make sure this is actually a player character.
         CharacterSO unitCharacter = unit.GetCharacter();
 
         if (unitCharacter == null)
@@ -79,22 +79,24 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
+        // Only player characters can become the current unit.
         if (!unitCharacter.isPlayerCharacter)
         {
             Debug.Log(
                 $"[UpdateManager] Ignoring non-player UnitData: " +
-                $"{unit.name} | Character={unitCharacter.characterName}"
+                $"{unit.name} | " +
+                $"Character={unitCharacter.characterName}"
             );
 
             return;
         }
 
-        // Prevent the same UnitData from being registered repeatedly.
+        // Prevent duplicate registration.
         if (currentUnit == unit)
         {
             Debug.Log(
-                $"[UpdateManager] This UnitData is already the current " +
-                $"unit. Skipping duplicate upgrade application. | " +
+                $"[UpdateManager] This UnitData is already the " +
+                $"current unit. Skipping duplicate upgrade application. | " +
                 $"Unit={unit.name} | " +
                 $"UnitData ID={unit.GetInstanceID()}"
             );
@@ -103,8 +105,6 @@ public class UpdateManager : MonoBehaviour
         }
 
         currentUnit = unit;
-
-        // Keep CharacterSO synchronized with the current player unit.
         currentCharacter = unitCharacter;
 
         Debug.Log(
@@ -115,7 +115,7 @@ public class UpdateManager : MonoBehaviour
             $"Stored Upgrades={purchasedUpgrades.Count}"
         );
 
-        // Apply upgrades that were purchased before this unit existed.
+        // Apply upgrades that were purchased before this unit spawned.
         ApplyRuntimeUpgradesToUnit(unit);
     }
 
@@ -149,14 +149,13 @@ public class UpdateManager : MonoBehaviour
         }
 
         Debug.Log(
-            $"[UpdateManager] Upgrade received: " +
-            $"{upgrade.name}"
+            $"[UpdateManager] Upgrade received: {upgrade.name}"
         );
 
-        // Always store the upgrade.
+        // Always remember the upgrade.
         //
-        // This is important because the player's AttackUnit/UnitData
-        // may not exist yet when the upgrade is selected.
+        // This allows upgrades to be selected before the player
+        // AttackUnit/UnitData has spawned.
         purchasedUpgrades.Add(upgrade);
 
         Debug.Log(
@@ -167,6 +166,7 @@ public class UpdateManager : MonoBehaviour
         // -----------------------------------------------------
         // Chain Bounce
         // -----------------------------------------------------
+
         ChainBounceUpgrade chainBounceUpgrade =
             upgrade as ChainBounceUpgrade;
 
@@ -179,7 +179,10 @@ public class UpdateManager : MonoBehaviour
                     "Applying ChainBounceUpgrade immediately."
                 );
 
-                ApplyUpgradeToUnit(upgrade, currentUnit);
+                ApplyUpgradeToUnit(
+                    upgrade,
+                    currentUnit
+                );
             }
             else
             {
@@ -196,7 +199,9 @@ public class UpdateManager : MonoBehaviour
         // -----------------------------------------------------
         // Other RustyUpgrades
         // -----------------------------------------------------
-        RustyUpgrades rustyUpgrade = upgrade as RustyUpgrades;
+
+        RustyUpgrades rustyUpgrade =
+            upgrade as RustyUpgrades;
 
         if (rustyUpgrade != null)
         {
@@ -238,7 +243,8 @@ public class UpdateManager : MonoBehaviour
         if (upgrade == null)
         {
             Debug.LogWarning(
-                "[UpdateManager] ApplyUpgradeToUnit: upgrade is NULL."
+                "[UpdateManager] ApplyUpgradeToUnit: " +
+                "upgrade is NULL."
             );
 
             return;
@@ -247,7 +253,8 @@ public class UpdateManager : MonoBehaviour
         if (unit == null)
         {
             Debug.LogWarning(
-                "[UpdateManager] ApplyUpgradeToUnit: UnitData is NULL."
+                "[UpdateManager] ApplyUpgradeToUnit: " +
+                "UnitData is NULL."
             );
 
             return;
@@ -258,14 +265,14 @@ public class UpdateManager : MonoBehaviour
         if (character == null)
         {
             Debug.LogWarning(
-                $"[UpdateManager] Cannot apply {upgrade.name} to " +
-                $"{unit.name}. CharacterSO is NULL."
+                $"[UpdateManager] Cannot apply {upgrade.name} " +
+                $"to {unit.name}. CharacterSO is NULL."
             );
 
             return;
         }
 
-        // Never apply player runtime upgrades to enemies.
+        // Never apply player upgrades to enemies.
         if (!character.isPlayerCharacter)
         {
             Debug.Log(
@@ -285,7 +292,8 @@ public class UpdateManager : MonoBehaviour
 
             Debug.Log(
                 $"[UpdateManager] ChainBounceUpgrade applied to " +
-                $"UnitData. | Unit={unit.name} | " +
+                $"UnitData. | " +
+                $"Unit={unit.name} | " +
                 $"UnitData ID={unit.GetInstanceID()}"
             );
 
@@ -314,15 +322,14 @@ public class UpdateManager : MonoBehaviour
         if (character == null)
         {
             Debug.LogWarning(
-                $"[UpdateManager] Cannot apply stored upgrades to " +
-                $"{unit.name}. CharacterSO is NULL."
+                $"[UpdateManager] Cannot apply stored upgrades " +
+                $"to {unit.name}. CharacterSO is NULL."
             );
 
             return;
         }
 
-        // Safety check: only player characters receive the
-        // upgrades stored by this manager.
+        // Only players receive stored upgrades.
         if (!character.isPlayerCharacter)
         {
             Debug.Log(
@@ -336,8 +343,8 @@ public class UpdateManager : MonoBehaviour
         if (purchasedUpgrades.Count == 0)
         {
             Debug.Log(
-                $"[UpdateManager] No stored upgrades to apply to " +
-                $"{unit.name}."
+                $"[UpdateManager] No stored upgrades to apply " +
+                $"to {unit.name}."
             );
 
             return;
@@ -364,7 +371,10 @@ public class UpdateManager : MonoBehaviour
 
             if (chainBounceUpgrade != null)
             {
-                ApplyUpgradeToUnit(upgrade, unit);
+                ApplyUpgradeToUnit(
+                    upgrade,
+                    unit
+                );
             }
         }
 
@@ -375,11 +385,53 @@ public class UpdateManager : MonoBehaviour
     }
 
     // =========================================================
-    // RESET
+    // NEW GAME
+    // =========================================================
+
+    public void StartNewGame()
+    {
+        Debug.Log(
+            "[UpdateManager] Starting NEW GAME. " +
+            "Clearing all runtime upgrades."
+        );
+
+        // Clear all upgrades stored by UpdateManager.
+        purchasedUpgrades.Clear();
+
+        // Clear runtime upgrade bonuses from the current player.
+        if (currentUnit != null)
+        {
+            currentUnit.ResetRuntimeUpgrades();
+
+            Debug.Log(
+                $"[UpdateManager] Cleared runtime upgrades from " +
+                $"current UnitData: {currentUnit.name}"
+            );
+        }
+
+        // The old player should no longer be considered
+        // the current unit.
+        currentUnit = null;
+
+        // Clear the current character reference too.
+        currentCharacter = null;
+
+        Debug.Log(
+            "[UpdateManager] NEW GAME initialized. " +
+            "All purchased upgrades have been cleared."
+        );
+    }
+
+    // =========================================================
+    // RESET ALL UPGRADES
     // =========================================================
 
     public void ResetAllUpgrades()
     {
+        Debug.Log(
+            "[UpdateManager] ResetAllUpgrades called."
+        );
+
         purchasedUpgrades.Clear();
 
         if (currentUnit != null)

@@ -60,11 +60,6 @@ public class UnitData : MonoBehaviour
 
         if (character == null)
         {
-            Debug.LogWarning(
-                "[UnitData] Initialize called with NULL character.",
-                this
-            );
-
             return;
         }
 
@@ -111,19 +106,6 @@ public class UnitData : MonoBehaviour
                     );
             }
         }
-
-
-        Debug.Log(
-            "[UnitData] Initialized " +
-            gameObject.name +
-            " | Character=" +
-            character.name +
-            " | Runtime abilities=" +
-            abilityData.Count +
-            " | Bonus jump entries=" +
-            abilityBonusJumps.Count,
-            this
-        );
     }
 
 
@@ -344,22 +326,12 @@ public class UnitData : MonoBehaviour
     {
         if (ability == null)
         {
-            Debug.LogWarning(
-                "[UnitData] AddBonusJumps failed: ability is NULL.",
-                this
-            );
-
             return;
         }
 
 
         if (amount <= 0)
         {
-            Debug.LogWarning(
-                "[UnitData] AddBonusJumps failed: amount <= 0.",
-                this
-            );
-
             return;
         }
 
@@ -377,23 +349,6 @@ public class UnitData : MonoBehaviour
 
         abilityBonusJumps[ability] +=
             amount;
-
-
-        Debug.Log(
-            "[UnitData] " +
-            gameObject.name +
-            " received +" +
-            amount +
-            " bonus jumps for " +
-            ability.name +
-            " | Ability ID=" +
-            ability.GetInstanceID() +
-            " | Total Bonus=" +
-            abilityBonusJumps[ability] +
-            " | Unit ID=" +
-            GetInstanceID(),
-            this
-        );
     }
 
 
@@ -430,37 +385,13 @@ public class UnitData : MonoBehaviour
     {
         if (ability == null)
         {
-            Debug.Log(
-                "[UnitData] " +
-                gameObject.name +
-                " | No ability supplied.",
-                this
-            );
-
             return;
         }
-
 
         int bonus =
             GetBonusJumps(
                 ability
             );
-
-
-        Debug.Log(
-            "[UnitData] DEBUG | " +
-            "Unit=" +
-            gameObject.name +
-            " | Unit ID=" +
-            GetInstanceID() +
-            " | Ability=" +
-            ability.name +
-            " | Ability ID=" +
-            ability.GetInstanceID() +
-            " | Bonus Jumps=" +
-            bonus,
-            this
-        );
     }
 
 
@@ -470,15 +401,6 @@ public class UnitData : MonoBehaviour
 
     public void ResetRuntimeUpgrades()
     {
-        Debug.Log(
-            "[UnitData] ResetRuntimeUpgrades | " +
-            gameObject.name +
-            " | Unit ID=" +
-            GetInstanceID(),
-            this
-        );
-
-
         abilityBonusJumps.Clear();
     }
 
@@ -495,15 +417,6 @@ public class UnitData : MonoBehaviour
 
     public void ResetRuntimeData()
     {
-        Debug.Log(
-            "[UnitData] ResetRuntimeData | " +
-            gameObject.name +
-            " | Unit ID=" +
-            GetInstanceID(),
-            this
-        );
-
-
         abilityData.Clear();
         abilityBonusJumps.Clear();
     }

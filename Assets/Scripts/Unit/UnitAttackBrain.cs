@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class UnitAttackBrain : MonoBehaviour
 {
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
     [Header("References")]
     [SerializeField]
     private AttackUnit attackUnit;
@@ -34,10 +38,8 @@ public class UnitAttackBrain : MonoBehaviour
             return "Basic Attack";
         }
 
-
         List<AbilitySO> abilities =
             attackUnit.GetAbilities();
-
 
         for (
             int i = 0;
@@ -47,7 +49,6 @@ public class UnitAttackBrain : MonoBehaviour
         {
             AbilitySO ability =
                 abilities[i];
-
 
             if (
                 ability != null &&
@@ -61,7 +62,6 @@ public class UnitAttackBrain : MonoBehaviour
             }
         }
 
-
         if (
             abilities.Count > 0 &&
             abilities[0] != null
@@ -71,7 +71,6 @@ public class UnitAttackBrain : MonoBehaviour
                 abilities[0]
                     .GetAbilityName();
         }
-
 
         return "Basic Attack";
     }
@@ -84,10 +83,8 @@ public class UnitAttackBrain : MonoBehaviour
             return 0;
         }
 
-
         List<AbilitySO> abilities =
             attackUnit.GetAbilities();
-
 
         for (
             int i = 0;
@@ -97,7 +94,6 @@ public class UnitAttackBrain : MonoBehaviour
         {
             AbilitySO ability =
                 abilities[i];
-
 
             if (
                 ability != null &&
@@ -110,7 +106,6 @@ public class UnitAttackBrain : MonoBehaviour
                     ability.GetRange();
             }
         }
-
 
         return
             attackUnit
@@ -138,7 +133,6 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         return
             GetBestAbilityForTarget(
                 target
@@ -160,18 +154,15 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         AbilitySO ability =
             GetBestAbilityForTarget(
                 target
             );
 
-
         if (ability == null)
         {
             return false;
         }
-
 
         return
             attackUnit.Attack(
@@ -186,7 +177,9 @@ public class UnitAttackBrain : MonoBehaviour
     )
     {
         return
-            Attack(target);
+            Attack(
+                target
+            );
     }
 
 
@@ -208,16 +201,13 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         GridManager gridManager =
             attackUnit.GetGridManager();
-
 
         if (gridManager == null)
         {
             return false;
         }
-
 
         if (
             !gridManager.IsInsideGrid(
@@ -228,7 +218,6 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         if (
             !attackUnit.IsAbilityReady(
                 ability
@@ -237,7 +226,6 @@ public class UnitAttackBrain : MonoBehaviour
         {
             return false;
         }
-
 
         if (
             !ability.CanHitTile(
@@ -250,14 +238,11 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         List<AttackUnit> units =
             CombatUtility
                 .GetAllAliveUnits();
 
-
         GameObject target = null;
-
 
         for (
             int i = 0;
@@ -268,7 +253,6 @@ public class UnitAttackBrain : MonoBehaviour
             AttackUnit unit =
                 units[i];
 
-
             if (
                 unit == null ||
                 unit == attackUnit
@@ -277,13 +261,11 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             Vector2Int unitPosition =
-                gridManager
-                    .WorldToGridPosition(
-                        unit.transform.position
-                    );
-
+                GetUnitTile(
+                    gridManager,
+                    unit.gameObject
+                );
 
             if (
                 unitPosition ==
@@ -297,7 +279,6 @@ public class UnitAttackBrain : MonoBehaviour
             }
         }
 
-
         if (target != null)
         {
             if (
@@ -309,7 +290,6 @@ public class UnitAttackBrain : MonoBehaviour
                 return false;
             }
 
-
             return
                 attackUnit.Attack(
                     target,
@@ -317,11 +297,43 @@ public class UnitAttackBrain : MonoBehaviour
                 );
         }
 
-
         return
             attackUnit.AttackAtTile(
                 targetTile,
                 ability
+            );
+    }
+
+
+    // ============================================================
+    // GET UNIT TILE
+    // ============================================================
+
+    private Vector2Int GetUnitTile(
+        GridManager gridManager,
+        GameObject unit
+    )
+    {
+        if (unit == null)
+        {
+            return Vector2Int.zero;
+        }
+
+        UnitTilePin pin =
+            unit.GetComponent<UnitTilePin>();
+
+        if (
+            pin != null &&
+            pin.HasTile()
+        )
+        {
+            return
+                pin.GetTile();
+        }
+
+        return
+            gridManager.WorldToGridPosition(
+                unit.transform.position
             );
     }
 
@@ -344,32 +356,25 @@ public class UnitAttackBrain : MonoBehaviour
             return null;
         }
 
-
         GridManager gridManager =
             attackUnit.GetGridManager();
-
 
         if (gridManager == null)
         {
             return null;
         }
 
-
         List<AbilitySO> abilities =
             attackUnit.GetAbilities();
-
 
         AbilitySO bestAbility =
             null;
 
-
         int bestDamage =
             int.MinValue;
 
-
         int bestRange =
             int.MinValue;
-
 
         for (
             int i = 0;
@@ -380,7 +385,6 @@ public class UnitAttackBrain : MonoBehaviour
             AbilitySO ability =
                 abilities[i];
 
-
             if (
                 ability == null ||
                 !attackUnit.IsAbilityReady(
@@ -390,7 +394,6 @@ public class UnitAttackBrain : MonoBehaviour
             {
                 continue;
             }
-
 
             if (
                 !ability.CanHit(
@@ -403,14 +406,11 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             int damage =
                 ability.GetDamage();
 
-
             int range =
                 ability.GetRange();
-
 
             if (
                 bestAbility == null ||
@@ -431,7 +431,6 @@ public class UnitAttackBrain : MonoBehaviour
                     range;
             }
         }
-
 
         return
             bestAbility;
@@ -457,35 +456,29 @@ public class UnitAttackBrain : MonoBehaviour
             return null;
         }
 
-
         GridManager gridManager =
             attackUnit.GetGridManager();
-
 
         if (gridManager == null)
         {
             return null;
         }
 
-
         List<AttackUnit> allUnits =
             CombatUtility
                 .GetAllAliveUnits();
 
-
         GameObject bestTarget =
             null;
-
 
         int bestDistance =
             int.MaxValue;
 
-
         Vector2Int myPosition =
-            gridManager.WorldToGridPosition(
-                transform.position
+            GetUnitTile(
+                gridManager,
+                gameObject
             );
-
 
         for (
             int i = 0;
@@ -496,7 +489,6 @@ public class UnitAttackBrain : MonoBehaviour
             AttackUnit otherUnit =
                 allUnits[i];
 
-
             if (
                 otherUnit == null ||
                 otherUnit == attackUnit
@@ -505,10 +497,8 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             GameObject target =
                 otherUnit.gameObject;
-
 
             if (
                 !attackUnit.IsValidTarget(
@@ -518,7 +508,6 @@ public class UnitAttackBrain : MonoBehaviour
             {
                 continue;
             }
-
 
             if (
                 !ability.CanHit(
@@ -531,20 +520,17 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             Vector2Int targetPosition =
-                gridManager
-                    .WorldToGridPosition(
-                        target.transform.position
-                    );
-
+                GetUnitTile(
+                    gridManager,
+                    target
+                );
 
             int distance =
                 gridManager.GetDistance(
                     myPosition,
                     targetPosition
                 );
-
 
             if (
                 distance < bestDistance
@@ -558,7 +544,6 @@ public class UnitAttackBrain : MonoBehaviour
             }
         }
 
-
         return
             bestTarget;
     }
@@ -566,16 +551,6 @@ public class UnitAttackBrain : MonoBehaviour
 
     // ============================================================
     // USE ALL AVAILABLE ABILITIES
-    // ============================================================
-    //
-    // This allows:
-    //
-    // Fireball x3
-    // then
-    // Slash x1
-    //
-    // instead of forcing every ability to be used
-    // only once.
     // ============================================================
 
     public int UseAllAvailableAbilities()
@@ -588,10 +563,8 @@ public class UnitAttackBrain : MonoBehaviour
             return 0;
         }
 
-
         int attacksPerformed =
             0;
-
 
         while (
             !attackUnit.IsDead()
@@ -599,12 +572,10 @@ public class UnitAttackBrain : MonoBehaviour
         {
             GameObject target;
 
-
             AbilitySO ability =
                 FindBestAvailableAbility(
                     out target
                 );
-
 
             if (
                 ability == null ||
@@ -614,23 +585,19 @@ public class UnitAttackBrain : MonoBehaviour
                 break;
             }
 
-
             bool success =
                 attackUnit.Attack(
                     target,
                     ability
                 );
 
-
             if (!success)
             {
                 break;
             }
 
-
             attacksPerformed++;
         }
-
 
         return
             attacksPerformed;
@@ -649,18 +616,15 @@ public class UnitAttackBrain : MonoBehaviour
             yield break;
         }
 
-
         if (attackUnit.IsDead())
         {
             yield break;
         }
 
-
         if (!attackUnit.CanAttack())
         {
             yield break;
         }
-
 
         while (
             !attackUnit.IsDead()
@@ -668,12 +632,10 @@ public class UnitAttackBrain : MonoBehaviour
         {
             GameObject target;
 
-
             AbilitySO ability =
                 FindBestAvailableAbility(
                     out target
                 );
-
 
             if (
                 ability == null ||
@@ -683,23 +645,31 @@ public class UnitAttackBrain : MonoBehaviour
                 break;
             }
 
-
             bool success =
                 attackUnit.Attack(
                     target,
                     ability
                 );
 
-
             if (!success)
             {
                 break;
             }
 
+            if (
+                attackUnit
+                    .UsesDirectionalEnemyAttackAnimation()
+            )
+            {
+                yield return
+                    StartCoroutine(
+                        attackUnit
+                            .WaitForAttackAnimation()
+                    );
+            }
 
             float useDuration =
                 ability.GetUseDuration();
-
 
             if (
                 useDuration > 0f
@@ -729,28 +699,22 @@ public class UnitAttackBrain : MonoBehaviour
         bestTarget =
             null;
 
-
         if (attackUnit == null)
         {
             return null;
         }
 
-
         List<AbilitySO> abilities =
             attackUnit.GetAbilities();
-
 
         AbilitySO bestAbility =
             null;
 
-
         int bestDamage =
             int.MinValue;
 
-
         int bestRange =
             int.MinValue;
-
 
         for (
             int i = 0;
@@ -761,19 +725,11 @@ public class UnitAttackBrain : MonoBehaviour
             AbilitySO ability =
                 abilities[i];
 
-
-            if (
-                ability == null
-            )
+            if (ability == null)
             {
                 continue;
             }
 
-
-            // IMPORTANT:
-            //
-            // This checks the runtime AbilityData
-            // belonging to THIS AttackUnit.
             if (
                 !attackUnit.IsAbilityReady(
                     ability
@@ -783,26 +739,21 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             GameObject target =
                 FindTargetForAbility(
                     ability
                 );
-
 
             if (target == null)
             {
                 continue;
             }
 
-
             int damage =
                 ability.GetDamage();
 
-
             int range =
                 ability.GetRange();
-
 
             if (
                 bestAbility == null ||
@@ -827,7 +778,6 @@ public class UnitAttackBrain : MonoBehaviour
             }
         }
 
-
         return
             bestAbility;
     }
@@ -848,10 +798,8 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         List<AbilitySO> abilities =
             attackUnit.GetAbilities();
-
 
         for (
             int i = 0;
@@ -861,7 +809,6 @@ public class UnitAttackBrain : MonoBehaviour
         {
             AbilitySO ability =
                 abilities[i];
-
 
             if (
                 ability == null ||
@@ -873,7 +820,6 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             if (
                 !ability
                     .CanAttackWithThisAfterMove()
@@ -882,19 +828,16 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             GameObject target =
                 FindTargetForAbility(
                     ability
                 );
-
 
             if (target != null)
             {
                 return true;
             }
         }
-
 
         return false;
     }
@@ -932,10 +875,8 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
-
         List<AbilitySO> abilities =
             attackUnit.GetAbilities();
-
 
         for (
             int i = 0;
@@ -945,7 +886,6 @@ public class UnitAttackBrain : MonoBehaviour
         {
             AbilitySO ability =
                 abilities[i];
-
 
             if (
                 ability == null ||
@@ -957,19 +897,16 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-
             GameObject target =
                 FindTargetForAbility(
                     ability
                 );
-
 
             if (target != null)
             {
                 return true;
             }
         }
-
 
         return false;
     }
@@ -985,7 +922,6 @@ public class UnitAttackBrain : MonoBehaviour
         {
             return 0;
         }
-
 
         return
             attackUnit

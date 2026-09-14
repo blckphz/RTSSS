@@ -686,8 +686,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   characterData: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+  unitData: {fileID: 0}
   abilities: []
   healthManager: {fileID: 3192282828779274466}
+  animationController: {fileID: 1265849680894574295}
+  useDirectionalEnemyAttackAnimation: 1
+  attackAnimatorLayerName: attackLayer
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &2374263692071149587
 MonoBehaviour:
@@ -808,7 +812,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitMoveBrain
   attackUnit: {fileID: 7430056509106207593}
   tilePin: {fileID: 0}
-  animationController: {fileID: 0}
+  animationController: {fileID: 1265849680894574295}
   moveDuration: 0.25
   attackRange: 1
   preferLowHealthEnemies: 1
@@ -897,6 +901,11 @@ MonoBehaviour:
   walkDownState: basicEnemyWalkDown
   walkUpState: basicEnemyWalkUp
   idleState: Idle
+  attackAnimatorLayerName: attackLayer
+  enemyAttackDownUpState: enemyattackdownup
+  enemyAttackDownDownState: enemyattackdowndown
+  enemyAttackDownLeftState: enemyattackdownleft
+  enemyAttackDownRightState: enemyattackdownright
 --- !u!114 &8379538594534882917
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -909,3 +918,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a97ace68f90fdc94b84bc9e7dbd777c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  useStunVisual: 1
+  smoothStunVisual: 1
+  visualFadeSpeed: 8
