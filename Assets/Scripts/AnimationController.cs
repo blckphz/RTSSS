@@ -153,6 +153,69 @@ public class AnimationController : MonoBehaviour
 
 
     // ============================================================
+    // CONVERT GRID DIRECTION TO VISUAL/WORLD DIRECTION
+    // ============================================================
+
+    private Vector2Int ConvertDirectionToWorldDirection(
+        Vector2Int direction
+    )
+    {
+        if (direction == Vector2Int.zero)
+        {
+            return Vector2Int.zero;
+        }
+
+        Vector3 logicalDirection =
+            new Vector3(
+                direction.x,
+                direction.y,
+                0f
+            );
+
+        BoardViewController board =
+            BoardViewController.Instance;
+
+        if (board != null)
+        {
+            Transform boardTransform =
+                board.GetBoardTransform();
+
+            if (boardTransform != null)
+            {
+                logicalDirection =
+                    boardTransform.TransformDirection(
+                        logicalDirection
+                    );
+            }
+        }
+
+        // --------------------------------------------------------
+        // Determine which visual cardinal direction is strongest.
+        // --------------------------------------------------------
+
+        if (
+            Mathf.Abs(logicalDirection.y) >=
+            Mathf.Abs(logicalDirection.x)
+        )
+        {
+            if (logicalDirection.y >= 0f)
+            {
+                return Vector2Int.up;
+            }
+
+            return Vector2Int.down;
+        }
+
+        if (logicalDirection.x >= 0f)
+        {
+            return Vector2Int.right;
+        }
+
+        return Vector2Int.left;
+    }
+
+
+    // ============================================================
     // MOVEMENT DIRECTION
     // ============================================================
 
@@ -170,30 +233,42 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
-        if (
-            Mathf.Abs(direction.y) >=
-            Mathf.Abs(direction.x)
-        )
+        // --------------------------------------------------------
+        // IMPORTANT:
+        //
+        // UnitMoveBrain gives us a LOGICAL GRID direction.
+        //
+        // The board may have been rotated visually.
+        //
+        // Convert the logical direction into the direction the
+        // player actually sees on screen.
+        // --------------------------------------------------------
+
+        Vector2Int visualDirection =
+            ConvertDirectionToWorldDirection(
+                direction
+            );
+
+
+        // --------------------------------------------------------
+        // PLAY CORRECT WALK ANIMATION
+        // --------------------------------------------------------
+
+        if (visualDirection == Vector2Int.up)
         {
-            if (direction.y > 0)
-            {
-                PlayWalkUp();
-            }
-            else
-            {
-                PlayWalkDown();
-            }
+            PlayWalkUp();
         }
-        else
+        else if (visualDirection == Vector2Int.down)
         {
-            if (direction.x > 0)
-            {
-                PlayWalkRight();
-            }
-            else
-            {
-                PlayWalkLeft();
-            }
+            PlayWalkDown();
+        }
+        else if (visualDirection == Vector2Int.left)
+        {
+            PlayWalkLeft();
+        }
+        else if (visualDirection == Vector2Int.right)
+        {
+            PlayWalkRight();
         }
 
         isWalking = true;
@@ -206,23 +281,35 @@ public class AnimationController : MonoBehaviour
 
     private void PlayWalkUp()
     {
-        PlayWalkState(walkUpState);
+        PlayWalkState(
+            walkUpState
+        );
     }
+
 
     private void PlayWalkDown()
     {
-        PlayWalkState(walkDownState);
+        PlayWalkState(
+            walkDownState
+        );
     }
+
 
     private void PlayWalkLeft()
     {
-        PlayWalkState(walkLeftState);
+        PlayWalkState(
+            walkLeftState
+        );
     }
+
 
     private void PlayWalkRight()
     {
-        PlayWalkState(walkRightState);
+        PlayWalkState(
+            walkRightState
+        );
     }
+
 
     private void PlayWalkState(
         string stateName
@@ -243,7 +330,10 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
-        if (IsCurrentState(stateName, 0))
+        if (IsCurrentState(
+                stateName,
+                0
+            ))
         {
             return;
         }
@@ -310,51 +400,41 @@ public class AnimationController : MonoBehaviour
 
         isWalking = false;
 
-        direction.x =
-            Mathf.Clamp(
-                direction.x,
-                -1,
-                1
+
+        // --------------------------------------------------------
+        // CONVERT LOGICAL ATTACK DIRECTION TO VISUAL DIRECTION
+        // --------------------------------------------------------
+
+        Vector2Int visualDirection =
+            ConvertDirectionToWorldDirection(
+                direction
             );
 
-        direction.y =
-            Mathf.Clamp(
-                direction.y,
-                -1,
-                1
-            );
 
         string stateToPlay = null;
 
-        if (
-            Mathf.Abs(direction.y) >=
-            Mathf.Abs(direction.x)
-        )
+
+        if (visualDirection == Vector2Int.up)
         {
-            if (direction.y > 0)
-            {
-                stateToPlay =
-                    enemyAttackUpState;
-            }
-            else
-            {
-                stateToPlay =
-                    enemyAttackDownState;
-            }
+            stateToPlay =
+                enemyAttackUpState;
         }
-        else
+        else if (visualDirection == Vector2Int.down)
         {
-            if (direction.x > 0)
-            {
-                stateToPlay =
-                    enemyAttackRightState;
-            }
-            else
-            {
-                stateToPlay =
-                    enemyAttackLeftState;
-            }
+            stateToPlay =
+                enemyAttackDownState;
         }
+        else if (visualDirection == Vector2Int.left)
+        {
+            stateToPlay =
+                enemyAttackLeftState;
+        }
+        else if (visualDirection == Vector2Int.right)
+        {
+            stateToPlay =
+                enemyAttackRightState;
+        }
+
 
         if (string.IsNullOrEmpty(stateToPlay))
         {
@@ -366,14 +446,22 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
-        // Reset animation event state for THIS attack.
+
+        // --------------------------------------------------------
+        // RESET ANIMATION EVENT STATE
+        // --------------------------------------------------------
+
         attackHitEventReceived = false;
+
         attackFinishedEventReceived = false;
+
 
         Debug.Log(
             "[AnimationController] ENEMY ATTACK"
-            + " | Direction: "
+            + " | Logical Direction: "
             + direction
+            + " | Visual Direction: "
+            + visualDirection
             + " | State: "
             + stateToPlay
             + " | Layer: "
@@ -383,6 +471,7 @@ public class AnimationController : MonoBehaviour
             this
         );
 
+
         animator.Play(
             stateToPlay,
             attackAnimatorLayerIndex,
@@ -391,10 +480,12 @@ public class AnimationController : MonoBehaviour
 
         animator.Update(0f);
 
+
         AnimatorStateInfo stateInfo =
             animator.GetCurrentAnimatorStateInfo(
                 attackAnimatorLayerIndex
             );
+
 
         Debug.Log(
             "[AnimationController] AFTER PLAY"
@@ -421,6 +512,7 @@ public class AnimationController : MonoBehaviour
         Vector2Int direction =
             targetTile - attackerTile;
 
+
         Debug.Log(
             "[AnimationController] Enemy attack grid direction"
             + " | Attacker: "
@@ -431,6 +523,7 @@ public class AnimationController : MonoBehaviour
             + direction,
             this
         );
+
 
         direction.x =
             Mathf.Clamp(
@@ -446,7 +539,10 @@ public class AnimationController : MonoBehaviour
                 1
             );
 
-        PlayEnemyAttack(direction);
+
+        PlayEnemyAttack(
+            direction
+        );
     }
 
 
@@ -465,7 +561,9 @@ public class AnimationController : MonoBehaviour
             this
         );
 
+
         // Prevent duplicate hit events.
+
         if (attackHitEventReceived)
         {
             Debug.LogWarning(
@@ -476,18 +574,16 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
+
         attackHitEventReceived = true;
+
 
         AttackUnit attackUnit =
             GetComponentInParent<AttackUnit>();
 
+
         if (attackUnit != null)
         {
-            // ----------------------------------------------------
-            // THIS IS THE ONLY PLACE THAT TELLS AttackUnit
-            // TO APPLY THE DAMAGE.
-            // ----------------------------------------------------
-
             attackUnit.OnAttackAnimationEvent();
         }
         else
@@ -515,14 +611,16 @@ public class AnimationController : MonoBehaviour
             this
         );
 
+
         attackFinishedEventReceived = true;
+
 
         AttackUnit attackUnit =
             GetComponentInParent<AttackUnit>();
 
+
         if (attackUnit != null)
         {
-            // Tell AttackUnit that this attack is completely finished.
             attackUnit.OnAttackAnimationFinished();
         }
         else
@@ -569,7 +667,9 @@ public class AnimationController : MonoBehaviour
         Vector2Int direction
     )
     {
-        PlayEnemyAttack(direction);
+        PlayEnemyAttack(
+            direction
+        );
     }
 
 
@@ -598,10 +698,15 @@ public class AnimationController : MonoBehaviour
 
         isWalking = false;
 
-        if (IsCurrentState(idleState, 0))
+
+        if (IsCurrentState(
+                idleState,
+                0
+            ))
         {
             return;
         }
+
 
         animator.Play(
             idleState,
@@ -645,12 +750,16 @@ public class AnimationController : MonoBehaviour
             return false;
         }
 
+
         AnimatorStateInfo stateInfo =
             animator.GetCurrentAnimatorStateInfo(
                 layerIndex
             );
 
-        return stateInfo.IsName(stateName);
+
+        return stateInfo.IsName(
+            stateName
+        );
     }
 
 
@@ -665,6 +774,7 @@ public class AnimationController : MonoBehaviour
             return -1;
         }
 
+
         if (attackAnimatorLayerIndex < 0)
         {
             attackAnimatorLayerIndex =
@@ -672,6 +782,7 @@ public class AnimationController : MonoBehaviour
                     attackAnimatorLayerName
                 );
         }
+
 
         return attackAnimatorLayerIndex;
     }

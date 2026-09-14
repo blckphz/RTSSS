@@ -106,12 +106,56 @@ public class EncounterDefinition : ScriptableObject
 
 
     // ============================================================
+    // OBSTACLES
+    // ============================================================
+
+    [Header("Obstacle Spawn")]
+    [Tooltip(
+        "Obstacles are spawned once when the encounter begins. " +
+        "They remain in the grid for the entire encounter."
+    )]
+    public List<ObstacleSpawnData> obstacles =
+        new List<ObstacleSpawnData>();
+
+
+    // ============================================================
     // ENEMIES
     // ============================================================
 
     [Header("Enemy Spawn")]
     public List<EnemySpawnData> enemies =
         new List<EnemySpawnData>();
+}
+
+
+// ============================================================
+// OBSTACLE SPAWN DATA
+// ============================================================
+
+[Serializable]
+public class ObstacleSpawnData
+{
+    // ============================================================
+    // PREFAB
+    // ============================================================
+
+    [Header("Prefab")]
+    [Tooltip(
+        "Prefab that will be spawned as an obstacle."
+    )]
+    public GameObject prefab;
+
+
+    // ============================================================
+    // AMOUNT
+    // ============================================================
+
+    [Header("Amount")]
+    [Min(1)]
+    [Tooltip(
+        "Number of this obstacle type to spawn."
+    )]
+    public int amount = 1;
 }
 
 

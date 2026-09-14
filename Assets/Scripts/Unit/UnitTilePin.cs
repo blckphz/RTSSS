@@ -12,15 +12,6 @@ public class UnitTilePin : MonoBehaviour
 
 
     // ==================================================
-    // SETTINGS
-    // ==================================================
-
-    [Header("Pin Settings")]
-    [SerializeField]
-    private bool pinEveryFrame = true;
-
-
-    // ==================================================
     // ROTATION
     // ==================================================
 
@@ -58,7 +49,9 @@ public class UnitTilePin : MonoBehaviour
     private void Awake()
     {
         GenerateUniqueId();
+
         FindGridManager();
+
         ForceRotation();
     }
 
@@ -66,20 +59,21 @@ public class UnitTilePin : MonoBehaviour
     private void Start()
     {
         FindGridManager();
+
         RegisterCurrentTile();
+
         ForceRotation();
     }
 
 
     private void LateUpdate()
     {
-        BoardViewController board =
-            BoardViewController.Instance;
-
-
         // ==================================================
         // BOARD ROTATION
         // ==================================================
+
+        BoardViewController board =
+            BoardViewController.Instance;
 
         if (
             board != null &&
@@ -92,31 +86,6 @@ public class UnitTilePin : MonoBehaviour
             }
 
             return;
-        }
-
-
-        // ==================================================
-        // IMPORTANT:
-        // DO NOT PIN WHILE THE UNIT IS MOVING.
-        //
-        // UnitMoveBrain animates transform.position.
-        // If we call PinToTile() every LateUpdate while
-        // moving, the old logicalTile can fight the animation.
-        // ==================================================
-
-        if (pinEveryFrame)
-        {
-            UnitMoveBrain moveBrain =
-                GetComponent<UnitMoveBrain>();
-
-            bool isMoving =
-                moveBrain != null &&
-                moveBrain.IsMoving();
-
-            if (!isMoving)
-            {
-                PinToTile();
-            }
         }
 
 
@@ -188,19 +157,23 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
-        Vector3 worldBefore =
-            transform.position;
-
         Vector2Int calculatedTile =
             gridManager.WorldToGridPosition(
-                worldBefore
+                transform.position
             );
+
+        if (!gridManager.IsInsideGrid(
+                calculatedTile))
+        {
+            return;
+        }
 
         logicalTile =
             calculatedTile;
 
         hasTile = true;
 
+        // Initial placement only.
         PinToTile();
     }
 
@@ -234,7 +207,11 @@ public class UnitTilePin : MonoBehaviour
         hasTile =
             true;
 
+        // This is now called explicitly
+        // after movement has finished.
         PinToTile();
+
+        ForceRotation();
     }
 
 
@@ -246,36 +223,7 @@ public class UnitTilePin : MonoBehaviour
         Vector2Int newTile
     )
     {
-        if (gridManager == null)
-        {
-            FindGridManager();
-        }
-
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        if (!gridManager.IsInsideGrid(newTile))
-        {
-            return;
-        }
-
-        logicalTile =
-            newTile;
-
-        hasTile =
-            true;
-
-        Vector3 targetPosition =
-            gridManager.GridToWorldPosition(
-                newTile
-            );
-
-        transform.position =
-            targetPosition;
-
-        ForceRotation();
+        SetTile(newTile);
     }
 
 
@@ -426,13 +374,16 @@ public class UnitTilePin : MonoBehaviour
             return;
         }
 
-        Vector3 worldBefore =
-            transform.position;
-
         Vector2Int calculatedTile =
             gridManager.WorldToGridPosition(
-                worldBefore
+                transform.position
             );
+
+        if (!gridManager.IsInsideGrid(
+                calculatedTile))
+        {
+            return;
+        }
 
         logicalTile =
             calculatedTile;
