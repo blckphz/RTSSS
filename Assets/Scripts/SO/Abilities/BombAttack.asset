@@ -28,4 +28,4 @@ MonoBehaviour:
   projectileSpeed: 8
   explosionPrefab: {fileID: 2004172624130830715, guid: a5b780eea8e76804c9bf4cdf4862f345, type: 3}
   explosionDelay: 0
-  explosionRadius: 1
+  explosionRadius: 2
