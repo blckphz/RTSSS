@@ -46,30 +46,51 @@ public class AttackUnit : MonoBehaviour
 
     private bool hasLogicalGridPosition;
 
+    // ============================================================
+    // PENDING ATTACK
+    // ============================================================
+
     private AbilitySO animationEventAbility;
     private GameObject animationEventTarget;
     private Vector2Int animationEventTargetTile;
+
     private bool animationEventFired;
+
+    // True from Attack() until AttackFinished animation event.
+    private bool attackInProgress;
+
+
+    // ============================================================
+    // UNITY
+    // ============================================================
 
     private void Awake()
     {
         if (healthManager == null)
         {
-            healthManager = GetComponent<HealthManager>();
+            healthManager =
+                GetComponent<HealthManager>();
         }
 
-        moveBrain = GetComponent<UnitMoveBrain>();
-        attackAnimation = GetComponent<IAttackAnimation>();
-        unitTilePin = GetComponent<UnitTilePin>();
+        moveBrain =
+            GetComponent<UnitMoveBrain>();
+
+        attackAnimation =
+            GetComponent<IAttackAnimation>();
+
+        unitTilePin =
+            GetComponent<UnitTilePin>();
 
         if (animationController == null)
         {
-            animationController = GetComponent<AnimationController>();
+            animationController =
+                GetComponent<AnimationController>();
         }
 
         FindUnitData();
 
-        updateManager = FindFirstObjectByType<UpdateManager>();
+        updateManager =
+            FindFirstObjectByType<UpdateManager>();
 
         EnsureGridManager();
 
@@ -79,17 +100,27 @@ public class AttackUnit : MonoBehaviour
         {
             Vector2Int initialTile;
 
-            if (unitTilePin != null && unitTilePin.HasTile())
+            if (
+                unitTilePin != null &&
+                unitTilePin.HasTile()
+            )
             {
-                initialTile = unitTilePin.GetTile();
+                initialTile =
+                    unitTilePin.GetTile();
             }
             else
             {
-                initialTile = cachedGridManager.WorldToGridPosition(transform.position);
+                initialTile =
+                    cachedGridManager.WorldToGridPosition(
+                        transform.position
+                    );
             }
 
-            logicalGridPosition = initialTile;
-            hasLogicalGridPosition = true;
+            logicalGridPosition =
+                initialTile;
+
+            hasLogicalGridPosition =
+                true;
         }
 
         if (characterData != null)
@@ -97,6 +128,11 @@ public class AttackUnit : MonoBehaviour
             Initialize(characterData);
         }
     }
+
+
+    // ============================================================
+    // FIND ATTACK ANIMATOR LAYER
+    // ============================================================
 
     private void FindAttackAnimatorLayer()
     {
@@ -107,33 +143,50 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        Animator animator = animationController.GetComponent<Animator>();
+        Animator animator =
+            animationController.GetAnimator();
 
         if (animator == null)
         {
             return;
         }
 
-        attackAnimatorLayerIndex = animator.GetLayerIndex(attackAnimatorLayerName);
+        attackAnimatorLayerIndex =
+            animator.GetLayerIndex(
+                attackAnimatorLayerName
+            );
     }
+
+
+    // ============================================================
+    // FIND UNIT DATA
+    // ============================================================
 
     private void FindUnitData()
     {
         if (unitData == null)
         {
-            unitData = GetComponent<UnitData>();
+            unitData =
+                GetComponent<UnitData>();
         }
 
         if (unitData == null)
         {
-            unitData = GetComponentInChildren<UnitData>();
+            unitData =
+                GetComponentInChildren<UnitData>();
         }
 
         if (unitData == null)
         {
-            unitData = GetComponentInParent<UnitData>();
+            unitData =
+                GetComponentInParent<UnitData>();
         }
     }
+
+
+    // ============================================================
+    // INITIALIZE
+    // ============================================================
 
     public void Initialize(CharacterSO data)
     {
@@ -142,25 +195,36 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        characterData = data;
+        characterData =
+            data;
 
         abilities.Clear();
 
-        List<AbilitySO> characterAbilities = data.GetAbilities();
+        List<AbilitySO> characterAbilities =
+            data.GetAbilities();
 
         if (characterAbilities != null)
         {
-            for (int i = 0; i < characterAbilities.Count; i++)
+            for (
+                int i = 0;
+                i < characterAbilities.Count;
+                i++
+            )
             {
-                AbilitySO abilitySO = characterAbilities[i];
+                AbilitySO abilitySO =
+                    characterAbilities[i];
 
                 if (abilitySO == null)
                 {
                     continue;
                 }
 
-                AbilityData runtimeAbility = new AbilityData(abilitySO);
-                abilities.Add(runtimeAbility);
+                AbilityData runtimeAbility =
+                    new AbilityData(abilitySO);
+
+                abilities.Add(
+                    runtimeAbility
+                );
             }
         }
 
@@ -172,6 +236,11 @@ public class AttackUnit : MonoBehaviour
         RegisterWithUpdateManager();
     }
 
+
+    // ============================================================
+    // REGISTER UPDATE MANAGER
+    // ============================================================
+
     private void RegisterWithUpdateManager()
     {
         if (unitData == null)
@@ -181,7 +250,8 @@ public class AttackUnit : MonoBehaviour
 
         if (updateManager == null)
         {
-            updateManager = FindFirstObjectByType<UpdateManager>();
+            updateManager =
+                FindFirstObjectByType<UpdateManager>();
         }
 
         if (updateManager == null)
@@ -189,26 +259,43 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        updateManager.SetCurrentUnit(unitData);
+        updateManager.SetCurrentUnit(
+            unitData
+        );
     }
 
-    private AbilityData GetAbilityData(AbilitySO abilitySO)
+
+    // ============================================================
+    // GET ABILITY DATA
+    // ============================================================
+
+    private AbilityData GetAbilityData(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
             return null;
         }
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilityData abilityData = abilities[i];
+            AbilityData abilityData =
+                abilities[i];
 
             if (abilityData == null)
             {
                 continue;
             }
 
-            if (abilityData.GetAbilitySO() == abilitySO)
+            if (
+                abilityData.GetAbilitySO() ==
+                abilitySO
+            )
             {
                 return abilityData;
             }
@@ -217,24 +304,45 @@ public class AttackUnit : MonoBehaviour
         return null;
     }
 
-    public bool HasAbility(AbilitySO abilitySO)
+
+    // ============================================================
+    // HAS ABILITY
+    // ============================================================
+
+    public bool HasAbility(
+        AbilitySO abilitySO
+    )
     {
-        return GetAbilityData(abilitySO) != null;
+        return
+            GetAbilityData(abilitySO) != null;
     }
 
-    public void SetLogicalGridPosition(Vector2Int position)
+
+    // ============================================================
+    // LOGICAL GRID POSITION
+    // ============================================================
+
+    public void SetLogicalGridPosition(
+        Vector2Int position
+    )
     {
-        logicalGridPosition = position;
-        hasLogicalGridPosition = true;
+        logicalGridPosition =
+            position;
+
+        hasLogicalGridPosition =
+            true;
 
         if (unitTilePin == null)
         {
-            unitTilePin = GetComponent<UnitTilePin>();
+            unitTilePin =
+                GetComponent<UnitTilePin>();
         }
 
         if (unitTilePin != null)
         {
-            unitTilePin.SetTile(position);
+            unitTilePin.SetTile(
+                position
+            );
         }
 
         if (cachedGridManager == null)
@@ -243,14 +351,21 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
+
     public Vector2Int GetLogicalGridPosition()
     {
         EnsureGridManager();
 
-        if (unitTilePin != null && unitTilePin.HasTile())
+        if (
+            unitTilePin != null &&
+            unitTilePin.HasTile()
+        )
         {
-            logicalGridPosition = unitTilePin.GetTile();
-            hasLogicalGridPosition = true;
+            logicalGridPosition =
+                unitTilePin.GetTile();
+
+            hasLogicalGridPosition =
+                true;
 
             return logicalGridPosition;
         }
@@ -258,100 +373,168 @@ public class AttackUnit : MonoBehaviour
         if (cachedGridManager != null)
         {
             logicalGridPosition =
-                cachedGridManager.WorldToGridPosition(transform.position);
+                cachedGridManager.WorldToGridPosition(
+                    transform.position
+                );
 
-            hasLogicalGridPosition = true;
+            hasLogicalGridPosition =
+                true;
         }
 
         return logicalGridPosition;
     }
+
 
     public bool HasLogicalGridPosition()
     {
         return hasLogicalGridPosition;
     }
 
+
+    // ============================================================
+    // MOVEMENT
+    // ============================================================
+
     public bool HasMovedThisTurn()
     {
-        return moveBrain != null && moveBrain.HasConsumedMovement();
+        return
+            moveBrain != null &&
+            moveBrain.HasConsumedMovement();
     }
 
-    public void SetHasMovedThisTurn(bool value)
+
+    public void SetHasMovedThisTurn(
+        bool value
+    )
     {
+        // Intentionally empty.
+        // Movement state is controlled by UnitMoveBrain.
     }
 
-    public int GetAbilityCooldown(AbilitySO abilitySO)
+
+    // ============================================================
+    // COOLDOWN
+    // ============================================================
+
+    public int GetAbilityCooldown(
+        AbilitySO abilitySO
+    )
     {
-        AbilityData abilityData = GetAbilityData(abilitySO);
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
 
         if (abilityData == null)
         {
             return -1;
         }
 
-        return abilityData.GetCooldownRemaining();
+        return
+            abilityData.GetCooldownRemaining();
     }
 
-    public bool IsAbilityOnCooldown(AbilitySO abilitySO)
+
+    public bool IsAbilityOnCooldown(
+        AbilitySO abilitySO
+    )
     {
-        return GetAbilityCooldown(abilitySO) > 0;
+        return
+            GetAbilityCooldown(
+                abilitySO
+            ) > 0;
     }
 
-    public int GetAbilityUsesRemaining(AbilitySO abilitySO)
+
+    // ============================================================
+    // USES
+    // ============================================================
+
+    public int GetAbilityUsesRemaining(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
             return -1;
         }
 
-        if (abilitySO.GetUsesPerTurn() <= 0)
+        if (
+            abilitySO.GetUsesPerTurn() <= 0
+        )
         {
             return 0;
         }
 
-        AbilityData abilityData = GetAbilityData(abilitySO);
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
 
         if (abilityData == null)
         {
             return -1;
         }
 
-        return abilityData.GetUsesRemaining();
+        return
+            abilityData.GetUsesRemaining();
     }
 
-    public bool HasAbilityUsesRemaining(AbilitySO abilitySO)
+
+    public bool HasAbilityUsesRemaining(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
             return false;
         }
 
-        if (abilitySO.GetUsesPerTurn() <= 0)
+        if (
+            abilitySO.GetUsesPerTurn() <= 0
+        )
         {
             return true;
         }
 
-        return GetAbilityUsesRemaining(abilitySO) > 0;
+        return
+            GetAbilityUsesRemaining(
+                abilitySO
+            ) > 0;
     }
 
-    private bool ConsumeAbilityUse(AbilitySO abilitySO)
+
+    private bool ConsumeAbilityUse(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
             return false;
         }
 
-        AbilityData abilityData = GetAbilityData(abilitySO);
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
 
         if (abilityData == null)
         {
             return false;
         }
 
-        return abilityData.ConsumeUse();
+        return
+            abilityData.ConsumeUse();
     }
 
-    private bool CanUseAbilityAfterMovement(AbilitySO abilitySO)
+
+    // ============================================================
+    // MOVEMENT / ATTACK VALIDATION
+    // ============================================================
+
+    private bool CanUseAbilityAfterMovement(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
@@ -363,44 +546,77 @@ public class AttackUnit : MonoBehaviour
             return true;
         }
 
-        if (!moveBrain.HasConsumedMovement())
+        if (
+            !moveBrain.HasConsumedMovement()
+        )
         {
             return true;
         }
 
-        return abilitySO.CanAttackWithThisAfterMove();
+        return
+            abilitySO.CanAttackWithThisAfterMove();
     }
 
-    public bool IsAbilityReady(AbilitySO abilitySO)
+
+    public bool IsAbilityReady(
+        AbilitySO abilitySO
+    )
     {
         if (!HasAbility(abilitySO))
         {
             return false;
         }
 
-        if (GetAbilityCooldown(abilitySO) > 0)
+        if (
+            GetAbilityCooldown(
+                abilitySO
+            ) > 0
+        )
         {
             return false;
         }
 
-        if (!HasAbilityUsesRemaining(abilitySO))
+        if (
+            !HasAbilityUsesRemaining(
+                abilitySO
+            )
+        )
         {
             return false;
         }
 
-        return CanUseAbilityAfterMovement(abilitySO);
+        return
+            CanUseAbilityAfterMovement(
+                abilitySO
+            );
     }
 
-    public bool CanUseAbility(AbilitySO abilitySO)
+
+    public bool CanUseAbility(
+        AbilitySO abilitySO
+    )
     {
-        return IsAbilityReady(abilitySO);
+        return
+            IsAbilityReady(
+                abilitySO
+            );
     }
+
+
+    // ============================================================
+    // ROUND
+    // ============================================================
 
     public void StartNewRound()
     {
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilityData abilityData = abilities[i];
+            AbilityData abilityData =
+                abilities[i];
 
             if (abilityData == null)
             {
@@ -412,26 +628,57 @@ public class AttackUnit : MonoBehaviour
         }
     }
 
-    private void StartAbilityCooldown(AbilitySO abilitySO)
+
+    // ============================================================
+    // START COOLDOWN
+    // ============================================================
+
+    private void StartAbilityCooldown(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
             return;
         }
 
-        AbilityData abilityData = GetAbilityData(abilitySO);
+        AbilityData abilityData =
+            GetAbilityData(
+                abilitySO
+            );
 
         if (abilityData == null)
         {
             return;
         }
 
-        abilityData.SetCooldown(abilitySO.GetCooldown());
+        abilityData.SetCooldown(
+            abilitySO.GetCooldown()
+        );
     }
 
-    public bool Attack(GameObject target, AbilitySO selectedAbility)
+
+    // ============================================================
+    // ATTACK
+    //
+    // IMPORTANT:
+    //
+    // NO DAMAGE IS APPLIED HERE.
+    //
+    // The ability is queued and waits for AttackHit.
+    // ============================================================
+
+    public bool Attack(
+        GameObject target,
+        AbilitySO selectedAbility
+    )
     {
         if (!CanAttack())
+        {
+            return false;
+        }
+
+        if (attackInProgress)
         {
             return false;
         }
@@ -446,7 +693,11 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!IsAbilityReady(selectedAbility))
+        if (
+            !IsAbilityReady(
+                selectedAbility
+            )
+        )
         {
             return false;
         }
@@ -458,50 +709,110 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!selectedAbility.CanHit(cachedGridManager, gameObject, target))
+        if (
+            !selectedAbility.CanHit(
+                cachedGridManager,
+                gameObject,
+                target
+            )
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.Use(gameObject, target))
-        {
-            return false;
-        }
+        // --------------------------------------------------------
+        // QUEUE ATTACK
+        // --------------------------------------------------------
 
-        animationEventAbility = selectedAbility;
-        animationEventTarget = target;
-        animationEventTargetTile = ResolveUnitTile(target);
-        animationEventFired = false;
+        animationEventAbility =
+            selectedAbility;
 
-        CompleteAbilityUse(selectedAbility);
+        animationEventTarget =
+            target;
 
-        if (useDirectionalEnemyAttackAnimation)
+        animationEventTargetTile =
+            ResolveUnitTile(target);
+
+        animationEventFired =
+            false;
+
+        attackInProgress =
+            true;
+
+        // --------------------------------------------------------
+        // START ATTACK ANIMATION
+        // --------------------------------------------------------
+
+        if (
+            useDirectionalEnemyAttackAnimation
+        )
         {
             if (animationController != null)
             {
-                PlayEnemyAttackAnimation(target);
+                PlayEnemyAttackAnimation(
+                    target
+                );
+            }
+            else
+            {
+                ClearPendingAttack();
+            }
+        }
+        else
+        {
+            if (attackAnimation != null)
+            {
+                attackAnimation.PlayAttackAnimation();
+            }
+            else
+            {
+                ClearPendingAttack();
             }
         }
 
-        return true;
+        return attackInProgress;
     }
 
-    public bool PlayerAttack(GameObject target, AbilitySO selectedAbility)
+
+    // ============================================================
+    // PLAYER ATTACK
+    // ============================================================
+
+    public bool PlayerAttack(
+        GameObject target,
+        AbilitySO selectedAbility
+    )
     {
-        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        if (
+            !CombatUtility.IsPlayerTurnInputAllowed(
+                this
+            )
+        )
         {
             return false;
         }
 
-        return Attack(target, selectedAbility);
+        return Attack(
+            target,
+            selectedAbility
+        );
     }
+
+
+    // ============================================================
+    // ATTACK AT TILE
+    // ============================================================
 
     public bool AttackAtTile(
         Vector2Int targetTile,
         AbilitySO selectedAbility
     )
     {
-        if (!CombatUtility.IsPlayerTurnInputAllowed(this))
+        if (
+            !CombatUtility.IsPlayerTurnInputAllowed(
+                this
+            )
+        )
         {
             return false;
         }
@@ -511,12 +822,21 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
+        if (attackInProgress)
+        {
+            return false;
+        }
+
         if (selectedAbility == null)
         {
             return false;
         }
 
-        if (!IsAbilityReady(selectedAbility))
+        if (
+            !IsAbilityReady(
+                selectedAbility
+            )
+        )
         {
             return false;
         }
@@ -528,58 +848,125 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        if (!cachedGridManager.IsInsideGrid(targetTile))
+        if (
+            !cachedGridManager.IsInsideGrid(
+                targetTile
+            )
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.CanHitTile(
+        if (
+            !selectedAbility.CanHitTile(
                 cachedGridManager,
                 gameObject,
-                targetTile))
+                targetTile
+            )
+        )
         {
             return false;
         }
 
-        if (!selectedAbility.UseAtTile(
-                gameObject,
-                cachedGridManager,
-                targetTile))
+        // --------------------------------------------------------
+        // QUEUE ATTACK
+        // --------------------------------------------------------
+
+        animationEventAbility =
+            selectedAbility;
+
+        animationEventTarget =
+            null;
+
+        animationEventTargetTile =
+            targetTile;
+
+        animationEventFired =
+            false;
+
+        attackInProgress =
+            true;
+
+        // --------------------------------------------------------
+        // START ATTACK ANIMATION
+        // --------------------------------------------------------
+
+        if (
+            useDirectionalEnemyAttackAnimation &&
+            animationController != null
+        )
         {
-            return false;
+            Vector2Int attackerTile =
+                ResolveUnitTile(gameObject);
+
+            animationController.PlayEnemyAttack(
+                attackerTile,
+                targetTile
+            );
+        }
+        else if (attackAnimation != null)
+        {
+            attackAnimation.PlayAttackAnimation();
+        }
+        else
+        {
+            ClearPendingAttack();
         }
 
-        animationEventAbility = selectedAbility;
-        animationEventTarget = null;
-        animationEventTargetTile = targetTile;
-        animationEventFired = false;
-
-        CompleteAbilityUse(selectedAbility);
-
-        return true;
+        return attackInProgress;
     }
 
-    private void CompleteAbilityUse(AbilitySO abilitySO)
+
+    // ============================================================
+    // COMPLETE ABILITY USE
+    //
+    // Called AFTER AttackHit has applied the ability.
+    // ============================================================
+
+    private void CompleteAbilityUse(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
             return;
         }
 
-        bool usesExhausted = false;
+        bool usesExhausted =
+            false;
 
-        if (abilitySO.GetUsesPerTurn() > 0)
+        if (
+            abilitySO.GetUsesPerTurn() > 0
+        )
         {
-            usesExhausted = ConsumeAbilityUse(abilitySO);
+            usesExhausted =
+                ConsumeAbilityUse(
+                    abilitySO
+                );
         }
 
         if (usesExhausted)
         {
-            StartAbilityCooldown(abilitySO);
+            StartAbilityCooldown(
+                abilitySO
+            );
         }
 
-        OnAbilityUsed?.Invoke(this, abilitySO);
+        OnAbilityUsed?.Invoke(
+            this,
+            abilitySO
+        );
     }
+
+
+    // ============================================================
+    // ATTACK HIT ANIMATION EVENT
+    //
+    // AnimationController.AttackHit()
+    // calls this method.
+    //
+    // THIS IS THE ONLY PLACE WHERE THE ABILITY IS EXECUTED.
+    // ============================================================
 
     public void OnAttackAnimationEvent()
     {
@@ -588,14 +975,174 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        animationEventFired = true;
+        if (!attackInProgress)
+        {
+            return;
+        }
+
+        animationEventFired =
+            true;
+
+        AbilitySO ability =
+            animationEventAbility;
+
+        GameObject target =
+            animationEventTarget;
+
+        Vector2Int targetTile =
+            animationEventTargetTile;
+
+        if (ability == null)
+        {
+            ClearPendingAttack();
+            return;
+        }
+
+        bool usedSuccessfully =
+            false;
+
+        // --------------------------------------------------------
+        // UNIT TARGET
+        // --------------------------------------------------------
+
+        if (target != null)
+        {
+            if (!IsValidTarget(target))
+            {
+                ClearPendingAttack();
+                return;
+            }
+
+            // ====================================================
+            // DAMAGE / EFFECT HAPPENS EXACTLY HERE
+            // ====================================================
+
+            usedSuccessfully =
+                ability.Use(
+                    gameObject,
+                    target
+                );
+        }
+
+        // --------------------------------------------------------
+        // TILE TARGET
+        // --------------------------------------------------------
+
+        else
+        {
+            EnsureGridManager();
+
+            if (cachedGridManager != null)
+            {
+                // =================================================
+                // TILE EFFECT HAPPENS EXACTLY HERE
+                // =================================================
+
+                usedSuccessfully =
+                    ability.UseAtTile(
+                        gameObject,
+                        cachedGridManager,
+                        targetTile
+                    );
+            }
+        }
+
+        // --------------------------------------------------------
+        // ABILITY FAILED
+        // --------------------------------------------------------
+
+        if (!usedSuccessfully)
+        {
+            ClearPendingAttack();
+            return;
+        }
+
+        // --------------------------------------------------------
+        // CONSUME USE / COOLDOWN
+        // --------------------------------------------------------
+
+        CompleteAbilityUse(
+            ability
+        );
+
+        // --------------------------------------------------------
+        // HIT VISUALS
+        // --------------------------------------------------------
 
         TriggerAttackVisuals(
-            animationEventAbility,
-            animationEventTarget,
-            animationEventTargetTile
+            ability,
+            target,
+            targetTile
         );
+
+        // --------------------------------------------------------
+        // DO NOT CLEAR attackInProgress.
+        //
+        // The animation is still playing.
+        //
+        // AttackFinished() will call:
+        //
+        // OnAttackAnimationFinished()
+        //
+        // which clears the attack.
+        // --------------------------------------------------------
+
+        animationEventAbility =
+            null;
+
+        animationEventTarget =
+            null;
+
+        animationEventTargetTile =
+            Vector2Int.zero;
     }
+
+
+    // ============================================================
+    // ATTACK ANIMATION FINISHED
+    //
+    // AnimationController.AttackFinished()
+    // calls this method.
+    //
+    // This allows the NEXT attack to start.
+    // ============================================================
+
+    public void OnAttackAnimationFinished()
+    {
+        if (!attackInProgress)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "[AttackUnit] Attack animation finished."
+            + " | Unit: "
+            + gameObject.name
+        );
+
+        ClearPendingAttack();
+    }
+
+
+    // ============================================================
+    // WAIT FOR CURRENT ATTACK FINISHED
+    //
+    // UnitAttackBrain should yield this before starting
+    // another attack.
+    // ============================================================
+
+    public IEnumerator WaitForCurrentAttackFinished()
+    {
+        while (attackInProgress)
+        {
+            yield return null;
+        }
+    }
+
+
+    // ============================================================
+    // ATTACK VISUALS
+    // ============================================================
 
     private void TriggerAttackVisuals(
         AbilitySO abilitySO,
@@ -603,96 +1150,64 @@ public class AttackUnit : MonoBehaviour
         Vector2Int targetTile
     )
     {
+        // Put hit VFX / impact effects here if needed.
+        //
+        // This method is called at the exact AttackHit event.
     }
+
+
+    // ============================================================
+    // ATTACK ROUTINE
+    //
+    // This version also waits for AttackFinished.
+    // ============================================================
 
     public IEnumerator AttackRoutine(
         GameObject target,
         AbilitySO selectedAbility
     )
     {
-        if (!CanAttack())
+        if (!Attack(
+                target,
+                selectedAbility
+            ))
         {
             yield break;
         }
 
-        if (target == null)
-        {
-            yield break;
-        }
-
-        if (selectedAbility == null)
-        {
-            yield break;
-        }
-
-        if (!IsAbilityReady(selectedAbility))
-        {
-            yield break;
-        }
-
-        EnsureGridManager();
-
-        if (cachedGridManager == null)
-        {
-            yield break;
-        }
-
-        if (!selectedAbility.CanHit(
-                cachedGridManager,
-                gameObject,
-                target))
-        {
-            yield break;
-        }
-
-        if (!selectedAbility.Use(gameObject, target))
-        {
-            yield break;
-        }
-
-        animationEventAbility = selectedAbility;
-        animationEventTarget = target;
-        animationEventTargetTile = ResolveUnitTile(target);
-        animationEventFired = false;
-
-        CompleteAbilityUse(selectedAbility);
-
-        if (
-            useDirectionalEnemyAttackAnimation &&
-            animationController != null
-        )
-        {
-            PlayEnemyAttackAnimation(target);
-
-            yield return StartCoroutine(
-                WaitForEnemyAttackAnimation()
-            );
-
-            yield break;
-        }
-
-        if (attackAnimation == null)
-        {
-            yield break;
-        }
-
-        attackAnimation.PlayAttackAnimation();
+        // --------------------------------------------------------
+        // Attack() has already started the animation.
+        //
+        // Wait until AnimationController.AttackFinished()
+        // releases attackInProgress.
+        // --------------------------------------------------------
 
         yield return StartCoroutine(
-            attackAnimation.WaitForAttackFinished()
+            WaitForCurrentAttackFinished()
         );
     }
 
-    private Vector2Int ResolveUnitTile(GameObject unit)
+
+    // ============================================================
+    // RESOLVE UNIT TILE
+    // ============================================================
+
+    private Vector2Int ResolveUnitTile(
+        GameObject unit
+    )
     {
         if (unit == null)
         {
             return Vector2Int.zero;
         }
 
-        UnitTilePin pin = unit.GetComponent<UnitTilePin>();
+        UnitTilePin pin =
+            unit.GetComponent<UnitTilePin>();
 
-        if (pin != null && pin.HasTile())
+        if (
+            pin != null &&
+            pin.HasTile()
+        )
         {
             return pin.GetTile();
         }
@@ -701,15 +1216,23 @@ public class AttackUnit : MonoBehaviour
 
         if (cachedGridManager != null)
         {
-            return cachedGridManager.WorldToGridPosition(
-                unit.transform.position
-            );
+            return
+                cachedGridManager.WorldToGridPosition(
+                    unit.transform.position
+                );
         }
 
         return Vector2Int.zero;
     }
 
-    private void PlayEnemyAttackAnimation(GameObject target)
+
+    // ============================================================
+    // PLAY ENEMY ATTACK ANIMATION
+    // ============================================================
+
+    private void PlayEnemyAttackAnimation(
+        GameObject target
+    )
     {
         if (animationController == null)
         {
@@ -728,14 +1251,26 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        Vector2Int attackerTile = ResolveUnitTile(gameObject);
-        Vector2Int targetTile = ResolveUnitTile(target);
+        Vector2Int attackerTile =
+            ResolveUnitTile(gameObject);
+
+        Vector2Int targetTile =
+            ResolveUnitTile(target);
 
         animationController.PlayEnemyAttackDown(
             attackerTile,
             targetTile
         );
     }
+
+
+    // ============================================================
+    // WAIT FOR ENEMY ATTACK ANIMATION
+    //
+    // Kept for compatibility with existing code.
+    //
+    // The preferred completion mechanism is now AttackFinished.
+    // ============================================================
 
     private IEnumerator WaitForEnemyAttackAnimation()
     {
@@ -745,7 +1280,7 @@ public class AttackUnit : MonoBehaviour
         }
 
         Animator animator =
-            animationController.GetComponent<Animator>();
+            animationController.GetAnimator();
 
         if (animator == null)
         {
@@ -797,7 +1332,9 @@ public class AttackUnit : MonoBehaviour
                 );
 
             bool isAttackState =
-                IsEnemyAttackState(stateInfo);
+                IsEnemyAttackState(
+                    stateInfo
+                );
 
             if (!isAttackState)
             {
@@ -817,6 +1354,11 @@ public class AttackUnit : MonoBehaviour
             yield return null;
         }
     }
+
+
+    // ============================================================
+    // IS ENEMY ATTACK STATE
+    // ============================================================
 
     private bool IsEnemyAttackState(
         AnimatorStateInfo stateInfo
@@ -853,6 +1395,11 @@ public class AttackUnit : MonoBehaviour
             );
     }
 
+
+    // ============================================================
+    // WAIT FOR ATTACK ANIMATION
+    // ============================================================
+
     public IEnumerator WaitForAttackAnimation()
     {
         if (
@@ -860,13 +1407,25 @@ public class AttackUnit : MonoBehaviour
             animationController == null
         )
         {
+            if (attackAnimation != null)
+            {
+                yield return StartCoroutine(
+                    attackAnimation.WaitForAttackFinished()
+                );
+            }
+
             yield break;
         }
 
         yield return StartCoroutine(
-            WaitForEnemyAttackAnimation()
+            WaitForCurrentAttackFinished()
         );
     }
+
+
+    // ============================================================
+    // USES DIRECTIONAL ATTACK ANIMATION
+    // ============================================================
 
     public bool UsesDirectionalEnemyAttackAnimation()
     {
@@ -875,7 +1434,14 @@ public class AttackUnit : MonoBehaviour
             animationController != null;
     }
 
-    public bool IsValidTarget(GameObject target)
+
+    // ============================================================
+    // VALID TARGET
+    // ============================================================
+
+    public bool IsValidTarget(
+        GameObject target
+    )
     {
         if (
             target == null ||
@@ -906,6 +1472,11 @@ public class AttackUnit : MonoBehaviour
             healthManager.GetTeam();
     }
 
+
+    // ============================================================
+    // CAN ATTACK
+    // ============================================================
+
     public bool CanAttack()
     {
         if (
@@ -916,9 +1487,26 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        for (int i = 0; i < abilities.Count; i++)
+        // --------------------------------------------------------
+        // IMPORTANT:
+        //
+        // Don't allow another attack while the current animation
+        // is still playing.
+        // --------------------------------------------------------
+
+        if (attackInProgress)
         {
-            AbilityData abilityData = abilities[i];
+            return false;
+        }
+
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
+        {
+            AbilityData abilityData =
+                abilities[i];
 
             if (
                 abilityData != null &&
@@ -932,6 +1520,11 @@ public class AttackUnit : MonoBehaviour
         return false;
     }
 
+
+    // ============================================================
+    // DEAD
+    // ============================================================
+
     public bool IsDead()
     {
         return
@@ -939,12 +1532,18 @@ public class AttackUnit : MonoBehaviour
             healthManager.IsDead();
     }
 
+
+    // ============================================================
+    // GRID MANAGER
+    // ============================================================
+
     public GridManager GetGridManager()
     {
         EnsureGridManager();
 
         return cachedGridManager;
     }
+
 
     private void EnsureGridManager()
     {
@@ -956,6 +1555,11 @@ public class AttackUnit : MonoBehaviour
         cachedGridManager =
             FindFirstObjectByType<GridManager>();
     }
+
+
+    // ============================================================
+    // SNAP TO GRID
+    // ============================================================
 
     [ContextMenu("Snap To Grid")]
     public void SnapToGrid()
@@ -970,7 +1574,11 @@ public class AttackUnit : MonoBehaviour
         Vector2Int gridPosition =
             GetLogicalGridPosition();
 
-        if (!cachedGridManager.IsInsideGrid(gridPosition))
+        if (
+            !cachedGridManager.IsInsideGrid(
+                gridPosition
+            )
+        )
         {
             return;
         }
@@ -980,13 +1588,21 @@ public class AttackUnit : MonoBehaviour
                 gridPosition
             );
 
-        transform.position = targetPosition;
+        transform.position =
+            targetPosition;
     }
+
+
+    // ============================================================
+    // GRID POSITIONS
+    // ============================================================
 
     public Vector2Int GetCurrentGridPosition()
     {
-        return GetLogicalGridPosition();
+        return
+            GetLogicalGridPosition();
     }
+
 
     public Vector2Int GetWorldDetectedGridPosition()
     {
@@ -997,18 +1613,29 @@ public class AttackUnit : MonoBehaviour
             return Vector2Int.zero;
         }
 
-        return cachedGridManager.WorldToGridPosition(
-            transform.position
-        );
+        return
+            cachedGridManager.WorldToGridPosition(
+                transform.position
+            );
     }
+
+
+    // ============================================================
+    // ATTACK RANGE
+    // ============================================================
 
     public int GetAttackRange()
     {
         int maxRange = 0;
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilityData abilityData = abilities[i];
+            AbilityData abilityData =
+                abilities[i];
 
             if (abilityData == null)
             {
@@ -1023,23 +1650,30 @@ public class AttackUnit : MonoBehaviour
                 IsAbilityReady(abilitySO)
             )
             {
-                maxRange = Mathf.Max(
-                    maxRange,
-                    abilitySO.GetRange()
-                );
+                maxRange =
+                    Mathf.Max(
+                        maxRange,
+                        abilitySO.GetRange()
+                    );
             }
         }
 
         return maxRange;
     }
 
+
     public int GetMaximumAttackRange()
     {
         int maxRange = 0;
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilityData abilityData = abilities[i];
+            AbilityData abilityData =
+                abilities[i];
 
             if (abilityData == null)
             {
@@ -1051,29 +1685,41 @@ public class AttackUnit : MonoBehaviour
 
             if (abilitySO != null)
             {
-                maxRange = Mathf.Max(
-                    maxRange,
-                    abilitySO.GetRange()
-                );
+                maxRange =
+                    Mathf.Max(
+                        maxRange,
+                        abilitySO.GetRange()
+                    );
             }
         }
 
         return maxRange;
     }
+
+
+    // ============================================================
+    // ABILITIES
+    // ============================================================
 
     public List<AbilityData> GetRuntimeAbilities()
     {
         return abilities;
     }
 
+
     public List<AbilitySO> GetAbilities()
     {
         List<AbilitySO> result =
             new List<AbilitySO>();
 
-        for (int i = 0; i < abilities.Count; i++)
+        for (
+            int i = 0;
+            i < abilities.Count;
+            i++
+        )
         {
-            AbilityData abilityData = abilities[i];
+            AbilityData abilityData =
+                abilities[i];
 
             if (abilityData == null)
             {
@@ -1085,19 +1731,25 @@ public class AttackUnit : MonoBehaviour
 
             if (abilitySO != null)
             {
-                result.Add(abilitySO);
+                result.Add(
+                    abilitySO
+                );
             }
         }
 
         return result;
     }
 
+
     public int GetAbilityCount()
     {
         return abilities.Count;
     }
 
-    public void AddAbility(AbilitySO abilitySO)
+
+    public void AddAbility(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
@@ -1110,12 +1762,19 @@ public class AttackUnit : MonoBehaviour
         }
 
         AbilityData runtimeAbility =
-            new AbilityData(abilitySO);
+            new AbilityData(
+                abilitySO
+            );
 
-        abilities.Add(runtimeAbility);
+        abilities.Add(
+            runtimeAbility
+        );
     }
 
-    public void RemoveAbility(AbilitySO abilitySO)
+
+    public void RemoveAbility(
+        AbilitySO abilitySO
+    )
     {
         if (abilitySO == null)
         {
@@ -1123,15 +1782,24 @@ public class AttackUnit : MonoBehaviour
         }
 
         AbilityData abilityData =
-            GetAbilityData(abilitySO);
+            GetAbilityData(
+                abilitySO
+            );
 
         if (abilityData == null)
         {
             return;
         }
 
-        abilities.Remove(abilityData);
+        abilities.Remove(
+            abilityData
+        );
     }
+
+
+    // ============================================================
+    // TEAM / DATA
+    // ============================================================
 
     public Team GetTeam()
     {
@@ -1141,18 +1809,50 @@ public class AttackUnit : MonoBehaviour
                 : healthManager.GetTeam();
     }
 
+
     public HealthManager GetHealthManager()
     {
         return healthManager;
     }
+
 
     public CharacterSO GetCharacterData()
     {
         return characterData;
     }
 
+
     public UnitData GetUnitData()
     {
         return unitData;
+    }
+
+
+    // ============================================================
+    // ATTACK STATE
+    // ============================================================
+
+    public bool IsAttackInProgress()
+    {
+        return attackInProgress;
+    }
+
+
+    // ============================================================
+    // CLEAR PENDING ATTACK
+    // ============================================================
+
+    private void ClearPendingAttack()
+    {
+        animationEventAbility = null;
+
+        animationEventTarget = null;
+
+        animationEventTargetTile =
+            Vector2Int.zero;
+
+        animationEventFired = false;
+
+        attackInProgress = false;
     }
 }
