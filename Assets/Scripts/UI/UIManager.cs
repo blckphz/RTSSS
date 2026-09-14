@@ -228,11 +228,23 @@ public class UIManager : MonoBehaviour
         // --------------------------------------------------------
         // ABILITY TARGETING
         // --------------------------------------------------------
+        //
+        // IMPORTANT:
+        //
+        // We pass the exact object that was clicked.
+        //
+        // Previously the code converted the mouse position into
+        // a grid cell and then performed another physics search
+        // around that cell. That could result in the clicked unit
+        // not being found even though it was visibly highlighted.
+        //
+        // --------------------------------------------------------
 
         if (HasSelectedAbility())
         {
             TryUseSelectedAbility(
-                mousePosition
+                mousePosition,
+                clickedTrigger
             );
 
             return;
@@ -514,7 +526,8 @@ public class UIManager : MonoBehaviour
     // ============================================================
 
     private bool TryUseSelectedAbility(
-        Vector2 mousePosition)
+        Vector2 mousePosition,
+        HoverInfoTrigger clickedTrigger)
     {
         if (
             CurrentSelection == null ||
@@ -582,7 +595,132 @@ public class UIManager : MonoBehaviour
             return false;
 
 
-        Vector2Int targetTile =
+        // ========================================================
+        // UNIT TARGET
+        // ========================================================
+        //
+        // If the click landed on a unit, use THAT exact unit.
+        //
+        // Do not perform another physics search around the
+        // calculated tile.
+        //
+        // ========================================================
+
+        if (clickedTrigger != null)
+        {
+            GameObject targetObject =
+                clickedTrigger.gameObject;
+
+
+            if (targetObject == null)
+                return false;
+
+
+            AttackUnit targetUnit =
+                targetObject.GetComponent<
+                    AttackUnit
+                >();
+
+
+            if (targetUnit == null)
+            {
+                targetUnit =
+                    targetObject.GetComponentInParent<
+                        AttackUnit
+                    >();
+            }
+
+
+            if (targetUnit == null)
+                return false;
+
+
+            Vector2Int targetTile =
+                gridManager.GetUnitGridPosition(
+                    targetObject
+                );
+
+
+            if (
+                !gridManager
+                    .IsInsideGrid(
+                        targetTile
+                    )
+            )
+            {
+                return false;
+            }
+
+
+            // ----------------------------------------------------
+            // Check ability range.
+            // ----------------------------------------------------
+
+            List<Vector2Int> rangeTiles =
+                ability.GetRangeTiles(
+                    gridManager,
+                    selectedObject
+                );
+
+
+            if (
+                rangeTiles == null ||
+                !rangeTiles.Contains(
+                    targetTile
+                )
+            )
+            {
+                return false;
+            }
+
+
+            // ----------------------------------------------------
+            // Final authoritative validation.
+            //
+            // This checks:
+            // - target type
+            // - team
+            // - range
+            // - movement restrictions
+            // ----------------------------------------------------
+
+            if (
+                !ability.CanHit(
+                    gridManager,
+                    selectedObject,
+                    targetObject
+                )
+            )
+            {
+                return false;
+            }
+
+
+            // ----------------------------------------------------
+            // USE ABILITY ON EXACT CLICKED UNIT
+            // ----------------------------------------------------
+
+            return UseNormalAbility(
+                attackUnit,
+                ability,
+                targetObject,
+                gridManager
+            );
+        }
+
+
+        // ========================================================
+        // TILE TARGET
+        // ========================================================
+        //
+        // No unit was clicked.
+        //
+        // This is used for abilities such as BombAttack that
+        // target a tile rather than a specific unit.
+        //
+        // ========================================================
+
+        Vector2Int targetTileFromMouse =
             ScreenToGridPosition(
                 mousePosition,
                 gridManager
@@ -592,7 +730,7 @@ public class UIManager : MonoBehaviour
         if (
             !gridManager
                 .IsInsideGrid(
-                    targetTile
+                    targetTileFromMouse
                 )
         )
         {
@@ -600,7 +738,7 @@ public class UIManager : MonoBehaviour
         }
 
 
-        List<Vector2Int> rangeTiles =
+        List<Vector2Int> abilityTiles =
             ability.GetRangeTiles(
                 gridManager,
                 selectedObject
@@ -608,9 +746,9 @@ public class UIManager : MonoBehaviour
 
 
         if (
-            rangeTiles == null ||
-            !rangeTiles.Contains(
-                targetTile
+            abilityTiles == null ||
+            !abilityTiles.Contains(
+                targetTileFromMouse
             )
         )
         {
@@ -627,21 +765,21 @@ public class UIManager : MonoBehaviour
             return UseBombAbility(
                 attackUnit,
                 ability,
-                targetTile
+                targetTileFromMouse
             );
         }
 
 
         // --------------------------------------------------------
-        // NORMAL ABILITY
+        // Normal non-tile ability clicked on empty space.
+        // --------------------------------------------------------
+        //
+        // Do nothing. A normal unit-targeted ability requires
+        // an actual target unit.
+        //
         // --------------------------------------------------------
 
-        return UseNormalAbility(
-            attackUnit,
-            ability,
-            targetTile,
-            gridManager
-        );
+        return false;
     }
 
 
@@ -683,24 +821,28 @@ public class UIManager : MonoBehaviour
     private bool UseNormalAbility(
         AttackUnit attackUnit,
         AbilitySO ability,
-        Vector2Int targetTile,
+        GameObject targetObject,
         GridManager gridManager)
     {
-        GameObject targetObject =
-            FindObjectOnTile(
-                targetTile,
-                gridManager
-            );
-
-
-        if (targetObject == null)
+        if (
+            attackUnit == null ||
+            ability == null ||
+            targetObject == null ||
+            gridManager == null
+        )
+        {
             return false;
+        }
 
+
+        // --------------------------------------------------------
+        // Final validation.
+        // --------------------------------------------------------
 
         if (
             !ability.CanHit(
                 gridManager,
-                CurrentSelection.gameObject,
+                attackUnit.gameObject,
                 targetObject
             )
         )
@@ -708,6 +850,10 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // Execute.
+        // --------------------------------------------------------
 
         bool used =
             attackUnit.Attack(
@@ -759,57 +905,6 @@ public class UIManager : MonoBehaviour
                 .WorldToGridPosition(
                     worldPosition
                 );
-    }
-
-
-    private GameObject FindObjectOnTile(
-        Vector2Int tile,
-        GridManager gridManager)
-    {
-        if (gridManager == null)
-            return null;
-
-
-        Vector3 worldPosition =
-            gridManager
-                .GridToWorldPosition(
-                    tile
-                );
-
-
-        Collider2D[] colliders =
-            Physics2D.OverlapCircleAll(
-                worldPosition,
-                0.35f,
-                clickLayers
-            );
-
-
-        foreach (
-            Collider2D collider
-            in colliders
-        )
-        {
-            if (collider == null)
-                continue;
-
-
-            HoverInfoTrigger trigger =
-                collider
-                    .GetComponentInParent<
-                        HoverInfoTrigger
-                    >();
-
-
-            if (trigger != null)
-            {
-                return
-                    trigger.gameObject;
-            }
-        }
-
-
-        return null;
     }
 
 

@@ -18,6 +18,13 @@ public class AbilityData
             source != null
                 ? source.GetUsesPerTurn()
                 : 0;
+
+        Debug.Log(
+            $"[AbilityDebug] AbilityData CREATED | " +
+            $"Ability={(source != null ? source.GetAbilityName() : "NULL")} | " +
+            $"Uses={usesRemaining} | " +
+            $"Cooldown={cooldownRemaining}"
+        );
     }
 
     public AbilitySO GetAbilitySO()
@@ -32,13 +39,33 @@ public class AbilityData
 
     public void SetCooldown(int value)
     {
-        cooldownRemaining = Mathf.Max(0, value);
+        cooldownRemaining =
+            Mathf.Max(0, value);
+
+        Debug.Log(
+            $"[AbilityDebug] SetCooldown | " +
+            $"Ability={(abilitySO != null ? abilitySO.GetAbilityName() : "NULL")} | " +
+            $"Cooldown={cooldownRemaining}"
+        );
     }
 
     public void ReduceCooldown()
     {
+        int oldCooldown =
+            cooldownRemaining;
+
         cooldownRemaining =
-            Mathf.Max(0, cooldownRemaining - 1);
+            Mathf.Max(
+                0,
+                cooldownRemaining - 1
+            );
+
+        Debug.Log(
+            $"[AbilityDebug] ReduceCooldown | " +
+            $"Ability={(abilitySO != null ? abilitySO.GetAbilityName() : "NULL")} | " +
+            $"Old={oldCooldown} | " +
+            $"New={cooldownRemaining}"
+        );
     }
 
     public int GetUsesRemaining()
@@ -49,22 +76,36 @@ public class AbilityData
     public void ResetUses()
     {
         if (abilitySO == null)
+        {
+          
+
             return;
+        }
 
         usesRemaining =
             abilitySO.GetUsesPerTurn();
+
+      
     }
 
     public bool CanUse()
     {
         if (abilitySO == null)
+        {
+           
             return false;
+        }
 
         // 0 = unlimited uses.
         if (abilitySO.GetUsesPerTurn() <= 0)
+        {
             return true;
+        }
 
-        return usesRemaining > 0;
+        bool result =
+            usesRemaining > 0;
+
+        return result;
     }
 
     public bool IsOnCooldown()
@@ -72,44 +113,48 @@ public class AbilityData
         return cooldownRemaining > 0;
     }
 
-    /// <summary>
-    /// Consumes one use of the ability.
-    ///
-    /// Returns TRUE only when the ability has now
-    /// exhausted all of its allowed uses for the turn.
-    ///
-    /// Example:
-    /// usesPerTurn = 3
-    ///
-    /// First use  -> false
-    /// Second use -> false
-    /// Third use  -> true
-    ///
-    /// usesPerTurn = 1
-    ///
-    /// First use  -> true
-    /// </summary>
     public bool ConsumeUse()
     {
         if (abilitySO == null)
+        {
+            Debug.LogWarning(
+                "[AbilityDebug] ConsumeUse FAILED - abilitySO is NULL."
+            );
+
             return false;
+        }
 
         int maximumUses =
             abilitySO.GetUsesPerTurn();
 
         // 0 = unlimited uses.
         if (maximumUses <= 0)
+        {
+          
+
             return false;
+        }
 
         if (usesRemaining <= 0)
+        {
             return true;
+        }
+
+        int oldUses =
+            usesRemaining;
 
         usesRemaining =
-            Mathf.Max(0, usesRemaining - 1);
+            Mathf.Max(
+                0,
+                usesRemaining - 1
+            );
 
-        // Only return TRUE when the final use
-        // has been consumed.
-        return usesRemaining == 0;
+        bool exhausted =
+            usesRemaining == 0;
+
+        
+
+        return exhausted;
     }
 
     public override string ToString()

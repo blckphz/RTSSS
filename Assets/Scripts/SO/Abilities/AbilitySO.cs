@@ -191,6 +191,11 @@ public abstract class AbilitySO : ScriptableObject
     {
         if (user == null)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanUseAfterMovement FAILED - user is NULL."
+            );
+
             return false;
         }
 
@@ -199,6 +204,11 @@ public abstract class AbilitySO : ScriptableObject
 
         if (moveBrain == null)
         {
+            Debug.Log(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"No UnitMoveBrain found. Allowing ability."
+            );
+
             return true;
         }
 
@@ -210,7 +220,16 @@ public abstract class AbilitySO : ScriptableObject
             return true;
         }
 
-        return canAttackWithThisAfterMove;
+        bool result =
+            canAttackWithThisAfterMove;
+
+        Debug.Log(
+            $"[AbilityDebug] {GetAbilityName()}: " +
+            $"Unit has consumed movement. " +
+            $"CanAttackWithThisAfterMove={result}"
+        );
+
+        return result;
     }
 
 
@@ -255,10 +274,6 @@ public abstract class AbilitySO : ScriptableObject
 
         switch (rangeShape)
         {
-            // ====================================================
-            // DIAMOND
-            // ====================================================
-
             case RangeShape.Diamond:
 
                 for (
@@ -315,10 +330,6 @@ public abstract class AbilitySO : ScriptableObject
 
                 break;
 
-
-            // ====================================================
-            // BOX
-            // ====================================================
 
             case RangeShape.Box:
 
@@ -379,10 +390,6 @@ public abstract class AbilitySO : ScriptableObject
                 break;
 
 
-            // ====================================================
-            // FOUR DIRECTIONS
-            // ====================================================
-
             case RangeShape.FourDirections:
 
                 for (
@@ -430,10 +437,6 @@ public abstract class AbilitySO : ScriptableObject
 
                 break;
 
-
-            // ====================================================
-            // DIAGONAL
-            // ====================================================
 
             case RangeShape.Diagonal:
 
@@ -561,12 +564,27 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target
     )
     {
+        Debug.Log(
+            $"[AbilityDebug] CanHit START | " +
+            $"Ability='{GetAbilityName()}' | " +
+            $"User={(user != null ? user.name : "NULL")} | " +
+            $"Target={(target != null ? target.name : "NULL")}"
+        );
+
         if (
             gridManager == null ||
             user == null ||
             target == null
         )
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] CanHit FAILED | " +
+                $"Null reference. " +
+                $"Grid={gridManager != null} | " +
+                $"User={user != null} | " +
+                $"Target={target != null}"
+            );
+
             return false;
         }
 
@@ -575,6 +593,11 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!canUseAfterMovement)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] CanHit FAILED | " +
+                $"'{GetAbilityName()}' cannot be used after movement."
+            );
+
             return false;
         }
 
@@ -586,6 +609,21 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!canTarget)
         {
+            AttackUnit userUnit =
+                user.GetComponent<AttackUnit>();
+
+            AttackUnit targetUnit =
+                target.GetComponent<AttackUnit>();
+
+            Debug.LogWarning(
+                $"[AbilityDebug] CanHit FAILED | " +
+                $"CanTargetObject() returned FALSE | " +
+                $"Ability='{GetAbilityName()}' | " +
+                $"TargetType={targetType} | " +
+                $"UserTeam={(userUnit != null ? userUnit.GetTeam().ToString() : "NULL")} | " +
+                $"TargetTeam={(targetUnit != null ? targetUnit.GetTeam().ToString() : "NULL")}"
+            );
+
             return false;
         }
 
@@ -594,6 +632,14 @@ public abstract class AbilitySO : ScriptableObject
                 target.transform.position
             );
 
+        Debug.Log(
+            $"[AbilityDebug] CanHit | " +
+            $"TargetTile={targetPosition} | " +
+            $"Range={range} | " +
+            $"MinDistance={minDistance} | " +
+            $"Shape={rangeShape}"
+        );
+
         bool canHitTile =
             CanHitTile(
                 gridManager,
@@ -601,7 +647,24 @@ public abstract class AbilitySO : ScriptableObject
                 targetPosition
             );
 
-        return canHitTile;
+        if (!canHitTile)
+        {
+            Debug.LogWarning(
+                $"[AbilityDebug] CanHit FAILED | " +
+                $"CanHitTile() returned FALSE | " +
+                $"Ability='{GetAbilityName()}' | " +
+                $"TargetTile={targetPosition}"
+            );
+
+            return false;
+        }
+
+        Debug.Log(
+            $"[AbilityDebug] CanHit SUCCESS | " +
+            $"Ability='{GetAbilityName()}'"
+        );
+
+        return true;
     }
 
 
@@ -619,6 +682,11 @@ public abstract class AbilitySO : ScriptableObject
             target == null
         )
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanTargetObject FAILED - user/target NULL."
+            );
+
             return false;
         }
 
@@ -633,6 +701,14 @@ public abstract class AbilitySO : ScriptableObject
             targetUnit == null
         )
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanTargetObject FAILED - " +
+                $"AttackUnit missing. " +
+                $"UserUnit={userUnit != null} | " +
+                $"TargetUnit={targetUnit != null}"
+            );
+
             return false;
         }
 
@@ -641,10 +717,6 @@ public abstract class AbilitySO : ScriptableObject
 
         Team targetTeam =
             targetUnit.GetTeam();
-
-        // ========================================================
-        // ENEMY
-        // ========================================================
 
         if (
             targetType ==
@@ -656,7 +728,18 @@ public abstract class AbilitySO : ScriptableObject
                 userTeam == Team.Ally
             )
             {
-                return targetTeam == Team.Enemy;
+                bool result =
+                    targetTeam == Team.Enemy;
+
+                Debug.Log(
+                    $"[AbilityDebug] {GetAbilityName()}: " +
+                    $"Enemy targeting | " +
+                    $"UserTeam={userTeam} | " +
+                    $"TargetTeam={targetTeam} | " +
+                    $"Result={result}"
+                );
+
+                return result;
             }
 
             if (
@@ -664,17 +747,23 @@ public abstract class AbilitySO : ScriptableObject
                 Team.Enemy
             )
             {
-                return targetTeam == Team.Player ||
-                       targetTeam == Team.Ally;
+                bool result =
+                    targetTeam == Team.Player ||
+                    targetTeam == Team.Ally;
+
+                Debug.Log(
+                    $"[AbilityDebug] {GetAbilityName()}: " +
+                    $"Enemy targeting | " +
+                    $"UserTeam={userTeam} | " +
+                    $"TargetTeam={targetTeam} | " +
+                    $"Result={result}"
+                );
+
+                return result;
             }
 
             return false;
         }
-
-
-        // ========================================================
-        // ALLY
-        // ========================================================
 
         if (
             targetType ==
@@ -686,8 +775,9 @@ public abstract class AbilitySO : ScriptableObject
                 userTeam == Team.Ally
             )
             {
-                return targetTeam == Team.Player ||
-                       targetTeam == Team.Ally;
+                return
+                    targetTeam == Team.Player ||
+                    targetTeam == Team.Ally;
             }
 
             if (
@@ -695,16 +785,12 @@ public abstract class AbilitySO : ScriptableObject
                 Team.Enemy
             )
             {
-                return targetTeam == Team.Enemy;
+                return
+                    targetTeam == Team.Enemy;
             }
 
             return false;
         }
-
-
-        // ========================================================
-        // ANY
-        // ========================================================
 
         if (
             targetType ==
@@ -733,6 +819,11 @@ public abstract class AbilitySO : ScriptableObject
             user == null
         )
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanHitTile FAILED - Grid/User NULL."
+            );
+
             return false;
         }
 
@@ -741,6 +832,11 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!canUseAfterMovement)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanHitTile FAILED - movement restriction."
+            );
+
             return false;
         }
 
@@ -751,6 +847,12 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!insideGrid)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanHitTile FAILED - target outside grid. " +
+                $"Target={targetPosition}"
+            );
+
             return false;
         }
 
@@ -762,6 +864,11 @@ public abstract class AbilitySO : ScriptableObject
 
         if (rangeTiles == null)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanHitTile FAILED - rangeTiles NULL."
+            );
+
             return false;
         }
 
@@ -772,8 +879,20 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!containsTarget)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"CanHitTile FAILED - target not in range. " +
+                $"Target={targetPosition} | " +
+                $"RangeTiles={rangeTiles.Count}"
+            );
+
             return false;
         }
+
+        Debug.Log(
+            $"[AbilityDebug] {GetAbilityName()}: " +
+            $"CanHitTile SUCCESS | Target={targetPosition}"
+        );
 
         return true;
     }
@@ -793,6 +912,11 @@ public abstract class AbilitySO : ScriptableObject
             target == null
         )
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"Use FAILED - User/Target NULL."
+            );
+
             return false;
         }
 
@@ -801,8 +925,18 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!canUseAfterMovement)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"Use FAILED - cannot use after movement."
+            );
+
             return false;
         }
+
+        Debug.Log(
+            $"[AbilityDebug] {GetAbilityName()}: " +
+            $"Use SUCCESS - Ability implementation executed."
+        );
 
         return true;
     }
@@ -823,6 +957,11 @@ public abstract class AbilitySO : ScriptableObject
             gridManager == null
         )
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"UseAtTile FAILED - User/Grid NULL."
+            );
+
             return false;
         }
 
@@ -831,6 +970,11 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!canUseAfterMovement)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"UseAtTile FAILED - movement restriction."
+            );
+
             return false;
         }
 
@@ -843,8 +987,18 @@ public abstract class AbilitySO : ScriptableObject
 
         if (!canHitTile)
         {
+            Debug.LogWarning(
+                $"[AbilityDebug] {GetAbilityName()}: " +
+                $"UseAtTile FAILED - CanHitTile returned FALSE."
+            );
+
             return false;
         }
+
+        Debug.Log(
+            $"[AbilityDebug] {GetAbilityName()}: " +
+            $"UseAtTile SUCCESS | TargetTile={targetTile}"
+        );
 
         return true;
     }
