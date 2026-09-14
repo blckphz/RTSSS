@@ -5,26 +5,68 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class UnitMoveBrain : MonoBehaviour
 {
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
     [Header("References")]
-    [SerializeField] private AttackUnit attackUnit;
-    [SerializeField] private UnitTilePin tilePin;
-    [SerializeField] private AnimationController animationController;
+    [SerializeField]
+    private AttackUnit attackUnit;
+
+    [SerializeField]
+    private UnitTilePin tilePin;
+
+    [SerializeField]
+    private AnimationController animationController;
+
+
+    // ============================================================
+    // MOVEMENT
+    // ============================================================
 
     [Header("Movement")]
-    [SerializeField, Min(0.01f)] private float moveDuration = 0.08f;
+    [SerializeField]
+    private float moveDuration = 0.08f;
+
+
+    // ============================================================
+    // AI TARGETING
+    // ============================================================
 
     [Header("AI Targeting")]
-    [SerializeField, Min(1)] private int attackRange = 1;
-    [SerializeField] private bool preferLowHealthEnemies = true;
-    [SerializeField] private bool preferCloserEnemies = true;
+    [SerializeField]
+    private int attackRange = 1;
+
+    [SerializeField]
+    private bool preferLowHealthEnemies = true;
+
+    [SerializeField]
+    private bool preferCloserEnemies = true;
+
+
+    // ============================================================
+    // AI ATTACK POSITION
+    // ============================================================
 
     [Header("AI Attack Position")]
-    [SerializeField] private bool preferCloserAttackPosition = true;
-    [SerializeField] private bool preferMoreOpenPositions = true;
-    [SerializeField] private bool preferSidePositions = true;
+    [SerializeField]
+    private bool preferCloserAttackPosition = true;
+
+    [SerializeField]
+    private bool preferMoreOpenPositions = true;
+
+    [SerializeField]
+    private bool preferSidePositions = true;
+
+
+    // ============================================================
+    // STATE
+    // ============================================================
 
     private bool isMoving;
+
     private bool movementConsumed;
+
 
     // ============================================================
     // UNITY
@@ -35,16 +77,22 @@ public class UnitMoveBrain : MonoBehaviour
         EnsureComponents();
     }
 
+
     private void OnEnable()
     {
         EnsureComponents();
+
         ResetMovement();
     }
+
 
     private void OnDisable()
     {
         isMoving = false;
+
+        StopWalkAnimation();
     }
+
 
     // ============================================================
     // COMPONENTS
@@ -53,14 +101,24 @@ public class UnitMoveBrain : MonoBehaviour
     private void EnsureComponents()
     {
         if (attackUnit == null)
-            attackUnit = GetComponent<AttackUnit>();
+        {
+            attackUnit =
+                GetComponent<AttackUnit>();
+        }
 
         if (tilePin == null)
-            tilePin = GetComponent<UnitTilePin>();
+        {
+            tilePin =
+                GetComponent<UnitTilePin>();
+        }
 
         if (animationController == null)
-            animationController = GetComponent<AnimationController>();
+        {
+            animationController =
+                GetComponent<AnimationController>();
+        }
     }
+
 
     // ============================================================
     // MOVEMENT STATE
@@ -73,6 +131,7 @@ public class UnitMoveBrain : MonoBehaviour
                attackUnit.GetTeam() != Team.Player;
     }
 
+
     public bool CanMoveThisTurn()
     {
         return !isMoving &&
@@ -80,36 +139,43 @@ public class UnitMoveBrain : MonoBehaviour
                CanMove();
     }
 
+
     public void ConsumeMovement()
     {
         movementConsumed = true;
     }
+
 
     public void ResetMovement()
     {
         movementConsumed = false;
     }
 
+
     public bool HasConsumedMovement()
     {
         return movementConsumed;
     }
+
 
     public bool IsMoving()
     {
         return isMoving;
     }
 
+
     public AttackUnit GetAttackUnit()
     {
         return attackUnit;
     }
+
 
     private bool CanMove()
     {
         return attackUnit != null &&
                !attackUnit.IsDead();
     }
+
 
     // ============================================================
     // GRID
@@ -118,10 +184,13 @@ public class UnitMoveBrain : MonoBehaviour
     public GridManager GetGridManager()
     {
         if (UnitMoveBrainManager.Instance == null)
+        {
             return null;
+        }
 
         return UnitMoveBrainManager.Instance.GetGridManager();
     }
+
 
     // ============================================================
     // CHARACTER DATA
@@ -130,106 +199,133 @@ public class UnitMoveBrain : MonoBehaviour
     public CharacterSO GetCharacterData()
     {
         if (attackUnit == null)
+        {
             return null;
+        }
 
         return attackUnit.GetCharacterData();
     }
 
+
     public int GetMoveRange()
     {
-        CharacterSO characterData = GetCharacterData();
+        CharacterSO characterData =
+            GetCharacterData();
 
         if (characterData == null)
+        {
             return 0;
+        }
 
-        return Mathf.Max(0, characterData.moveRange);
+        return Mathf.Max(
+            0,
+            characterData.moveRange
+        );
     }
+
 
     public bool CanWalkDiagonally()
     {
-        CharacterSO characterData = GetCharacterData();
+        CharacterSO characterData =
+            GetCharacterData();
 
         if (characterData == null)
+        {
             return false;
+        }
 
         return characterData.canwalkdiagonally;
     }
 
-    public bool CanAttackAfterMoving(AbilitySO ability)
+
+    public bool CanAttackAfterMoving(
+        AbilitySO ability
+    )
     {
         if (ability == null)
+        {
             return false;
+        }
 
         return GetMoveRange() > 0;
     }
+
 
     // ============================================================
     // CURRENT TILE
     // ============================================================
 
-    public bool TryGetCurrentTile(out Vector2Int tile)
+    public bool TryGetCurrentTile(
+        out Vector2Int tile
+    )
     {
         tile = Vector2Int.zero;
 
-        GridManager gridManager = GetGridManager();
+        GridManager gridManager =
+            GetGridManager();
 
         if (gridManager == null)
+        {
             return false;
+        }
 
         tile =
             gridManager.WorldToGridPosition(
                 transform.position
             );
 
-        return gridManager.IsInsideGrid(tile);
+        return gridManager.IsInsideGrid(
+            tile
+        );
     }
+
 
     public Vector2Int GetCurrentTile()
     {
-        TryGetCurrentTile(out Vector2Int tile);
+        TryGetCurrentTile(
+            out Vector2Int tile
+        );
 
         return tile;
     }
 
+
     // ============================================================
-    // DYNAMIC ENEMY MOVEMENT PREDICTION
-    // ============================================================
-    //
-    // This uses the exact same AI calculations used by
-    // MoveTowardsEnemy().
-    //
-    // It predicts the tile this enemy would actually reach
-    // during its next movement.
-    //
-    // The hologram manager can call this every frame.
+    // PREDICTED MOVE TILE
     // ============================================================
 
     public bool TryGetPredictedMoveTile(
-        out Vector2Int predictedTile)
+        out Vector2Int predictedTile
+    )
     {
-        predictedTile = GetCurrentTile();
+        predictedTile =
+            GetCurrentTile();
 
         if (!CanUseAIMovement())
+        {
             return false;
+        }
 
         if (!CanMoveThisTurn())
+        {
             return false;
+        }
 
         UnitMoveBrainManager manager =
             UnitMoveBrainManager.Instance;
 
         if (manager == null)
+        {
             return false;
+        }
 
         GridManager gridManager =
             GetGridManager();
 
         if (gridManager == null)
+        {
             return false;
-
-        // --------------------------------------------------------
-        // FIND THE SAME TARGET THE AI WOULD USE
-        // --------------------------------------------------------
+        }
 
         AttackUnit target =
             manager.FindBestTarget(
@@ -241,27 +337,17 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (target == null)
+        {
             return false;
-
-        // --------------------------------------------------------
-        // CURRENT POSITION
-        // --------------------------------------------------------
+        }
 
         Vector2Int currentPosition =
             GetCurrentTile();
-
-        // --------------------------------------------------------
-        // TARGET POSITION
-        // --------------------------------------------------------
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
-
-        // --------------------------------------------------------
-        // ALREADY IN ATTACK RANGE
-        // --------------------------------------------------------
 
         int distance =
             manager.GetMovementDistance(
@@ -271,11 +357,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (distance <= attackRange)
+        {
             return false;
-
-        // --------------------------------------------------------
-        // FIND THE SAME ATTACK POSITION THE AI USES
-        // --------------------------------------------------------
+        }
 
         Vector2Int attackPosition =
             manager.FindBestAttackPosition(
@@ -285,15 +369,14 @@ public class UnitMoveBrain : MonoBehaviour
                 CanWalkDiagonally(),
                 preferCloserAttackPosition,
                 preferMoreOpenPositions,
-                preferSidePositions
+                preferSidePositions,
+                gameObject
             );
 
         if (attackPosition == currentPosition)
+        {
             return false;
-
-        // --------------------------------------------------------
-        // FIND ACTUAL PATH
-        // --------------------------------------------------------
+        }
 
         List<Vector2Int> path =
             new List<Vector2Int>(32);
@@ -308,14 +391,14 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (!foundPath)
+        {
             return false;
+        }
 
         if (path.Count < 2)
+        {
             return false;
-
-        // --------------------------------------------------------
-        // DETERMINE HOW MANY TILES THE ENEMY CAN ACTUALLY MOVE
-        // --------------------------------------------------------
+        }
 
         int availableSteps =
             Mathf.Min(
@@ -324,11 +407,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (availableSteps <= 0)
+        {
             return false;
-
-        // --------------------------------------------------------
-        // THIS IS THE PREDICTED DESTINATION
-        // --------------------------------------------------------
+        }
 
         predictedTile =
             path[availableSteps];
@@ -336,36 +417,49 @@ public class UnitMoveBrain : MonoBehaviour
         return predictedTile != currentPosition;
     }
 
+
     // ============================================================
-    // DIRECT MOVE
+    // DIRECT MOVEMENT
     // ============================================================
 
     public bool TryMoveTo(
-        Vector2Int destination)
+        Vector2Int destination
+    )
     {
         if (!CanMoveThisTurn())
+        {
             return false;
+        }
 
         UnitMoveBrainManager manager =
             UnitMoveBrainManager.Instance;
 
         if (manager == null)
+        {
             return false;
+        }
 
         GridManager gridManager =
             GetGridManager();
 
         if (gridManager == null)
+        {
             return false;
+        }
 
         Vector2Int start =
             GetCurrentTile();
 
         if (start == destination)
+        {
             return false;
+        }
 
-        if (!gridManager.IsInsideGrid(destination))
+        if (!gridManager.IsInsideGrid(
+                destination))
+        {
             return false;
+        }
 
         if (!gridManager.CanMoveToCell(
                 gameObject,
@@ -382,7 +476,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (distance > GetMoveRange())
+        {
             return false;
+        }
 
         List<Vector2Int> path =
             new List<Vector2Int>(32);
@@ -397,10 +493,14 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (!foundPath)
+        {
             return false;
+        }
 
         if (path.Count < 2)
+        {
             return false;
+        }
 
         int steps =
             Mathf.Min(
@@ -409,7 +509,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (steps <= 0)
+        {
             return false;
+        }
 
         ConsumeMovement();
 
@@ -423,40 +525,46 @@ public class UnitMoveBrain : MonoBehaviour
         return true;
     }
 
+
     // ============================================================
-    // ENEMY AI MOVEMENT
+    // ENEMY MOVEMENT
     // ============================================================
 
     public void TryMoveTowardsEnemy()
     {
         if (!CanMoveThisTurn())
+        {
             return;
+        }
 
         StartCoroutine(
             MoveTowardsEnemy()
         );
     }
 
+
     public IEnumerator MoveTowardsEnemy()
     {
         if (!CanMoveThisTurn())
+        {
             yield break;
+        }
 
         UnitMoveBrainManager manager =
             UnitMoveBrainManager.Instance;
 
         if (manager == null)
+        {
             yield break;
+        }
 
         GridManager gridManager =
             GetGridManager();
 
         if (gridManager == null)
+        {
             yield break;
-
-        // --------------------------------------------------------
-        // FIND TARGET
-        // --------------------------------------------------------
+        }
 
         AttackUnit target =
             manager.FindBestTarget(
@@ -468,11 +576,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (target == null)
+        {
             yield break;
-
-        // --------------------------------------------------------
-        // POSITIONS
-        // --------------------------------------------------------
+        }
 
         Vector2Int currentPosition =
             GetCurrentTile();
@@ -482,10 +588,6 @@ public class UnitMoveBrain : MonoBehaviour
                 target.transform.position
             );
 
-        // --------------------------------------------------------
-        // CHECK RANGE
-        // --------------------------------------------------------
-
         int distance =
             manager.GetMovementDistance(
                 currentPosition,
@@ -494,11 +596,9 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (distance <= attackRange)
+        {
             yield break;
-
-        // --------------------------------------------------------
-        // FIND ATTACK POSITION
-        // --------------------------------------------------------
+        }
 
         Vector2Int attackPosition =
             manager.FindBestAttackPosition(
@@ -508,15 +608,14 @@ public class UnitMoveBrain : MonoBehaviour
                 CanWalkDiagonally(),
                 preferCloserAttackPosition,
                 preferMoreOpenPositions,
-                preferSidePositions
+                preferSidePositions,
+                gameObject
             );
 
         if (attackPosition == currentPosition)
+        {
             yield break;
-
-        // --------------------------------------------------------
-        // FIND PATH
-        // --------------------------------------------------------
+        }
 
         List<Vector2Int> path =
             new List<Vector2Int>(32);
@@ -531,14 +630,14 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (!foundPath)
+        {
             yield break;
+        }
 
         if (path.Count < 2)
+        {
             yield break;
-
-        // --------------------------------------------------------
-        // AVAILABLE MOVEMENT
-        // --------------------------------------------------------
+        }
 
         int availableSteps =
             Mathf.Min(
@@ -547,17 +646,11 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
         if (availableSteps <= 0)
+        {
             yield break;
-
-        // --------------------------------------------------------
-        // CONSUME MOVEMENT
-        // --------------------------------------------------------
+        }
 
         ConsumeMovement();
-
-        // --------------------------------------------------------
-        // MOVE
-        // --------------------------------------------------------
 
         yield return ExecuteMoveRoutine(
             path,
@@ -565,28 +658,38 @@ public class UnitMoveBrain : MonoBehaviour
         );
     }
 
+
     // ============================================================
     // MOVE ROUTINE
     // ============================================================
 
     private IEnumerator ExecuteMoveRoutine(
         List<Vector2Int> path,
-        int steps)
+        int steps
+    )
     {
         if (path == null)
+        {
             yield break;
+        }
 
         if (path.Count < 2)
+        {
             yield break;
+        }
 
         if (steps <= 0)
+        {
             yield break;
+        }
 
         GridManager gridManager =
             GetGridManager();
 
         if (gridManager == null)
+        {
             yield break;
+        }
 
         isMoving = true;
 
@@ -606,17 +709,39 @@ public class UnitMoveBrain : MonoBehaviour
             Vector2Int toTile =
                 path[i];
 
-            // ----------------------------------------------------
-            // UPDATE GRID OCCUPANCY FIRST
-            // ----------------------------------------------------
+            // ====================================================
+            // SET WALK DIRECTION
+            // ====================================================
 
-            if (!gridManager.StartMoveUnit(
+            Vector2Int direction =
+                toTile - fromTile;
+
+            if (animationController != null)
+            {
+                animationController.SetMovementDirection(
+                    direction
+                );
+            }
+
+            // ====================================================
+            // START GRID MOVEMENT
+            // ====================================================
+
+            bool started =
+                gridManager.StartMoveUnit(
                     gameObject,
                     fromTile,
-                    toTile))
+                    toTile
+                );
+
+            if (!started)
             {
                 break;
             }
+
+            // ====================================================
+            // WORLD POSITIONS
+            // ====================================================
 
             Vector3 startPosition =
                 gridManager.GridToWorldPosition(
@@ -628,9 +753,9 @@ public class UnitMoveBrain : MonoBehaviour
                     toTile
                 );
 
-            // ----------------------------------------------------
-            // ANIMATION
-            // ----------------------------------------------------
+            // ====================================================
+            // ACTUAL MOVEMENT
+            // ====================================================
 
             float elapsed = 0f;
 
@@ -653,34 +778,89 @@ public class UnitMoveBrain : MonoBehaviour
                 yield return null;
             }
 
+            // Make absolutely sure we land
+            // exactly on the target tile.
+
             transform.position =
                 endPosition;
 
-            // ----------------------------------------------------
-            // FINISH GRID MOVE
-            // ----------------------------------------------------
+            // ====================================================
+            // FINISH GRID MOVEMENT
+            // ====================================================
 
             gridManager.FinishMoveUnit(
                 gameObject,
                 toTile
             );
 
-            // ----------------------------------------------------
-            // UNIT TILE PIN
-            // ----------------------------------------------------
-            //
-            // Your UnitTilePin does not have Refresh(),
-            // so we intentionally do not call it here.
-            //
-            // If UnitTilePin updates automatically, nothing
-            // else is needed.
-            // ----------------------------------------------------
+            // ====================================================
+            // UPDATE TILE PIN
+            // ====================================================
+
+            if (tilePin != null)
+            {
+                tilePin.SetTile(
+                    toTile
+                );
+            }
+
+            // ====================================================
+            // UPDATE LOGICAL UNIT POSITION
+            // ====================================================
+
+            if (attackUnit != null)
+            {
+                attackUnit.SetLogicalGridPosition(
+                    toTile
+                );
+            }
 
             yield return null;
         }
 
+        // ========================================================
+        // STOP WALKING / RETURN TO IDLE
+        // ========================================================
+
+        StopWalkAnimation();
+
         isMoving = false;
     }
+
+
+    // ============================================================
+    // WALK ANIMATION
+    // ============================================================
+
+    private void UpdateWalkAnimation(
+        Vector2Int direction
+    )
+    {
+        if (animationController == null)
+        {
+            return;
+        }
+
+        animationController.SetMovementDirection(
+            direction
+        );
+    }
+
+
+    // ============================================================
+    // STOP WALK ANIMATION
+    // ============================================================
+
+    private void StopWalkAnimation()
+    {
+        if (animationController == null)
+        {
+            return;
+        }
+
+        animationController.PlayIdle();
+    }
+
 
     // ============================================================
     // PREVIEW PATH
@@ -688,10 +868,13 @@ public class UnitMoveBrain : MonoBehaviour
 
     public bool GetPreviewPath(
         Vector2Int destination,
-        List<Vector2Int> result)
+        List<Vector2Int> result
+    )
     {
         if (result == null)
+        {
             return false;
+        }
 
         result.Clear();
 
@@ -699,7 +882,9 @@ public class UnitMoveBrain : MonoBehaviour
             UnitMoveBrainManager.Instance;
 
         if (manager == null)
+        {
             return false;
+        }
 
         Vector2Int start =
             GetCurrentTile();
@@ -713,15 +898,19 @@ public class UnitMoveBrain : MonoBehaviour
         );
     }
 
+
     // ============================================================
     // REACHABLE CELLS
     // ============================================================
 
     public void GetReachableCells(
-        List<Vector2Int> result)
+        List<Vector2Int> result
+    )
     {
         if (result == null)
+        {
             return;
+        }
 
         result.Clear();
 
@@ -729,13 +918,17 @@ public class UnitMoveBrain : MonoBehaviour
             UnitMoveBrainManager.Instance;
 
         if (manager == null)
+        {
             return;
+        }
 
         GridManager gridManager =
             GetGridManager();
 
         if (gridManager == null)
+        {
             return;
+        }
 
         manager.GetReachableCells(
             GetCurrentTile(),

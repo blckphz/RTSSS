@@ -11,7 +11,7 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: -5754801726769487652}
-    m_Position: {x: 360, y: 120, z: 0}
+    m_Position: {x: 350, y: 130, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 5488525816603984216}
     m_Position: {x: 360, y: 240, z: 0}
@@ -146,7 +146,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: enemattackdown
+  m_Name: enemyattackdown
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
