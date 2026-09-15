@@ -67,11 +67,11 @@ public class ChainLightning : AbilitySO
 
     public int GetMaxJumps(UnitData unitData)
     {
-        int bonus = GetBonusJumps(unitData);
+        int bonus =
+            GetBonusJumps(unitData);
 
         int total =
-            maxJumps +
-            bonus;
+            maxJumps + bonus;
 
         Debug.Log(
             "[ChainLightning] " +
@@ -173,7 +173,7 @@ public class ChainLightning : AbilitySO
 
 
         // ========================================================
-        // GET UNIT DATA
+        // UNIT DATA
         // ========================================================
 
         UnitData unitData =
@@ -342,7 +342,7 @@ public class ChainLightning : AbilitySO
 
 
     // ============================================================
-    // SPAWN POINT
+    // FIND SPAWN POINT
     // ============================================================
 
     private Transform FindAbilitySpawnPoint(
@@ -432,6 +432,44 @@ public class ChainLightning : AbilitySO
         }
 
 
+        // ========================================================
+        // PLAYER -> FIRST ENEMY
+        // ========================================================
+
+        Vector2Int playerTile =
+            gridManager.GetUnitGridPosition(
+                user
+            );
+
+
+        Vector2Int firstEnemyTile =
+            gridManager.GetUnitGridPosition(
+                firstTarget
+            );
+
+
+        if (
+            HasObjectOnLine(
+                gridManager,
+                playerTile,
+                firstEnemyTile
+            )
+        )
+        {
+            Debug.Log(
+                "[ChainLightning] " +
+                "First target cannot be reached. " +
+                "Something is between player and target."
+            );
+
+            return chain;
+        }
+
+
+        // ========================================================
+        // CHAIN
+        // ========================================================
+
         HashSet<GameObject> hitTargets =
             new HashSet<GameObject>();
 
@@ -452,6 +490,10 @@ public class ChainLightning : AbilitySO
             jump < maximumJumps
         )
         {
+            // ----------------------------------------------------
+            // VALID TARGET
+            // ----------------------------------------------------
+
             if (
                 !IsValidChainTarget(
                     user,
@@ -464,6 +506,10 @@ public class ChainLightning : AbilitySO
             }
 
 
+            // ----------------------------------------------------
+            // ADD TARGET
+            // ----------------------------------------------------
+
             hitTargets.Add(
                 currentTarget
             );
@@ -473,6 +519,10 @@ public class ChainLightning : AbilitySO
                 currentTarget
             );
 
+
+            // ----------------------------------------------------
+            // FIND NEXT TARGET
+            // ----------------------------------------------------
 
             currentTarget =
                 FindClosestEnemy(
@@ -511,18 +561,27 @@ public class ChainLightning : AbilitySO
         }
 
 
-        Vector2Int origin =
+        // ========================================================
+        // CURRENT TARGET TILE
+        // ========================================================
+
+        Vector2Int currentTile =
             gridManager.GetUnitGridPosition(
                 currentTarget
             );
 
 
-        GameObject closestEnemy = null;
+        GameObject closestEnemy =
+            null;
 
 
         float closestDistance =
             float.MaxValue;
 
+
+        // ========================================================
+        // ALL ENEMIES
+        // ========================================================
 
         AttackUnit[] allUnits =
             FindObjectsByType<AttackUnit>(
@@ -550,18 +609,41 @@ public class ChainLightning : AbilitySO
                 candidateUnit.gameObject;
 
 
-            if (
-                candidate == null ||
-                candidate == user ||
-                !candidate.activeInHierarchy ||
-                candidateUnit.IsDead() ||
-                hitTargets.Contains(candidate)
-            )
+            if (candidate == null)
             {
                 continue;
             }
 
 
+            // Don't target the player.
+            if (candidate == user)
+            {
+                continue;
+            }
+
+
+            // Must be active.
+            if (!candidate.activeInHierarchy)
+            {
+                continue;
+            }
+
+
+            // Must be alive.
+            if (candidateUnit.IsDead())
+            {
+                continue;
+            }
+
+
+            // Don't hit the same enemy twice.
+            if (hitTargets.Contains(candidate))
+            {
+                continue;
+            }
+
+
+            // Must be a valid enemy.
             if (
                 !CanTargetObject(
                     user,
@@ -573,16 +655,24 @@ public class ChainLightning : AbilitySO
             }
 
 
-            Vector2Int candidatePosition =
+            // ====================================================
+            // CANDIDATE TILE
+            // ====================================================
+
+            Vector2Int candidateTile =
                 gridManager.GetUnitGridPosition(
                     candidate
                 );
 
 
+            // ====================================================
+            // DISTANCE
+            // ====================================================
+
             float distance =
                 Vector2.Distance(
-                    origin,
-                    candidatePosition
+                    currentTile,
+                    candidateTile
                 );
 
 
@@ -595,17 +685,56 @@ public class ChainLightning : AbilitySO
             }
 
 
+            // ====================================================
+            // LINE CHECK
+            // ====================================================
+            //
+            // Current enemy tile
+            //          |
+            //          |
+            //      object
+            //          |
+            //          |
+            // Next enemy tile
+            //
+            // If an occupied grid cell is between them,
+            // this enemy cannot be reached.
+            //
+            // ====================================================
+
             if (
-                distance <
-                closestDistance
+                HasObjectOnLine(
+                    gridManager,
+                    currentTile,
+                    candidateTile
+                )
             )
             {
-                closestDistance =
-                    distance;
+                Debug.Log(
+                    "[ChainLightning] " +
+                    "Path to " +
+                    candidate.name +
+                    " is obstructed."
+                );
+
+                continue;
+            }
 
 
+            // ====================================================
+            // CLOSEST VALID ENEMY
+            // ====================================================
+
+            if (
+                closestEnemy == null ||
+                distance < closestDistance
+            )
+            {
                 closestEnemy =
                     candidate;
+
+                closestDistance =
+                    distance;
             }
             else if (
                 Mathf.Approximately(
@@ -615,7 +744,6 @@ public class ChainLightning : AbilitySO
             )
             {
                 if (
-                    closestEnemy == null ||
                     candidate.GetInstanceID() <
                     closestEnemy.GetInstanceID()
                 )
@@ -628,6 +756,190 @@ public class ChainLightning : AbilitySO
 
 
         return closestEnemy;
+    }
+
+
+    // ============================================================
+    // GRID LINE CHECK
+    // ============================================================
+    //
+    // Calculates the line between two GRID TILES.
+    //
+    // Example:
+    //
+    //      Enemy
+    //        |
+    //      empty
+    //        |
+    //      object   <- detected
+    //        |
+    //      empty
+    //        |
+    //      Enemy
+    //
+    // The start and end tiles are ignored.
+    //
+    // Every tile between them is checked.
+    //
+    // ============================================================
+
+    private bool HasObjectOnLine(
+        GridManager gridManager,
+        Vector2Int start,
+        Vector2Int end)
+    {
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+
+        int x =
+            start.x;
+
+
+        int y =
+            start.y;
+
+
+        int targetX =
+            end.x;
+
+
+        int targetY =
+            end.y;
+
+
+        int deltaX =
+            Mathf.Abs(
+                targetX - x
+            );
+
+
+        int deltaY =
+            Mathf.Abs(
+                targetY - y
+            );
+
+
+        int stepX =
+            x < targetX
+                ? 1
+                : -1;
+
+
+        int stepY =
+            y < targetY
+                ? 1
+                : -1;
+
+
+        int error =
+            deltaX - deltaY;
+
+
+        while (true)
+        {
+            // ====================================================
+            // REACHED DESTINATION
+            // ====================================================
+
+            if (
+                x == targetX &&
+                y == targetY
+            )
+            {
+                break;
+            }
+
+
+            int error2 =
+                error * 2;
+
+
+            // ====================================================
+            // MOVE X
+            // ====================================================
+
+            if (
+                error2 > -deltaY
+            )
+            {
+                error -= deltaY;
+                x += stepX;
+            }
+
+
+            // ====================================================
+            // MOVE Y
+            // ====================================================
+
+            if (
+                error2 < deltaX
+            )
+            {
+                error += deltaX;
+                y += stepY;
+            }
+
+
+            Vector2Int tile =
+                new Vector2Int(
+                    x,
+                    y
+                );
+
+
+            // ====================================================
+            // DESTINATION IS ALLOWED
+            // ====================================================
+
+            if (tile == end)
+            {
+                break;
+            }
+
+
+            // ====================================================
+            // OUTSIDE GRID
+            // ====================================================
+
+            if (
+                !gridManager.IsInsideGrid(
+                    tile
+                )
+            )
+            {
+                continue;
+            }
+
+
+            // ====================================================
+            // CHECK OBJECT
+            // ====================================================
+
+            GameObject objectOnTile =
+                gridManager.GetUnitAt(
+                    tile
+                );
+
+
+            if (objectOnTile != null)
+            {
+                Debug.Log(
+                    "[ChainLightning] " +
+                    "Object detected on line at tile " +
+                    tile +
+                    " : " +
+                    objectOnTile.name
+                );
+
+                return true;
+            }
+        }
+
+
+        return false;
     }
 
 
