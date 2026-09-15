@@ -257,6 +257,9 @@ MonoBehaviour:
   damageNumberPrefab: {fileID: 5742265421823657814, guid: e332337082ba6ce4c9f2c18e3fa4330d, type: 3}
   damageNumberParent: {fileID: 0}
   damageNumberOffset: {x: 0, y: 1, z: 0}
+  healNumberPrefab: {fileID: 0}
+  healNumberParent: {fileID: 0}
+  healNumberOffset: {x: 0, y: 1, z: 0}
   queueDamageFlashes: 1
   minimumFlashInterval: 0.03
 --- !u!114 &7910321259876173858
@@ -863,7 +866,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 10
+  m_SortingOrder: 11
   m_TargetDisplay: 0
 --- !u!114 &4345892279739794755
 MonoBehaviour:

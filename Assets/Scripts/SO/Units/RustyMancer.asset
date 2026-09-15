@@ -21,12 +21,12 @@ MonoBehaviour:
   moveRange: 4
   canwalkdiagonally: 0
   abilities:
-  - {fileID: 11400000, guid: 700548be2ef013645be511273ce187fd, type: 2}
+  - {fileID: 11400000, guid: ef07fb65b86de7448930e443cf24632c, type: 2}
   - {fileID: 11400000, guid: 10a3d323965d847439150b2decd37e21, type: 2}
   - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
   - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
   RangedAttacker: 0
   upgrades:
   - {fileID: 11400000, guid: a852fc7afe4502047a6b0aadd1dcd67c, type: 2}
-  - {fileID: 11400000, guid: a852fc7afe4502047a6b0aadd1dcd67c, type: 2}
+  - {fileID: 11400000, guid: f138b88c8a0317647934d8a8a9e31bf2, type: 2}
   - {fileID: 11400000, guid: a852fc7afe4502047a6b0aadd1dcd67c, type: 2}

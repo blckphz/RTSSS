@@ -175,14 +175,28 @@ public class FrontAttack : AbilitySO
         }
 
 
-        if (
-            !CanTargetObject(
+        // ==================================================
+        // FRIENDLY TURRET EXCEPTION
+        // ==================================================
+
+        bool friendlyTurret =
+            IsFriendlyTurretHealTarget(
                 user,
                 target
-            )
-        )
+            );
+
+
+        if (!friendlyTurret)
         {
-            return false;
+            if (
+                !CanTargetObject(
+                    user,
+                    target
+                )
+            )
+            {
+                return false;
+            }
         }
 
 
@@ -260,6 +274,88 @@ public class FrontAttack : AbilitySO
         return rangeTiles.Contains(
             targetPosition
         );
+    }
+
+
+    // ==================================================
+    // FRIENDLY TURRET HEAL TARGET
+    // ==================================================
+
+    private bool IsFriendlyTurretHealTarget(
+        GameObject user,
+        GameObject target
+    )
+    {
+        if (
+            user == null ||
+            target == null
+        )
+        {
+            return false;
+        }
+
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+
+        if (turret == null)
+        {
+            return false;
+        }
+
+
+        UnitData userUnitData =
+            user.GetComponent<UnitData>();
+
+
+        if (userUnitData == null)
+        {
+            return false;
+        }
+
+
+        if (
+            !userUnitData.HasMeleeTurretHealUpgrade()
+        )
+        {
+            return false;
+        }
+
+
+        HealthManager userHealth =
+            user.GetComponent<HealthManager>();
+
+
+        HealthManager targetHealth =
+            target.GetComponent<HealthManager>();
+
+
+        if (
+            userHealth == null ||
+            targetHealth == null
+        )
+        {
+            return false;
+        }
+
+
+        if (targetHealth.IsDead())
+        {
+            return false;
+        }
+
+
+        if (
+            userHealth.GetTeam() !=
+            targetHealth.GetTeam()
+        )
+        {
+            return false;
+        }
+
+
+        return true;
     }
 
 
@@ -799,6 +895,60 @@ public class FrontAttack : AbilitySO
             user.GetComponent<HealthManager>();
 
 
+        // ==================================================
+        // FRIENDLY TURRET HEAL
+        // ==================================================
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+
+        UnitData userUnitData =
+            user.GetComponent<UnitData>();
+
+
+        if (
+            turret != null &&
+            userUnitData != null &&
+            userHealth != null &&
+            targetHealth.GetTeam() ==
+            userHealth.GetTeam() &&
+            userUnitData.HasMeleeTurretHealUpgrade()
+        )
+        {
+            // Base FrontAttack damage.
+            int baseDamage =
+                GetDamage();
+
+
+            // Fixed bonus supplied by
+            // the Engineer turret-heal upgrade.
+            int bonusHeal =
+                userUnitData.GetMeleeTurretHealAmount();
+
+
+            // Total turret healing.
+            int totalHeal =
+                baseDamage +
+                bonusHeal;
+
+
+            if (totalHeal > 0)
+            {
+                targetHealth.Heal(
+                    totalHeal
+                );
+
+
+                return true;
+            }
+        }
+
+
+        // ==================================================
+        // NORMAL FRIENDLY FIRE BLOCK
+        // ==================================================
+
         if (
             userHealth != null &&
             targetHealth.GetTeam() ==
@@ -808,6 +958,10 @@ public class FrontAttack : AbilitySO
             return false;
         }
 
+
+        // ==================================================
+        // NORMAL DAMAGE
+        // ==================================================
 
         targetHealth.TakeDamage(
             GetDamage()

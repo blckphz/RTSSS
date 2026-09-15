@@ -71,6 +71,18 @@ public class AudioFXManager : MonoBehaviour
 
 
     // ============================================================
+    // UNIT HEAL
+    // ============================================================
+
+    [Header("Unit Heal")]
+    [SerializeField]
+    private AudioClip unitHealClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float unitHealVolume = 1f;
+
+
+    // ============================================================
     // MAP NODE HOVER
     // ============================================================
 
@@ -240,6 +252,27 @@ public class AudioFXManager : MonoBehaviour
         audioSource.PlayOneShot(
             unitDamageClip,
             unitDamageVolume
+        );
+    }
+
+
+    // ============================================================
+    // UNIT HEAL
+    // ============================================================
+
+    public void PlayUnitHeal()
+    {
+        if (
+            unitHealClip == null ||
+            audioSource == null
+        )
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            unitHealClip,
+            unitHealVolume
         );
     }
 

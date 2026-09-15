@@ -14,13 +14,6 @@ public class UnitData : MonoBehaviour
     // ============================================================
     // RUNTIME ABILITY DATA
     // ============================================================
-    //
-    // The AbilitySO is shared.
-    //
-    // The AbilityData is NOT shared.
-    //
-    // Every UnitData creates its own AbilityData objects.
-    // ============================================================
 
     private Dictionary<AbilitySO, AbilityData> abilityData =
         new Dictionary<AbilitySO, AbilityData>();
@@ -35,6 +28,18 @@ public class UnitData : MonoBehaviour
 
 
     // ============================================================
+    // ENGINEER TURRET HEAL UPGRADE
+    // ============================================================
+
+    // 0 = no turret-heal upgrade.
+    //
+    // Greater than 0 = amount of HP restored when this unit's
+    // FrontAttack hits a friendly turret.
+
+    private int meleeTurretHealAmount;
+
+
+    // ============================================================
     // INITIALIZE
     // ============================================================
 
@@ -43,30 +48,24 @@ public class UnitData : MonoBehaviour
     {
         character = characterData;
 
-
         // IMPORTANT:
         //
         // Do NOT call ResetRuntimeData() here.
         //
-        // Initialize() may be called again when a card/unit is
-        // placed or recreated.
+        // Initialize() may be called again when a unit is placed
+        // or recreated.
         //
-        // ResetRuntimeData() clears purchased runtime upgrades,
-        // which would cause Chain Lightning bonuses to disappear.
+        // Runtime upgrades must survive initialization.
         //
-        // We only rebuild the AbilityData here.
-        abilityData.Clear();
+        // We only rebuild the ability data here.
 
+        abilityData.Clear();
 
         if (character == null)
         {
             return;
         }
 
-
-        // ========================================================
-        // CREATE THIS UNIT'S ABILITY DATA
-        // ========================================================
 
         List<AbilitySO> abilities =
             character.GetAbilities();
@@ -377,6 +376,33 @@ public class UnitData : MonoBehaviour
 
 
     // ============================================================
+    // ENGINEER TURRET HEAL UPGRADE
+    // ============================================================
+
+    public void SetMeleeTurretHealAmount(
+        int amount)
+    {
+        meleeTurretHealAmount =
+            Mathf.Max(
+                0,
+                amount
+            );
+    }
+
+
+    public int GetMeleeTurretHealAmount()
+    {
+        return meleeTurretHealAmount;
+    }
+
+
+    public bool HasMeleeTurretHealUpgrade()
+    {
+        return meleeTurretHealAmount > 0;
+    }
+
+
+    // ============================================================
     // DEBUG
     // ============================================================
 
@@ -387,6 +413,7 @@ public class UnitData : MonoBehaviour
         {
             return;
         }
+
 
         int bonus =
             GetBonusJumps(
@@ -402,22 +429,21 @@ public class UnitData : MonoBehaviour
     public void ResetRuntimeUpgrades()
     {
         abilityBonusJumps.Clear();
+
+        meleeTurretHealAmount = 0;
     }
 
 
     // ============================================================
     // RESET EVERYTHING
     // ============================================================
-    //
-    // Use this ONLY when you intentionally want to completely
-    // wipe the unit's runtime state.
-    //
-    // DO NOT call this from Initialize().
-    // ============================================================
 
     public void ResetRuntimeData()
     {
         abilityData.Clear();
+
         abilityBonusJumps.Clear();
+
+        meleeTurretHealAmount = 0;
     }
 }

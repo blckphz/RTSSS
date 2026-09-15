@@ -149,6 +149,18 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
+    // HEAL SOUND
+    // ==================================================
+
+    [Header("Heal Sound")]
+    [Tooltip(
+        "Enables the heal sound whenever this unit actually restores health."
+    )]
+    [SerializeField]
+    private bool enableHealSound = true;
+
+
+    // ==================================================
     // DAMAGE NUMBERS
     // ==================================================
 
@@ -170,6 +182,33 @@ public class HealthManager : MonoBehaviour
     )]
     [SerializeField]
     private Vector3 damageNumberOffset =
+        new Vector3(0f, 1f, 0f);
+
+
+    // ==================================================
+    // HEAL NUMBERS
+    // ==================================================
+
+    [Header("Heal Numbers")]
+    [Tooltip(
+        "Prefab used to display floating healing numbers. " +
+        "Make this prefab green."
+    )]
+    [SerializeField]
+    private DamageNumber healNumberPrefab;
+
+    [Tooltip(
+        "Canvas or transform that will contain spawned heal numbers. " +
+        "Leave empty to use the same parent as damage numbers."
+    )]
+    [SerializeField]
+    private Transform healNumberParent;
+
+    [Tooltip(
+        "World-space offset from the unit where the heal number appears."
+    )]
+    [SerializeField]
+    private Vector3 healNumberOffset =
         new Vector3(0f, 1f, 0f);
 
 
@@ -638,6 +677,50 @@ public class HealthManager : MonoBehaviour
 
 
     // ==================================================
+    // HEAL NUMBER
+    // ==================================================
+
+    private void SpawnHealNumber(
+        int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        if (healNumberPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 spawnPosition =
+            transform.position +
+            healNumberOffset;
+
+        Transform parent =
+            healNumberParent;
+
+        if (parent == null)
+        {
+            parent =
+                damageNumberParent;
+        }
+
+        DamageNumber healNumber =
+            Instantiate(
+                healNumberPrefab,
+                spawnPosition,
+                Quaternion.identity,
+                parent
+            );
+
+        healNumber.Setup(
+            amount
+        );
+    }
+
+
+    // ==================================================
     // SAVE PLAYER HEALTH
     // ==================================================
 
@@ -683,6 +766,30 @@ public class HealthManager : MonoBehaviour
         if (audioFXManager != null)
         {
             audioFXManager.PlayUnitDamage();
+        }
+    }
+
+
+    // ==================================================
+    // HEAL SOUND
+    // ==================================================
+
+    private void PlayHealSound()
+    {
+        if (!enableHealSound)
+        {
+            return;
+        }
+
+        if (audioFXManager == null)
+        {
+            audioFXManager =
+                AudioFXManager.Instance;
+        }
+
+        if (audioFXManager != null)
+        {
+            audioFXManager.PlayUnitHeal();
         }
     }
 
@@ -1159,6 +1266,9 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
+        int oldHealth =
+            health;
+
         health +=
             amount;
 
@@ -1166,6 +1276,21 @@ public class HealthManager : MonoBehaviour
         {
             health =
                 maxHealth;
+        }
+
+        int actualHealing =
+            health -
+            oldHealth;
+
+        // Only show and play feedback
+        // for HP that was actually restored.
+        if (actualHealing > 0)
+        {
+            SpawnHealNumber(
+                actualHealing
+            );
+
+            PlayHealSound();
         }
 
         NotifyHealthChanged();
@@ -1183,8 +1308,24 @@ public class HealthManager : MonoBehaviour
             return;
         }
 
+        int oldHealth =
+            health;
+
         health =
             maxHealth;
+
+        int actualHealing =
+            health -
+            oldHealth;
+
+        if (actualHealing > 0)
+        {
+            SpawnHealNumber(
+                actualHealing
+            );
+
+            PlayHealSound();
+        }
 
         NotifyHealthChanged();
     }
@@ -1340,5 +1481,4 @@ public class HealthManager : MonoBehaviour
 
         NotifyHealthChanged();
     }
-
 }

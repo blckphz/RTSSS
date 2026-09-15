@@ -17,7 +17,7 @@ MonoBehaviour:
   description: 
   damage: 10
   cooldown: 1
-  canAttackWithThisAfterMove: 0
+  canAttackWithThisAfterMove: 1
   usesPerTurn: 1
   useDuration: 0.25
   targetType: 0

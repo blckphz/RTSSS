@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: RadiusAttack
   m_EditorClassIdentifier: Assembly-CSharp::BasicAttack
   abilityName: Scratch
+  abilityIcon: {fileID: 0}
   description: does damage
   damage: 10
   cooldown: 3
@@ -24,6 +25,6 @@ MonoBehaviour:
   minDistance: 0
   rangeShape: 0
   explosionPrefab: {fileID: 0}
-  explosionRadius: 1
-  useAbilityDamage: 1
+  explosionRadius: 0
+  useAbilityDamage: 0
   explosionDamage: 10
