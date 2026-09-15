@@ -7,6 +7,39 @@ public class UnitMoveBrainManager : MonoBehaviour
 {
     public static UnitMoveBrainManager Instance { get; private set; }
 
+    // ============================================================
+    // GLOBAL MOVEMENT STATE
+    // ============================================================
+
+    // True whenever one or more units are currently moving.
+    public static bool IsUnitMoving =>
+        movingUnitCount > 0;
+
+    private static int movingUnitCount;
+
+    public static void BeginUnitMovement()
+    {
+        movingUnitCount++;
+    }
+
+    public static void EndUnitMovement()
+    {
+        movingUnitCount =
+            Mathf.Max(
+                0,
+                movingUnitCount - 1
+            );
+    }
+
+    public static void ClearUnitMovementState()
+    {
+        movingUnitCount = 0;
+    }
+
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
     [Header("References")]
     [SerializeField] private GridManager gridManager;
 
@@ -71,7 +104,20 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         Instance = this;
 
+        // Make sure stale movement state cannot survive
+        // a scene/object reinitialization.
+        movingUnitCount = 0;
+
         EnsureGridManager();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+            movingUnitCount = 0;
+        }
     }
 
     // ============================================================

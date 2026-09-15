@@ -6,6 +6,22 @@ using UnityEngine;
 public class UnitMoveBrain : MonoBehaviour
 {
     // ============================================================
+    // GLOBAL MOVEMENT STATE
+    // ============================================================
+
+    /// <summary>
+    /// True while one or more units are currently moving.
+    ///
+    /// BoardViewController uses this to prevent board rotation
+    /// during unit movement.
+    /// </summary>
+    public static bool IsAnyUnitMoving { get; private set; }
+
+
+    private static int movingUnitCount;
+
+
+    // ============================================================
     // PARTICLE EVENTS
     // ============================================================
 
@@ -97,6 +113,13 @@ public class UnitMoveBrain : MonoBehaviour
 
     private void OnDisable()
     {
+        // If this unit was moving when disabled,
+        // make sure it no longer keeps the global movement lock.
+        if (isMoving)
+        {
+            SetMovingState(false);
+        }
+
         isMoving = false;
 
         StopWalkAnimation();
@@ -126,6 +149,66 @@ public class UnitMoveBrain : MonoBehaviour
             animationController =
                 GetComponent<AnimationController>();
         }
+    }
+
+
+    // ============================================================
+    // GLOBAL MOVEMENT LOCK
+    // ============================================================
+
+    private void SetMovingState(bool moving)
+    {
+        if (moving)
+        {
+            if (isMoving)
+            {
+                return;
+            }
+
+            isMoving = true;
+
+            movingUnitCount++;
+
+            IsAnyUnitMoving =
+                movingUnitCount > 0;
+        }
+        else
+        {
+            if (!isMoving)
+            {
+                return;
+            }
+
+            isMoving = false;
+
+            movingUnitCount =
+                Mathf.Max(
+                    0,
+                    movingUnitCount - 1
+                );
+
+            IsAnyUnitMoving =
+                movingUnitCount > 0;
+        }
+    }
+
+
+    /// <summary>
+    /// Returns true if any UnitMoveBrain in the scene
+    /// is currently moving.
+    /// </summary>
+    public static bool AreAnyUnitsMoving()
+    {
+        return IsAnyUnitMoving;
+    }
+
+
+    /// <summary>
+    /// Returns the number of units currently moving.
+    /// </summary>
+    public static int GetMovingUnitCount()
+    {
+        return movingUnitCount;
     }
 
 
@@ -278,8 +361,6 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
-        // UnitTilePin is the authoritative logical tile
-        // whenever it has one.
         if (
             tilePin != null &&
             tilePin.HasTile()
@@ -715,7 +796,11 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
-        isMoving = true;
+        // ========================================================
+        // GLOBAL MOVEMENT LOCK START
+        // ========================================================
+
+        SetMovingState(true);
 
         movementSequence++;
 
@@ -904,7 +989,11 @@ public class UnitMoveBrain : MonoBehaviour
 
         StopWalkAnimation();
 
-        isMoving = false;
+        // ========================================================
+        // GLOBAL MOVEMENT LOCK END
+        // ========================================================
+
+        SetMovingState(false);
     }
 
 
