@@ -18,13 +18,6 @@ public class AbilityData
             source != null
                 ? source.GetUsesPerTurn()
                 : 0;
-
-        Debug.Log(
-            $"[AbilityDebug] AbilityData CREATED | " +
-            $"Ability={(source != null ? source.GetAbilityName() : "NULL")} | " +
-            $"Uses={usesRemaining} | " +
-            $"Cooldown={cooldownRemaining}"
-        );
     }
 
     public AbilitySO GetAbilitySO()
@@ -41,31 +34,15 @@ public class AbilityData
     {
         cooldownRemaining =
             Mathf.Max(0, value);
-
-        Debug.Log(
-            $"[AbilityDebug] SetCooldown | " +
-            $"Ability={(abilitySO != null ? abilitySO.GetAbilityName() : "NULL")} | " +
-            $"Cooldown={cooldownRemaining}"
-        );
     }
 
     public void ReduceCooldown()
     {
-        int oldCooldown =
-            cooldownRemaining;
-
         cooldownRemaining =
             Mathf.Max(
                 0,
                 cooldownRemaining - 1
             );
-
-        Debug.Log(
-            $"[AbilityDebug] ReduceCooldown | " +
-            $"Ability={(abilitySO != null ? abilitySO.GetAbilityName() : "NULL")} | " +
-            $"Old={oldCooldown} | " +
-            $"New={cooldownRemaining}"
-        );
     }
 
     public int GetUsesRemaining()
@@ -77,22 +54,17 @@ public class AbilityData
     {
         if (abilitySO == null)
         {
-          
-
             return;
         }
 
         usesRemaining =
             abilitySO.GetUsesPerTurn();
-
-      
     }
 
     public bool CanUse()
     {
         if (abilitySO == null)
         {
-           
             return false;
         }
 
@@ -117,10 +89,6 @@ public class AbilityData
     {
         if (abilitySO == null)
         {
-            Debug.LogWarning(
-                "[AbilityDebug] ConsumeUse FAILED - abilitySO is NULL."
-            );
-
             return false;
         }
 
@@ -130,8 +98,6 @@ public class AbilityData
         // 0 = unlimited uses.
         if (maximumUses <= 0)
         {
-          
-
             return false;
         }
 
@@ -139,9 +105,6 @@ public class AbilityData
         {
             return true;
         }
-
-        int oldUses =
-            usesRemaining;
 
         usesRemaining =
             Mathf.Max(
@@ -151,8 +114,6 @@ public class AbilityData
 
         bool exhausted =
             usesRemaining == 0;
-
-        
 
         return exhausted;
     }

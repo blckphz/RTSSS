@@ -846,7 +846,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
-  pinEveryFrame: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
   unitId: 
@@ -900,12 +899,14 @@ MonoBehaviour:
   animator: {fileID: 2879961967551686256}
   walkDownState: basicEnemyWalkDown
   walkUpState: basicEnemyWalkUp
+  walkLeftState: basicEnemyWalkLeft
+  walkRightState: basicEnemyWalkRight
   idleState: Idle
   attackAnimatorLayerName: attackLayer
-  enemyAttackDownUpState: enemyattackdownup
-  enemyAttackDownDownState: enemyattackdowndown
-  enemyAttackDownLeftState: enemyattackdownleft
-  enemyAttackDownRightState: enemyattackdownright
+  enemyAttackUpState: enemyattackup
+  enemyAttackDownState: enemyattackdown
+  enemyAttackLeftState: enemyattackleft
+  enemyAttackRightState: enemyattackright
 --- !u!114 &8379538594534882917
 MonoBehaviour:
   m_ObjectHideFlags: 0

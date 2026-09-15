@@ -20,12 +20,6 @@ public class UnitAttackBrain : MonoBehaviour
             attackUnit =
                 GetComponent<AttackUnit>();
         }
-
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"UnitAttackBrain Awake | " +
-            $"AttackUnit={(attackUnit != null ? "FOUND" : "NULL")}"
-        );
     }
 
 
@@ -118,12 +112,6 @@ public class UnitAttackBrain : MonoBehaviour
         GameObject target
     )
     {
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"CanAttackTarget | " +
-            $"Target={(target != null ? target.name : "NULL")}"
-        );
-
         if (
             attackUnit == null ||
             attackUnit.IsDead() ||
@@ -131,11 +119,6 @@ public class UnitAttackBrain : MonoBehaviour
             !attackUnit.IsValidTarget(target)
         )
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"CanAttackTarget FAILED."
-            );
-
             return false;
         }
 
@@ -147,12 +130,6 @@ public class UnitAttackBrain : MonoBehaviour
         bool result =
             best != null;
 
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"CanAttackTarget result={result} | " +
-            $"Ability={(best != null ? best.GetAbilityName() : "NONE")}"
-        );
-
         return result;
     }
 
@@ -161,22 +138,11 @@ public class UnitAttackBrain : MonoBehaviour
         GameObject target
     )
     {
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"UnitAttackBrain.Attack() | " +
-            $"Target={(target != null ? target.name : "NULL")}"
-        );
-
         if (
             attackUnit == null ||
             !CanAttackTarget(target)
         )
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"UnitAttackBrain.Attack FAILED."
-            );
-
             return false;
         }
 
@@ -187,18 +153,8 @@ public class UnitAttackBrain : MonoBehaviour
 
         if (ability == null)
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"No ability found for target."
-            );
-
             return false;
         }
-
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"Selected ability '{ability.GetAbilityName()}'"
-        );
 
         return attackUnit.Attack(
             target,
@@ -224,24 +180,12 @@ public class UnitAttackBrain : MonoBehaviour
         Vector2Int targetTile
     )
     {
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"UseAbilityAtTile | " +
-            $"Ability={(ability != null ? ability.GetAbilityName() : "NULL")} | " +
-            $"Tile={targetTile}"
-        );
-
         if (
             attackUnit == null ||
             ability == null ||
             attackUnit.IsDead()
         )
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"UseAbilityAtTile FAILED - initial validation."
-            );
-
             return false;
         }
 
@@ -250,11 +194,6 @@ public class UnitAttackBrain : MonoBehaviour
 
         if (gridManager == null)
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"UseAbilityAtTile FAILED - GridManager NULL."
-            );
-
             return false;
         }
 
@@ -273,11 +212,6 @@ public class UnitAttackBrain : MonoBehaviour
             )
         )
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"UseAbilityAtTile FAILED - ability not ready."
-            );
-
             return false;
         }
 
@@ -289,11 +223,6 @@ public class UnitAttackBrain : MonoBehaviour
             )
         )
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"UseAbilityAtTile FAILED - tile cannot be hit."
-            );
-
             return false;
         }
 
@@ -345,11 +274,6 @@ public class UnitAttackBrain : MonoBehaviour
                 )
             )
             {
-                Debug.LogWarning(
-                    $"[AbilityDebug] {gameObject.name}: " +
-                    $"Target on tile is not valid."
-                );
-
                 return false;
             }
 
@@ -411,11 +335,6 @@ public class UnitAttackBrain : MonoBehaviour
             !attackUnit.IsValidTarget(target)
         )
         {
-            Debug.LogWarning(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"GetBestAbilityForTarget FAILED - invalid target."
-            );
-
             return null;
         }
 
@@ -452,22 +371,12 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
-            Debug.Log(
-                $"[AbilityDebug] {gameObject.name}: " +
-                $"Testing ability '{ability.GetAbilityName()}'"
-            );
-
             if (
                 !attackUnit.IsAbilityReady(
                     ability
                 )
             )
             {
-                Debug.Log(
-                    $"[AbilityDebug] {gameObject.name}: " +
-                    $"Skipping '{ability.GetAbilityName()}' - not ready."
-                );
-
                 continue;
             }
 
@@ -479,11 +388,6 @@ public class UnitAttackBrain : MonoBehaviour
                 )
             )
             {
-                Debug.Log(
-                    $"[AbilityDebug] {gameObject.name}: " +
-                    $"Skipping '{ability.GetAbilityName()}' - cannot hit target."
-                );
-
                 continue;
             }
 
@@ -512,12 +416,6 @@ public class UnitAttackBrain : MonoBehaviour
                     range;
             }
         }
-
-        Debug.Log(
-            $"[AbilityDebug] {gameObject.name}: " +
-            $"Best ability = " +
-            $"{(bestAbility != null ? bestAbility.GetAbilityName() : "NONE")}"
-        );
 
         return bestAbility;
     }

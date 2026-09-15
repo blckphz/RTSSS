@@ -272,8 +272,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   characterData: {fileID: 11400000, guid: ad18bbb26e16b984498d916f39746623, type: 2}
+  unitData: {fileID: 0}
   abilities: []
   healthManager: {fileID: 7781654838360763359}
+  animationController: {fileID: 0}
+  useDirectionalEnemyAttackAnimation: 0
+  attackAnimatorLayerName: attackLayer
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &8427803419809321729
 MonoBehaviour:
@@ -480,7 +484,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitTilePin
   gridManager: {fileID: 0}
-  pinEveryFrame: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
   unitId: 

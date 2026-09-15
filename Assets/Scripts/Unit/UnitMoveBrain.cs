@@ -6,6 +6,13 @@ using UnityEngine;
 public class UnitMoveBrain : MonoBehaviour
 {
     // ============================================================
+    // PARTICLE EVENTS
+    // ============================================================
+
+    public static event System.Action<Vector3> OnWalkParticleTile;
+
+
+    // ============================================================
     // REFERENCES
     // ============================================================
 
@@ -66,6 +73,8 @@ public class UnitMoveBrain : MonoBehaviour
     private bool isMoving;
 
     private bool movementConsumed;
+
+    private int movementSequence;
 
 
     // ============================================================
@@ -267,6 +276,21 @@ public class UnitMoveBrain : MonoBehaviour
         if (gridManager == null)
         {
             return false;
+        }
+
+        // UnitTilePin is the authoritative logical tile
+        // whenever it has one.
+        if (
+            tilePin != null &&
+            tilePin.HasTile()
+        )
+        {
+            tile =
+                tilePin.GetTile();
+
+            return gridManager.IsInsideGrid(
+                tile
+            );
         }
 
         tile =
@@ -693,21 +717,34 @@ public class UnitMoveBrain : MonoBehaviour
 
         isMoving = true;
 
+        movementSequence++;
+
+        int currentMovementSequence =
+            movementSequence;
+
+        Debug.Log(
+            $"[WalkParticles][UnitMoveBrain] START -> {name} | Movement #{currentMovementSequence}",
+            this
+        );
+
         int actualSteps =
             Mathf.Min(
                 steps,
                 path.Count - 1
             );
 
-        for (int i = 1;
-             i <= actualSteps;
-             i++)
+        for (
+            int i = 1;
+            i <= actualSteps;
+            i++
+        )
         {
             Vector2Int fromTile =
                 path[i - 1];
 
             Vector2Int toTile =
                 path[i];
+
 
             // ====================================================
             // SET WALK DIRECTION
@@ -723,6 +760,7 @@ public class UnitMoveBrain : MonoBehaviour
                 );
             }
 
+
             // ====================================================
             // START GRID MOVEMENT
             // ====================================================
@@ -736,8 +774,14 @@ public class UnitMoveBrain : MonoBehaviour
 
             if (!started)
             {
+                Debug.LogWarning(
+                    $"[WalkParticles][UnitMoveBrain] Grid movement failed -> {name} | Movement #{currentMovementSequence}",
+                    this
+                );
+
                 break;
             }
+
 
             // ====================================================
             // WORLD POSITIONS
@@ -753,6 +797,7 @@ public class UnitMoveBrain : MonoBehaviour
                     toTile
                 );
 
+
             // ====================================================
             // ACTUAL MOVEMENT
             // ====================================================
@@ -763,10 +808,20 @@ public class UnitMoveBrain : MonoBehaviour
             {
                 elapsed += Time.deltaTime;
 
-                float t =
-                    Mathf.Clamp01(
-                        elapsed / moveDuration
-                    );
+                float t;
+
+                if (moveDuration <= 0f)
+                {
+                    t = 1f;
+                }
+                else
+                {
+                    t =
+                        Mathf.Clamp01(
+                            elapsed /
+                            moveDuration
+                        );
+                }
 
                 transform.position =
                     Vector3.Lerp(
@@ -778,11 +833,9 @@ public class UnitMoveBrain : MonoBehaviour
                 yield return null;
             }
 
-            // Make absolutely sure we land
-            // exactly on the target tile.
-
             transform.position =
                 endPosition;
+
 
             // ====================================================
             // FINISH GRID MOVEMENT
@@ -792,6 +845,7 @@ public class UnitMoveBrain : MonoBehaviour
                 gameObject,
                 toTile
             );
+
 
             // ====================================================
             // UPDATE TILE PIN
@@ -804,6 +858,7 @@ public class UnitMoveBrain : MonoBehaviour
                 );
             }
 
+
             // ====================================================
             // UPDATE LOGICAL UNIT POSITION
             // ====================================================
@@ -815,12 +870,37 @@ public class UnitMoveBrain : MonoBehaviour
                 );
             }
 
+
+            // ====================================================
+            // SPAWN PARTICLE AT THIS TILE
+            // ====================================================
+
+            Vector3 particlePosition =
+                gridManager.GridToWorldPosition(
+                    toTile
+                );
+
+            OnWalkParticleTile?.Invoke(
+                particlePosition
+            );
+
+
+            // ====================================================
+            // NEXT TILE
+            // ====================================================
+
             yield return null;
         }
 
+
         // ========================================================
-        // STOP WALKING / RETURN TO IDLE
+        // MOVEMENT FINISHED
         // ========================================================
+
+        Debug.Log(
+            $"[WalkParticles][UnitMoveBrain] STOP -> {name} | Movement #{currentMovementSequence}",
+            this
+        );
 
         StopWalkAnimation();
 
