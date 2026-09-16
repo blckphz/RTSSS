@@ -48,6 +48,9 @@ public class EncounterManager : MonoBehaviour
     [SerializeField]
     private CardManager cardManager;
 
+    [SerializeField]
+    private biomesManager biomesManager;
+
 
     // ==================================================
     // CURRENT ENCOUNTER
@@ -214,6 +217,13 @@ public class EncounterManager : MonoBehaviour
             cardManager =
                 FindFirstObjectByType<CardManager>();
         }
+
+
+        if (biomesManager == null)
+        {
+            biomesManager =
+                FindFirstObjectByType<biomesManager>();
+        }
     }
 
 
@@ -343,6 +353,13 @@ public class EncounterManager : MonoBehaviour
         ClearPreviousEncounter();
 
 
+        // ==================================================
+        // SET BIOME
+        // ==================================================
+
+        SetupBiome();
+
+
         yield return null;
 
 
@@ -426,6 +443,50 @@ public class EncounterManager : MonoBehaviour
 
         SetEncounterState(
             EncounterState.Preparing
+        );
+    }
+
+
+    // ==================================================
+    // SETUP BIOME
+    // ==================================================
+
+    private void SetupBiome()
+    {
+        if (biomesManager == null)
+        {
+            Debug.LogWarning(
+                "[EncounterManager] BiomesManager missing.",
+                this
+            );
+
+            return;
+        }
+
+
+        if (currentEncounter == null)
+        {
+            return;
+        }
+
+
+        if (
+            string.IsNullOrWhiteSpace(
+                currentEncounter.biomeGameObjectName
+            )
+        )
+        {
+            Debug.LogWarning(
+                "[EncounterManager] Current encounter has no biome assigned.",
+                this
+            );
+
+            return;
+        }
+
+
+        biomesManager.SetBiome(
+            currentEncounter.biomeGameObjectName
         );
     }
 

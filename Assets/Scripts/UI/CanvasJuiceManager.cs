@@ -6,6 +6,7 @@ public class CanvasJuiceManager : MonoBehaviour
 {
     public static CanvasJuiceManager Instance;
 
+
     // ============================================================
     // UI REFERENCES
     // ============================================================
@@ -69,7 +70,18 @@ public class CanvasJuiceManager : MonoBehaviour
 
 
     // ============================================================
-    // ENEMY FOLLOW
+    // FREE CAMERA
+    // ============================================================
+
+    [Header("Free Camera")]
+    [Tooltip(
+        "Camera movement script responsible for mouse edge scrolling."
+    )]
+    [SerializeField] private cameraMoveScript freeCamera;
+
+
+    // ============================================================
+    // UNIT CAMERA FOLLOW
     // ============================================================
 
     [Header("Unit Camera Follow")]
@@ -99,6 +111,10 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private void Awake()
     {
+        // --------------------------------------------------------
+        // SINGLETON
+        // --------------------------------------------------------
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -121,17 +137,13 @@ public class CanvasJuiceManager : MonoBehaviour
         else
         {
             hoverRectTransform =
-                hoverInfoCanvas.GetComponent<
-                    RectTransform
-                >();
+                hoverInfoCanvas.GetComponent<RectTransform>();
 
             hoverInfoCanvas.alpha = 0f;
 
-            hoverInfoCanvas.interactable =
-                false;
+            hoverInfoCanvas.interactable = false;
 
-            hoverInfoCanvas.blocksRaycasts =
-                false;
+            hoverInfoCanvas.blocksRaycasts = false;
         }
 
 
@@ -158,6 +170,23 @@ public class CanvasJuiceManager : MonoBehaviour
             Debug.LogWarning(
                 "CanvasJuiceManager: Ability Camera Position is not assigned."
             );
+        }
+
+        if (freeCamera == null)
+        {
+            Debug.LogWarning(
+                "CanvasJuiceManager: Free Camera is not assigned."
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // START IN FREE CAMERA MODE
+        // --------------------------------------------------------
+
+        if (freeCamera != null)
+        {
+            freeCamera.EnableFreeMode();
         }
     }
 
@@ -186,8 +215,10 @@ public class CanvasJuiceManager : MonoBehaviour
         if (hoverRectTransform == null)
             return;
 
+
         Vector2 mousePosition =
             Input.mousePosition;
+
 
         hoverRectTransform.position =
             mousePosition +
@@ -204,9 +235,15 @@ public class CanvasJuiceManager : MonoBehaviour
         if (unit == null)
             return;
 
+
+        // Disable free camera while a unit is selected.
+        DisableFreeCamera();
+
+
         FadeCanvasTo(
             hoverTransparency
         );
+
 
         MoveCameraToUnit(unit);
     }
@@ -226,33 +263,41 @@ public class CanvasJuiceManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // Stop following the previous unit.
+        // DISABLE FREE CAMERA
+        // --------------------------------------------------------
+
+        DisableFreeCamera();
+
+
+        // --------------------------------------------------------
+        // STOP FOLLOWING PREVIOUS UNIT
         // --------------------------------------------------------
 
         StopFollowingUnit();
 
 
         // --------------------------------------------------------
-        // Set new follow target.
+        // SET NEW FOLLOW TARGET
         // --------------------------------------------------------
 
         currentFollowTarget = unit;
 
 
         // --------------------------------------------------------
-        // Calculate initial camera position.
+        // CALCULATE TARGET POSITION
         // --------------------------------------------------------
 
         Vector3 targetPosition =
             unit.position +
             unitCameraOffset;
 
+
         Quaternion targetRotation =
             cameraTarget.rotation;
 
 
         // --------------------------------------------------------
-        // Smoothly move camera to the enemy first.
+        // STOP PREVIOUS CAMERA MOVEMENT
         // --------------------------------------------------------
 
         if (cameraCoroutine != null)
@@ -260,14 +305,30 @@ public class CanvasJuiceManager : MonoBehaviour
             StopCoroutine(
                 cameraCoroutine
             );
+
+            cameraCoroutine = null;
         }
+
+
+        // --------------------------------------------------------
+        // IMMEDIATE MOVE IF OBJECT IS INACTIVE
+        // --------------------------------------------------------
 
         if (!gameObject.activeInHierarchy)
         {
-            cameraTarget.position = targetPosition;
-            cameraTarget.rotation = targetRotation;
+            cameraTarget.position =
+                targetPosition;
+
+            cameraTarget.rotation =
+                targetRotation;
+
             return;
         }
+
+
+        // --------------------------------------------------------
+        // SMOOTH MOVE TO UNIT
+        // --------------------------------------------------------
 
         cameraCoroutine =
             StartCoroutine(
@@ -279,7 +340,7 @@ public class CanvasJuiceManager : MonoBehaviour
 
 
         // --------------------------------------------------------
-        // Start continuous follow.
+        // START CONTINUOUS FOLLOW
         // --------------------------------------------------------
 
         if (gameObject.activeInHierarchy)
@@ -304,7 +365,10 @@ public class CanvasJuiceManager : MonoBehaviour
             yield break;
 
 
-        // Wait for the initial camera movement to finish.
+        // --------------------------------------------------------
+        // WAIT FOR INITIAL CAMERA MOVEMENT
+        // --------------------------------------------------------
+
         if (cameraCoroutine != null)
         {
             yield return cameraCoroutine;
@@ -329,7 +393,6 @@ public class CanvasJuiceManager : MonoBehaviour
                 unitCameraOffset;
 
 
-            // Smooth camera movement.
             float smoothAmount =
                 1f -
                 Mathf.Exp(
@@ -380,9 +443,23 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void MoveCameraToAbilityPosition()
     {
-        // Stop following the current unit.
+        // --------------------------------------------------------
+        // STOP UNIT FOLLOW
+        // --------------------------------------------------------
+
         StopFollowingUnit();
 
+
+        // --------------------------------------------------------
+        // DISABLE FREE CAMERA
+        // --------------------------------------------------------
+
+        DisableFreeCamera();
+
+
+        // --------------------------------------------------------
+        // VALIDATE
+        // --------------------------------------------------------
 
         if (cameraTarget == null)
             return;
@@ -390,6 +467,10 @@ public class CanvasJuiceManager : MonoBehaviour
         if (abilityCameraPosition == null)
             return;
 
+
+        // --------------------------------------------------------
+        // MOVE TO ABILITY POSITION
+        // --------------------------------------------------------
 
         MoveCameraTargetTo(
             abilityCameraPosition.position,
@@ -404,7 +485,10 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void MoveCameraToNormalPosition()
     {
-        // Stop following the current enemy.
+        // --------------------------------------------------------
+        // STOP UNIT FOLLOW
+        // --------------------------------------------------------
+
         StopFollowingUnit();
 
 
@@ -415,10 +499,50 @@ public class CanvasJuiceManager : MonoBehaviour
             return;
 
 
+        // --------------------------------------------------------
+        // MOVE TO NORMAL POSITION
+        // --------------------------------------------------------
+
         MoveCameraTargetTo(
             normalPosition.position,
             normalPosition.rotation
         );
+
+
+        // --------------------------------------------------------
+        // ENABLE FREE CAMERA
+        // --------------------------------------------------------
+
+        EnableFreeCamera();
+    }
+
+
+    // ============================================================
+    // ENABLE FREE CAMERA
+    // ============================================================
+
+    public void EnableFreeCamera()
+    {
+        StopFollowingUnit();
+
+
+        if (freeCamera != null)
+        {
+            freeCamera.EnableFreeMode();
+        }
+    }
+
+
+    // ============================================================
+    // DISABLE FREE CAMERA
+    // ============================================================
+
+    public void DisableFreeCamera()
+    {
+        if (freeCamera != null)
+        {
+            freeCamera.DisableFreeMode();
+        }
     }
 
 
@@ -430,6 +554,11 @@ public class CanvasJuiceManager : MonoBehaviour
     {
         FadeCanvasTo(0f);
 
+
+        // --------------------------------------------------------
+        // Return to normal position and then free camera.
+        // --------------------------------------------------------
+
         MoveCameraToNormalPosition();
     }
 
@@ -440,27 +569,48 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private void MoveCameraTargetTo(
         Vector3 targetPosition,
-        Quaternion targetRotation)
+        Quaternion targetRotation
+    )
     {
         if (cameraTarget == null)
             return;
 
+
+        // --------------------------------------------------------
+        // STOP PREVIOUS MOVEMENT
+        // --------------------------------------------------------
 
         if (cameraCoroutine != null)
         {
             StopCoroutine(
                 cameraCoroutine
             );
+
+            cameraCoroutine = null;
         }
+
+
+        // --------------------------------------------------------
+        // IMMEDIATE MOVE IF INACTIVE
+        // --------------------------------------------------------
 
         if (!gameObject.activeInHierarchy)
         {
-            cameraTarget.position = targetPosition;
-            cameraTarget.rotation = targetRotation;
+            cameraTarget.position =
+                targetPosition;
+
+            cameraTarget.rotation =
+                targetRotation;
+
             cameraCoroutine = null;
+
             return;
         }
 
+
+        // --------------------------------------------------------
+        // SMOOTH MOVEMENT
+        // --------------------------------------------------------
 
         cameraCoroutine =
             StartCoroutine(
@@ -474,7 +624,8 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private IEnumerator MoveCameraTargetCoroutine(
         Vector3 targetPosition,
-        Quaternion targetRotation)
+        Quaternion targetRotation
+    )
     {
         if (cameraTarget == null)
             yield break;
@@ -489,7 +640,10 @@ public class CanvasJuiceManager : MonoBehaviour
         float elapsed = 0f;
 
 
-        // Prevent division by zero.
+        // --------------------------------------------------------
+        // INSTANT MOVEMENT
+        // --------------------------------------------------------
+
         if (cameraMoveDuration <= 0f)
         {
             cameraTarget.position =
@@ -503,6 +657,10 @@ public class CanvasJuiceManager : MonoBehaviour
             yield break;
         }
 
+
+        // --------------------------------------------------------
+        // SMOOTH MOVEMENT
+        // --------------------------------------------------------
 
         while (elapsed < cameraMoveDuration)
         {
@@ -543,6 +701,10 @@ public class CanvasJuiceManager : MonoBehaviour
         }
 
 
+        // --------------------------------------------------------
+        // FINAL POSITION
+        // --------------------------------------------------------
+
         cameraTarget.position =
             targetPosition;
 
@@ -558,26 +720,45 @@ public class CanvasJuiceManager : MonoBehaviour
     // ============================================================
 
     private void FadeCanvasTo(
-        float targetAlpha)
+        float targetAlpha
+    )
     {
         if (hoverInfoCanvas == null)
             return;
 
+
+        // --------------------------------------------------------
+        // STOP PREVIOUS FADE
+        // --------------------------------------------------------
 
         if (fadeCoroutine != null)
         {
             StopCoroutine(
                 fadeCoroutine
             );
+
+            fadeCoroutine = null;
         }
+
+
+        // --------------------------------------------------------
+        // INSTANT FADE IF INACTIVE
+        // --------------------------------------------------------
 
         if (!gameObject.activeInHierarchy)
         {
-            hoverInfoCanvas.alpha = targetAlpha;
+            hoverInfoCanvas.alpha =
+                targetAlpha;
+
             fadeCoroutine = null;
+
             return;
         }
 
+
+        // --------------------------------------------------------
+        // START FADE
+        // --------------------------------------------------------
 
         fadeCoroutine =
             StartCoroutine(
@@ -589,13 +770,18 @@ public class CanvasJuiceManager : MonoBehaviour
 
 
     private IEnumerator FadeCanvasCoroutine(
-        float targetAlpha)
+        float targetAlpha
+    )
     {
         float startAlpha =
             hoverInfoCanvas.alpha;
 
         float elapsed = 0f;
 
+
+        // --------------------------------------------------------
+        // INSTANT FADE
+        // --------------------------------------------------------
 
         if (fadeDuration <= 0f)
         {
@@ -607,6 +793,10 @@ public class CanvasJuiceManager : MonoBehaviour
             yield break;
         }
 
+
+        // --------------------------------------------------------
+        // SMOOTH FADE
+        // --------------------------------------------------------
 
         while (elapsed < fadeDuration)
         {
@@ -631,6 +821,10 @@ public class CanvasJuiceManager : MonoBehaviour
             yield return null;
         }
 
+
+        // --------------------------------------------------------
+        // FINAL ALPHA
+        // --------------------------------------------------------
 
         hoverInfoCanvas.alpha =
             targetAlpha;

@@ -49,6 +49,19 @@ public class EncounterDefinition : ScriptableObject
 
 
     // ============================================================
+    // BIOME
+    // ============================================================
+
+    [Header("Biome")]
+    [Tooltip(
+        "Name of the GameObject under the Biome Root that should " +
+        "be enabled when this encounter starts. " +
+        "Example: Grass or Dirt."
+    )]
+    public string biomeGameObjectName;
+
+
+    // ============================================================
     // GRID
     // ============================================================
 
