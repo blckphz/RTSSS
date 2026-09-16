@@ -466,10 +466,5 @@ public class WalkParticleManager : MonoBehaviour
         {
             return;
         }
-
-        Debug.Log(
-            $"[WalkParticles][Manager] {message}",
-            this
-        );
     }
 }

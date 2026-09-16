@@ -41,7 +41,6 @@ public static class GridShapeEvaluator
                         position.y <= maxY;
                 }
 
-
             case GridShapeType.Manhattan:
                 {
                     int radius =
@@ -51,7 +50,6 @@ public static class GridShapeEvaluator
                         Mathf.Abs(position.x) +
                         Mathf.Abs(position.y) <= radius;
                 }
-
 
             case GridShapeType.Pyramid:
                 {
@@ -82,7 +80,6 @@ public static class GridShapeEvaluator
                         position.x <= currentHalfWidth;
                 }
 
-
             case GridShapeType.Donut:
                 {
                     int distSq =
@@ -99,7 +96,6 @@ public static class GridShapeEvaluator
                         distSq >= minSq &&
                         distSq <= maxSq;
                 }
-
 
             default:
                 return true;
@@ -470,11 +466,6 @@ public class GridManager : MonoBehaviour
                         oldMinY + y
                     );
 
-
-                // =================================================
-                // UNIT STILL FITS
-                // =================================================
-
                 if (IsInsideGrid(logicalPos))
                 {
                     Vector2Int newArrayPos =
@@ -482,14 +473,19 @@ public class GridManager : MonoBehaviour
                             logicalPos
                         );
 
-                    occupiedCells[
-                        newArrayPos.x,
-                        newArrayPos.y
-                    ] = unit;
+                    if (
+                        occupiedCells[
+                            newArrayPos.x,
+                            newArrayPos.y
+                        ] == null
+                    )
+                    {
+                        occupiedCells[
+                            newArrayPos.x,
+                            newArrayPos.y
+                        ] = unit;
+                    }
 
-
-                    // IMPORTANT:
-                    // Synchronize UnitTilePin as well.
                     UnitTilePin pin =
                         unit.GetComponent<UnitTilePin>();
 
@@ -505,12 +501,6 @@ public class GridManager : MonoBehaviour
                             );
                     }
                 }
-
-
-                // =================================================
-                // UNIT NO LONGER FITS
-                // =================================================
-
                 else
                 {
                     if (destroyInvalidUnits)
@@ -1097,8 +1087,7 @@ public class GridManager : MonoBehaviour
     {
         if (
             unit == null ||
-            !IsInsideGrid(position) ||
-            IsCellOccupied(position)
+            !IsInsideGrid(position)
         )
         {
             return false;
@@ -1109,14 +1098,57 @@ public class GridManager : MonoBehaviour
                 position
             );
 
+        GameObject existing =
+            occupiedCells[
+                array.x,
+                array.y
+            ];
+
+        if (existing != null)
+        {
+            if (existing == unit)
+            {
+                SynchronizeUnitPosition(
+                    unit,
+                    position
+                );
+
+                return true;
+            }
+
+            if (IsOccupantValid(existing, position))
+            {
+                return false;
+            }
+        }
+
         occupiedCells[
             array.x,
             array.y
         ] = unit;
 
+        SynchronizeUnitPosition(
+            unit,
+            position
+        );
 
-        // IMPORTANT:
-        // Synchronize UnitTilePin with GridManager.
+        return true;
+    }
+
+
+    // ============================================================
+    // SYNCHRONIZE UNIT POSITION
+    // ============================================================
+
+    private void SynchronizeUnitPosition(
+        GameObject unit,
+        Vector2Int position)
+    {
+        if (unit == null)
+        {
+            return;
+        }
+
         UnitTilePin pin =
             unit.GetComponent<UnitTilePin>();
 
@@ -1131,6 +1163,56 @@ public class GridManager : MonoBehaviour
                     position
                 );
         }
+    }
+
+
+    // ============================================================
+    // REGISTER UNIT IF MISSING
+    // ============================================================
+
+    private bool EnsureUnitRegistered(
+        GameObject unit,
+        Vector2Int position)
+    {
+        if (
+            unit == null ||
+            !IsInsideGrid(position)
+        )
+        {
+            return false;
+        }
+
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
+
+        GameObject occupant =
+            occupiedCells[
+                array.x,
+                array.y
+            ];
+
+        if (occupant == unit)
+        {
+            return true;
+        }
+
+        if (
+            occupant != null &&
+            IsOccupantValid(
+                occupant,
+                position
+            )
+        )
+        {
+            return false;
+        }
+
+        occupiedCells[
+            array.x,
+            array.y
+        ] = unit;
 
         return true;
     }
@@ -1250,16 +1332,76 @@ public class GridManager : MonoBehaviour
                 newPosition
             );
 
-        if (
+
+        // ========================================================
+        // ENSURE THE MOVING UNIT IS REGISTERED
+        // ========================================================
+
+        GameObject oldOccupant =
             occupiedCells[
                 oldArray.x,
                 oldArray.y
-            ] != unit ||
-            IsCellOccupied(newPosition)
-        )
+            ];
+
+        if (oldOccupant != unit)
         {
-            return false;
+            bool registered =
+                EnsureUnitRegistered(
+                    unit,
+                    oldPosition
+                );
+
+            if (!registered)
+            {
+                Debug.LogWarning(
+                    $"[GridManager] StartMoveUnit failed to register {unit.name} at {oldPosition}.",
+                    unit
+                );
+
+                return false;
+            }
         }
+
+
+        // ========================================================
+        // DESTINATION CHECK
+        // ========================================================
+
+        GameObject destinationOccupant =
+            occupiedCells[
+                newArray.x,
+                newArray.y
+            ];
+
+        if (destinationOccupant != null)
+        {
+            if (
+                destinationOccupant != unit &&
+                IsOccupantValid(
+                    destinationOccupant,
+                    newPosition
+                )
+            )
+            {
+                return false;
+            }
+
+            if (
+                destinationOccupant != null &&
+                destinationOccupant != unit
+            )
+            {
+                occupiedCells[
+                    newArray.x,
+                    newArray.y
+                ] = null;
+            }
+        }
+
+
+        // ========================================================
+        // MOVE OCCUPANCY
+        // ========================================================
 
         occupiedCells[
             oldArray.x,
@@ -1306,13 +1448,6 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-
-        // IMPORTANT:
-        // UnitTilePin must receive the final logical tile.
-        //
-        // Do NOT directly move transform.position when a pin
-        // exists, because that leaves UnitTilePin.logicalTile
-        // stale.
         UnitTilePin pin =
             unit.GetComponent<UnitTilePin>();
 

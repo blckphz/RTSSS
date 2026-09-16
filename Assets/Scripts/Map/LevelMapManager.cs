@@ -131,9 +131,6 @@ public class LevelMapManager : MonoBehaviour
     [SerializeField]
     private bool hideMapDuringEncounter = true;
 
-    [SerializeField]
-    private bool showMapAfterVictory = true;
-
     private List<List<LevelNode>> mapNodes =
         new List<List<LevelNode>>();
 
@@ -269,7 +266,6 @@ public class LevelMapManager : MonoBehaviour
 
             int countInRow;
 
-            // Start and boss are single nodes.
             if (row == 0 || row == rows - 1)
             {
                 countInRow = 1;
@@ -419,11 +415,9 @@ public class LevelMapManager : MonoBehaviour
         int row,
         int column)
     {
-        // Start node.
         if (row == 0)
             return startEncounter;
 
-        // Boss node.
         if (row == rows - 1)
             return bossEncounter;
 
@@ -562,10 +556,6 @@ public class LevelMapManager : MonoBehaviour
         if (mapNodes.Count < 2)
             return;
 
-        // --------------------------------------------------------
-        // Primary connections
-        // --------------------------------------------------------
-
         for (
             int row = 0;
             row < mapNodes.Count - 1;
@@ -611,10 +601,6 @@ public class LevelMapManager : MonoBehaviour
                 );
             }
         }
-
-        // --------------------------------------------------------
-        // Optional additional connections
-        // --------------------------------------------------------
 
         for (
             int row = 0;
@@ -709,10 +695,6 @@ public class LevelMapManager : MonoBehaviour
                 }
             }
         }
-
-        // --------------------------------------------------------
-        // Make sure every node has an incoming connection.
-        // --------------------------------------------------------
 
         for (
             int row = 0;
@@ -1071,24 +1053,6 @@ public class LevelMapManager : MonoBehaviour
             return;
         }
 
-        // ========================================================
-        // IMPORTANT
-        //
-        // This locks the OTHER available branches.
-        //
-        // Example:
-        //
-        //       B     C
-        //        \   /
-        //          A
-        //
-        // Choose B:
-        //
-        //       B     C
-        //       🔓    🔒
-        //
-        // ========================================================
-
         SelectRoute(node);
 
         currentNode = node;
@@ -1118,24 +1082,18 @@ public class LevelMapManager : MonoBehaviour
                 if (node == selectedNode)
                     continue;
 
-                // Never unlock a completed node again.
                 if (node.IsCompleted)
                     continue;
 
-                // Lock all other nodes.
                 node.IsUnlocked = false;
 
                 UpdateIconState(node);
             }
         }
 
-        // Keep the selected node unlocked
-        // while its encounter is running.
         selectedNode.IsUnlocked = true;
 
         UpdateIconState(selectedNode);
-
-
     }
 
     // ============================================================
@@ -1212,10 +1170,14 @@ public class LevelMapManager : MonoBehaviour
 
         CompleteCurrentNode();
 
-        if (showMapAfterVictory)
-        {
-            ShowMap();
-        }
+        // IMPORTANT:
+        // Do NOT show the map here.
+        //
+        // The Victory Canvas must remain visible until
+        // the player presses Continue.
+        //
+        // VictoryManager.ContinueButton() is responsible
+        // for returning to the map.
     }
 
     private void CompleteCurrentNode()
@@ -1225,10 +1187,6 @@ public class LevelMapManager : MonoBehaviour
 
         LevelNode completedNode =
             currentNode;
-
-        // --------------------------------------------------------
-        // Complete the node we actually played.
-        // --------------------------------------------------------
 
         completedNode.IsCompleted = true;
         completedNode.IsUnlocked = false;
@@ -1241,10 +1199,6 @@ public class LevelMapManager : MonoBehaviour
             $"[LevelMapManager] Completed node: Row {completedNode.Row}, Column {completedNode.Column}",
             this
         );
-
-        // --------------------------------------------------------
-        // Unlock ONLY the nodes connected to this node.
-        // --------------------------------------------------------
 
         foreach (
             LevelNode nextNode
@@ -1263,10 +1217,6 @@ public class LevelMapManager : MonoBehaviour
                 this
             );
         }
-
-        // --------------------------------------------------------
-        // No current node after victory.
-        // --------------------------------------------------------
 
         currentNode = null;
     }

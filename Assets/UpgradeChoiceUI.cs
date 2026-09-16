@@ -550,11 +550,6 @@ public class UpgradeChoiceUI : MonoBehaviour
             return;
         }
 
-
-        if (victoryManager != null)
-        {
-            victoryManager.OnUpgradeSelected();
-        }
     }
 
 

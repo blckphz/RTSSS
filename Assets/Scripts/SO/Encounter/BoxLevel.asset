@@ -16,6 +16,7 @@ MonoBehaviour:
   description: 
   mapNodeIcon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
   biomeGameObjectName: DirtLevel
+  music: {fileID: 8300000, guid: f3996a234c01ce34e9530e7e17ca0a16, type: 3}
   width: 11
   height: 11
   shape: 0

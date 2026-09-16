@@ -35,16 +35,10 @@ public class CombatManager : MonoBehaviour
     private readonly HashSet<AttackUnit> lockedEnemies =
         new HashSet<AttackUnit>();
 
-
-    // ============================================================
-    // UNITY
-    // ============================================================
-
     private void Awake()
     {
         FindReferences();
     }
-
 
     private void Start()
     {
@@ -54,11 +48,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     private void FindReferences()
     {
         if (gridManager == null)
@@ -67,11 +56,6 @@ public class CombatManager : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
     }
-
-
-    // ============================================================
-    // ENEMY ROUND
-    // ============================================================
 
     public IEnumerator RunEnemyRound()
     {
@@ -117,18 +101,12 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
     public void StartEnemyRound()
     {
         StartCoroutine(
             RunEnemyRound()
         );
     }
-
-
-    // ============================================================
-    // ENEMY LOCKS
-    // ============================================================
 
     public void LockEnemyForCurrentRound(
         AttackUnit enemy
@@ -147,7 +125,6 @@ public class CombatManager : MonoBehaviour
         lockedEnemies.Add(enemy);
     }
 
-
     public void LockEnemiesForCurrentRound(
         List<AttackUnit> enemies
     )
@@ -165,7 +142,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
     public void UnlockEnemy(
         AttackUnit enemy
     )
@@ -178,12 +154,10 @@ public class CombatManager : MonoBehaviour
         lockedEnemies.Remove(enemy);
     }
 
-
     public void ClearEnemyTurnLocks()
     {
         lockedEnemies.Clear();
     }
-
 
     public bool IsEnemyLocked(
         AttackUnit enemy
@@ -197,16 +171,10 @@ public class CombatManager : MonoBehaviour
         return lockedEnemies.Contains(enemy);
     }
 
-
     public int GetLockedEnemyCount()
     {
         return lockedEnemies.Count;
     }
-
-
-    // ============================================================
-    // ENEMY TURN SETTINGS
-    // ============================================================
 
     public bool EnemiesMoveAfterRound
     {
@@ -216,7 +184,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
     public bool EnemiesAttackAfterMoving
     {
         get
@@ -224,11 +191,6 @@ public class CombatManager : MonoBehaviour
             return enemiesAttackAfterMoving;
         }
     }
-
-
-    // ============================================================
-    // ENEMY CHECKS
-    // ============================================================
 
     public void CheckForEnemies()
     {
@@ -243,14 +205,12 @@ public class CombatManager : MonoBehaviour
         SpawnTestEnemies();
     }
 
-
     public int GetEnemyCount()
     {
         return CombatUtility.GetUnitCount(
             Team.Enemy
         );
     }
-
 
     public List<GameObject> GetAllEnemies()
     {
@@ -259,7 +219,6 @@ public class CombatManager : MonoBehaviour
         );
     }
 
-
     public List<GameObject> GetAllAllies()
     {
         return CombatUtility.GetObjectsByTeam(
@@ -267,16 +226,10 @@ public class CombatManager : MonoBehaviour
         );
     }
 
-
-    // ============================================================
-    // SPAWN
-    // ============================================================
-
     public void SpawnTestEnemiesNow()
     {
         SpawnTestEnemies();
     }
-
 
     private void SpawnTestEnemies()
     {
@@ -333,7 +286,6 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-
     private bool SpawnEnemy(
         Vector2Int gridPosition
     )
@@ -364,7 +316,6 @@ public class CombatManager : MonoBehaviour
         enemy.name =
             $"{enemyCharacter.name}_Enemy";
 
-
         HealthManager health =
             enemy.GetComponent<HealthManager>();
 
@@ -380,7 +331,6 @@ public class CombatManager : MonoBehaviour
             return false;
         }
 
-
         if (
             !gridManager.PlaceUnit(
                 enemy,
@@ -392,7 +342,6 @@ public class CombatManager : MonoBehaviour
             return false;
         }
 
-
         health.Initialize(
             enemyCharacter
         );
@@ -401,18 +350,12 @@ public class CombatManager : MonoBehaviour
             enemyCharacter
         );
 
-
         LockEnemyForCurrentRound(
             attackUnit
         );
 
         return true;
     }
-
-
-    // ============================================================
-    // AVAILABLE GRID CELLS
-    // ============================================================
 
     private List<Vector2Int> GetAvailableCells()
     {
@@ -471,7 +414,6 @@ public class CombatManager : MonoBehaviour
         return cells;
     }
 
-
     public bool TryGetRandomAvailableCell(
         out Vector2Int position
     )
@@ -509,22 +451,15 @@ public class CombatManager : MonoBehaviour
         return true;
     }
 
-
-    // ============================================================
-    // ACCESSORS
-    // ============================================================
-
     public GridManager GetGridManager()
     {
         return gridManager;
     }
 
-
     public bool AreEnemiesAlive()
     {
         return GetEnemyCount() > 0;
     }
-
 
     public bool HasEnemies()
     {

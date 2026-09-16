@@ -6,30 +6,21 @@ public class EncounterUnit : MonoBehaviour
     [SerializeField]
     private string encounterUnitId;
 
-
-    // ============================================================
-    // SET
-    // ============================================================
-
     public void SetEncounterUnitId(
-        string id)
+        string id
+    )
     {
         encounterUnitId = id;
     }
-
-
-    // ============================================================
-    // GET
-    // ============================================================
 
     public string GetEncounterUnitId()
     {
         return encounterUnitId;
     }
 
-
     public bool HasEncounterUnitId(
-        string id)
+        string id
+    )
     {
         if (string.IsNullOrEmpty(id))
         {

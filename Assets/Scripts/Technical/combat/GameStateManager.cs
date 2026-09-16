@@ -101,6 +101,8 @@ public class GameStateManager : MonoBehaviour
 
         currentState =
             startingState;
+
+
     }
 
 
@@ -129,16 +131,37 @@ public class GameStateManager : MonoBehaviour
     // ============================================================
 
     public void SetGameState(
-        GameState newState)
+        GameState newState
+    )
     {
         // --------------------------------------------------------
-        // DON'T DO ANYTHING IF STATE IS ALREADY THE SAME
+        // SAME STATE
         // --------------------------------------------------------
 
         if (currentState == newState)
         {
+            Debug.Log(
+                "[GameStateManager] State already is " +
+                newState +
+                ". No change.",
+                this
+            );
+
             return;
         }
+
+
+        // --------------------------------------------------------
+        // LOG STATE CHANGE
+        // --------------------------------------------------------
+
+        Debug.Log(
+            "[GameStateManager] State changing: " +
+            currentState +
+            " -> " +
+            newState,
+            this
+        );
 
 
         // --------------------------------------------------------
@@ -182,6 +205,11 @@ public class GameStateManager : MonoBehaviour
 
         if (upgradeChoiceUI == null)
         {
+            Debug.LogWarning(
+                "[GameStateManager] UpgradeChoiceUI not found.",
+                this
+            );
+
             return;
         }
 
@@ -253,6 +281,11 @@ public class GameStateManager : MonoBehaviour
 
         if (encounterManager == null)
         {
+            Debug.LogError(
+                "[GameStateManager] EncounterManager not found.",
+                this
+            );
+
             return;
         }
 
@@ -268,6 +301,13 @@ public class GameStateManager : MonoBehaviour
             currentState != GameState.Defeat
         )
         {
+            Debug.LogWarning(
+                "[GameStateManager] Cannot start combat " +
+                "from state: " +
+                currentState,
+                this
+            );
+
             return;
         }
 
@@ -295,6 +335,12 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterStarted()
     {
+        Debug.Log(
+            "[GameStateManager] Encounter started.",
+            this
+        );
+
+
         SetGameState(
             GameState.Combat
         );
@@ -307,6 +353,13 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterVictory()
     {
+        Debug.Log(
+            "[GameStateManager] EncounterVictory() called. " +
+            "Changing state to Victory.",
+            this
+        );
+
+
         SetGameState(
             GameState.Victory
         );
@@ -319,6 +372,12 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterDefeat()
     {
+        Debug.Log(
+            "[GameStateManager] EncounterDefeat() called.",
+            this
+        );
+
+
         SetGameState(
             GameState.Defeat
         );

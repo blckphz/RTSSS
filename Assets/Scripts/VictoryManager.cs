@@ -1,15 +1,9 @@
-using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class VictoryManager : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("References")]
-
     [SerializeField]
     private GameStateManager gameStateManager;
 
@@ -17,42 +11,22 @@ public class VictoryManager : MonoBehaviour
     private transitionGameManager transitionManager;
 
     [SerializeField]
-    private UpgradeChoiceUI upgradeChoiceUI;
-
-
-    // ============================================================
-    // UI
-    // ============================================================
+    private musicManager musicManager;
 
     [Header("UI")]
-
     [SerializeField]
     private GameObject victoryCanvas;
 
     [SerializeField]
     private Button continueButton;
 
-
-    // ============================================================
-    // AWAKE
-    // ============================================================
-
     private void Awake()
     {
-        // --------------------------------------------------------
-        // FIND GAME STATE MANAGER
-        // --------------------------------------------------------
-
         if (gameStateManager == null)
         {
             gameStateManager =
                 FindFirstObjectByType<GameStateManager>();
         }
-
-
-        // --------------------------------------------------------
-        // FIND TRANSITION MANAGER
-        // --------------------------------------------------------
 
         if (transitionManager == null)
         {
@@ -60,42 +34,29 @@ public class VictoryManager : MonoBehaviour
                 FindFirstObjectByType<transitionGameManager>();
         }
 
-
-        // --------------------------------------------------------
-        // FIND UPGRADE UI
-        // --------------------------------------------------------
-
-        if (upgradeChoiceUI == null)
+        if (musicManager == null)
         {
-            upgradeChoiceUI =
-                FindFirstObjectByType<UpgradeChoiceUI>();
+            musicManager =
+                FindFirstObjectByType<musicManager>();
         }
 
-
-        // --------------------------------------------------------
-        // HIDE VICTORY CANVAS
-        // --------------------------------------------------------
-
-        if (victoryCanvas != null)
+        if (victoryCanvas == null)
+        {
+            Debug.LogError(
+                "[VictoryManager] Victory Canvas is not assigned!",
+                this
+            );
+        }
+        else
         {
             victoryCanvas.SetActive(false);
         }
 
-
-        // --------------------------------------------------------
-        // DISABLE CONTINUE
-        // --------------------------------------------------------
-
         if (continueButton != null)
         {
-            continueButton.interactable = false;
+            continueButton.interactable = true;
         }
     }
-
-
-    // ============================================================
-    // ENABLE
-    // ============================================================
 
     private void OnEnable()
     {
@@ -105,18 +66,24 @@ public class VictoryManager : MonoBehaviour
                 FindFirstObjectByType<GameStateManager>();
         }
 
-
         if (gameStateManager != null)
         {
             gameStateManager.OnGameStateChanged +=
                 HandleGameStateChanged;
+
+            Debug.Log(
+                "[VictoryManager] Subscribed to GameStateManager.",
+                this
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                "[VictoryManager] Could not find GameStateManager.",
+                this
+            );
         }
     }
-
-
-    // ============================================================
-    // DISABLE
-    // ============================================================
 
     private void OnDisable()
     {
@@ -124,128 +91,68 @@ public class VictoryManager : MonoBehaviour
         {
             gameStateManager.OnGameStateChanged -=
                 HandleGameStateChanged;
+
+            Debug.Log(
+                "[VictoryManager] Unsubscribed from GameStateManager.",
+                this
+            );
         }
     }
-
-
-    // ============================================================
-    // GAME STATE CHANGED
-    // ============================================================
 
     private void HandleGameStateChanged(
         GameStateManager.GameState newState
     )
     {
-        if (newState ==
-            GameStateManager.GameState.Victory)
+        Debug.Log(
+            "[VictoryManager] Received game state: " +
+            newState,
+            this
+        );
+
+        if (
+            newState ==
+            GameStateManager.GameState.Victory
+        )
         {
             Debug.Log(
-                "[VictoryManager] Victory state reached."
+                "[VictoryManager] Victory state reached.",
+                this
             );
 
             ShowVictoryCanvas();
+
+            return;
         }
-        else
-        {
-            HideVictoryCanvas();
-        }
+
+        HideVictoryCanvas();
     }
-
-
-    // ============================================================
-    // SHOW VICTORY
-    // ============================================================
 
     private void ShowVictoryCanvas()
     {
         if (victoryCanvas == null)
         {
-            Debug.LogWarning(
-                "[VictoryManager] " +
-                "Victory Canvas is not assigned!",
+            Debug.LogError(
+                "[VictoryManager] Cannot show Victory Canvas. " +
+                "Reference is missing.",
                 this
             );
 
             return;
         }
 
-
-        // --------------------------------------------------------
-        // RESET CONTINUE BUTTON
-        // --------------------------------------------------------
-
-        if (continueButton != null)
-        {
-            continueButton.interactable = false;
-        }
-
-
-        // --------------------------------------------------------
-        // SHOW VICTORY CANVAS
-        // --------------------------------------------------------
-
-        victoryCanvas.SetActive(true);
-
-
-        Debug.Log(
-            "[VictoryManager] Victory screen shown. " +
-            "Waiting for upgrade selection."
-        );
-
-
-        // --------------------------------------------------------
-        // SHOW UPGRADE CHOICES
-        // --------------------------------------------------------
-
-        if (upgradeChoiceUI != null)
-        {
-            upgradeChoiceUI.ShowUpgradeChoices(
-                OnUpgradeSelected
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[VictoryManager] " +
-                "UpgradeChoiceUI not found!",
-                this
-            );
-
-
-            // ----------------------------------------------------
-            // NO UPGRADE UI
-            // ----------------------------------------------------
-
-            if (continueButton != null)
-            {
-                continueButton.interactable = true;
-            }
-        }
-    }
-
-
-    // ============================================================
-    // UPGRADE SELECTED
-    // ============================================================
-
-    public void OnUpgradeSelected()
-    {
-        Debug.Log(
-            "[VictoryManager] Upgrade selected. " +
-            "Continue enabled."
-        );
-
-
+        // Continue is immediately available.
         if (continueButton != null)
         {
             continueButton.interactable = true;
         }
+
+        victoryCanvas.SetActive(true);
+
+        Debug.Log(
+            "[VictoryManager] Victory Canvas shown.",
+            this
+        );
     }
-
-
-    // ============================================================
-    // HIDE VICTORY
-    // ============================================================
 
     private void HideVictoryCanvas()
     {
@@ -254,49 +161,28 @@ public class VictoryManager : MonoBehaviour
             return;
         }
 
-
         if (!victoryCanvas.activeSelf)
         {
             return;
         }
 
-
         victoryCanvas.SetActive(false);
+
+        Debug.Log(
+            "[VictoryManager] Victory Canvas hidden.",
+            this
+        );
     }
-
-
-    // ============================================================
-    // CONTINUE
-    // ============================================================
 
     public void ContinueButton()
     {
         Debug.Log(
             "[VictoryManager] Continue pressed. " +
-            "Returning to map."
+            "Returning to map.",
+            this
         );
 
-
-        // --------------------------------------------------------
-        // HIDE UPGRADE UI
-        // --------------------------------------------------------
-
-        if (upgradeChoiceUI != null)
-        {
-            upgradeChoiceUI.HideUpgradeChoices();
-        }
-
-
-        // --------------------------------------------------------
-        // HIDE VICTORY UI
-        // --------------------------------------------------------
-
         HideVictoryCanvas();
-
-
-        // --------------------------------------------------------
-        // CHANGE GAME STATE TO MAP
-        // --------------------------------------------------------
 
         if (gameStateManager != null)
         {
@@ -307,16 +193,23 @@ public class VictoryManager : MonoBehaviour
         else
         {
             Debug.LogError(
-                "[VictoryManager] " +
-                "GameStateManager not found!",
+                "[VictoryManager] GameStateManager not found!",
                 this
             );
         }
 
-
-        // --------------------------------------------------------
-        // TRANSITION TO MAP
-        // --------------------------------------------------------
+        if (musicManager != null)
+        {
+            musicManager.PlayMapMusic();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[VictoryManager] MusicManager not found. " +
+                "Map music will not play.",
+                this
+            );
+        }
 
         if (transitionManager != null)
         {

@@ -1,16 +1,7 @@
 ﻿using UnityEngine;
 
-
-// ============================================================
-// ENCOUNTER SPAWNER
-// ============================================================
-
 public class EncounterSpawner : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("References")]
     [SerializeField]
     private GridManager gridManager;
@@ -21,20 +12,18 @@ public class EncounterSpawner : MonoBehaviour
     [SerializeField]
     private CombatManager combatManager;
 
-
-    // ============================================================
-    // UNITY
-    // ============================================================
+    [Header("Survival")]
+    [SerializeField]
+    private int currentWave = 0;
 
     private void Awake()
     {
         FindReferences();
     }
 
-
-    // ============================================================
-    // FIND REFERENCES
-    // ============================================================
+    // =========================================================
+    // REFERENCES
+    // =========================================================
 
     private void FindReferences()
     {
@@ -44,13 +33,11 @@ public class EncounterSpawner : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
 
-
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
-
 
         if (combatManager == null)
         {
@@ -59,22 +46,28 @@ public class EncounterSpawner : MonoBehaviour
         }
     }
 
+    // =========================================================
+    // WAVES
+    // =========================================================
 
-    // ============================================================
-    // SPAWN COMPLETE ENCOUNTER
-    // ============================================================
-    //
-    // Called when an encounter starts.
-    //
-    // ORDER:
-    //
-    // 1. Spawn obstacles
-    // 2. Spawn enemies
-    //
-    // Obstacles therefore occupy their cells before enemies
-    // search for free cells.
-    //
-    // ============================================================
+    public void ResetWaves()
+    {
+        currentWave = 0;
+
+        Debug.Log(
+            "[EncounterSpawner] Waves reset.",
+            this
+        );
+    }
+
+    public int GetCurrentWave()
+    {
+        return currentWave;
+    }
+
+    // =========================================================
+    // INITIAL ENCOUNTER
+    // =========================================================
 
     public void SpawnEncounter(
         EncounterDefinition encounter
@@ -82,55 +75,212 @@ public class EncounterSpawner : MonoBehaviour
     {
         if (encounter == null)
         {
-            Debug.LogWarning(
-                "EncounterSpawner: Encounter is null."
+            Debug.LogError(
+                "[EncounterSpawner] Cannot spawn encounter. " +
+                "Encounter is null.",
+                this
             );
 
             return;
         }
 
-
         FindReferences();
-
 
         if (gridManager == null)
         {
             Debug.LogError(
-                "EncounterSpawner: GridManager is missing."
+                "[EncounterSpawner] Cannot spawn encounter. " +
+                "GridManager is missing.",
+                this
             );
 
             return;
         }
 
+        /*
+         * Every encounter starts at Wave 1.
+         */
+        ResetWaves();
 
-        // ========================================================
-        // OBSTACLES
-        // ========================================================
+        Debug.Log(
+            "[EncounterSpawner] Starting encounter spawn.",
+            this
+        );
 
+        /*
+         * Obstacles only spawn once.
+         */
         SpawnObstacles(
             encounter
         );
 
+        /*
+         * Initial enemy wave.
+         */
+        int spawned =
+            SpawnWave(
+                encounter,
+                true
+            );
 
-        // ========================================================
-        // ENEMIES
-        // ========================================================
-
-        SpawnEnemies(
-            encounter
+        Debug.Log(
+            "[EncounterSpawner] Initial Wave 1 spawned " +
+            spawned +
+            " enemies.",
+            this
         );
     }
 
+    // =========================================================
+    // SPAWN WAVE
+    // =========================================================
 
-    // ============================================================
-    // SPAWN OBSTACLES
-    // ============================================================
-    //
-    // Obstacles are spawned ONCE when the encounter begins.
-    //
-    // Survival rounds DO NOT call this method.
-    //
-    // ============================================================
+    public int SpawnWave(
+        EncounterDefinition encounter,
+        bool lockForCurrentRound = false
+    )
+    {
+        if (encounter == null)
+        {
+            Debug.LogError(
+                "[EncounterSpawner] SpawnWave failed: " +
+                "encounter is null.",
+                this
+            );
+
+            return 0;
+        }
+
+        if (encounter.enemies == null)
+        {
+            Debug.LogError(
+                "[EncounterSpawner] SpawnWave failed: " +
+                "encounter.enemies is null.",
+                this
+            );
+
+            return 0;
+        }
+
+        FindReferences();
+
+        if (gridManager == null)
+        {
+            Debug.LogError(
+                "[EncounterSpawner] SpawnWave failed: " +
+                "GridManager is missing.",
+                this
+            );
+
+            return 0;
+        }
+
+        /*
+         * IMPORTANT:
+         *
+         * Dead enemies may still have their grid
+         * cells registered as occupied.
+         *
+         * Clean those before attempting to place
+         * the next wave.
+         */
+        gridManager.CleanupDeadUnits();
+
+        currentWave++;
+
+        Debug.Log(
+            "[EncounterSpawner] =========================",
+            this
+        );
+
+        Debug.Log(
+            "[EncounterSpawner] SPAWNING WAVE " +
+            currentWave +
+            " | Enemy definitions: " +
+            encounter.enemies.Count,
+            this
+        );
+
+        int spawnedCount = 0;
+
+        for (
+            int enemyIndex = 0;
+            enemyIndex < encounter.enemies.Count;
+            enemyIndex++
+        )
+        {
+            EnemySpawnData enemyData =
+                encounter.enemies[
+                    enemyIndex
+                ];
+
+            if (enemyData == null)
+            {
+                Debug.LogWarning(
+                    "[EncounterSpawner] Enemy entry " +
+                    enemyIndex +
+                    " is null.",
+                    this
+                );
+
+                continue;
+            }
+
+            if (enemyData.prefab == null)
+            {
+                Debug.LogWarning(
+                    "[EncounterSpawner] Enemy entry " +
+                    enemyIndex +
+                    " has no prefab.",
+                    this
+                );
+
+                continue;
+            }
+
+            Debug.Log(
+                "[EncounterSpawner] Attempting enemy " +
+                enemyIndex +
+                " | ID: " +
+                enemyData.enemyId,
+                this
+            );
+
+            bool spawned =
+                SpawnRandomUnit(
+                    enemyData.prefab,
+                    enemyData.character,
+                    enemyData.enemyId,
+                    lockForCurrentRound
+                );
+
+            if (spawned)
+            {
+                spawnedCount++;
+            }
+        }
+
+        Debug.Log(
+            "[EncounterSpawner] WAVE " +
+            currentWave +
+            " COMPLETE | Spawned: " +
+            spawnedCount +
+            " / " +
+            encounter.enemies.Count,
+            this
+        );
+
+        Debug.Log(
+            "[EncounterSpawner] =========================",
+            this
+        );
+
+        return spawnedCount;
+    }
+
+    // =========================================================
+    // OBSTACLES
+    // =========================================================
 
     public void SpawnObstacles(
         EncounterDefinition encounter
@@ -141,12 +291,10 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
-
         if (encounter.obstacles == null)
         {
             return;
         }
-
 
         for (
             int obstacleIndex = 0;
@@ -159,31 +307,28 @@ public class EncounterSpawner : MonoBehaviour
                     obstacleIndex
                 ];
 
-
             if (obstacleData == null)
             {
                 continue;
             }
 
-
             if (obstacleData.prefab == null)
             {
                 Debug.LogWarning(
-                    $"EncounterSpawner: Encounter " +
-                    $"'{encounter.encounterName}' has obstacle " +
-                    $"entry {obstacleIndex} without a prefab."
+                    "[EncounterSpawner] Obstacle " +
+                    obstacleIndex +
+                    " has no prefab.",
+                    this
                 );
 
                 continue;
             }
-
 
             int amount =
                 Mathf.Max(
                     1,
                     obstacleData.amount
                 );
-
 
             for (
                 int instanceIndex = 0;
@@ -200,11 +345,6 @@ public class EncounterSpawner : MonoBehaviour
         }
     }
 
-
-    // ============================================================
-    // SPAWN RANDOM OBSTACLE
-    // ============================================================
-
     private void SpawnRandomObstacle(
         GameObject prefab,
         int obstacleIndex,
@@ -216,16 +356,10 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
-
         if (gridManager == null)
         {
             return;
         }
-
-
-        // ========================================================
-        // FIND FREE GRID CELL
-        // ========================================================
 
         if (
             !gridManager.TryGetRandomFreeCell(
@@ -234,46 +368,34 @@ public class EncounterSpawner : MonoBehaviour
         )
         {
             Debug.LogWarning(
-                $"EncounterSpawner: No free grid cell " +
-                $"available for obstacle '{prefab.name}'."
+                "[EncounterSpawner] Could not find a free cell " +
+                "for obstacle.",
+                this
             );
 
             return;
         }
-
-
-        // ========================================================
-        // CREATE OBSTACLE
-        // ========================================================
 
         GameObject obstacle =
             Instantiate(
                 prefab
             );
 
-
         if (obstacle == null)
         {
+            Debug.LogError(
+                "[EncounterSpawner] Failed to instantiate obstacle.",
+                this
+            );
+
             return;
         }
-
 
         obstacle.name =
             $"Obstacle_{obstacleIndex}_{instanceIndex}";
 
-
-        // ========================================================
-        // UNIT TILE PIN
-        // ========================================================
-        //
-        // Obstacles use the same logical grid positioning
-        // system as units.
-        //
-        // ========================================================
-
         UnitTilePin tilePin =
             obstacle.GetComponent<UnitTilePin>();
-
 
         if (tilePin == null)
         {
@@ -281,138 +403,81 @@ public class EncounterSpawner : MonoBehaviour
                 obstacle.AddComponent<UnitTilePin>();
         }
 
-
-        // ========================================================
-        // SET TILE
-        // ========================================================
-
         tilePin.SetTile(
             position
         );
 
-
-        // ========================================================
-        // REGISTER OCCUPIED CELL
-        // ========================================================
-        //
-        // This prevents enemies from spawning on this cell.
-        //
-        // ========================================================
-
-        gridManager.PlaceUnit(
-            obstacle,
-            position
-        );
-    }
-
-
-    // ============================================================
-    // SPAWN ENEMIES
-    // ============================================================
-    //
-    // PUBLIC because EncounterManager calls this for subsequent
-    // survival rounds.
-    //
-    // IMPORTANT:
-    //
-    // This method does NOT spawn obstacles.
-    //
-    // ============================================================
-
-    public void SpawnEnemies(
-        EncounterDefinition encounter
-    )
-    {
-        if (encounter == null)
-        {
-            return;
-        }
-
-
-        if (encounter.enemies == null)
-        {
-            return;
-        }
-
-
-        for (
-            int enemyIndex = 0;
-            enemyIndex < encounter.enemies.Count;
-            enemyIndex++
-        )
-        {
-            EnemySpawnData enemyData =
-                encounter.enemies[
-                    enemyIndex
-                ];
-
-
-            if (enemyData == null)
-            {
-                continue;
-            }
-
-
-            if (enemyData.prefab == null)
-            {
-                Debug.LogWarning(
-                    $"EncounterSpawner: Encounter " +
-                    $"'{encounter.encounterName}' has enemy " +
-                    $"entry {enemyIndex} without a prefab."
-                );
-
-                continue;
-            }
-
-
-            SpawnRandomUnit(
-                enemyData.prefab,
-                enemyData.character,
-                enemyData.enemyId
+        bool placed =
+            gridManager.PlaceUnit(
+                obstacle,
+                position
             );
+
+        if (!placed)
+        {
+            Debug.LogWarning(
+                "[EncounterSpawner] Failed to place obstacle at " +
+                position +
+                ". Destroying it.",
+                this
+            );
+
+            Destroy(
+                obstacle
+            );
+
+            return;
         }
     }
 
+    // =========================================================
+    // ENEMY SPAWNING
+    // =========================================================
 
-    // ============================================================
-    // SPAWN RANDOM ENEMY
-    // ============================================================
-
-    private void SpawnRandomUnit(
+    private bool SpawnRandomUnit(
         GameObject prefab,
         CharacterSO character,
-        string enemyId
+        string enemyId,
+        bool lockForCurrentRound
     )
     {
         if (prefab == null)
         {
-            return;
-        }
+            Debug.LogWarning(
+                "[EncounterSpawner] Enemy prefab is null.",
+                this
+            );
 
+            return false;
+        }
 
         if (gridManager == null)
         {
-            return;
+            Debug.LogError(
+                "[EncounterSpawner] GridManager is missing.",
+                this
+            );
+
+            return false;
         }
-
-
-        // ========================================================
-        // DO NOT SPAWN IF ENCOUNTER IS FINISHED
-        // ========================================================
 
         if (
             encounterManager != null &&
             encounterManager.IsFinished()
         )
         {
-            return;
+            Debug.LogWarning(
+                "[EncounterSpawner] Encounter is already finished. " +
+                "Enemy will not spawn.",
+                this
+            );
+
+            return false;
         }
 
-
-        // ========================================================
-        // FIND FREE CELL
-        // ========================================================
-
+        /*
+         * Find a completely free grid cell.
+         */
         if (
             !gridManager.TryGetRandomFreeCell(
                 out Vector2Int position
@@ -420,46 +485,46 @@ public class EncounterSpawner : MonoBehaviour
         )
         {
             Debug.LogWarning(
-                $"EncounterSpawner: No free grid cell " +
-                $"available for enemy '{enemyId}'."
+                "[EncounterSpawner] NO FREE GRID CELL FOUND. " +
+                "Cannot spawn enemy '" +
+                enemyId +
+                "'.",
+                this
             );
 
-            return;
+            return false;
         }
 
-
-        // ========================================================
-        // CREATE ENEMY
-        // ========================================================
-
+        /*
+         * Instantiate enemy.
+         */
         GameObject unit =
             Instantiate(
                 prefab
             );
 
-
         if (unit == null)
         {
-            return;
+            Debug.LogError(
+                "[EncounterSpawner] Failed to instantiate enemy '" +
+                enemyId +
+                "'.",
+                this
+            );
+
+            return false;
         }
 
+        unit.name =
+            string.IsNullOrWhiteSpace(enemyId)
+                ? "EncounterEnemy"
+                : enemyId + "_Enemy";
 
-        // ========================================================
-        // UNIT DATA
-        // ========================================================
-        //
-        // Your UnitData.character is private.
-        //
-        // Therefore we correctly use the existing
-        // Initialize(CharacterSO) method.
-        //
-        // This also creates the unit's runtime AbilityData.
-        //
-        // ========================================================
-
+        /*
+         * UnitData.
+         */
         UnitData unitData =
             unit.GetComponent<UnitData>();
-
 
         if (unitData == null)
         {
@@ -467,19 +532,15 @@ public class EncounterSpawner : MonoBehaviour
                 unit.AddComponent<UnitData>();
         }
 
-
         unitData.Initialize(
             character
         );
 
-
-        // ========================================================
-        // ENCOUNTER UNIT
-        // ========================================================
-
+        /*
+         * EncounterUnit.
+         */
         EncounterUnit encounterUnit =
             unit.GetComponent<EncounterUnit>();
-
 
         if (encounterUnit == null)
         {
@@ -487,39 +548,49 @@ public class EncounterSpawner : MonoBehaviour
                 unit.AddComponent<EncounterUnit>();
         }
 
-
-        // ========================================================
-        // SET ENCOUNTER UNIT ID
-        // ========================================================
-        //
-        // Uses your actual EncounterUnit API.
-        //
-        // ========================================================
-
         encounterUnit.SetEncounterUnitId(
             enemyId
         );
 
+        /*
+         * Place on grid.
+         */
+        bool placed =
+            gridManager.PlaceUnit(
+                unit,
+                position
+            );
 
-        // ========================================================
-        // PLACE ON GRID
-        // ========================================================
+        if (!placed)
+        {
+            Debug.LogWarning(
+                "[EncounterSpawner] GridManager refused to place " +
+                "enemy '" +
+                enemyId +
+                "' at " +
+                position +
+                ". Destroying enemy.",
+                this
+            );
 
-        gridManager.PlaceUnit(
-            unit,
-            position
-        );
+            Destroy(
+                unit
+            );
 
+            return false;
+        }
 
-        // ========================================================
-        // LOCK ENEMY FOR CURRENT ROUND
-        // ========================================================
-
-        if (combatManager != null)
+        /*
+         * Lock the newly spawned enemy for the
+         * current round if requested.
+         */
+        if (
+            lockForCurrentRound &&
+            combatManager != null
+        )
         {
             AttackUnit attackUnit =
                 unit.GetComponent<AttackUnit>();
-
 
             if (attackUnit != null)
             {
@@ -528,5 +599,17 @@ public class EncounterSpawner : MonoBehaviour
                 );
             }
         }
+
+        Debug.Log(
+            "[EncounterSpawner] SPAWNED enemy '" +
+            enemyId +
+            "' at " +
+            position +
+            " | Wave " +
+            currentWave,
+            unit
+        );
+
+        return true;
     }
 }

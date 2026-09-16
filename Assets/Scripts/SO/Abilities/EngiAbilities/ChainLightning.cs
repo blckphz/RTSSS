@@ -73,20 +73,6 @@ public class ChainLightning : AbilitySO
         int total =
             maxJumps + bonus;
 
-        Debug.Log(
-            "[ChainLightning] " +
-            "GetMaxJumps | " +
-            "Ability=" + name +
-            " | ID=" + GetInstanceID() +
-            " | Unit=" +
-            (unitData != null
-                ? unitData.name
-                : "NULL") +
-            " | Base=" + maxJumps +
-            " | Bonus=" + bonus +
-            " | Total=" + total
-        );
-
         return total;
     }
 
@@ -152,22 +138,12 @@ public class ChainLightning : AbilitySO
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[ChainLightning] " +
-                "GridManager not found."
-            );
-
             return false;
         }
 
 
         if (projectilePrefab == null)
         {
-            Debug.LogError(
-                "[ChainLightning] " +
-                "Projectile prefab is missing."
-            );
-
             return false;
         }
 
@@ -178,29 +154,6 @@ public class ChainLightning : AbilitySO
 
         UnitData unitData =
             FindUnitData(user);
-
-
-        if (unitData == null)
-        {
-            Debug.LogWarning(
-                "[ChainLightning] " +
-                "UnitData not found on " +
-                user.name +
-                ". Using base jump count."
-            );
-        }
-        else
-        {
-            Debug.Log(
-                "[ChainLightning] " +
-                "Using UnitData: " +
-                unitData.name +
-                " | ID=" +
-                unitData.GetInstanceID() +
-                " | Bonus=" +
-                GetBonusJumps(unitData)
-            );
-        }
 
 
         // ========================================================
@@ -223,14 +176,6 @@ public class ChainLightning : AbilitySO
         {
             return false;
         }
-
-
-        Debug.Log(
-            "[ChainLightning] " +
-            "Chain created with " +
-            chain.Count +
-            " target(s)."
-        );
 
 
         // ========================================================
@@ -274,12 +219,6 @@ public class ChainLightning : AbilitySO
 
         if (projectileComponent == null)
         {
-            Debug.LogError(
-                "[ChainLightning] " +
-                "Projectile prefab requires " +
-                "ChainLightningProjectile."
-            );
-
             Destroy(projectile);
 
             return false;
@@ -456,12 +395,6 @@ public class ChainLightning : AbilitySO
             )
         )
         {
-            Debug.Log(
-                "[ChainLightning] " +
-                "First target cannot be reached. " +
-                "Something is between player and target."
-            );
-
             return chain;
         }
 
@@ -688,19 +621,6 @@ public class ChainLightning : AbilitySO
             // ====================================================
             // LINE CHECK
             // ====================================================
-            //
-            // Current enemy tile
-            //          |
-            //          |
-            //      object
-            //          |
-            //          |
-            // Next enemy tile
-            //
-            // If an occupied grid cell is between them,
-            // this enemy cannot be reached.
-            //
-            // ====================================================
 
             if (
                 HasObjectOnLine(
@@ -710,13 +630,6 @@ public class ChainLightning : AbilitySO
                 )
             )
             {
-                Debug.Log(
-                    "[ChainLightning] " +
-                    "Path to " +
-                    candidate.name +
-                    " is obstructed."
-                );
-
                 continue;
             }
 
@@ -761,26 +674,6 @@ public class ChainLightning : AbilitySO
 
     // ============================================================
     // GRID LINE CHECK
-    // ============================================================
-    //
-    // Calculates the line between two GRID TILES.
-    //
-    // Example:
-    //
-    //      Enemy
-    //        |
-    //      empty
-    //        |
-    //      object   <- detected
-    //        |
-    //      empty
-    //        |
-    //      Enemy
-    //
-    // The start and end tiles are ignored.
-    //
-    // Every tile between them is checked.
-    //
     // ============================================================
 
     private bool HasObjectOnLine(
@@ -926,14 +819,6 @@ public class ChainLightning : AbilitySO
 
             if (objectOnTile != null)
             {
-                Debug.Log(
-                    "[ChainLightning] " +
-                    "Object detected on line at tile " +
-                    tile +
-                    " : " +
-                    objectOnTile.name
-                );
-
                 return true;
             }
         }

@@ -62,6 +62,17 @@ public class EncounterDefinition : ScriptableObject
 
 
     // ============================================================
+    // MUSIC
+    // ============================================================
+
+    [Header("Music")]
+    [Tooltip(
+        "Music that will play when this encounter starts."
+    )]
+    public AudioClip music;
+
+
+    // ============================================================
     // GRID
     // ============================================================
 
