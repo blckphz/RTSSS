@@ -8,6 +8,9 @@ public class UnitAttackBrain : MonoBehaviour
     [SerializeField]
     private AttackUnit attackUnit;
 
+    [SerializeField]
+    private AnimationController animationController;
+
 
     // ============================================================
     // UNITY
@@ -19,6 +22,12 @@ public class UnitAttackBrain : MonoBehaviour
         {
             attackUnit =
                 GetComponent<AttackUnit>();
+        }
+
+        if (animationController == null)
+        {
+            animationController =
+                GetComponent<AnimationController>();
         }
     }
 
@@ -127,10 +136,7 @@ public class UnitAttackBrain : MonoBehaviour
                 target
             );
 
-        bool result =
-            best != null;
-
-        return result;
+        return best != null;
     }
 
 
@@ -578,18 +584,26 @@ public class UnitAttackBrain : MonoBehaviour
     {
         if (attackUnit == null)
         {
+            SetAttackSequenceActive(false);
             yield break;
         }
 
         if (attackUnit.IsDead())
         {
+            SetAttackSequenceActive(false);
             yield break;
         }
 
         if (!attackUnit.CanAttack())
         {
+            SetAttackSequenceActive(false);
             yield break;
         }
+
+
+        // Start the full attack sequence.
+        SetAttackSequenceActive(true);
+
 
         while (!attackUnit.IsDead())
         {
@@ -600,6 +614,8 @@ public class UnitAttackBrain : MonoBehaviour
                     out target
                 );
 
+
+            // Nothing left to do.
             if (
                 ability == null ||
                 target == null
@@ -608,20 +624,26 @@ public class UnitAttackBrain : MonoBehaviour
                 break;
             }
 
+
             bool success =
                 attackUnit.Attack(
                     target,
                     ability
                 );
 
+
             if (!success)
             {
                 break;
             }
 
+
+            // Wait until the current attack animation
+            // has completely finished.
             yield return StartCoroutine(
                 attackUnit.WaitForAttackAnimation()
             );
+
 
             float useDuration =
                 ability.GetUseDuration();
@@ -637,6 +659,29 @@ public class UnitAttackBrain : MonoBehaviour
                 yield return null;
             }
         }
+
+
+        // No more usable abilities/targets.
+        SetAttackSequenceActive(false);
+    }
+
+
+    // ============================================================
+    // SET ATTACK ANIMATION BOOL
+    // ============================================================
+
+    private void SetAttackSequenceActive(
+        bool active
+    )
+    {
+        if (animationController == null)
+        {
+            return;
+        }
+
+        animationController.SetAttackSequenceActive(
+            active
+        );
     }
 
 

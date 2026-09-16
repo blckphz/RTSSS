@@ -2,23 +2,13 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
-public class AnimationController : MonoBehaviour
+public class AnimationController : MonoBehaviour, IAttackAnimation
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("References")]
     [SerializeField]
     private Animator animator;
 
-
-    // ============================================================
-    // WALK ANIMATION STATES
-    // ============================================================
-
     [Header("Walk Animation States")]
-
     [SerializeField]
     private string walkDownState = "basicEnemyWalkDown";
 
@@ -31,33 +21,23 @@ public class AnimationController : MonoBehaviour
     [SerializeField]
     private string walkRightState = "basicEnemyWalkRight";
 
-
-    // ============================================================
-    // IDLE
-    // ============================================================
-
     [Header("Idle Animation State")]
-
     [SerializeField]
     private string idleState = "Idle";
 
+    [Header("Generic Attack Animation")]
+    [SerializeField]
+    private string attackTrigger = "Attack";
 
-    // ============================================================
-    // ATTACK LAYER
-    // ============================================================
+    [Header("Attack Sequence Animator Bool")]
+    [SerializeField]
+    private string attackSequenceBool = "IsAttacking";
 
     [Header("Enemy Attack Animation Layer")]
-
     [SerializeField]
     private string attackAnimatorLayerName = "attackLayer";
 
-
-    // ============================================================
-    // ATTACK STATES
-    // ============================================================
-
     [Header("Enemy Attack Animation States")]
-
     [SerializeField]
     private string enemyAttackUpState = "enemyattackup";
 
@@ -70,19 +50,11 @@ public class AnimationController : MonoBehaviour
     [SerializeField]
     private string enemyAttackRightState = "enemyattackright";
 
-
-    // ============================================================
-    // STATE
-    // ============================================================
-
     private bool isWalking;
 
     private int attackAnimatorLayerIndex = -1;
 
-
-    // ============================================================
-    // ATTACK EVENT STATE
-    // ============================================================
+    private bool attackFinished = true;
 
     private bool attackHitEventReceived;
 
@@ -141,19 +113,102 @@ public class AnimationController : MonoBehaviour
             1f
         );
 
-        Debug.Log(
-            "[AnimationController] Attack layer found"
-            + " | Name: "
-            + attackAnimatorLayerName
-            + " | Index: "
-            + attackAnimatorLayerIndex,
-            this
+        if (!string.IsNullOrEmpty(attackSequenceBool))
+        {
+            animator.SetBool(
+                attackSequenceBool,
+                false
+            );
+        }
+    }
+
+
+    // ============================================================
+    // ATTACK SEQUENCE BOOL
+    // ============================================================
+
+    public void SetAttackSequenceActive(bool active)
+    {
+        if (animator == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(attackSequenceBool))
+        {
+            return;
+        }
+
+        animator.SetBool(
+            attackSequenceBool,
+            active
+        );
+    }
+
+
+    public bool IsAttackSequenceActive()
+    {
+        if (animator == null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(attackSequenceBool))
+        {
+            return false;
+        }
+
+        return animator.GetBool(
+            attackSequenceBool
         );
     }
 
 
     // ============================================================
-    // CONVERT GRID DIRECTION TO VISUAL/WORLD DIRECTION
+    // GENERIC ATTACK
+    // ============================================================
+
+    public void PlayAttackAnimation()
+    {
+        if (animator == null)
+        {
+            attackFinished = true;
+            return;
+        }
+
+        attackFinished = false;
+
+        animator.SetTrigger(
+            attackTrigger
+        );
+    }
+
+
+    public IEnumerator WaitForAttackFinished()
+    {
+        while (!attackFinished)
+        {
+            yield return null;
+        }
+    }
+
+
+    public void OnAttackAnimationFinished()
+    {
+        attackFinished = true;
+
+        AttackUnit attackUnit =
+            GetComponentInParent<AttackUnit>();
+
+        if (attackUnit != null)
+        {
+            attackUnit.OnAttackAnimationFinished();
+        }
+    }
+
+
+    // ============================================================
+    // CONVERT DIRECTION
     // ============================================================
 
     private Vector2Int ConvertDirectionToWorldDirection(
@@ -189,10 +244,6 @@ public class AnimationController : MonoBehaviour
             }
         }
 
-        // --------------------------------------------------------
-        // Determine which visual cardinal direction is strongest.
-        // --------------------------------------------------------
-
         if (
             Mathf.Abs(logicalDirection.y) >=
             Mathf.Abs(logicalDirection.x)
@@ -216,7 +267,7 @@ public class AnimationController : MonoBehaviour
 
 
     // ============================================================
-    // MOVEMENT DIRECTION
+    // MOVEMENT
     // ============================================================
 
     public void SetMovementDirection(
@@ -233,26 +284,10 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
-        // --------------------------------------------------------
-        // IMPORTANT:
-        //
-        // UnitMoveBrain gives us a LOGICAL GRID direction.
-        //
-        // The board may have been rotated visually.
-        //
-        // Convert the logical direction into the direction the
-        // player actually sees on screen.
-        // --------------------------------------------------------
-
         Vector2Int visualDirection =
             ConvertDirectionToWorldDirection(
                 direction
             );
-
-
-        // --------------------------------------------------------
-        // PLAY CORRECT WALK ANIMATION
-        // --------------------------------------------------------
 
         if (visualDirection == Vector2Int.up)
         {
@@ -281,33 +316,25 @@ public class AnimationController : MonoBehaviour
 
     private void PlayWalkUp()
     {
-        PlayWalkState(
-            walkUpState
-        );
+        PlayWalkState(walkUpState);
     }
 
 
     private void PlayWalkDown()
     {
-        PlayWalkState(
-            walkDownState
-        );
+        PlayWalkState(walkDownState);
     }
 
 
     private void PlayWalkLeft()
     {
-        PlayWalkState(
-            walkLeftState
-        );
+        PlayWalkState(walkLeftState);
     }
 
 
     private void PlayWalkRight()
     {
-        PlayWalkState(
-            walkRightState
-        );
+        PlayWalkState(walkRightState);
     }
 
 
@@ -330,10 +357,7 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
-        if (IsCurrentState(
-                stateName,
-                0
-            ))
+        if (IsCurrentState(stateName, 0))
         {
             return;
         }
@@ -356,21 +380,11 @@ public class AnimationController : MonoBehaviour
     {
         if (animator == null)
         {
-            Debug.LogWarning(
-                "[AnimationController] Cannot play enemy attack. Animator is null.",
-                this
-            );
-
             return;
         }
 
         if (direction == Vector2Int.zero)
         {
-            Debug.LogWarning(
-                "[AnimationController] Cannot play enemy attack. Direction is zero.",
-                this
-            );
-
             return;
         }
 
@@ -400,41 +414,29 @@ public class AnimationController : MonoBehaviour
 
         isWalking = false;
 
-
-        // --------------------------------------------------------
-        // CONVERT LOGICAL ATTACK DIRECTION TO VISUAL DIRECTION
-        // --------------------------------------------------------
-
         Vector2Int visualDirection =
             ConvertDirectionToWorldDirection(
                 direction
             );
 
-
         string stateToPlay = null;
-
 
         if (visualDirection == Vector2Int.up)
         {
-            stateToPlay =
-                enemyAttackUpState;
+            stateToPlay = enemyAttackUpState;
         }
         else if (visualDirection == Vector2Int.down)
         {
-            stateToPlay =
-                enemyAttackDownState;
+            stateToPlay = enemyAttackDownState;
         }
         else if (visualDirection == Vector2Int.left)
         {
-            stateToPlay =
-                enemyAttackLeftState;
+            stateToPlay = enemyAttackLeftState;
         }
         else if (visualDirection == Vector2Int.right)
         {
-            stateToPlay =
-                enemyAttackRightState;
+            stateToPlay = enemyAttackRightState;
         }
-
 
         if (string.IsNullOrEmpty(stateToPlay))
         {
@@ -446,31 +448,8 @@ public class AnimationController : MonoBehaviour
             return;
         }
 
-
-        // --------------------------------------------------------
-        // RESET ANIMATION EVENT STATE
-        // --------------------------------------------------------
-
         attackHitEventReceived = false;
-
         attackFinishedEventReceived = false;
-
-
-        Debug.Log(
-            "[AnimationController] ENEMY ATTACK"
-            + " | Logical Direction: "
-            + direction
-            + " | Visual Direction: "
-            + visualDirection
-            + " | State: "
-            + stateToPlay
-            + " | Layer: "
-            + attackAnimatorLayerName
-            + " | Layer Index: "
-            + attackAnimatorLayerIndex,
-            this
-        );
-
 
         animator.Play(
             stateToPlay,
@@ -479,30 +458,8 @@ public class AnimationController : MonoBehaviour
         );
 
         animator.Update(0f);
-
-
-        AnimatorStateInfo stateInfo =
-            animator.GetCurrentAnimatorStateInfo(
-                attackAnimatorLayerIndex
-            );
-
-
-        Debug.Log(
-            "[AnimationController] AFTER PLAY"
-            + " | Requested: "
-            + stateToPlay
-            + " | IsName: "
-            + stateInfo.IsName(stateToPlay)
-            + " | Normalized Time: "
-            + stateInfo.normalizedTime,
-            this
-        );
     }
 
-
-    // ============================================================
-    // ENEMY ATTACK USING GRID POSITIONS
-    // ============================================================
 
     public void PlayEnemyAttack(
         Vector2Int attackerTile,
@@ -511,19 +468,6 @@ public class AnimationController : MonoBehaviour
     {
         Vector2Int direction =
             targetTile - attackerTile;
-
-
-        Debug.Log(
-            "[AnimationController] Enemy attack grid direction"
-            + " | Attacker: "
-            + attackerTile
-            + " | Target: "
-            + targetTile
-            + " | Raw Direction: "
-            + direction,
-            this
-        );
-
 
         direction.x =
             Mathf.Clamp(
@@ -539,96 +483,49 @@ public class AnimationController : MonoBehaviour
                 1
             );
 
-
-        PlayEnemyAttack(
-            direction
-        );
+        PlayEnemyAttack(direction);
     }
 
 
     // ============================================================
     // ATTACK HIT
-    //
-    // UNITY ANIMATION EVENT
-    //
-    // DAMAGE HAPPENS HERE.
     // ============================================================
 
     public void AttackHit()
     {
-        Debug.Log(
-            "[AnimationController] ATTACK HIT ANIMATION EVENT FIRED.",
-            this
-        );
-
-
-        // Prevent duplicate hit events.
-
         if (attackHitEventReceived)
         {
-            Debug.LogWarning(
-                "[AnimationController] AttackHit was already received for this attack.",
-                this
-            );
-
             return;
         }
 
-
         attackHitEventReceived = true;
-
 
         AttackUnit attackUnit =
             GetComponentInParent<AttackUnit>();
 
-
         if (attackUnit != null)
         {
             attackUnit.OnAttackAnimationEvent();
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[AnimationController] AttackHit fired but no AttackUnit was found.",
-                this
-            );
         }
     }
 
 
     // ============================================================
     // ATTACK FINISHED
-    //
-    // UNITY ANIMATION EVENT
-    //
-    // PUT THIS EVENT AT THE VERY END OF THE ATTACK ANIMATION.
     // ============================================================
 
     public void AttackFinished()
     {
-        Debug.Log(
-            "[AnimationController] ATTACK FINISHED ANIMATION EVENT FIRED.",
-            this
-        );
-
-
         attackFinishedEventReceived = true;
 
+        attackFinished = true;
 
         AttackUnit attackUnit =
             GetComponentInParent<AttackUnit>();
 
-
         if (attackUnit != null)
         {
             attackUnit.OnAttackAnimationFinished();
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[AnimationController] AttackFinished fired but no AttackUnit was found.",
-                this
-            );
         }
     }
 
@@ -647,10 +544,10 @@ public class AnimationController : MonoBehaviour
 
 
     // ============================================================
-    // WAIT FOR ATTACK FINISHED
+    // WAIT FOR ENEMY ATTACK FINISHED
     // ============================================================
 
-    public IEnumerator WaitForAttackFinished()
+    public IEnumerator WaitForEnemyAttackFinished()
     {
         while (!attackFinishedEventReceived)
         {
@@ -667,9 +564,7 @@ public class AnimationController : MonoBehaviour
         Vector2Int direction
     )
     {
-        PlayEnemyAttack(
-            direction
-        );
+        PlayEnemyAttack(direction);
     }
 
 
@@ -698,15 +593,10 @@ public class AnimationController : MonoBehaviour
 
         isWalking = false;
 
-
-        if (IsCurrentState(
-                idleState,
-                0
-            ))
+        if (IsCurrentState(idleState, 0))
         {
             return;
         }
-
 
         animator.Play(
             idleState,
@@ -750,16 +640,12 @@ public class AnimationController : MonoBehaviour
             return false;
         }
 
-
         AnimatorStateInfo stateInfo =
             animator.GetCurrentAnimatorStateInfo(
                 layerIndex
             );
 
-
-        return stateInfo.IsName(
-            stateName
-        );
+        return stateInfo.IsName(stateName);
     }
 
 
@@ -774,7 +660,6 @@ public class AnimationController : MonoBehaviour
             return -1;
         }
 
-
         if (attackAnimatorLayerIndex < 0)
         {
             attackAnimatorLayerIndex =
@@ -782,7 +667,6 @@ public class AnimationController : MonoBehaviour
                     attackAnimatorLayerName
                 );
         }
-
 
         return attackAnimatorLayerIndex;
     }
