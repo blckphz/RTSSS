@@ -63,9 +63,6 @@ public class RoundManager : MonoBehaviour
     private readonly List<AttackUnit> cachedUnits =
         new List<AttackUnit>();
 
-    private readonly HashSet<AttackUnit> enemyTurnLockedUnits =
-        new HashSet<AttackUnit>();
-
     private bool roundRunning;
 
     private void Awake()
@@ -134,10 +131,13 @@ public class RoundManager : MonoBehaviour
         currentState = RoundState.Setup;
         roundRunning = false;
 
-        enemyTurnLockedUnits.Clear();
         roundAbilityLogs.Clear();
         cachedUnits.Clear();
 
+        /*
+         * This is safe here because a completely new encounter
+         * is being prepared.
+         */
         if (combatManager != null)
         {
             combatManager.ClearEnemyTurnLocks();
@@ -202,12 +202,26 @@ public class RoundManager : MonoBehaviour
 
         CombatUtility.SetPlayerInputLocked(false);
 
-        enemyTurnLockedUnits.Clear();
-
-        if (combatManager != null)
-        {
-            combatManager.ClearEnemyTurnLocks();
-        }
+        /*
+         * =====================================================
+         * IMPORTANT
+         * =====================================================
+         *
+         * DO NOT CALL:
+         *
+         * combatManager.ClearEnemyTurnLocks();
+         *
+         * HERE.
+         *
+         * EncounterManager has already spawned the wave before
+         * calling StartRound().
+         *
+         * Wave 2:
+         *     Spawn -> lock -> StartRound()
+         *
+         * If we cleared the locks here, Wave 2 would immediately
+         * act during Round 2.
+         */
 
         RefreshCachedUnits();
 
@@ -238,8 +252,6 @@ public class RoundManager : MonoBehaviour
 
         /*
          * EncounterManager owns encounter spawning.
-         *
-         * This method must NEVER spawn a survival wave.
          */
         EnsureEnemiesExist();
 
@@ -377,6 +389,14 @@ public class RoundManager : MonoBehaviour
                 }
             }
 
+            /*
+             * No enemies remain.
+             */
+            if (combatManager != null)
+            {
+                combatManager.ClearEnemyTurnLocks();
+            }
+
             yield break;
         }
 
@@ -404,10 +424,33 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
-            if (IsEnemyTurnLocked(enemy))
+            // =================================================
+            // NEW WAVE LOCK
+            // =================================================
+            //
+            // Newly spawned survival-wave enemies are locked
+            // for the round in which they spawned.
+            //
+            // They simply skip this turn.
+            //
+            if (
+                combatManager.IsEnemyLocked(
+                    enemy
+                )
+            )
             {
+                Debug.Log(
+                    "[RoundManager] Skipping newly spawned enemy: " +
+                    enemy.name,
+                    enemy
+                );
+
                 continue;
             }
+
+            // =================================================
+            // STUN
+            // =================================================
 
             if (ConditionManager.IsStunned(enemy))
             {
@@ -442,11 +485,20 @@ public class RoundManager : MonoBehaviour
 
             yield return null;
 
+            /*
+             * If combat ended because the enemy killed the
+             * player, stop processing enemies.
+             *
+             * Clear the locks before leaving so no stale locks
+             * survive this encounter.
+             */
             if (
                 encounterManager != null &&
                 encounterManager.IsFinished()
             )
             {
+                combatManager.ClearEnemyTurnLocks();
+
                 if (nextRoundTextManager != null)
                 {
                     yield return StartCoroutine(
@@ -478,6 +530,20 @@ public class RoundManager : MonoBehaviour
                 yield return null;
             }
         }
+
+        /*
+         * =====================================================
+         * IMPORTANT
+         * =====================================================
+         *
+         * The entire enemy phase is now finished.
+         *
+         * Therefore the newly spawned enemies have now used
+         * their one-round grace period.
+         *
+         * Clear the locks so they can act normally next round.
+         */
+        combatManager.ClearEnemyTurnLocks();
     }
 
     // =========================================================
@@ -493,22 +559,6 @@ public class RoundManager : MonoBehaviour
             canvasJuiceManager.MoveCameraToNormalPosition();
         }
 
-        /*
-         * IMPORTANT:
-         *
-         * currentRound is STILL the round that just finished.
-         *
-         * Example:
-         *
-         * Round 1 combat finishes.
-         * currentRound == 1.
-         *
-         * EncounterManager checks:
-         *
-         * 1 / 6
-         *
-         * Then this method advances to Round 2.
-         */
         if (encounterManager != null)
         {
             encounterManager.CheckVictoryAfterRound();
@@ -526,9 +576,7 @@ public class RoundManager : MonoBehaviour
         }
 
         /*
-         * The combat round has finished.
-         *
-         * Advance to the NEXT round's Prepare phase.
+         * Advance to the next round's Prepare phase.
          */
         currentRound++;
 
@@ -559,8 +607,8 @@ public class RoundManager : MonoBehaviour
     private bool EnsureEnemiesExist()
     {
         /*
-         * EncounterManager owns enemy spawning
-         * during an active encounter.
+         * EncounterManager owns enemy spawning during
+         * an active encounter.
          */
         if (
             encounterManager != null &&
@@ -712,78 +760,6 @@ public class RoundManager : MonoBehaviour
         }
 
         return false;
-    }
-
-    // =========================================================
-    // ENEMY LOCKS
-    // =========================================================
-
-    private bool IsEnemyTurnLocked(
-        AttackUnit enemy
-    )
-    {
-        if (enemy == null)
-        {
-            return true;
-        }
-
-        return enemyTurnLockedUnits.Contains(
-            enemy
-        );
-    }
-
-    public void LockEnemyForCurrentRound(
-        AttackUnit enemy
-    )
-    {
-        if (enemy == null)
-        {
-            return;
-        }
-
-        enemyTurnLockedUnits.Add(
-            enemy
-        );
-    }
-
-    public void LockEnemiesForCurrentRound(
-        List<AttackUnit> enemies
-    )
-    {
-        if (enemies == null)
-        {
-            return;
-        }
-
-        for (
-            int i = 0;
-            i < enemies.Count;
-            i++
-        )
-        {
-            LockEnemyForCurrentRound(
-                enemies[i]
-            );
-        }
-    }
-
-    public void UnlockEnemy(
-        AttackUnit enemy
-    )
-    {
-        if (enemy == null)
-        {
-            return;
-        }
-
-        enemyTurnLockedUnits.Remove(
-            enemy
-        );
-    }
-
-    public int GetLockedEnemyCount()
-    {
-        return enemyTurnLockedUnits.Count;
     }
 
     // =========================================================

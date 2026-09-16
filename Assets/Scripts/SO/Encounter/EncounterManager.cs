@@ -221,9 +221,11 @@ public class EncounterManager : MonoBehaviour
         startingRound = false;
 
         /*
-         * Round 1 begins in PREPARE.
+         * Round 1 begins in Prepare.
          *
-         * Nothing is spawned for Round 1 yet.
+         * The initial Wave 1 is spawned below.
+         * It is deliberately NOT locked, so it can act
+         * during Round 1.
          */
         SetEncounterState(
             EncounterState.Preparing
@@ -292,23 +294,21 @@ public class EncounterManager : MonoBehaviour
         }
 
         // -----------------------------------------------------
-        // PREPARE ROUND 1
+        // INITIAL ENCOUNTER SPAWN
         // -----------------------------------------------------
-
-        /*
-         * IMPORTANT:
-         *
-         * SpawnEncounter() now creates the encounter environment
-         * and resets the wave counter, but DOES NOT spawn enemies.
-         *
-         * Wave 1 belongs to Round 1 and will be spawned when the
-         * player presses Next Round.
-         */
 
         SetEncounterState(
             EncounterState.SpawningUnits
         );
 
+        /*
+         * SpawnEncounter() creates Wave 1.
+         *
+         * IMPORTANT:
+         * Wave 1 is spawned UNLOCKED.
+         *
+         * Therefore initial enemies can act in Round 1.
+         */
         encounterSpawner.SpawnEncounter(
             currentEncounter
         );
@@ -366,15 +366,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * The current round is the round currently being prepared.
-         *
-         * Therefore:
-         *
-         * Prepare Round 1 -> spawn Wave 1
-         * Prepare Round 2 -> spawn Wave 2
-         * Prepare Round 3 -> spawn Wave 3
-         */
         int currentRound =
             roundManager.GetCurrentRound();
 
@@ -387,6 +378,16 @@ public class EncounterManager : MonoBehaviour
             this
         );
 
+        /*
+         * IMPORTANT:
+         *
+         * Every survival wave after the initial encounter
+         * is locked for the round in which it spawns.
+         *
+         * Wave 2 -> locked during Round 2
+         * Wave 3 -> locked during Round 3
+         * etc.
+         */
         encounterSpawner.SpawnWave(
             currentEncounter,
             true
@@ -404,9 +405,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Next Round is only valid during the Prepare phase.
-         */
         if (
             currentState !=
             EncounterState.Preparing
@@ -532,9 +530,16 @@ public class EncounterManager : MonoBehaviour
             roundManager.GetCurrentRound();
 
         /*
-         * The current round is the round being prepared.
+         * For survival encounters:
          *
-         * So spawn its wave NOW.
+         * Round 1 -> Spawn Wave 1
+         * Round 2 -> Spawn Wave 2
+         * Round 3 -> Spawn Wave 3
+         *
+         * Wave 1 is handled by SpawnEncounter() and is
+         * unlocked.
+         *
+         * Waves 2+ are handled here and are locked.
          */
         if (UsesSurvival())
         {
@@ -561,10 +566,6 @@ public class EncounterManager : MonoBehaviour
             EncounterState.StartingCombat
         );
 
-        /*
-         * EncounterStarted() happens when the first actual
-         * combat round begins.
-         */
         if (round == 1)
         {
             if (gameStateManager != null)
@@ -634,6 +635,15 @@ public class EncounterManager : MonoBehaviour
             this
         );
 
+        /*
+         * IMPORTANT:
+         *
+         * Wave locks have already been registered by
+         * EncounterSpawner.
+         *
+         * RoundManager.StartRound() deliberately DOES NOT
+         * clear them.
+         */
         roundManager.StartRound();
     }
 
@@ -656,9 +666,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Player died.
-         */
         if (
             killedUnit.GetTeam() !=
             Team.Enemy
@@ -668,9 +675,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Defeat a specific enemy.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.DefeatSpecificEnemy
@@ -690,11 +694,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Defeat all enemies.
-         *
-         * Survival encounters are ignored here.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.DefeatAllEnemies
@@ -725,9 +724,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Player health changed.
-         */
         if (
             healthManager.GetTeam() ==
             Team.Player
@@ -737,9 +733,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Ignore non-enemies.
-         */
         if (
             healthManager.GetTeam() !=
             Team.Enemy
@@ -753,10 +746,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Survival encounters do not use
-         * enemy count for victory.
-         */
         if (UsesSurvival())
         {
             return;
@@ -804,18 +793,11 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-        /*
-         * Survival encounters are checked only
-         * after a completed round.
-         */
         if (UsesSurvival())
         {
             return false;
         }
 
-        /*
-         * Defeat all enemies.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.DefeatAllEnemies
@@ -830,9 +812,6 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-        /*
-         * Defeat specific enemy.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.DefeatSpecificEnemy
@@ -864,12 +843,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * SURVIVAL
-         *
-         * currentRound is still the round that just
-         * finished when this method is called.
-         */
         if (UsesSurvival())
         {
             int completedRound =
@@ -883,9 +856,6 @@ public class EncounterManager : MonoBehaviour
                 this
             );
 
-            /*
-             * Final round.
-             */
             if (
                 completedRound >=
                 RoundsToSurvive
@@ -895,14 +865,6 @@ public class EncounterManager : MonoBehaviour
                 return;
             }
 
-            /*
-             * The current combat round is over.
-             *
-             * RoundManager will increment currentRound
-             * immediately after this method returns.
-             *
-             * So we only return to Prepare here.
-             */
             SetEncounterState(
                 EncounterState.Preparing
             );
@@ -921,9 +883,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Normal encounters.
-         */
         CheckVictoryConditions();
 
         if (!encounterRunning)
@@ -1121,10 +1080,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Defeat-all encounters cannot win
-         * while enemies are alive.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.DefeatAllEnemies &&
@@ -1134,10 +1089,6 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        /*
-         * Survival encounters can only win
-         * after enough rounds have completed.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.SurviveRounds
@@ -1153,10 +1104,6 @@ public class EncounterManager : MonoBehaviour
             }
         }
 
-        /*
-         * Specific-target encounters cannot
-         * win while the target is alive.
-         */
         if (
             CurrentVictoryCondition ==
             VictoryCondition.DefeatSpecificEnemy &&
@@ -1170,6 +1117,14 @@ public class EncounterManager : MonoBehaviour
         startingRound = false;
 
         StopAllCoroutines();
+
+        /*
+         * Make sure no wave locks survive into a later encounter.
+         */
+        if (combatManager != null)
+        {
+            combatManager.ClearEnemyTurnLocks();
+        }
 
         SetEncounterState(
             EncounterState.Victory
@@ -1205,6 +1160,14 @@ public class EncounterManager : MonoBehaviour
         startingRound = false;
 
         StopAllCoroutines();
+
+        /*
+         * Clean up any wave locks.
+         */
+        if (combatManager != null)
+        {
+            combatManager.ClearEnemyTurnLocks();
+        }
 
         SetEncounterState(
             EncounterState.Defeat
@@ -1362,6 +1325,11 @@ public class EncounterManager : MonoBehaviour
         if (gridManager != null)
         {
             gridManager.CleanupDeadUnits();
+        }
+
+        if (combatManager != null)
+        {
+            combatManager.ClearEnemyTurnLocks();
         }
     }
 

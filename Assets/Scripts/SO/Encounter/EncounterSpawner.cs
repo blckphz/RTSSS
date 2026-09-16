@@ -97,9 +97,6 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
 
-        /*
-         * Every encounter starts at Wave 1.
-         */
         ResetWaves();
 
         Debug.Log(
@@ -107,26 +104,30 @@ public class EncounterSpawner : MonoBehaviour
             this
         );
 
-        /*
-         * Obstacles only spawn once.
-         */
         SpawnObstacles(
             encounter
         );
 
         /*
-         * Initial enemy wave.
+         * =====================================================
+         * IMPORTANT
+         * =====================================================
+         *
+         * Initial Wave 1 is NOT locked.
+         *
+         * These enemies are present from the beginning of the
+         * encounter and therefore CAN act during Round 1.
          */
         int spawned =
             SpawnWave(
                 encounter,
-                true
+                false
             );
 
         Debug.Log(
             "[EncounterSpawner] Initial Wave 1 spawned " +
             spawned +
-            " enemies.",
+            " enemies. Initial enemies are UNLOCKED.",
             this
         );
     }
@@ -175,15 +176,6 @@ public class EncounterSpawner : MonoBehaviour
             return 0;
         }
 
-        /*
-         * IMPORTANT:
-         *
-         * Dead enemies may still have their grid
-         * cells registered as occupied.
-         *
-         * Clean those before attempting to place
-         * the next wave.
-         */
         gridManager.CleanupDeadUnits();
 
         currentWave++;
@@ -197,7 +189,9 @@ public class EncounterSpawner : MonoBehaviour
             "[EncounterSpawner] SPAWNING WAVE " +
             currentWave +
             " | Enemy definitions: " +
-            encounter.enemies.Count,
+            encounter.enemies.Count +
+            " | Locked: " +
+            lockForCurrentRound,
             this
         );
 
@@ -266,7 +260,9 @@ public class EncounterSpawner : MonoBehaviour
             " COMPLETE | Spawned: " +
             spawnedCount +
             " / " +
-            encounter.enemies.Count,
+            encounter.enemies.Count +
+            " | Locked: " +
+            lockForCurrentRound,
             this
         );
 
@@ -475,9 +471,6 @@ public class EncounterSpawner : MonoBehaviour
             return false;
         }
 
-        /*
-         * Find a completely free grid cell.
-         */
         if (
             !gridManager.TryGetRandomFreeCell(
                 out Vector2Int position
@@ -495,9 +488,6 @@ public class EncounterSpawner : MonoBehaviour
             return false;
         }
 
-        /*
-         * Instantiate enemy.
-         */
         GameObject unit =
             Instantiate(
                 prefab
@@ -520,9 +510,10 @@ public class EncounterSpawner : MonoBehaviour
                 ? "EncounterEnemy"
                 : enemyId + "_Enemy";
 
-        /*
-         * UnitData.
-         */
+        // -----------------------------------------------------
+        // UNIT DATA
+        // -----------------------------------------------------
+
         UnitData unitData =
             unit.GetComponent<UnitData>();
 
@@ -536,9 +527,10 @@ public class EncounterSpawner : MonoBehaviour
             character
         );
 
-        /*
-         * EncounterUnit.
-         */
+        // -----------------------------------------------------
+        // ENCOUNTER UNIT
+        // -----------------------------------------------------
+
         EncounterUnit encounterUnit =
             unit.GetComponent<EncounterUnit>();
 
@@ -552,9 +544,10 @@ public class EncounterSpawner : MonoBehaviour
             enemyId
         );
 
-        /*
-         * Place on grid.
-         */
+        // -----------------------------------------------------
+        // GRID
+        // -----------------------------------------------------
+
         bool placed =
             gridManager.PlaceUnit(
                 unit,
@@ -580,9 +573,21 @@ public class EncounterSpawner : MonoBehaviour
             return false;
         }
 
+        // -----------------------------------------------------
+        // WAVE TURN LOCK
+        // -----------------------------------------------------
+
         /*
-         * Lock the newly spawned enemy for the
-         * current round if requested.
+         * Only Wave 2+ passes TRUE here.
+         *
+         * Wave 1:
+         *     false -> can act in Round 1
+         *
+         * Wave 2:
+         *     true -> skips Round 2
+         *
+         * Wave 3:
+         *     true -> skips Round 3
          */
         if (
             lockForCurrentRound &&
@@ -597,6 +602,23 @@ public class EncounterSpawner : MonoBehaviour
                 combatManager.LockEnemyForCurrentRound(
                     attackUnit
                 );
+
+                Debug.Log(
+                    "[EncounterSpawner] Locked newly spawned enemy '" +
+                    enemyId +
+                    "' for current round.",
+                    unit
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[EncounterSpawner] Enemy '" +
+                    enemyId +
+                    "' has no AttackUnit. " +
+                    "Could not apply wave lock.",
+                    unit
+                );
             }
         }
 
@@ -606,7 +628,9 @@ public class EncounterSpawner : MonoBehaviour
             "' at " +
             position +
             " | Wave " +
-            currentWave,
+            currentWave +
+            " | Locked: " +
+            lockForCurrentRound,
             unit
         );
 
