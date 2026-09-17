@@ -1,45 +1,55 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class GridShapeManager : MonoBehaviour
 {
+    // ============================================================
+    // GRID REFERENCE
+    // ============================================================
+
     [Header("Grid Reference")]
-    [SerializeField] private GridManager gridManager;
+    [SerializeField]
+    private GridManager gridManager;
+
+
+    // ============================================================
+    // HIGHLIGHT REFERENCES
+    // ============================================================
 
     [Header("Highlight References")]
-    [SerializeField] private GridHighlightBrain highlightBrain;
+    [SerializeField]
+    private GridHighlightBrain highlightBrain;
 
-    [Header("Shape Input Controls")]
-    [Tooltip("Press this key to switch to Box shape")]
-    [SerializeField] private Key boxKey = Key.Digit1;
 
-    [Tooltip("Press this key to switch to Manhattan (Diamond) shape")]
-    [SerializeField] private Key manhattanKey = Key.Digit2;
-
-    [Tooltip("Press this key to switch to Pyramid shape")]
-    [SerializeField] private Key pyramidKey = Key.Digit3;
-
-    [Tooltip("Press this key to switch to Donut shape")]
-    [SerializeField] private Key donutKey = Key.Digit4;
-
-    [Header("Dynamic Resizing Controls")]
-    [Tooltip("Amount to change dimensions per keypress")]
-    [SerializeField, Min(1)] private int resizeStep = 2;
-
-    [Tooltip("Key to expand grid dimensions")]
-    [SerializeField] private Key expandKey = Key.Equals;
-
-    [Tooltip("Key to shrink grid dimensions")]
-    [SerializeField] private Key shrinkKey = Key.Minus;
+    // ============================================================
+    // DONUT SETTINGS
+    // ============================================================
 
     [Header("Donut Shape Settings")]
+
     [Tooltip("Inner empty radius for Donut shape")]
-    [SerializeField, Min(0)] private int minRadius = 2;
+    [SerializeField, Min(0)]
+    private int minRadius = 2;
 
     [Tooltip("Outer edge radius for Donut shape")]
-    [SerializeField, Min(1)] private int maxRadius = 5;
+    [SerializeField, Min(1)]
+    private int maxRadius = 5;
+
+
+    // ============================================================
+    // UNITY
+    // ============================================================
 
     private void Start()
+    {
+        FindReferences();
+    }
+
+
+    // ============================================================
+    // REFERENCES
+    // ============================================================
+
+    private void FindReferences()
     {
         if (gridManager == null)
         {
@@ -47,11 +57,13 @@ public class GridShapeManager : MonoBehaviour
                 FindFirstObjectByType<GridManager>();
         }
 
+
         if (highlightBrain == null)
         {
             highlightBrain =
                 FindFirstObjectByType<GridHighlightBrain>();
         }
+
 
         if (gridManager == null)
         {
@@ -60,6 +72,7 @@ public class GridShapeManager : MonoBehaviour
                 this
             );
         }
+
 
         if (highlightBrain == null)
         {
@@ -70,78 +83,11 @@ public class GridShapeManager : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (Keyboard.current == null ||
-            gridManager == null)
-        {
-            return;
-        }
 
-        // Shape switching controls
+    // ============================================================
+    // RELATIVE RESIZE
+    // ============================================================
 
-        if (Keyboard.current[boxKey].wasPressedThisFrame)
-        {
-            gridManager.SetGridShape(
-                GridShapeType.Box
-            );
-
-            RefreshHighlightGrid();
-        }
-
-        if (Keyboard.current[manhattanKey].wasPressedThisFrame)
-        {
-            gridManager.SetGridShape(
-                GridShapeType.Manhattan
-            );
-
-            RefreshHighlightGrid();
-        }
-
-        if (Keyboard.current[pyramidKey].wasPressedThisFrame)
-        {
-            gridManager.SetGridShape(
-                GridShapeType.Pyramid
-            );
-
-            RefreshHighlightGrid();
-        }
-
-        if (Keyboard.current[donutKey].wasPressedThisFrame)
-        {
-            gridManager.SetGridShape(
-                GridShapeType.Donut,
-                newMinRadius: minRadius,
-                newMaxRadius: maxRadius
-            );
-
-            RefreshHighlightGrid();
-        }
-
-        // Dynamic dimension resizing
-
-        if (Keyboard.current[expandKey].wasPressedThisFrame ||
-            Keyboard.current[Key.NumpadPlus].wasPressedThisFrame)
-        {
-            ResizeGridRelative(
-                resizeStep,
-                resizeStep
-            );
-        }
-
-        if (Keyboard.current[shrinkKey].wasPressedThisFrame ||
-            Keyboard.current[Key.NumpadMinus].wasPressedThisFrame)
-        {
-            ResizeGridRelative(
-                -resizeStep,
-                -resizeStep
-            );
-        }
-    }
-
-    /// <summary>
-    /// Resizes the grid relative to its current dimensions.
-    /// </summary>
     public void ResizeGridRelative(
         int widthDelta,
         int heightDelta)
@@ -149,29 +95,37 @@ public class GridShapeManager : MonoBehaviour
         if (gridManager == null)
             return;
 
+
         int newWidth =
             Mathf.Max(
                 1,
-                gridManager.GetWidth() + widthDelta
+                gridManager.GetWidth() +
+                widthDelta
             );
+
 
         int newHeight =
             Mathf.Max(
                 1,
-                gridManager.GetHeight() + heightDelta
+                gridManager.GetHeight() +
+                heightDelta
             );
+
 
         gridManager.SetGridDimensions(
             newWidth,
             newHeight
         );
 
+
         RefreshHighlightGrid();
     }
 
-    /// <summary>
-    /// Sets exact dimensions for the grid directly.
-    /// </summary>
+
+    // ============================================================
+    // DIRECT RESIZE
+    // ============================================================
+
     public void SetGridDimensionsDirect(
         int width,
         int height)
@@ -179,18 +133,84 @@ public class GridShapeManager : MonoBehaviour
         if (gridManager == null)
             return;
 
+
         gridManager.SetGridDimensions(
             width,
             height
         );
 
+
         RefreshHighlightGrid();
     }
 
-    /// <summary>
-    /// Refreshes the highlight system after the grid
-    /// has changed dimensions or shape.
-    /// </summary>
+
+    // ============================================================
+    // DIRECT SHAPE SETTING
+    // ============================================================
+
+    public void SetGridShapeDirect(
+        GridShapeType shape)
+    {
+        if (gridManager == null)
+            return;
+
+
+        gridManager.SetGridShape(
+            shape,
+            gridManager.GetWidth(),
+            gridManager.GetHeight(),
+            gridManager.GetMinRadius(),
+            gridManager.GetMaxRadius()
+        );
+
+
+        RefreshHighlightGrid();
+    }
+
+
+    // ============================================================
+    // DONUT SETTINGS
+    // ============================================================
+
+    public void SetDonutSettings(
+        int newMinRadius,
+        int newMaxRadius)
+    {
+        minRadius =
+            Mathf.Max(
+                0,
+                newMinRadius
+            );
+
+
+        maxRadius =
+            Mathf.Max(
+                minRadius,
+                newMaxRadius
+            );
+
+
+        if (gridManager == null)
+            return;
+
+
+        gridManager.SetGridShape(
+            GridShapeType.Donut,
+            gridManager.GetWidth(),
+            gridManager.GetHeight(),
+            minRadius,
+            maxRadius
+        );
+
+
+        RefreshHighlightGrid();
+    }
+
+
+    // ============================================================
+    // HIGHLIGHT REFRESH
+    // ============================================================
+
     private void RefreshHighlightGrid()
     {
         if (highlightBrain == null)
@@ -199,9 +219,12 @@ public class GridShapeManager : MonoBehaviour
                 FindFirstObjectByType<GridHighlightBrain>();
         }
 
-        if (highlightBrain != null)
-        {
-            highlightBrain.RefreshGridBounds();
-        }
+
+        if (highlightBrain == null)
+            return;
+
+
+        highlightBrain.RefreshGridBounds();
+        highlightBrain.RefreshActiveHighlights();
     }
 }
