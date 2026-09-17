@@ -10,20 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2fed2dc7bc9ea0f4ca986cdbbf4b1eef, type: 3}
-  m_Name: BasicAttack
-  m_EditorClassIdentifier: Assembly-CSharp::RadiusAttack
-  abilityName: radiusAttack
-  description: 
+  m_Name: EnemyScratchAttack
+  m_EditorClassIdentifier: Assembly-CSharp::BasicAttack
+  abilityName: Vicerate
+  abilityIcon: {fileID: 0}
+  description: 'A devastating Flurry of Hits   inflicts <link="status_stun"><color=yellow><u>Stun</u></color></link>.
+
+'
   damage: 10
   cooldown: 3
-  canAttackWithThisAfterMove: 1
-  usesPerTurn: 1
-  useDuration: 0.5
+  canAttackWithThisAfterMove: 0
+  usesPerTurn: 3
+  useDuration: 0.25
   targetType: 0
-  range: 7
-  minDistance: 4
+  range: 1
+  minDistance: 0
   rangeShape: 0
   explosionPrefab: {fileID: 0}
-  explosionRadius: 1
-  useAbilityDamage: 1
+  explosionRadius: 0
+  useAbilityDamage: 0
   explosionDamage: 10

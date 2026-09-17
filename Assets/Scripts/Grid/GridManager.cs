@@ -24,22 +24,47 @@ public static class GridShapeEvaluator
         int minRadius = 2,
         int maxRadius = 5)
     {
+        // ========================================================
+        // IMPORTANT:
+        // ALWAYS enforce the rectangular grid bounds first.
+        //
+        // The backing arrays are:
+        //
+        // occupiedCells[width, height]
+        // floorTiles[width, height]
+        //
+        // Therefore no shape is allowed to return a position
+        // outside this rectangular range.
+        // ========================================================
+
+        int minX = -(width / 2);
+        int maxX = minX + width - 1;
+
+        int minY = -(height / 2);
+        int maxY = minY + height - 1;
+
+        if (
+            position.x < minX ||
+            position.x > maxX ||
+            position.y < minY ||
+            position.y > maxY
+        )
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // SHAPE
+        // ========================================================
+
         switch (shapeType)
         {
             case GridShapeType.Box:
                 {
-                    int minX = -(width / 2);
-                    int maxX = minX + width - 1;
-
-                    int minY = -(height / 2);
-                    int maxY = minY + height - 1;
-
-                    return
-                        position.x >= minX &&
-                        position.x <= maxX &&
-                        position.y >= minY &&
-                        position.y <= maxY;
+                    return true;
                 }
+
 
             case GridShapeType.Manhattan:
                 {
@@ -51,19 +76,9 @@ public static class GridShapeEvaluator
                         Mathf.Abs(position.y) <= radius;
                 }
 
+
             case GridShapeType.Pyramid:
                 {
-                    int minY = -(height / 2);
-                    int maxY = minY + height - 1;
-
-                    if (
-                        position.y < minY ||
-                        position.y > maxY
-                    )
-                    {
-                        return false;
-                    }
-
                     int rowOffset =
                         position.y - minY;
 
@@ -79,6 +94,7 @@ public static class GridShapeEvaluator
                         position.x >= -currentHalfWidth &&
                         position.x <= currentHalfWidth;
                 }
+
 
             case GridShapeType.Donut:
                 {
@@ -97,8 +113,9 @@ public static class GridShapeEvaluator
                         distSq <= maxSq;
                 }
 
+
             default:
-                return true;
+                return false;
         }
     }
 }
@@ -115,6 +132,7 @@ public class GridManager : MonoBehaviour
     // ============================================================
 
     [Header("Grid References")]
+
     [SerializeField]
     private Grid grid;
 
@@ -130,6 +148,7 @@ public class GridManager : MonoBehaviour
     // ============================================================
 
     [Header("Grid Configuration")]
+
     [SerializeField, Min(1)]
     private int width = 11;
 
@@ -149,6 +168,7 @@ public class GridManager : MonoBehaviour
     // ============================================================
 
     [Header("Grid Centering")]
+
     [SerializeField]
     private bool centerGridAtWorldOrigin = true;
 
@@ -158,6 +178,7 @@ public class GridManager : MonoBehaviour
     // ============================================================
 
     [Header("Highlight Manager")]
+
     [SerializeField]
     private GridHighlightManager highlightManager;
 
@@ -167,6 +188,7 @@ public class GridManager : MonoBehaviour
     // ============================================================
 
     [Header("Gizmos")]
+
     [SerializeField]
     private bool showGridGizmos = true;
 
@@ -474,6 +496,10 @@ public class GridManager : MonoBehaviour
                         );
 
                     if (
+                        newArrayPos.x >= 0 &&
+                        newArrayPos.x < occupiedCells.GetLength(0) &&
+                        newArrayPos.y >= 0 &&
+                        newArrayPos.y < occupiedCells.GetLength(1) &&
                         occupiedCells[
                             newArrayPos.x,
                             newArrayPos.y
@@ -867,6 +893,32 @@ public class GridManager : MonoBehaviour
     public bool IsInsideGrid(
         Vector2Int position)
     {
+        // IMPORTANT:
+        // The shape must NEVER be allowed to return true
+        // for a coordinate outside the backing arrays.
+
+        int minX =
+            GetMinX();
+
+        int maxX =
+            GetMaxX();
+
+        int minY =
+            GetMinY();
+
+        int maxY =
+            GetMaxY();
+
+        if (
+            position.x < minX ||
+            position.x > maxX ||
+            position.y < minY ||
+            position.y > maxY
+        )
+        {
+            return false;
+        }
+
         return GridShapeEvaluator.IsCellInShape(
             position,
             gridShape,
@@ -881,6 +933,11 @@ public class GridManager : MonoBehaviour
     private void CreateFloor()
     {
         if (floorTilePrefab == null)
+        {
+            return;
+        }
+
+        if (floorTiles == null)
         {
             return;
         }
@@ -933,10 +990,28 @@ public class GridManager : MonoBehaviour
                         logicalPos
                     );
 
-                floorTiles[
-                    arrayPos.x,
-                    arrayPos.y
-                ] = tile;
+                if (
+                    arrayPos.x >= 0 &&
+                    arrayPos.x < floorTiles.GetLength(0) &&
+                    arrayPos.y >= 0 &&
+                    arrayPos.y < floorTiles.GetLength(1)
+                )
+                {
+                    floorTiles[
+                        arrayPos.x,
+                        arrayPos.y
+                    ] = tile;
+                }
+                else
+                {
+                    Debug.LogError(
+                        $"[GridManager] CreateFloor calculated invalid array position " +
+                        $"{arrayPos} for logical position {logicalPos}.",
+                        this
+                    );
+
+                    Destroy(tile);
+                }
             }
         }
     }
@@ -982,7 +1057,10 @@ public class GridManager : MonoBehaviour
     public bool IsCellOccupied(
         Vector2Int position)
     {
-        if (!IsInsideGrid(position))
+        if (
+            occupiedCells == null ||
+            !IsInsideGrid(position)
+        )
         {
             return false;
         }
@@ -991,6 +1069,17 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        // Extra protection.
+        if (
+            array.x < 0 ||
+            array.x >= occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= occupiedCells.GetLength(1)
+        )
+        {
+            return false;
+        }
 
         return IsOccupantValid(
             occupiedCells[
@@ -1005,7 +1094,18 @@ public class GridManager : MonoBehaviour
     public GameObject GetUnitAt(
         Vector2Int position)
     {
-        if (!IsInsideGrid(position))
+        // ========================================================
+        // FIX FOR:
+        //
+        // IndexOutOfRangeException
+        // GridManager.GetUnitAt()
+        //
+        // ========================================================
+
+        if (
+            occupiedCells == null ||
+            !IsInsideGrid(position)
+        )
         {
             return null;
         }
@@ -1014,6 +1114,34 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        // ========================================================
+        // FINAL ARRAY SAFETY CHECK
+        // ========================================================
+
+        if (
+            array.x < 0 ||
+            array.x >= occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= occupiedCells.GetLength(1)
+        )
+        {
+            Debug.LogError(
+                $"[GridManager] GetUnitAt out of range!\n" +
+                $"Logical Position: {position}\n" +
+                $"Array Position: {array}\n" +
+                $"Array Size: " +
+                $"{occupiedCells.GetLength(0)}x" +
+                $"{occupiedCells.GetLength(1)}\n" +
+                $"Logical X Range: " +
+                $"{GetMinX()}..{GetMaxX()}\n" +
+                $"Logical Y Range: " +
+                $"{GetMinY()}..{GetMaxY()}",
+                this
+            );
+
+            return null;
+        }
 
         GameObject unit =
             occupiedCells[
@@ -1087,6 +1215,7 @@ public class GridManager : MonoBehaviour
     {
         if (
             unit == null ||
+            occupiedCells == null ||
             !IsInsideGrid(position)
         )
         {
@@ -1097,6 +1226,22 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        if (
+            array.x < 0 ||
+            array.x >= occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= occupiedCells.GetLength(1)
+        )
+        {
+            Debug.LogError(
+                $"[GridManager] PlaceUnit out of range! " +
+                $"Position={position}, Array={array}",
+                this
+            );
+
+            return false;
+        }
 
         GameObject existing =
             occupiedCells[
@@ -1176,6 +1321,7 @@ public class GridManager : MonoBehaviour
     {
         if (
             unit == null ||
+            occupiedCells == null ||
             !IsInsideGrid(position)
         )
         {
@@ -1186,6 +1332,16 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        if (
+            array.x < 0 ||
+            array.x >= occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= occupiedCells.GetLength(1)
+        )
+        {
+            return false;
+        }
 
         GameObject occupant =
             occupiedCells[
@@ -1225,7 +1381,10 @@ public class GridManager : MonoBehaviour
     public void RemoveUnit(
         Vector2Int position)
     {
-        if (!IsInsideGrid(position))
+        if (
+            occupiedCells == null ||
+            !IsInsideGrid(position)
+        )
         {
             return;
         }
@@ -1234,6 +1393,16 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        if (
+            array.x < 0 ||
+            array.x >= occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= occupiedCells.GetLength(1)
+        )
+        {
+            return;
+        }
 
         occupiedCells[
             array.x,
@@ -1245,7 +1414,10 @@ public class GridManager : MonoBehaviour
     public void RemoveUnit(
         GameObject unit)
     {
-        if (unit == null)
+        if (
+            unit == null ||
+            occupiedCells == null
+        )
         {
             return;
         }
@@ -1314,6 +1486,7 @@ public class GridManager : MonoBehaviour
     {
         if (
             unit == null ||
+            occupiedCells == null ||
             !IsInsideGrid(oldPosition) ||
             !IsInsideGrid(newPosition) ||
             oldPosition == newPosition
@@ -1331,6 +1504,36 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 newPosition
             );
+
+        // ========================================================
+        // SAFETY
+        // ========================================================
+
+        if (
+            oldArray.x < 0 ||
+            oldArray.x >= occupiedCells.GetLength(0) ||
+            oldArray.y < 0 ||
+            oldArray.y >= occupiedCells.GetLength(1) ||
+            newArray.x < 0 ||
+            newArray.x >= occupiedCells.GetLength(0) ||
+            newArray.y < 0 ||
+            newArray.y >= occupiedCells.GetLength(1)
+        )
+        {
+            Debug.LogError(
+                $"[GridManager] StartMoveUnit array position out of range.\n" +
+                $"Old Logical: {oldPosition}\n" +
+                $"Old Array: {oldArray}\n" +
+                $"New Logical: {newPosition}\n" +
+                $"New Array: {newArray}\n" +
+                $"Array Size: " +
+                $"{occupiedCells.GetLength(0)}x" +
+                $"{occupiedCells.GetLength(1)}",
+                this
+            );
+
+            return false;
+        }
 
 
         // ========================================================
@@ -1427,6 +1630,7 @@ public class GridManager : MonoBehaviour
     {
         if (
             unit == null ||
+            occupiedCells == null ||
             !IsInsideGrid(position)
         )
         {
@@ -1437,6 +1641,16 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        if (
+            array.x < 0 ||
+            array.x >= occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= occupiedCells.GetLength(1)
+        )
+        {
+            return;
+        }
 
         if (
             occupiedCells[
@@ -1609,7 +1823,10 @@ public class GridManager : MonoBehaviour
     public GameObject GetFloorTile(
         Vector2Int position)
     {
-        if (!IsInsideGrid(position))
+        if (
+            floorTiles == null ||
+            !IsInsideGrid(position)
+        )
         {
             return null;
         }
@@ -1618,6 +1835,16 @@ public class GridManager : MonoBehaviour
             LogicalToArrayPosition(
                 position
             );
+
+        if (
+            array.x < 0 ||
+            array.x >= floorTiles.GetLength(0) ||
+            array.y < 0 ||
+            array.y >= floorTiles.GetLength(1)
+        )
+        {
+            return null;
+        }
 
         return floorTiles[
             array.x,

@@ -18,6 +18,7 @@ public abstract class AbilitySO : ScriptableObject
         Any
     }
 
+
     // ============================================================
     // ABILITY
     // ============================================================
@@ -569,7 +570,10 @@ public abstract class AbilitySO : ScriptableObject
                 target.transform.position
             );
 
-        if (!CanHitTile(gridManager, user, targetPosition))
+        if (!CanHitTile(
+                gridManager,
+                user,
+                targetPosition))
         {
             return false;
         }
@@ -723,7 +727,9 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        return rangeTiles.Contains(targetPosition);
+        return rangeTiles.Contains(
+            targetPosition
+        );
     }
 
 

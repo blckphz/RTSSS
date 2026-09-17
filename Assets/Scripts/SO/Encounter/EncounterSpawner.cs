@@ -53,11 +53,6 @@ public class EncounterSpawner : MonoBehaviour
     public void ResetWaves()
     {
         currentWave = 0;
-
-        Debug.Log(
-            "[EncounterSpawner] Waves reset.",
-            this
-        );
     }
 
     public int GetCurrentWave()
@@ -75,12 +70,6 @@ public class EncounterSpawner : MonoBehaviour
     {
         if (encounter == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] Cannot spawn encounter. " +
-                "Encounter is null.",
-                this
-            );
-
             return;
         }
 
@@ -88,21 +77,10 @@ public class EncounterSpawner : MonoBehaviour
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] Cannot spawn encounter. " +
-                "GridManager is missing.",
-                this
-            );
-
             return;
         }
 
         ResetWaves();
-
-        Debug.Log(
-            "[EncounterSpawner] Starting encounter spawn.",
-            this
-        );
 
         SpawnObstacles(
             encounter
@@ -123,13 +101,6 @@ public class EncounterSpawner : MonoBehaviour
                 encounter,
                 false
             );
-
-        Debug.Log(
-            "[EncounterSpawner] Initial Wave 1 spawned " +
-            spawned +
-            " enemies. Initial enemies are UNLOCKED.",
-            this
-        );
     }
 
     // =========================================================
@@ -143,23 +114,11 @@ public class EncounterSpawner : MonoBehaviour
     {
         if (encounter == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] SpawnWave failed: " +
-                "encounter is null.",
-                this
-            );
-
             return 0;
         }
 
         if (encounter.enemies == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] SpawnWave failed: " +
-                "encounter.enemies is null.",
-                this
-            );
-
             return 0;
         }
 
@@ -167,33 +126,12 @@ public class EncounterSpawner : MonoBehaviour
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] SpawnWave failed: " +
-                "GridManager is missing.",
-                this
-            );
-
             return 0;
         }
 
         gridManager.CleanupDeadUnits();
 
         currentWave++;
-
-        Debug.Log(
-            "[EncounterSpawner] =========================",
-            this
-        );
-
-        Debug.Log(
-            "[EncounterSpawner] SPAWNING WAVE " +
-            currentWave +
-            " | Enemy definitions: " +
-            encounter.enemies.Count +
-            " | Locked: " +
-            lockForCurrentRound,
-            this
-        );
 
         int spawnedCount = 0;
 
@@ -210,35 +148,13 @@ public class EncounterSpawner : MonoBehaviour
 
             if (enemyData == null)
             {
-                Debug.LogWarning(
-                    "[EncounterSpawner] Enemy entry " +
-                    enemyIndex +
-                    " is null.",
-                    this
-                );
-
                 continue;
             }
 
             if (enemyData.prefab == null)
             {
-                Debug.LogWarning(
-                    "[EncounterSpawner] Enemy entry " +
-                    enemyIndex +
-                    " has no prefab.",
-                    this
-                );
-
                 continue;
             }
-
-            Debug.Log(
-                "[EncounterSpawner] Attempting enemy " +
-                enemyIndex +
-                " | ID: " +
-                enemyData.enemyId,
-                this
-            );
 
             bool spawned =
                 SpawnRandomUnit(
@@ -253,23 +169,6 @@ public class EncounterSpawner : MonoBehaviour
                 spawnedCount++;
             }
         }
-
-        Debug.Log(
-            "[EncounterSpawner] WAVE " +
-            currentWave +
-            " COMPLETE | Spawned: " +
-            spawnedCount +
-            " / " +
-            encounter.enemies.Count +
-            " | Locked: " +
-            lockForCurrentRound,
-            this
-        );
-
-        Debug.Log(
-            "[EncounterSpawner] =========================",
-            this
-        );
 
         return spawnedCount;
     }
@@ -310,13 +209,6 @@ public class EncounterSpawner : MonoBehaviour
 
             if (obstacleData.prefab == null)
             {
-                Debug.LogWarning(
-                    "[EncounterSpawner] Obstacle " +
-                    obstacleIndex +
-                    " has no prefab.",
-                    this
-                );
-
                 continue;
             }
 
@@ -363,12 +255,6 @@ public class EncounterSpawner : MonoBehaviour
             )
         )
         {
-            Debug.LogWarning(
-                "[EncounterSpawner] Could not find a free cell " +
-                "for obstacle.",
-                this
-            );
-
             return;
         }
 
@@ -379,11 +265,6 @@ public class EncounterSpawner : MonoBehaviour
 
         if (obstacle == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] Failed to instantiate obstacle.",
-                this
-            );
-
             return;
         }
 
@@ -411,13 +292,6 @@ public class EncounterSpawner : MonoBehaviour
 
         if (!placed)
         {
-            Debug.LogWarning(
-                "[EncounterSpawner] Failed to place obstacle at " +
-                position +
-                ". Destroying it.",
-                this
-            );
-
             Destroy(
                 obstacle
             );
@@ -439,21 +313,11 @@ public class EncounterSpawner : MonoBehaviour
     {
         if (prefab == null)
         {
-            Debug.LogWarning(
-                "[EncounterSpawner] Enemy prefab is null.",
-                this
-            );
-
             return false;
         }
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] GridManager is missing.",
-                this
-            );
-
             return false;
         }
 
@@ -462,12 +326,6 @@ public class EncounterSpawner : MonoBehaviour
             encounterManager.IsFinished()
         )
         {
-            Debug.LogWarning(
-                "[EncounterSpawner] Encounter is already finished. " +
-                "Enemy will not spawn.",
-                this
-            );
-
             return false;
         }
 
@@ -477,14 +335,6 @@ public class EncounterSpawner : MonoBehaviour
             )
         )
         {
-            Debug.LogWarning(
-                "[EncounterSpawner] NO FREE GRID CELL FOUND. " +
-                "Cannot spawn enemy '" +
-                enemyId +
-                "'.",
-                this
-            );
-
             return false;
         }
 
@@ -495,13 +345,6 @@ public class EncounterSpawner : MonoBehaviour
 
         if (unit == null)
         {
-            Debug.LogError(
-                "[EncounterSpawner] Failed to instantiate enemy '" +
-                enemyId +
-                "'.",
-                this
-            );
-
             return false;
         }
 
@@ -556,16 +399,6 @@ public class EncounterSpawner : MonoBehaviour
 
         if (!placed)
         {
-            Debug.LogWarning(
-                "[EncounterSpawner] GridManager refused to place " +
-                "enemy '" +
-                enemyId +
-                "' at " +
-                position +
-                ". Destroying enemy.",
-                this
-            );
-
             Destroy(
                 unit
             );
@@ -602,37 +435,8 @@ public class EncounterSpawner : MonoBehaviour
                 combatManager.LockEnemyForCurrentRound(
                     attackUnit
                 );
-
-                Debug.Log(
-                    "[EncounterSpawner] Locked newly spawned enemy '" +
-                    enemyId +
-                    "' for current round.",
-                    unit
-                );
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "[EncounterSpawner] Enemy '" +
-                    enemyId +
-                    "' has no AttackUnit. " +
-                    "Could not apply wave lock.",
-                    unit
-                );
             }
         }
-
-        Debug.Log(
-            "[EncounterSpawner] SPAWNED enemy '" +
-            enemyId +
-            "' at " +
-            position +
-            " | Wave " +
-            currentWave +
-            " | Locked: " +
-            lockForCurrentRound,
-            unit
-        );
 
         return true;
     }

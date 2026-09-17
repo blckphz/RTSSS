@@ -23,7 +23,6 @@ MonoBehaviour:
   abilities:
   - {fileID: 11400000, guid: ef07fb65b86de7448930e443cf24632c, type: 2}
   - {fileID: 11400000, guid: 10a3d323965d847439150b2decd37e21, type: 2}
-  - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
   - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
   RangedAttacker: 0
   upgrades:

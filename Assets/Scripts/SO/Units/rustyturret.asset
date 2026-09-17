@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
-  m_Name: RUSTYSENTRY
+  m_Name: rustyturret
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
   characterName: Sentry
   icon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
@@ -21,6 +21,7 @@ MonoBehaviour:
   moveRange: 0
   canwalkdiagonally: 0
   abilities:
+  - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
   - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
   RangedAttacker: 1
   upgrades: []

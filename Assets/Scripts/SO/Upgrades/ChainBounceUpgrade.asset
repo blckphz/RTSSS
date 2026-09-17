@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChainBounceUpgrade
   UpgradeName: 'increases bounce by 1 '
   Description: increases the bounce by 1
-  additionalBounces: 3
+  additionalBounces: 1

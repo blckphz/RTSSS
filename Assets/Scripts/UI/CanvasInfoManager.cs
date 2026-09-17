@@ -56,6 +56,8 @@ public class CanvasInfoManager : MonoBehaviour
 
     private Sprite currentCharacterIcon;
 
+    private CharacterSO displayedCharacter;
+
     private Camera eventCamera;
     private Canvas cachedCanvas;
 
@@ -558,6 +560,8 @@ public class CanvasInfoManager : MonoBehaviour
         if (character == null)
             return;
 
+        displayedCharacter = character;
+
         currentCharacterIcon = character.icon;
 
         textBuilder.Clear();
@@ -629,6 +633,12 @@ public class CanvasInfoManager : MonoBehaviour
                 string description =
                     ability.GetDescription();
 
+                description =
+                    AddAbilityIndexToStatusLinks(
+                        description,
+                        i
+                    );
+
                 if (!string.IsNullOrEmpty(description))
                 {
                     textBuilder.AppendLine(
@@ -699,6 +709,21 @@ public class CanvasInfoManager : MonoBehaviour
         }
 
         UpdateCharacterIcon();
+    }
+
+    private string AddAbilityIndexToStatusLinks(
+        string description,
+        int abilityIndex)
+    {
+        if (string.IsNullOrEmpty(description))
+        {
+            return description;
+        }
+
+        return description.Replace(
+            "<link=\"status_stun\">",
+            $"<link=\"status_stun_{abilityIndex}\">"
+        );
     }
 
     // =========================================================
@@ -1190,10 +1215,99 @@ public class CanvasInfoManager : MonoBehaviour
     // =========================================================
 
     private void ShowStatusTooltip(
-        string statusId)
+        string statusData)
     {
-        tooltipManager?.ShowStatusTooltip(
-            statusId
+        if (tooltipManager == null)
+        {
+            return;
+        }
+
+        string[] parts =
+            statusData.Split('_');
+
+        if (parts.Length < 2)
+        {
+            tooltipManager.ShowStatusTooltip(
+                statusData
+            );
+
+            return;
+        }
+
+        string statusId =
+            parts[0];
+
+        string abilityIndexString =
+            parts[parts.Length - 1];
+
+        if (!int.TryParse(
+                abilityIndexString,
+                out int abilityIndex))
+        {
+            tooltipManager.ShowStatusTooltip(
+                statusId
+            );
+
+            return;
+        }
+
+        if (displayedCharacter == null)
+        {
+            tooltipManager.ShowStatusTooltip(
+                statusId
+            );
+
+            return;
+        }
+
+        List<AbilitySO> abilities =
+            displayedCharacter.GetAbilities();
+
+        if (abilities == null ||
+            abilityIndex < 0 ||
+            abilityIndex >= abilities.Count)
+        {
+            tooltipManager.ShowStatusTooltip(
+                statusId
+            );
+
+            return;
+        }
+
+        AbilitySO ability =
+            abilities[abilityIndex];
+
+        if (ability == null)
+        {
+            tooltipManager.ShowStatusTooltip(
+                statusId
+            );
+
+            return;
+        }
+
+        float stunChance = 0f;
+        int stunDuration = 1;
+
+        if (
+            statusId.Equals(
+                "stun",
+                System.StringComparison.OrdinalIgnoreCase
+            ) &&
+            ability is ChainLightning chainLightning
+        )
+        {
+            stunChance =
+                chainLightning.GetStunPercentage();
+
+            stunDuration =
+                chainLightning.GetStunDuration();
+        }
+
+        tooltipManager.ShowStatusTooltip(
+            statusId,
+            stunChance,
+            stunDuration
         );
     }
 
@@ -1273,6 +1387,7 @@ public class CanvasInfoManager : MonoBehaviour
         selectedAbility = null;
 
         currentCharacterIcon = null;
+        displayedCharacter = null;
 
         if (iconPopCoroutine != null)
         {

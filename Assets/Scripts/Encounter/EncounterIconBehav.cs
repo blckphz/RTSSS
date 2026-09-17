@@ -1,7 +1,11 @@
 ﻿using System.Collections;
+using System.Text;
 using TMPro;
+using Unity.VisualScripting;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.EventSystems;
+
 
 public class IconBehav :
     MonoBehaviour,
@@ -129,8 +133,8 @@ public class IconBehav :
 
     private void Awake()
     {
-        // Save the original icon scale.
-        originalScale = transform.localScale;
+        originalScale =
+            transform.localScale;
 
 
         // --------------------------------------------------------
@@ -184,8 +188,7 @@ public class IconBehav :
 
     private void Start()
     {
-        // Managers may have been spawned after Awake,
-        // so try again if necessary.
+        // Managers may have been spawned after Awake.
 
         if (encounterManager == null)
         {
@@ -208,15 +211,24 @@ public class IconBehav :
         }
 
 
-        // Find the LevelDesc TMP.
+        // --------------------------------------------------------
+        // FIND LEVEL DESCRIPTION
+        // --------------------------------------------------------
+
         FindLevelDescription();
 
 
-        // Update locked/unlocked/completed visuals.
+        // --------------------------------------------------------
+        // UPDATE VISUALS
+        // --------------------------------------------------------
+
         RefreshVisuals();
 
 
-        // Hide hover description at startup.
+        // --------------------------------------------------------
+        // HIDE DESCRIPTION
+        // --------------------------------------------------------
+
         HideHoverInfo();
     }
 
@@ -226,7 +238,8 @@ public class IconBehav :
     // ============================================================
 
     public void OnPointerClick(
-        PointerEventData eventData)
+        PointerEventData eventData
+    )
     {
         StartLevel();
     }
@@ -247,7 +260,8 @@ public class IconBehav :
     // ============================================================
 
     public void OnPointerEnter(
-        PointerEventData eventData)
+        PointerEventData eventData
+    )
     {
         isHovering = true;
 
@@ -284,7 +298,8 @@ public class IconBehav :
     // ============================================================
 
     public void OnPointerExit(
-        PointerEventData eventData)
+        PointerEventData eventData
+    )
     {
         isHovering = false;
 
@@ -442,28 +457,6 @@ public class IconBehav :
         // ========================================================
         // SELECT NODE
         // ========================================================
-        //
-        // IMPORTANT:
-        //
-        // SetCurrentNode() is VOID in your current
-        // LevelMapManager.
-        //
-        // It also calls SelectRoute().
-        //
-        // So if we have:
-        //
-        //        B       C
-        //         \     /
-        //           A
-        //
-        // and choose B:
-        //
-        //        B       C
-        //        🔓      🔒
-        //
-        // C becomes locked.
-        //
-        // ========================================================
 
         mapManager.SetCurrentNode(this);
 
@@ -526,10 +519,6 @@ public class IconBehav :
 
 
         // ========================================================
-        // DEBUG
-        // ========================================================
-
-        // ========================================================
         // START TRANSITION
         // ========================================================
 
@@ -552,11 +541,14 @@ public class IconBehav :
     // ============================================================
 
     private void StartScaleAnimation(
-        Vector3 targetScale)
+        Vector3 targetScale
+    )
     {
         if (scaleCoroutine != null)
         {
-            StopCoroutine(scaleCoroutine);
+            StopCoroutine(
+                scaleCoroutine
+            );
         }
 
 
@@ -572,7 +564,8 @@ public class IconBehav :
     // ============================================================
 
     private IEnumerator ScaleTo(
-        Vector3 targetScale)
+        Vector3 targetScale
+    )
     {
         Vector3 startScale =
             transform.localScale;
@@ -622,7 +615,10 @@ public class IconBehav :
 
     private IEnumerator ClickPop()
     {
-        // Stop hover animation.
+        // --------------------------------------------------------
+        // STOP HOVER ANIMATION
+        // --------------------------------------------------------
+
         if (scaleCoroutine != null)
         {
             StopCoroutine(
@@ -761,10 +757,6 @@ public class IconBehav :
         }
 
 
-        // --------------------------------------------------------
-        // FINAL SCALE
-        // --------------------------------------------------------
-
         transform.localScale =
             originalScale;
     }
@@ -783,7 +775,8 @@ public class IconBehav :
         if (levelDesc == null)
         {
             Debug.LogError(
-                "[IconBehav] Could not find GameObject named 'LevelDesc'."
+                "[IconBehav] Could not find GameObject named " +
+                "'LevelDesc'."
             );
 
             return;
@@ -844,24 +837,139 @@ public class IconBehav :
         }
 
 
+        string mapInfo =
+            GetMapInfoText();
+
+
         string objective =
             GetObjectiveText();
 
 
+        StringBuilder result =
+            new StringBuilder();
+
+
+        // ========================================================
+        // TITLE
+        // ========================================================
+
+        result.Append(
+            $"<b>{encounter.encounterName}</b>"
+        );
+
+
+        // ========================================================
+        // DESCRIPTION
+        // ========================================================
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                encounter.description
+            )
+        )
+        {
+            result.Append(
+                "\n\n"
+            );
+
+            result.Append(
+                encounter.description
+            );
+        }
+
+
+        // ========================================================
+        // MAP
+        // ========================================================
+
+        result.Append(
+            "\n\n<b>MAP</b>\n"
+        );
+
+        result.Append(
+            mapInfo
+        );
+
+
+        // ========================================================
+        // OBJECTIVE
+        // ========================================================
+
+        result.Append(
+            "\n\n<b>OBJECTIVE</b>\n"
+        );
+
+        result.Append(
+            objective
+        );
+
+
+        // ========================================================
+        // SET TEXT
+        // ========================================================
+
         hoverInfoText.text =
-            $"<b>{encounter.encounterName}</b>\n\n" +
-            $"{encounter.description}\n\n" +
-            $"<b>Objective:</b> {objective}";
+            result.ToString();
 
 
         // Enable TMP only.
         //
         // Do NOT disable the LevelDesc GameObject.
-        //
         // GameObject.Find() only finds active objects.
 
         hoverInfoText.enabled = true;
     }
+
+
+    // ============================================================
+    // MAP INFO
+    // ============================================================
+
+private string GetMapInfoText()
+    {
+        StringBuilder result =
+            new StringBuilder();
+
+
+        // --------------------------------------------------------
+        // SHAPE
+        // --------------------------------------------------------
+
+        if (
+            encounter.shape ==
+            GridShapeType.Donut
+        )
+        {
+            // Treat Donut as Circle for the LevelDesc display.
+            result.Append(
+                "Shape: Circle"
+            );
+
+
+            result.Append(
+                $"\nSize: " +
+                $"{encounter.maxRadius * 2} × " +
+                $"{encounter.maxRadius * 2}"
+            );
+        }
+        else
+        {
+            result.Append(
+                $"Shape: {encounter.shape}"
+            );
+
+
+            result.Append(
+                $"\nSize: " +
+                $"{encounter.width} × " +
+                $"{encounter.height}"
+            );
+        }
+
+
+        return result.ToString();
+    }
+
 
 
     // ============================================================
@@ -889,17 +997,22 @@ public class IconBehav :
         }
 
 
-        switch (encounter.victoryCondition)
+        switch (
+            encounter.victoryCondition
+        )
         {
             case VictoryCondition.DefeatAllEnemies:
 
-                return "Defeat all enemies.";
+                return
+                    "Defeat all enemies.";
 
 
             case VictoryCondition.SurviveRounds:
 
                 return
-                    $"Survive {encounter.roundsToSurvive} rounds.";
+                    $"Survive " +
+                    $"{encounter.roundsToSurvive} " +
+                    $"rounds.";
 
 
             case VictoryCondition.DefeatSpecificEnemy:
@@ -910,17 +1023,20 @@ public class IconBehav :
                     )
                 )
                 {
-                    return "Defeat the target enemy.";
+                    return
+                        "Defeat the target enemy.";
                 }
 
 
                 return
-                    $"Defeat {encounter.targetEnemyId}.";
+                    $"Defeat " +
+                    $"{encounter.targetEnemyId}.";
 
 
             default:
 
-                return "Unknown objective.";
+                return
+                    "Unknown objective.";
         }
     }
 
@@ -930,7 +1046,8 @@ public class IconBehav :
     // ============================================================
 
     public void SetEncounter(
-        EncounterDefinition newEncounter)
+        EncounterDefinition newEncounter
+    )
     {
         encounter =
             newEncounter;
@@ -955,7 +1072,8 @@ public class IconBehav :
     // ============================================================
 
     public void SetEncounterManager(
-        EncounterManager manager)
+        EncounterManager manager
+    )
     {
         encounterManager =
             manager;
@@ -967,7 +1085,8 @@ public class IconBehav :
     // ============================================================
 
     public void SetMapManager(
-        LevelMapManager manager)
+        LevelMapManager manager
+    )
     {
         mapManager =
             manager;
@@ -979,7 +1098,8 @@ public class IconBehav :
     // ============================================================
 
     public void SetTransitionManager(
-        transitionGameManager manager)
+        transitionGameManager manager
+    )
     {
         transitionManager =
             manager;
@@ -992,7 +1112,8 @@ public class IconBehav :
 
     public void SetNodeState(
         bool unlocked,
-        bool completed)
+        bool completed
+    )
     {
         isUnlocked =
             unlocked;

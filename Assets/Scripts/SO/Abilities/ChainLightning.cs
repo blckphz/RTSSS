@@ -3,14 +3,14 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [CreateAssetMenu(
-    fileName = "ChainLightning",
-    menuName = "Abilities/Rusty/Chain Lightning"
+fileName = "ChainLightning",
+menuName = "Combat/Abilities/Chain Lightning"
 )]
 public class ChainLightning : AbilitySO
 {
     [Header("Chain Lightning")]
 
-    [SerializeField, Min(1)]
+[SerializeField, Min(1)]
     private int maxJumps = 5;
 
     [SerializeField, Min(0f)]
@@ -70,8 +70,10 @@ public class ChainLightning : AbilitySO
         int bonus =
             GetBonusJumps(unitData);
 
+
         int total =
             maxJumps + bonus;
+
 
         return total;
     }
@@ -866,4 +868,5 @@ public class ChainLightning : AbilitySO
             target
         );
     }
+
 }

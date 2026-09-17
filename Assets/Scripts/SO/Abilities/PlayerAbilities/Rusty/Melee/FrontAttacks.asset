@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85799ed5eab80b7468015be60e332fbb, type: 3}
   m_Name: FrontAttacks
   m_EditorClassIdentifier: Assembly-CSharp::MeleeSwoosh
-  abilityName: swing
+  abilityName: Staff Swing
   abilityIcon: {fileID: 0}
-  description: 
+  description: Attacks 3 tiles in front of the player
   damage: 10
   cooldown: 1
   canAttackWithThisAfterMove: 1

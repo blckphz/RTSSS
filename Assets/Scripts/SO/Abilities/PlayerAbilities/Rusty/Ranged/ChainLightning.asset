@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8221a0c82b621b546b894d41f8251e26, type: 3}
   m_Name: ChainLightning
   m_EditorClassIdentifier: Assembly-CSharp::ChainLightning
-  abilityName: ChainLIghtning
+  abilityName: Chain LIghtning
   abilityIcon: {fileID: 21300000, guid: eb0767ddd397d154b8b6b07f4a4ef1ba, type: 3}
-  description: 'Attacks
+  description: 'Deals damage,bounces between enemies and inflicts <link="status_stun"><color=yellow><u>Stun</u></color></link>.
 
 '
   damage: 100
@@ -29,7 +29,7 @@ MonoBehaviour:
   maxJumps: 3
   jumpDelay: 0.15
   maxJumpDistance: 8
-  stunPercentage: 33
+  stunPercentage: 10
   stunDuration: 2
   projectilePrefab: {fileID: 1253008432403029687, guid: 450c971267a451f40bb389db9cf5bd0e, type: 3}
   projectileSpeed: 12

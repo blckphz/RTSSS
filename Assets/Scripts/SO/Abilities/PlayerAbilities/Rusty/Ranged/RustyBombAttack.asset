@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2f65b8e348d0e2e4883bc8f4b93b219a, type: 3}
-  m_Name: BombAttack
+  m_Name: RustyBombAttack
   m_EditorClassIdentifier: Assembly-CSharp::BombAttack
-  abilityName: bomb
+  abilityName: Bomb Throw
   abilityIcon: {fileID: 0}
-  description: Deals damage and inflicts <link="status_stun"><color=yellow><u>Stun</u></color></link>.
+  description: Explodes in a Radius
   damage: 10
   cooldown: 3
   canAttackWithThisAfterMove: 0

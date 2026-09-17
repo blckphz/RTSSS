@@ -1,200 +1,117 @@
-﻿using System.Collections;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class tooltipManager : MonoBehaviour
 {
-    [Header("Tooltip UI")]
-    [SerializeField]
-    private GameObject tooltipObject;
+    [Header("Tooltip References")]
+    [SerializeField] private TMP_Text tooltipText;
+    [SerializeField] private GameObject tooltipObject;
+    [SerializeField] private RectTransform tooltipBackground;
+    [SerializeField] private CanvasGroup canvasGroup;
 
-    [SerializeField]
-    private TMP_Text tooltipText;
+[Header("Tooltip Background Padding")]
+    [SerializeField] private float backgroundPaddingX = 30f;
+    [SerializeField] private float backgroundPaddingY = 20f;
 
-
-    [Header("Mouse")]
+    [Header("Tooltip Position")]
     [SerializeField]
     private Vector2 mouseOffset =
-        new Vector2(20f, -20f);
+        new Vector2(15f, -15f);
 
-
-    [Header("Tooltip Animation")]
-    [SerializeField]
-    private CanvasGroup tooltipCanvasGroup;
-
-    [SerializeField]
-    private float animationDuration = 0.18f;
-
-    [SerializeField]
-    private float startScale = 0.75f;
-
-    [SerializeField]
-    private float overshootScale = 1.08f;
-
+    [Header("Animation")]
+    [SerializeField] private float fadeSpeed = 10f;
+    [SerializeField] private float popInScale = 1f;
 
     private RectTransform tooltipRect;
-
-    private RectTransform canvasRect;
-
     private Canvas canvas;
 
-    private Coroutine tooltipAnimation;
-
-
-    // ============================================================
-    // UNITY
-    // ============================================================
+    private bool isShowing;
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // GET CANVAS
-        // --------------------------------------------------------
-
-        canvas = GetComponent<Canvas>();
-
-        if (canvas == null)
-        {
-            Debug.LogError(
-                "[TooltipManager] " +
-                "Could not find Canvas on TooltipManager!"
-            );
-
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // GET CANVAS RECT
-        // --------------------------------------------------------
-
-        canvasRect =
-            canvas.GetComponent<RectTransform>();
-
-        if (canvasRect == null)
-        {
-            Debug.LogError(
-                "[TooltipManager] " +
-                "Canvas does not have a RectTransform!"
-            );
-
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // GET TOOLTIP RECT
-        // --------------------------------------------------------
-
         if (tooltipObject != null)
         {
             tooltipRect =
                 tooltipObject.GetComponent<RectTransform>();
         }
 
-
-        if (tooltipRect == null)
+        if (canvasGroup == null && tooltipObject != null)
         {
-            Debug.LogError(
-                "[TooltipManager] " +
-                "Tooltip GameObject needs a RectTransform!"
-            );
-        }
-
-
-        // --------------------------------------------------------
-        // GET CANVAS GROUP
-        // --------------------------------------------------------
-
-        if (tooltipObject != null)
-        {
-            tooltipCanvasGroup =
+            canvasGroup =
                 tooltipObject.GetComponent<CanvasGroup>();
         }
 
-        // --------------------------------------------------------
-        // TEXT
-        // --------------------------------------------------------
-
-        if (tooltipText == null)
+        if (canvasGroup == null && tooltipObject != null)
         {
-            Debug.LogWarning(
-                "[TooltipManager] " +
-                "Tooltip Text is not assigned."
-            );
+            canvasGroup =
+                tooltipObject.AddComponent<CanvasGroup>();
         }
 
+        canvas =
+            GetComponentInParent<Canvas>();
 
-        // --------------------------------------------------------
-        // INITIAL STATE
-        // --------------------------------------------------------
-
-        if (tooltipCanvasGroup != null)
+        if (canvas == null)
         {
-            tooltipCanvasGroup.alpha = 0f;
+            canvas =
+                FindFirstObjectByType<Canvas>();
         }
 
+        HideTooltipImmediate();
+    }
+
+    private void Update()
+    {
+        if (!isShowing)
+        {
+            return;
+        }
+
+        FollowMouse();
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha =
+                Mathf.MoveTowards(
+                    canvasGroup.alpha,
+                    1f,
+                    fadeSpeed * Time.unscaledDeltaTime
+                );
+        }
 
         if (tooltipRect != null)
         {
             tooltipRect.localScale =
-                Vector3.one * startScale;
+                Vector3.Lerp(
+                    tooltipRect.localScale,
+                    Vector3.one * popInScale,
+                    fadeSpeed * Time.unscaledDeltaTime
+                );
         }
-
-
-        HideTooltipInstant();
     }
 
+    // =========================================================
+    // SHOW TOOLTIP
+    // =========================================================
 
-    private void Update()
+    public void ShowStatusTooltip(
+        string statusId,
+        float stunChance = 0f,
+        int stunDuration = 1
+    )
     {
-        FollowMouse();
-    }
-
-
-    // ============================================================
-    // SHOW STATUS TOOLTIP
-    // ============================================================
-
-    public void ShowStatusTooltip(string statusId)
-    {
-        if (tooltipObject == null)
-        {
-            Debug.LogError(
-                "[TooltipManager] " +
-                "tooltipObject is NULL!"
-            );
-
-            return;
-        }
-
-
         if (tooltipText == null)
         {
-            Debug.LogError(
-                "[TooltipManager] " +
-                "tooltipText is NULL!"
-            );
-
             return;
         }
 
-
-        if (string.IsNullOrEmpty(statusId))
+        if (tooltipObject != null)
         {
-            Debug.LogWarning(
-                "[TooltipManager] " +
-                "statusId is empty."
-            );
-
-            return;
+            tooltipObject.SetActive(true);
         }
 
-
-        // ========================================================
-        // STATUS
-        // ========================================================
+        isShowing = true;
 
         switch (statusId.ToLower())
         {
@@ -203,10 +120,13 @@ public class tooltipManager : MonoBehaviour
                 tooltipText.text =
                     "<b>STUN</b>\n" +
                     "Cannot move or attack.\n" +
-                    "Duration: 1 turn";
+                    $"Chance: {stunChance:0}%\n" +
+                    $"Duration: {stunDuration} turn" +
+                    (stunDuration == 1
+                        ? ""
+                        : "s");
 
                 break;
-
 
             case "burn":
 
@@ -217,7 +137,6 @@ public class tooltipManager : MonoBehaviour
 
                 break;
 
-
             case "slow":
 
                 tooltipText.text =
@@ -225,7 +144,6 @@ public class tooltipManager : MonoBehaviour
                     "Movement range is reduced.";
 
                 break;
-
 
             case "poison":
 
@@ -235,532 +153,177 @@ public class tooltipManager : MonoBehaviour
 
                 break;
 
-
             default:
 
-                tooltipText.text =
-                    $"<b>{statusId.ToUpper()}</b>";
-
-                Debug.LogWarning(
-                    "[TooltipManager] Unknown status: " +
-                    statusId
-                );
+                tooltipText.text = "";
 
                 break;
         }
-
-
-        // ========================================================
-        // STOP CURRENT ANIMATION
-        // ========================================================
-
-        if (tooltipAnimation != null)
-        {
-            StopCoroutine(tooltipAnimation);
-            tooltipAnimation = null;
-        }
-
-
-        // ========================================================
-        // ENABLE TOOLTIP
-        // ========================================================
-
-        tooltipObject.SetActive(true);
-
-
-        // ========================================================
-        // RESET ANIMATION
-        // ========================================================
-
-        if (tooltipCanvasGroup != null)
-        {
-            tooltipCanvasGroup.alpha = 0f;
-        }
-
-
-        if (tooltipRect != null)
-        {
-            tooltipRect.localScale =
-                Vector3.one * startScale;
-        }
-
-
-        // ========================================================
-        // UPDATE LAYOUT
-        // ========================================================
 
         tooltipText.ForceMeshUpdate();
 
         Canvas.ForceUpdateCanvases();
 
+        UpdateTooltipSize();
 
-        // ========================================================
-        // POSITION
-        // ========================================================
+        Canvas.ForceUpdateCanvases();
 
         FollowMouse();
 
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+        }
 
-        // ========================================================
-        // PLAY POP-IN
-        // ========================================================
-
-        tooltipAnimation =
-            StartCoroutine(
-                AnimateTooltipIn()
-            );
+        if (tooltipRect != null)
+        {
+            tooltipRect.localScale =
+                Vector3.zero;
+        }
     }
 
-
-    // ============================================================
-    // HIDE
-    // ============================================================
+    // =========================================================
+    // HIDE TOOLTIP
+    // =========================================================
 
     public void HideTooltip()
     {
-        if (tooltipObject == null)
+        isShowing = false;
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+        }
+
+        if (tooltipObject != null)
+        {
+            tooltipObject.SetActive(false);
+        }
+    }
+
+    private void HideTooltipImmediate()
+    {
+        isShowing = false;
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+        }
+
+        if (tooltipRect != null)
+        {
+            tooltipRect.localScale =
+                Vector3.zero;
+        }
+
+        if (tooltipObject != null)
+        {
+            tooltipObject.SetActive(false);
+        }
+    }
+
+    // =========================================================
+    // TOOLTIP SIZE
+    // =========================================================
+
+    private void UpdateTooltipSize()
+    {
+        if (tooltipText == null)
         {
             return;
         }
 
-
-        if (!tooltipObject.activeSelf)
+        if (tooltipBackground == null)
         {
             return;
         }
 
+        tooltipText.ForceMeshUpdate();
 
-        // --------------------------------------------------------
-        // STOP CURRENT ANIMATION
-        // --------------------------------------------------------
+        Vector2 preferredSize =
+            tooltipText.GetPreferredValues();
 
-        if (tooltipAnimation != null)
-        {
-            StopCoroutine(tooltipAnimation);
-            tooltipAnimation = null;
-        }
+        float width =
+            preferredSize.x +
+            backgroundPaddingX;
 
+        float height =
+            preferredSize.y +
+            backgroundPaddingY;
 
-        // --------------------------------------------------------
-        // PLAY POP-OUT
-        // --------------------------------------------------------
-
-        tooltipAnimation =
-            StartCoroutine(
-                AnimateTooltipOut()
+        tooltipBackground.sizeDelta =
+            new Vector2(
+                width,
+                height
             );
     }
 
-
-    // ============================================================
-    // HIDE INSTANTLY
-    // ============================================================
-
-    private void HideTooltipInstant()
-    {
-        if (tooltipObject == null)
-        {
-            return;
-        }
-
-
-        if (tooltipCanvasGroup != null)
-        {
-            tooltipCanvasGroup.alpha = 0f;
-        }
-
-
-        if (tooltipRect != null)
-        {
-            tooltipRect.localScale =
-                Vector3.one * startScale;
-        }
-
-
-        tooltipObject.SetActive(false);
-    }
-
-
-    // ============================================================
-    // POP IN
-    // ============================================================
-
-    private IEnumerator AnimateTooltipIn()
-    {
-        float elapsed = 0f;
-
-
-        while (elapsed < animationDuration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-
-
-            float t =
-                animationDuration <= 0f
-                    ? 1f
-                    : Mathf.Clamp01(
-                        elapsed /
-                        animationDuration
-                    );
-
-
-            // ====================================================
-            // FADE
-            // ====================================================
-
-            if (tooltipCanvasGroup != null)
-            {
-                tooltipCanvasGroup.alpha =
-                    Mathf.SmoothStep(
-                        0f,
-                        1f,
-                        t
-                    );
-            }
-
-
-            // ====================================================
-            // POP
-            // ====================================================
-
-            if (tooltipRect != null)
-            {
-                float scale;
-
-
-                if (t < 0.7f)
-                {
-                    float popT =
-                        Mathf.SmoothStep(
-                            0f,
-                            1f,
-                            t / 0.7f
-                        );
-
-
-                    scale =
-                        Mathf.Lerp(
-                            startScale,
-                            overshootScale,
-                            popT
-                        );
-                }
-                else
-                {
-                    float settleT =
-                        Mathf.SmoothStep(
-                            0f,
-                            1f,
-                            (t - 0.7f) / 0.3f
-                        );
-
-
-                    scale =
-                        Mathf.Lerp(
-                            overshootScale,
-                            1f,
-                            settleT
-                        );
-                }
-
-
-                tooltipRect.localScale =
-                    Vector3.one * scale;
-            }
-
-
-            yield return null;
-        }
-
-
-        // ========================================================
-        // FINAL STATE
-        // ========================================================
-
-        if (tooltipCanvasGroup != null)
-        {
-            tooltipCanvasGroup.alpha = 1f;
-        }
-
-
-        if (tooltipRect != null)
-        {
-            tooltipRect.localScale =
-                Vector3.one;
-        }
-
-
-        tooltipAnimation = null;
-    }
-
-
-    // ============================================================
-    // POP OUT
-    // ============================================================
-
-    private IEnumerator AnimateTooltipOut()
-    {
-        float elapsed = 0f;
-
-
-        float startingAlpha =
-            tooltipCanvasGroup != null
-                ? tooltipCanvasGroup.alpha
-                : 1f;
-
-
-        Vector3 startingScale =
-            tooltipRect != null
-                ? tooltipRect.localScale
-                : Vector3.one;
-
-
-        while (elapsed < animationDuration)
-        {
-            elapsed +=
-                Time.unscaledDeltaTime;
-
-
-            float t =
-                animationDuration <= 0f
-                    ? 1f
-                    : Mathf.Clamp01(
-                        elapsed /
-                        animationDuration
-                    );
-
-
-            float easedT =
-                Mathf.SmoothStep(
-                    0f,
-                    1f,
-                    t
-                );
-
-
-            // ====================================================
-            // FADE OUT
-            // ====================================================
-
-            if (tooltipCanvasGroup != null)
-            {
-                tooltipCanvasGroup.alpha =
-                    Mathf.Lerp(
-                        startingAlpha,
-                        0f,
-                        easedT
-                    );
-            }
-
-
-            // ====================================================
-            // SHRINK
-            // ====================================================
-
-            if (tooltipRect != null)
-            {
-                tooltipRect.localScale =
-                    Vector3.Lerp(
-                        startingScale,
-                        Vector3.one * startScale,
-                        easedT
-                    );
-            }
-
-
-            yield return null;
-        }
-
-
-        // ========================================================
-        // FINAL STATE
-        // ========================================================
-
-        if (tooltipCanvasGroup != null)
-        {
-            tooltipCanvasGroup.alpha = 0f;
-        }
-
-
-        if (tooltipRect != null)
-        {
-            tooltipRect.localScale =
-                Vector3.one * startScale;
-        }
-
-
-        tooltipObject.SetActive(false);
-
-        tooltipAnimation = null;
-    }
-
-
-    // ============================================================
+    // =========================================================
     // FOLLOW MOUSE
-    // ============================================================
+    // =========================================================
 
     private void FollowMouse()
     {
-        if (tooltipObject == null)
-        {
-            return;
-        }
-
-
-        if (!tooltipObject.activeSelf)
-        {
-            return;
-        }
-
-
         if (tooltipRect == null)
         {
             return;
         }
 
+        Vector2 mousePosition =
+            Mouse.current != null
+                ? Mouse.current.position.ReadValue()
+                : Vector2.zero;
 
         if (canvas == null)
         {
+            tooltipRect.position =
+                mousePosition + mouseOffset;
+
             return;
         }
-
-
-        // ========================================================
-        // NEW INPUT SYSTEM
-        // ========================================================
-
-        if (Mouse.current == null)
-        {
-            return;
-        }
-
-
-        Vector2 mousePosition =
-            Mouse.current.position.ReadValue();
-
-
-        // ========================================================
-        // SCREEN SPACE OVERLAY
-        // ========================================================
 
         if (
             canvas.renderMode ==
             RenderMode.ScreenSpaceOverlay
         )
         {
-            Vector2 localPosition;
-
-
-            bool success =
-                RectTransformUtility
-                    .ScreenPointToLocalPointInRectangle(
-                        canvasRect,
-                        mousePosition,
-                        null,
-                        out localPosition
-                    );
-
-
-            if (!success)
-            {
-                return;
-            }
-
-
-            localPosition += mouseOffset;
-
-            tooltipRect.localPosition =
-                localPosition;
+            tooltipRect.position =
+                mousePosition + mouseOffset;
 
             return;
         }
 
+        Camera canvasCamera =
+            canvas.worldCamera;
 
-        // ========================================================
-        // SCREEN SPACE CAMERA
-        // ========================================================
-
-        if (
-            canvas.renderMode ==
-            RenderMode.ScreenSpaceCamera
-        )
+        if (canvasCamera == null)
         {
-            Vector2 localPosition;
+            canvasCamera =
+                Camera.main;
+        }
 
+        RectTransform canvasRect =
+            canvas.transform as RectTransform;
 
-            bool success =
-                RectTransformUtility
-                    .ScreenPointToLocalPointInRectangle(
-                        canvasRect,
-                        mousePosition,
-                        canvas.worldCamera,
-                        out localPosition
-                    );
-
-
-            if (!success)
-            {
-                return;
-            }
-
-
-            localPosition += mouseOffset;
-
-            tooltipRect.localPosition =
-                localPosition;
-
+        if (canvasRect == null)
+        {
             return;
         }
 
-
-        // ========================================================
-        // WORLD SPACE
-        // ========================================================
+        Vector2 localPoint;
 
         if (
-            canvas.renderMode ==
-            RenderMode.WorldSpace
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRect,
+                mousePosition,
+                canvasCamera,
+                out localPoint
+            )
         )
         {
-            Camera cam =
-                canvas.worldCamera;
-
-
-            if (cam == null)
-            {
-                cam = Camera.main;
-            }
-
-
-            if (cam == null)
-            {
-                return;
-            }
-
-
-            Vector2 localPosition;
-
-
-            bool success =
-                RectTransformUtility
-                    .ScreenPointToLocalPointInRectangle(
-                        canvasRect,
-                        mousePosition,
-                        cam,
-                        out localPosition
-                    );
-
-
-            if (!success)
-            {
-                return;
-            }
-
-
-            localPosition += mouseOffset;
-
             tooltipRect.localPosition =
-                localPosition;
+                localPoint + mouseOffset;
         }
     }
+
 }
