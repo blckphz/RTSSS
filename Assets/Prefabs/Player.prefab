@@ -410,6 +410,7 @@ MonoBehaviour:
   tilePin: {fileID: 0}
   animationController: {fileID: 0}
   moveDuration: 0.25
+  moveActionsPerTurn: 1
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1

@@ -667,7 +667,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
   team: 2
   isPlayerCharacter: 0
-  maxHealth: 30
+  maxHealth: 60
   health: 0
   healthBarFill: {fileID: 6132181389253083579}
   healthText: {fileID: 6252303622901577857}
@@ -838,11 +838,12 @@ MonoBehaviour:
   tilePin: {fileID: 0}
   animationController: {fileID: 1265849680894574295}
   moveDuration: 0.25
+  moveActionsPerTurn: 1
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
   preferCloserAttackPosition: 1
-  preferMoreOpenPositions: 1
+  preferMoreOpenPositions: 0
   preferSidePositions: 1
 --- !u!114 &1213053164979615894
 MonoBehaviour:
