@@ -254,6 +254,7 @@ MonoBehaviour:
   damageScreenShakeMagnitude: 1
   damageScreenShakeDuration: 0.15
   enableDamageSound: 1
+  enableHealSound: 1
   damageNumberPrefab: {fileID: 5742265421823657814, guid: e332337082ba6ce4c9f2c18e3fa4330d, type: 3}
   damageNumberParent: {fileID: 0}
   damageNumberOffset: {x: 0, y: 1, z: 0}
@@ -314,6 +315,12 @@ MonoBehaviour:
   hoverShaderObjectName: HoverShaderSprite
   enableHoverOutline: 1
   selectedChildSprite: {fileID: 3350255872931640762}
+  healthBarCanvasGroup: {fileID: 6384675295120456835}
+  enableHealthBarHover: 1
+  healthBarFadeSpeed: 10
+  healthBarVisibleAlpha: 1
+  healthBarHiddenAlpha: 0
+  showHealthBarWhenSelected: 1
 --- !u!61 &6280651182369518804
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -422,6 +429,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   attackUnit: {fileID: 0}
+  animationController: {fileID: 0}
 --- !u!114 &5314316195543410599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -816,6 +824,7 @@ GameObject:
   - component: {fileID: 8563993597590357855}
   - component: {fileID: 4345892279739794755}
   - component: {fileID: 266380110921358682}
+  - component: {fileID: 6384675295120456835}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -908,6 +917,18 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!225 &6384675295120456835
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7287967419285999697}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &8001771988020292421
 GameObject:
   m_ObjectHideFlags: 0

@@ -17,7 +17,7 @@ MonoBehaviour:
   description: 'Deals damage,bounces between enemies and inflicts <link="status_stun"><color=yellow><u>Stun</u></color></link>.
 
 '
-  damage: 100
+  damage: 15
   cooldown: 3
   canAttackWithThisAfterMove: 1
   usesPerTurn: 2

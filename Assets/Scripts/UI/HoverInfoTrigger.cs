@@ -125,6 +125,37 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
 
     // ============================================================
+    // HEALTH BAR HOVER
+    // ============================================================
+
+    [Header("Health Bar Hover")]
+    [Tooltip(
+        "CanvasGroup on the unit's health bar UI. " +
+        "The health bar fades in when hovered and fades out when not hovered."
+    )]
+    [SerializeField]
+    private CanvasGroup healthBarCanvasGroup;
+
+    [SerializeField]
+    private bool enableHealthBarHover = true;
+
+    [SerializeField, Min(0.01f)]
+    private float healthBarFadeSpeed = 10f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float healthBarVisibleAlpha = 1f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float healthBarHiddenAlpha = 0f;
+
+    [Tooltip(
+        "If enabled, the health bar also remains visible while the unit is selected."
+    )]
+    [SerializeField]
+    private bool showHealthBarWhenSelected = true;
+
+
+    // ============================================================
     // REFERENCES
     // ============================================================
 
@@ -166,6 +197,13 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
 
     // ============================================================
+    // HEALTH BAR STATE
+    // ============================================================
+
+    private float targetHealthBarAlpha;
+
+
+    // ============================================================
     // HOVER OUTLINE STATE
     // ============================================================
 
@@ -200,6 +238,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
         SetupHoverOutline();
 
+        SetupHealthBar();
+
         canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
 
@@ -211,6 +251,100 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     private void Update()
     {
         UpdateScale();
+
+        UpdateHealthBarVisibility();
+    }
+
+
+    // ============================================================
+    // HEALTH BAR SETUP
+    // ============================================================
+
+    private void SetupHealthBar()
+    {
+        if (
+            healthBarCanvasGroup == null ||
+            !enableHealthBarHover
+        )
+        {
+            return;
+        }
+
+        healthBarCanvasGroup.interactable =
+            false;
+
+        healthBarCanvasGroup.blocksRaycasts =
+            false;
+
+        targetHealthBarAlpha =
+            healthBarHiddenAlpha;
+
+        healthBarCanvasGroup.alpha =
+            healthBarHiddenAlpha;
+
+        UpdateHealthBarTarget();
+    }
+
+
+    // ============================================================
+    // HEALTH BAR VISIBILITY
+    // ============================================================
+
+    private void UpdateHealthBarVisibility()
+    {
+        if (
+            healthBarCanvasGroup == null ||
+            !enableHealthBarHover
+        )
+        {
+            return;
+        }
+
+        UpdateHealthBarTarget();
+
+        healthBarCanvasGroup.alpha =
+            Mathf.Lerp(
+                healthBarCanvasGroup.alpha,
+                targetHealthBarAlpha,
+                Time.deltaTime *
+                healthBarFadeSpeed
+            );
+
+        if (
+            Mathf.Abs(
+                healthBarCanvasGroup.alpha -
+                targetHealthBarAlpha
+            ) < 0.005f
+        )
+        {
+            healthBarCanvasGroup.alpha =
+                targetHealthBarAlpha;
+        }
+    }
+
+
+    // ============================================================
+    // HEALTH BAR TARGET
+    // ============================================================
+
+    private void UpdateHealthBarTarget()
+    {
+        if (
+            isHovered ||
+            (
+                showHealthBarWhenSelected &&
+                isSelected
+            )
+        )
+        {
+            targetHealthBarAlpha =
+                healthBarVisibleAlpha;
+        }
+        else
+        {
+            targetHealthBarAlpha =
+                healthBarHiddenAlpha;
+        }
     }
 
 
@@ -356,6 +490,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
     private void OnHoverEnter()
     {
+        UpdateHealthBarTarget();
+
         if (audioFXManager == null)
         {
             audioFXManager =
@@ -396,6 +532,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     private void OnHoverExit()
     {
         isAbilityTargetHovered = false;
+
+        UpdateHealthBarTarget();
 
         if (UIManager.CurrentSelection != null)
         {
@@ -523,8 +661,27 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
     }
 
 
+    // ============================================================
+    // SET SELECTED
+    // ============================================================
+    //
+    // playDeselectSound:
+    //
+    // true  = normal deselection, play deselect sound
+    // false = silent deselection, useful when switching units
+    //
+    // Example:
+    //
+    // oldUnit.SetSelected(false, false);
+    // newUnit.SetSelected(true);
+    //
+    // This prevents the old unit's deselect sound from playing
+    // when selecting another unit.
+    // ============================================================
+
     public void SetSelected(
-        bool selected)
+        bool selected,
+        bool playDeselectSound = true)
     {
         // Nothing changed.
         if (isSelected == selected)
@@ -548,7 +705,10 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             audioFXManager == null &&
             (
                 becomingSelected ||
-                becomingDeselected
+                (
+                    becomingDeselected &&
+                    playDeselectSound
+                )
             )
         )
         {
@@ -582,7 +742,10 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         // DESELECT
         // ========================================================
 
-        if (becomingDeselected)
+        if (
+            becomingDeselected &&
+            playDeselectSound
+        )
         {
             audioFXManager?.PlayUnitDeselect();
         }
@@ -601,6 +764,8 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         // ========================================================
 
         UpdateHoverOutline();
+
+        UpdateHealthBarTarget();
 
         if (selectedChildSprite != null)
         {
@@ -668,6 +833,9 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         currentAbilityTargetScale = 0f;
         abilityTargetScaleVelocity = 0f;
 
+        targetHealthBarAlpha =
+            healthBarHiddenAlpha;
+
 
         if (selectedChildSprite != null)
         {
@@ -678,6 +846,13 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         if (hoverShaderSprite != null)
         {
             hoverShaderSprite.enabled = false;
+        }
+
+
+        if (healthBarCanvasGroup != null)
+        {
+            healthBarCanvasGroup.alpha =
+                healthBarHiddenAlpha;
         }
 
 

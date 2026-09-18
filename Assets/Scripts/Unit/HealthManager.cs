@@ -13,6 +13,8 @@ public class HealthManager : MonoBehaviour
 
     public static event Action<HealthManager> OnHealthChanged;
 
+    public static event Action<HealthManager> OnDie;
+
 
     // ==================================================
     // TEAM
@@ -1282,8 +1284,6 @@ public class HealthManager : MonoBehaviour
             health -
             oldHealth;
 
-        // Only show and play feedback
-        // for HP that was actually restored.
         if (actualHealing > 0)
         {
             SpawnHealNumber(
@@ -1339,6 +1339,10 @@ public class HealthManager : MonoBehaviour
     {
         SavePlayerHealth();
 
+        // ==================================================
+        // PLAYER DEATH
+        // ==================================================
+
         if (isPlayerCharacter)
         {
             GameStateManager gameStateManager =
@@ -1355,6 +1359,18 @@ public class HealthManager : MonoBehaviour
 
             return;
         }
+
+
+        // ==================================================
+        // ENEMY DEATH EVENT
+        // ==================================================
+
+        OnDie?.Invoke(this);
+
+
+        // ==================================================
+        // ENEMY DEATH
+        // ==================================================
 
         StopDamageFlash();
 

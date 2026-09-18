@@ -419,9 +419,13 @@ MonoBehaviour:
   damageScreenShakeMagnitude: 1
   damageScreenShakeDuration: 0.15
   enableDamageSound: 1
+  enableHealSound: 1
   damageNumberPrefab: {fileID: 5742265421823657814, guid: e332337082ba6ce4c9f2c18e3fa4330d, type: 3}
   damageNumberParent: {fileID: 0}
   damageNumberOffset: {x: 0, y: 1, z: 0}
+  healNumberPrefab: {fileID: 0}
+  healNumberParent: {fileID: 0}
+  healNumberOffset: {x: 0, y: 1, z: 0}
   queueDamageFlashes: 1
   minimumFlashInterval: 0.03
 --- !u!114 &1197825336682691849
@@ -476,6 +480,12 @@ MonoBehaviour:
   hoverShaderObjectName: HoverShaderSprite
   enableHoverOutline: 1
   selectedChildSprite: {fileID: 2127174547280046171}
+  healthBarCanvasGroup: {fileID: 880787171950924998}
+  enableHealthBarHover: 1
+  healthBarFadeSpeed: 10
+  healthBarVisibleAlpha: 1
+  healthBarHiddenAlpha: 0
+  showHealthBarWhenSelected: 1
 --- !u!61 &804218615678651272
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -513,7 +523,7 @@ BoxCollider2D:
   m_Offset: {x: -0.024063498, y: 0.36343327}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
+    pivot: {x: 0.5334523, y: 0.18936652}
     oldSize: {x: 1, y: 2.3333333}
     newSize: {x: 1, y: 2.3333333}
     adaptiveTilingThreshold: 0.5
@@ -584,6 +594,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   attackUnit: {fileID: 0}
+  animationController: {fileID: 0}
 --- !u!114 &3740628071518266872
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -888,6 +899,7 @@ GameObject:
   - component: {fileID: 5969091750344782962}
   - component: {fileID: 3565829113593033697}
   - component: {fileID: 5514820420172537459}
+  - component: {fileID: 880787171950924998}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -980,3 +992,15 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!225 &880787171950924998
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7860811975899319097}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0

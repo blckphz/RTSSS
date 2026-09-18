@@ -71,7 +71,6 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         Instance = this;
 
 
@@ -228,17 +227,6 @@ public class UIManager : MonoBehaviour
         // --------------------------------------------------------
         // ABILITY TARGETING
         // --------------------------------------------------------
-        //
-        // IMPORTANT:
-        //
-        // We pass the exact object that was clicked.
-        //
-        // Previously the code converted the mouse position into
-        // a grid cell and then performed another physics search
-        // around that cell. That could result in the clicked unit
-        // not being found even though it was visibly highlighted.
-        //
-        // --------------------------------------------------------
 
         if (HasSelectedAbility())
         {
@@ -331,11 +319,6 @@ public class UIManager : MonoBehaviour
                 // ------------------------------------------------
                 // ENEMY ABILITY
                 // ------------------------------------------------
-                //
-                // Enemy abilities should NOT move the camera.
-                //
-                // The ability is still selected normally.
-                //
 
                 if (team == Team.Enemy)
                 {
@@ -598,13 +581,6 @@ public class UIManager : MonoBehaviour
         // ========================================================
         // UNIT TARGET
         // ========================================================
-        //
-        // If the click landed on a unit, use THAT exact unit.
-        //
-        // Do not perform another physics search around the
-        // calculated tile.
-        //
-        // ========================================================
 
         if (clickedTrigger != null)
         {
@@ -652,10 +628,6 @@ public class UIManager : MonoBehaviour
             }
 
 
-            // ----------------------------------------------------
-            // Check ability range.
-            // ----------------------------------------------------
-
             List<Vector2Int> rangeTiles =
                 ability.GetRangeTiles(
                     gridManager,
@@ -674,16 +646,6 @@ public class UIManager : MonoBehaviour
             }
 
 
-            // ----------------------------------------------------
-            // Final authoritative validation.
-            //
-            // This checks:
-            // - target type
-            // - team
-            // - range
-            // - movement restrictions
-            // ----------------------------------------------------
-
             if (
                 !ability.CanHit(
                     gridManager,
@@ -696,10 +658,6 @@ public class UIManager : MonoBehaviour
             }
 
 
-            // ----------------------------------------------------
-            // USE ABILITY ON EXACT CLICKED UNIT
-            // ----------------------------------------------------
-
             return UseNormalAbility(
                 attackUnit,
                 ability,
@@ -711,13 +669,6 @@ public class UIManager : MonoBehaviour
 
         // ========================================================
         // TILE TARGET
-        // ========================================================
-        //
-        // No unit was clicked.
-        //
-        // This is used for abilities such as BombAttack that
-        // target a tile rather than a specific unit.
-        //
         // ========================================================
 
         Vector2Int targetTileFromMouse =
@@ -770,15 +721,6 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // Normal non-tile ability clicked on empty space.
-        // --------------------------------------------------------
-        //
-        // Do nothing. A normal unit-targeted ability requires
-        // an actual target unit.
-        //
-        // --------------------------------------------------------
-
         return false;
     }
 
@@ -802,8 +744,6 @@ public class UIManager : MonoBehaviour
         if (!used)
             return false;
 
-
-        // Keep camera at ability overview position.
 
         ClearSelectedAbility(
             false
@@ -835,10 +775,6 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // Final validation.
-        // --------------------------------------------------------
-
         if (
             !ability.CanHit(
                 gridManager,
@@ -851,10 +787,6 @@ public class UIManager : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // Execute.
-        // --------------------------------------------------------
-
         bool used =
             attackUnit.Attack(
                 targetObject,
@@ -865,8 +797,6 @@ public class UIManager : MonoBehaviour
         if (!used)
             return false;
 
-
-        // Keep camera at battlefield position.
 
         ClearSelectedAbility(
             false
@@ -1105,11 +1035,44 @@ public class UIManager : MonoBehaviour
         }
 
 
+        // ========================================================
+        // DESELECT PREVIOUS UNIT
+        // ========================================================
+        //
+        // IMPORTANT:
+        //
+        // We are switching directly from one unit to another.
+        //
+        // Therefore:
+        //
+        // false = deselect
+        // false = DO NOT play deselect sound
+        //
+        // The newly selected unit will still play its normal
+        // selection/click sound below.
+        // ========================================================
+
         if (CurrentSelection != null)
         {
-            ClearSelection();
+            HoverInfoTrigger previousSelection =
+                CurrentSelection;
+
+
+            previousSelection.SetSelected(
+                false,
+                false
+            );
+
+
+            ClearMovementRange(
+                previousSelection
+            );
         }
 
+
+        // ========================================================
+        // SET NEW SELECTION
+        // ========================================================
 
         CurrentSelection =
             trigger;
@@ -1149,8 +1112,16 @@ public class UIManager : MonoBehaviour
             CurrentSelection;
 
 
+        // ========================================================
+        // NORMAL DESELECTION
+        // ========================================================
+        //
+        // This IS a real deselection, so the deselect sound plays.
+        // ========================================================
+
         previousSelection.SetSelected(
-            false
+            false,
+            true
         );
 
 
