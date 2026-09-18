@@ -12,7 +12,6 @@ public class UIManager : MonoBehaviour
         private set;
     }
 
-
     // ============================================================
     // CLICK RAYCAST
     // ============================================================
@@ -28,7 +27,6 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     private float raycastDistance = 1000f;
 
-
     // ============================================================
     // MOVEMENT
     // ============================================================
@@ -37,7 +35,6 @@ public class UIManager : MonoBehaviour
 
     [SerializeField]
     private bool allowPlayerMovement = true;
-
 
     // ============================================================
     // CHAIN LIGHTNING
@@ -48,13 +45,11 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     private GridChainHighlight gridChainHighlight;
 
-
     // ============================================================
     // REFERENCES
     // ============================================================
 
     private CanvasInfoManager canvasInfoManager;
-
 
     // ============================================================
     // UNITY
@@ -73,7 +68,6 @@ public class UIManager : MonoBehaviour
 
         Instance = this;
 
-
         // --------------------------------------------------------
         // CAMERA
         // --------------------------------------------------------
@@ -83,7 +77,6 @@ public class UIManager : MonoBehaviour
             clickCamera = Camera.main;
         }
 
-
         // --------------------------------------------------------
         // CANVAS INFO
         // --------------------------------------------------------
@@ -92,7 +85,6 @@ public class UIManager : MonoBehaviour
             FindFirstObjectByType<
                 CanvasInfoManager
             >();
-
 
         // --------------------------------------------------------
         // CHAIN LIGHTNING
@@ -107,7 +99,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
     private void Update()
     {
         CheckRightClick();
@@ -116,7 +107,6 @@ public class UIManager : MonoBehaviour
 
         UpdateChainLightningPreview();
     }
-
 
     // ============================================================
     // INPUT
@@ -127,7 +117,6 @@ public class UIManager : MonoBehaviour
         if (Mouse.current == null)
             return;
 
-
         if (
             !Mouse.current
                 .rightButton
@@ -137,20 +126,16 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // CANCEL ABILITY FIRST
         // --------------------------------------------------------
 
         if (HasSelectedAbility())
         {
-            ClearSelectedAbility(
-                true
-            );
+            ClearSelectedAbility(true);
 
             return;
         }
-
 
         // --------------------------------------------------------
         // OTHERWISE DESELECT
@@ -162,7 +147,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
     private void CheckMouseClick()
     {
         if (
@@ -173,7 +157,6 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         if (
             !Mouse.current
                 .leftButton
@@ -183,12 +166,10 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         Vector2 mousePosition =
             Mouse.current
                 .position
                 .ReadValue();
-
 
         // --------------------------------------------------------
         // ABILITY UI
@@ -199,7 +180,6 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // WORLD RAYCAST
         // --------------------------------------------------------
@@ -209,7 +189,6 @@ public class UIManager : MonoBehaviour
                 mousePosition
             );
 
-
         RaycastHit2D hit =
             Physics2D.GetRayIntersection(
                 ray,
@@ -217,12 +196,8 @@ public class UIManager : MonoBehaviour
                 clickLayers
             );
 
-
         HoverInfoTrigger clickedTrigger =
-            GetClickedTrigger(
-                hit
-            );
-
+            GetClickedTrigger(hit);
 
         // --------------------------------------------------------
         // ABILITY TARGETING
@@ -238,20 +213,16 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         // --------------------------------------------------------
         // SELECT UNIT
         // --------------------------------------------------------
 
         if (clickedTrigger != null)
         {
-            SelectObject(
-                clickedTrigger
-            );
+            SelectObject(clickedTrigger);
 
             return;
         }
-
 
         // --------------------------------------------------------
         // MOVE SELECTED UNIT
@@ -272,14 +243,12 @@ public class UIManager : MonoBehaviour
             }
         }
 
-
         // --------------------------------------------------------
         // CLICKED EMPTY SPACE
         // --------------------------------------------------------
 
         ClearSelection();
     }
-
 
     // ============================================================
     // ABILITY UI
@@ -290,15 +259,12 @@ public class UIManager : MonoBehaviour
         if (canvasInfoManager == null)
             return false;
 
-
         bool selected =
             canvasInfoManager
                 .TrySelectAbilityUnderMouse();
 
-
         if (!selected)
             return false;
-
 
         // ========================================================
         // CHECK SELECTED UNIT
@@ -309,12 +275,10 @@ public class UIManager : MonoBehaviour
             AttackUnit attackUnit =
                 CurrentSelection.GetAttackUnit();
 
-
             if (attackUnit != null)
             {
                 Team team =
                     attackUnit.GetTeam();
-
 
                 // ------------------------------------------------
                 // ENEMY ABILITY
@@ -327,7 +291,6 @@ public class UIManager : MonoBehaviour
             }
         }
 
-
         // ========================================================
         // PLAYER / ALLY ABILITY
         // ========================================================
@@ -338,10 +301,8 @@ public class UIManager : MonoBehaviour
                 .MoveCameraToAbilityPosition();
         }
 
-
         return true;
     }
-
 
     private HoverInfoTrigger GetClickedTrigger(
         RaycastHit2D hit)
@@ -349,14 +310,12 @@ public class UIManager : MonoBehaviour
         if (hit.collider == null)
             return null;
 
-
         return
             hit.collider
                 .GetComponentInParent<
                     HoverInfoTrigger
                 >();
     }
-
 
     // ============================================================
     // CHAIN LIGHTNING PREVIEW
@@ -366,7 +325,6 @@ public class UIManager : MonoBehaviour
     {
         if (gridChainHighlight == null)
             return;
-
 
         if (
             CurrentSelection == null ||
@@ -380,11 +338,9 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         AbilitySO ability =
             canvasInfoManager
                 .GetSelectedAbility();
-
 
         if (
             ability is not ChainLightning
@@ -396,11 +352,9 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         AttackUnit attackUnit =
             CurrentSelection
                 .GetAttackUnit();
-
 
         if (attackUnit == null)
         {
@@ -409,10 +363,8 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         Team team =
             attackUnit.GetTeam();
-
 
         if (
             team != Team.Player &&
@@ -423,7 +375,6 @@ public class UIManager : MonoBehaviour
 
             return;
         }
-
 
         if (
             !attackUnit.IsAbilityReady(
@@ -436,13 +387,11 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         gridChainHighlight.BeginPreview(
             attackUnit.gameObject,
             chainLightning
         );
     }
-
 
     // ============================================================
     // ABILITY STATE
@@ -455,7 +404,6 @@ public class UIManager : MonoBehaviour
             canvasInfoManager
                 .HasSelectedAbility();
     }
-
 
     // ============================================================
     // CLEAR SELECTED ABILITY
@@ -474,7 +422,6 @@ public class UIManager : MonoBehaviour
                 .EndPreview();
         }
 
-
         // --------------------------------------------------------
         // CLEAR UI ABILITY
         // --------------------------------------------------------
@@ -484,7 +431,6 @@ public class UIManager : MonoBehaviour
             canvasInfoManager
                 .ClearSelectedAbility();
         }
-
 
         // --------------------------------------------------------
         // CAMERA
@@ -503,7 +449,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // ABILITY TARGETING
     // ============================================================
@@ -520,10 +465,8 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         GameObject selectedObject =
             CurrentSelection.gameObject;
-
 
         if (
             !IsPlayerControlledUnit(
@@ -534,20 +477,16 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         AbilitySO ability =
             canvasInfoManager
                 .GetSelectedAbility();
 
-
         if (ability == null)
             return false;
-
 
         AttackUnit attackUnit =
             CurrentSelection
                 .GetAttackUnit();
-
 
         if (
             attackUnit == null ||
@@ -559,24 +498,19 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         UnitMoveBrain moveBrain =
             attackUnit.GetComponent<
                 UnitMoveBrain
             >();
 
-
         if (moveBrain == null)
             return false;
-
 
         GridManager gridManager =
             moveBrain.GetGridManager();
 
-
         if (gridManager == null)
             return false;
-
 
         // ========================================================
         // UNIT TARGET
@@ -587,16 +521,13 @@ public class UIManager : MonoBehaviour
             GameObject targetObject =
                 clickedTrigger.gameObject;
 
-
             if (targetObject == null)
                 return false;
-
 
             AttackUnit targetUnit =
                 targetObject.GetComponent<
                     AttackUnit
                 >();
-
 
             if (targetUnit == null)
             {
@@ -606,16 +537,13 @@ public class UIManager : MonoBehaviour
                     >();
             }
 
-
             if (targetUnit == null)
                 return false;
-
 
             Vector2Int targetTile =
                 gridManager.GetUnitGridPosition(
                     targetObject
                 );
-
 
             if (
                 !gridManager
@@ -627,13 +555,11 @@ public class UIManager : MonoBehaviour
                 return false;
             }
 
-
             List<Vector2Int> rangeTiles =
                 ability.GetRangeTiles(
                     gridManager,
                     selectedObject
                 );
-
 
             if (
                 rangeTiles == null ||
@@ -644,7 +570,6 @@ public class UIManager : MonoBehaviour
             {
                 return false;
             }
-
 
             if (
                 !ability.CanHit(
@@ -657,7 +582,6 @@ public class UIManager : MonoBehaviour
                 return false;
             }
 
-
             return UseNormalAbility(
                 attackUnit,
                 ability,
@@ -665,7 +589,6 @@ public class UIManager : MonoBehaviour
                 gridManager
             );
         }
-
 
         // ========================================================
         // TILE TARGET
@@ -677,7 +600,6 @@ public class UIManager : MonoBehaviour
                 gridManager
             );
 
-
         if (
             !gridManager
                 .IsInsideGrid(
@@ -688,13 +610,11 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         List<Vector2Int> abilityTiles =
             ability.GetRangeTiles(
                 gridManager,
                 selectedObject
             );
-
 
         if (
             abilityTiles == null ||
@@ -705,7 +625,6 @@ public class UIManager : MonoBehaviour
         {
             return false;
         }
-
 
         // --------------------------------------------------------
         // BOMB
@@ -720,10 +639,8 @@ public class UIManager : MonoBehaviour
             );
         }
 
-
         return false;
     }
-
 
     // ============================================================
     // BOMB ABILITY
@@ -740,19 +657,13 @@ public class UIManager : MonoBehaviour
                 ability
             );
 
-
         if (!used)
             return false;
 
-
-        ClearSelectedAbility(
-            false
-        );
-
+        ClearSelectedAbility(false);
 
         return true;
     }
-
 
     // ============================================================
     // NORMAL ABILITY
@@ -774,7 +685,6 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         if (
             !ability.CanHit(
                 gridManager,
@@ -786,26 +696,19 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         bool used =
             attackUnit.Attack(
                 targetObject,
                 ability
             );
 
-
         if (!used)
             return false;
 
-
-        ClearSelectedAbility(
-            false
-        );
-
+        ClearSelectedAbility(false);
 
         return true;
     }
-
 
     // ============================================================
     // GRID / SCREEN CONVERSION
@@ -829,14 +732,12 @@ public class UIManager : MonoBehaviour
                 )
             );
 
-
         return
             gridManager
                 .WorldToGridPosition(
                     worldPosition
                 );
     }
-
 
     // ============================================================
     // UNIT CONTROL
@@ -848,26 +749,21 @@ public class UIManager : MonoBehaviour
         if (unit == null)
             return false;
 
-
         AttackUnit attackUnit =
             unit.GetComponent<
                 AttackUnit
             >();
 
-
         if (attackUnit == null)
             return false;
 
-
         Team team =
             attackUnit.GetTeam();
-
 
         return
             team == Team.Player ||
             team == Team.Ally;
     }
-
 
     // ============================================================
     // MOVEMENT
@@ -879,10 +775,8 @@ public class UIManager : MonoBehaviour
         if (CurrentSelection == null)
             return false;
 
-
         GameObject selectedObject =
             CurrentSelection.gameObject;
-
 
         if (
             !IsPlayerControlledUnit(
@@ -893,37 +787,29 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         AttackUnit attackUnit =
             CurrentSelection
                 .GetAttackUnit();
 
-
         if (attackUnit == null)
             return false;
-
 
         UnitMoveBrain moveBrain =
             attackUnit.GetComponent<
                 UnitMoveBrain
             >();
 
-
         if (moveBrain == null)
             return false;
-
 
         if (moveBrain.IsMoving())
             return true;
 
-
         GridManager gridManager =
             moveBrain.GetGridManager();
 
-
         if (gridManager == null)
             return false;
-
 
         Vector2Int destination =
             ScreenToGridPosition(
@@ -931,17 +817,14 @@ public class UIManager : MonoBehaviour
                 gridManager
             );
 
-
         Vector2Int currentPosition =
             gridManager
                 .WorldToGridPosition(
                     attackUnit.transform.position
                 );
 
-
         if (destination == currentPosition)
             return false;
-
 
         if (
             !gridManager
@@ -953,16 +836,13 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         GridHighlightManager
             highlightManager =
                 gridManager
                     .GetHighlightManager();
 
-
         if (highlightManager == null)
             return false;
-
 
         if (
             !highlightManager
@@ -974,7 +854,6 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         if (
             gridManager
                 .IsCellOccupied(
@@ -985,10 +864,8 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-
         int moveRange =
             moveBrain.GetMoveRange();
-
 
         int distance =
             gridManager.GetDistance(
@@ -996,28 +873,48 @@ public class UIManager : MonoBehaviour
                 destination
             );
 
-
         if (distance > moveRange)
             return false;
-
 
         bool started =
             moveBrain.TryMoveTo(
                 destination
             );
 
-
         if (!started)
             return false;
 
-
-        highlightManager
-            .ClearMovementRange();
-
+        // ========================================================
+        // IMPORTANT
+        // ========================================================
+        //
+        // DO NOT clear the movement range here.
+        //
+        // UnitMoveBrain consumes the movement action and fires
+        // OnMovementActionsChanged.
+        //
+        // If actions remain:
+        //
+        //     2 -> 1
+        //
+        // GridHighlightBrain will detect the unit's new tile
+        // and automatically recalculate the range.
+        //
+        // If no actions remain:
+        //
+        //     1 -> 0
+        //
+        // GridHighlightBrain automatically hides the range.
+        //
+        // This prevents the:
+        //
+        //     visible -> disappear -> visible
+        //
+        // flicker after the first movement.
+        // ========================================================
 
         return true;
     }
-
 
     // ============================================================
     // SELECTION
@@ -1034,22 +931,8 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-
         // ========================================================
         // DESELECT PREVIOUS UNIT
-        // ========================================================
-        //
-        // IMPORTANT:
-        //
-        // We are switching directly from one unit to another.
-        //
-        // Therefore:
-        //
-        // false = deselect
-        // false = DO NOT play deselect sound
-        //
-        // The newly selected unit will still play its normal
-        // selection/click sound below.
         // ========================================================
 
         if (CurrentSelection != null)
@@ -1057,18 +940,15 @@ public class UIManager : MonoBehaviour
             HoverInfoTrigger previousSelection =
                 CurrentSelection;
 
-
             previousSelection.SetSelected(
                 false,
                 false
             );
 
-
             ClearMovementRange(
                 previousSelection
             );
         }
-
 
         // ========================================================
         // SET NEW SELECTION
@@ -1077,16 +957,13 @@ public class UIManager : MonoBehaviour
         CurrentSelection =
             trigger;
 
-
         trigger.SetSelected(
             true
         );
 
-
         ShowMovementRange(
             trigger
         );
-
 
         // ========================================================
         // CAMERA
@@ -1101,37 +978,24 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
     public static void ClearSelection()
     {
         if (CurrentSelection == null)
             return;
 
-
         HoverInfoTrigger previousSelection =
             CurrentSelection;
-
-
-        // ========================================================
-        // NORMAL DESELECTION
-        // ========================================================
-        //
-        // This IS a real deselection, so the deselect sound plays.
-        // ========================================================
 
         previousSelection.SetSelected(
             false,
             true
         );
 
-
         ClearMovementRange(
             previousSelection
         );
 
-
         CurrentSelection = null;
-
 
         if (Instance != null)
         {
@@ -1143,7 +1007,6 @@ public class UIManager : MonoBehaviour
                     .EndPreview();
             }
 
-
             if (
                 Instance.canvasInfoManager != null
             )
@@ -1152,7 +1015,6 @@ public class UIManager : MonoBehaviour
                     .ClearInfo();
             }
         }
-
 
         // ========================================================
         // CAMERA
@@ -1165,20 +1027,17 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
     public static void ClearSelection(
         HoverInfoTrigger trigger)
     {
         if (trigger == null)
             return;
 
-
         if (CurrentSelection == trigger)
         {
             ClearSelection();
         }
     }
-
 
     // ============================================================
     // MOVEMENT RANGE
@@ -1190,54 +1049,42 @@ public class UIManager : MonoBehaviour
         if (trigger == null)
             return;
 
-
         AttackUnit attackUnit =
             trigger.GetAttackUnit();
-
 
         if (attackUnit == null)
             return;
 
-
         Team team =
             attackUnit.GetTeam();
 
-
         if (team == Team.Enemy)
             return;
-
 
         UnitMoveBrain moveBrain =
             attackUnit.GetComponent<
                 UnitMoveBrain
             >();
 
-
         if (moveBrain == null)
             return;
-
 
         if (!moveBrain.CanMoveThisTurn())
             return;
 
-
         GridManager gridManager =
             moveBrain.GetGridManager();
 
-
         if (gridManager == null)
             return;
-
 
         GridHighlightManager
             highlightManager =
                 gridManager
                     .GetHighlightManager();
 
-
         if (highlightManager == null)
             return;
-
 
         Vector2Int position =
             gridManager
@@ -1245,10 +1092,8 @@ public class UIManager : MonoBehaviour
                     trigger.transform.position
                 );
 
-
         int moveRange =
             moveBrain.GetMoveRange();
-
 
         highlightManager
             .ShowMovementRange(
@@ -1258,45 +1103,36 @@ public class UIManager : MonoBehaviour
             );
     }
 
-
     private static void ClearMovementRange(
         HoverInfoTrigger trigger)
     {
         if (trigger == null)
             return;
 
-
         AttackUnit attackUnit =
             trigger.GetAttackUnit();
 
-
         if (attackUnit == null)
             return;
-
 
         UnitMoveBrain moveBrain =
             attackUnit.GetComponent<
                 UnitMoveBrain
             >();
 
-
         if (moveBrain == null)
             return;
-
 
         GridManager gridManager =
             moveBrain.GetGridManager();
 
-
         if (gridManager == null)
             return;
-
 
         GridHighlightManager
             highlightManager =
                 gridManager
                     .GetHighlightManager();
-
 
         if (highlightManager != null)
         {

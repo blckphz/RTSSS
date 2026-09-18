@@ -154,6 +154,20 @@ public class GridHighlightBrain : MonoBehaviour
     }
 
 
+    private void OnEnable()
+    {
+        UnitMoveBrain.OnMovementActionsChanged +=
+            HandleMovementActionsChanged;
+    }
+
+
+    private void OnDisable()
+    {
+        UnitMoveBrain.OnMovementActionsChanged -=
+            HandleMovementActionsChanged;
+    }
+
+
     private IEnumerator DelayedInitialRefresh()
     {
         yield return null;
@@ -169,6 +183,61 @@ public class GridHighlightBrain : MonoBehaviour
         CheckBoardRotationChange();
 
         CheckHighlightedUnitTileChanged();
+    }
+
+
+    // ============================================================
+    // MOVEMENT ACTION EVENT
+    // ============================================================
+
+    private void HandleMovementActionsChanged(
+        UnitMoveBrain changedUnit)
+    {
+        if (changedUnit == null)
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Only react to the unit whose movement range is currently
+        // being displayed.
+        // --------------------------------------------------------
+
+        if (cachedUser != changedUnit.gameObject)
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // Only movement-range highlighting cares about movement
+        // action exhaustion.
+        // --------------------------------------------------------
+
+        if (
+            currentState !=
+            HighlightState.MovementRange
+        )
+        {
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // If this unit has used all movement actions, immediately
+        // hide the movement range.
+        // --------------------------------------------------------
+
+        if (changedUnit.HasUsedAllMovement())
+        {
+            DebugLog(
+                "Movement actions exhausted. " +
+                "Automatically hiding movement range."
+            );
+
+            HideMovementRange();
+        }
     }
 
 
@@ -305,10 +374,6 @@ public class GridHighlightBrain : MonoBehaviour
 
         // ========================================================
         // RE-FIND CURRENT REFERENCES
-        // ========================================================
-        //
-        // This is important if the new encounter created a new
-        // GridManager or GridHighlightManager.
         // ========================================================
 
         gridManager = null;
@@ -649,6 +714,10 @@ public class GridHighlightBrain : MonoBehaviour
         // ========================================================
         // NEW MOVEMENT REQUEST
         // ========================================================
+        //
+        // An explicit request to show the movement range always
+        // makes it visible again.
+        // ========================================================
 
         movementRangeHidden = false;
 
@@ -680,11 +749,6 @@ public class GridHighlightBrain : MonoBehaviour
         // ========================================================
         // IMPORTANT
         // ========================================================
-        //
-        // Refresh grid bounds every time movement range is shown.
-        //
-        // This makes sure the current encounter's grid is used.
-        // ========================================================
 
         RefreshGridBounds();
 
@@ -715,6 +779,15 @@ public class GridHighlightBrain : MonoBehaviour
 
         // ========================================================
         // MOVEMENT RANGE WAS INTENTIONALLY HIDDEN
+        // ========================================================
+        //
+        // This is critical.
+        //
+        // Once all movement actions are used, the movement range
+        // is hidden and normal refresh calls must NOT recreate it.
+        //
+        // It can only become visible again through a new explicit
+        // ShowMovementRange() call.
         // ========================================================
 
         if (movementRangeHidden)
@@ -760,14 +833,6 @@ public class GridHighlightBrain : MonoBehaviour
 
         // ========================================================
         // FIND ACTUAL REACHABLE CELLS
-        // ========================================================
-        //
-        // IMPORTANT:
-        //
-        // Do not use simple GetDistance() here.
-        //
-        // UnitMoveBrain uses the actual pathfinding system.
-        // The highlight should therefore use the same system.
         // ========================================================
 
         reusableTileList.Clear();
@@ -857,7 +922,7 @@ public class GridHighlightBrain : MonoBehaviour
 
 
         DebugLog(
-            "Movement range hidden after destination selection."
+            "Movement range hidden because movement actions are exhausted."
         );
     }
 

@@ -589,10 +589,6 @@ public class GridHighlightManager : MonoBehaviour
     public void ShowAbilityCell(
         Vector2Int position)
     {
-        // FIXED:
-        // The original version was missing braces around
-        // the grid validation.
-
         if (
             gridManager == null ||
             !gridManager.IsInsideGrid(position)
@@ -694,24 +690,6 @@ public class GridHighlightManager : MonoBehaviour
 
     // ============================================================
     // ACTIVATE ABILITY
-    //
-    // THIS IS THE IMPORTANT PART.
-    //
-    // HoverInfoTrigger calls this when the player clicks a unit.
-    //
-    // The actual ability is then handled by:
-    //
-    // AttackUnit.PlayerAttack()
-    //      ↓
-    // Attack()
-    //      ↓
-    // animation
-    //      ↓
-    // OnAttackAnimationEvent()
-    //      ↓
-    // AbilitySO.Use()
-    //
-    // So damage/healing/cooldown remain in AttackUnit.
     // ============================================================
 
     public bool TryActivateAbilityOnUnit(
@@ -742,10 +720,6 @@ public class GridHighlightManager : MonoBehaviour
             return false;
         }
 
-        // --------------------------------------------------------
-        // TARGET MUST BE INSIDE THE CURRENT ABILITY RANGE
-        // --------------------------------------------------------
-
         Vector2Int targetPosition =
             gridManager.GetUnitGridPosition(
                 target
@@ -756,18 +730,10 @@ public class GridHighlightManager : MonoBehaviour
             return false;
         }
 
-        // --------------------------------------------------------
-        // TARGET MUST BE VALID
-        // --------------------------------------------------------
-
         if (!IsValidAbilityTarget(target))
         {
             return false;
         }
-
-        // --------------------------------------------------------
-        // ATTACK UNIT MUST BE READY
-        // --------------------------------------------------------
 
         if (
             !currentRangeUserUnit.IsAbilityReady(
@@ -777,15 +743,6 @@ public class GridHighlightManager : MonoBehaviour
         {
             return false;
         }
-
-        // --------------------------------------------------------
-        // USE THE EXISTING ATTACK PIPELINE.
-        //
-        // DO NOT call AbilitySO.Use() here.
-        //
-        // AttackUnit does that when the animation reaches
-        // the AttackHit event.
-        // --------------------------------------------------------
 
         bool started =
             currentRangeUserUnit.PlayerAttack(
@@ -798,16 +755,7 @@ public class GridHighlightManager : MonoBehaviour
             return false;
         }
 
-        // --------------------------------------------------------
-        // ATTACK HAS SUCCESSFULLY STARTED.
-        //
-        // Clear target highlights immediately so the player
-        // cannot click another target while the attack animation
-        // is running.
-        // --------------------------------------------------------
-
         ClearAbilityTargetVisualsOnly();
-
 
         return true;
     }

@@ -9,14 +9,7 @@ public class UnitMoveBrain : MonoBehaviour
     // GLOBAL MOVEMENT STATE
     // ============================================================
 
-    /// <summary>
-    /// True while one or more units are currently moving.
-    ///
-    /// BoardViewController uses this to prevent board rotation
-    /// during unit movement.
-    /// </summary>
     public static bool IsAnyUnitMoving { get; private set; }
-
 
     private static int movingUnitCount;
 
@@ -26,6 +19,19 @@ public class UnitMoveBrain : MonoBehaviour
     // ============================================================
 
     public static event System.Action<Vector3> OnWalkParticleTile;
+
+
+    // ============================================================
+    // MOVEMENT ACTION EVENTS
+    // ============================================================
+
+    /// <summary>
+    /// Fired whenever this unit's remaining movement actions change.
+    /// GridHighlightBrain listens to this event so movement highlights
+    /// can automatically disappear when all movement actions are used.
+    /// </summary>
+    public static event System.Action<UnitMoveBrain>
+        OnMovementActionsChanged;
 
 
     // ============================================================
@@ -49,7 +55,13 @@ public class UnitMoveBrain : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField]
-    private float moveDuration = 0.08f;
+    private float moveDuration = 0.02f;
+
+    [Tooltip("How many separate movement actions this unit gets per turn.")]
+    [SerializeField]
+    private int moveActionsPerTurn;
+
+    private int moveActionsRemaining;
 
 
     // ============================================================
@@ -88,8 +100,6 @@ public class UnitMoveBrain : MonoBehaviour
 
     private bool isMoving;
 
-    private bool movementConsumed;
-
     private int movementSequence;
 
 
@@ -100,6 +110,8 @@ public class UnitMoveBrain : MonoBehaviour
     private void Awake()
     {
         EnsureComponents();
+
+        ResetMovement();
     }
 
 
@@ -113,8 +125,6 @@ public class UnitMoveBrain : MonoBehaviour
 
     private void OnDisable()
     {
-        // If this unit was moving when disabled,
-        // make sure it no longer keeps the global movement lock.
         if (isMoving)
         {
             SetMovingState(false);
@@ -193,19 +203,12 @@ public class UnitMoveBrain : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Returns true if any UnitMoveBrain in the scene
-    /// is currently moving.
-    /// </summary>
     public static bool AreAnyUnitsMoving()
     {
         return IsAnyUnitMoving;
     }
 
 
-    /// <summary>
-    /// Returns the number of units currently moving.
-    /// </summary>
     public static int GetMovingUnitCount()
     {
         return movingUnitCount;
@@ -213,40 +216,79 @@ public class UnitMoveBrain : MonoBehaviour
 
 
     // ============================================================
-    // MOVEMENT STATE
+    // MOVEMENT ACTION STATE
     // ============================================================
-
-    public bool CanUseAIMovement()
-    {
-        return attackUnit != null &&
-               !attackUnit.IsDead() &&
-               attackUnit.GetTeam() != Team.Player;
-    }
-
 
     public bool CanMoveThisTurn()
     {
-        return !isMoving &&
-               !movementConsumed &&
-               CanMove();
+        return
+            !isMoving &&
+            moveActionsRemaining > 0 &&
+            CanMove();
     }
 
 
+    /// <summary>
+    /// Consumes exactly ONE movement action.
+    /// </summary>
     public void ConsumeMovement()
     {
-        movementConsumed = true;
+        if (moveActionsRemaining <= 0)
+        {
+            return;
+        }
+
+        moveActionsRemaining--;
+
+        Debug.Log(
+            $"[Movement] {name} used a movement action. " +
+            $"Remaining: {moveActionsRemaining}/{moveActionsPerTurn}",
+            this
+        );
+
+        // Notify GridHighlightBrain immediately.
+        OnMovementActionsChanged?.Invoke(this);
     }
 
 
+    /// <summary>
+    /// Resets movement actions for a new turn.
+    /// </summary>
     public void ResetMovement()
     {
-        movementConsumed = false;
+        moveActionsRemaining =
+            Mathf.Max(
+                0,
+                moveActionsPerTurn
+            );
+
+        // Notify listeners that the movement count changed.
+        OnMovementActionsChanged?.Invoke(this);
     }
 
 
     public bool HasConsumedMovement()
     {
-        return movementConsumed;
+        return moveActionsRemaining <
+               moveActionsPerTurn;
+    }
+
+
+    public int GetMoveActionsRemaining()
+    {
+        return moveActionsRemaining;
+    }
+
+
+    public int GetMoveActionsPerTurn()
+    {
+        return moveActionsPerTurn;
+    }
+
+
+    public bool HasUsedAllMovement()
+    {
+        return moveActionsRemaining <= 0;
     }
 
 
@@ -618,6 +660,7 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
         }
 
+        // Consume exactly ONE movement action.
         ConsumeMovement();
 
         StartCoroutine(
@@ -755,6 +798,7 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
+        // Consume exactly ONE movement action.
         ConsumeMovement();
 
         yield return ExecuteMoveRoutine(
@@ -796,10 +840,6 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
-        // ========================================================
-        // GLOBAL MOVEMENT LOCK START
-        // ========================================================
-
         SetMovingState(true);
 
         movementSequence++;
@@ -835,11 +875,11 @@ public class UnitMoveBrain : MonoBehaviour
             // SET WALK DIRECTION
             // ====================================================
 
-            Vector2Int direction =
-                toTile - fromTile;
-
             if (animationController != null)
             {
+                Vector2Int direction =
+                    toTile - fromTile;
+
                 animationController.SetMovementDirection(
                     direction
                 );
@@ -957,7 +997,7 @@ public class UnitMoveBrain : MonoBehaviour
 
 
             // ====================================================
-            // SPAWN PARTICLE AT THIS TILE
+            // WALK PARTICLE
             // ====================================================
 
             Vector3 particlePosition =
@@ -989,10 +1029,6 @@ public class UnitMoveBrain : MonoBehaviour
 
         StopWalkAnimation();
 
-        // ========================================================
-        // GLOBAL MOVEMENT LOCK END
-        // ========================================================
-
         SetMovingState(false);
     }
 
@@ -1015,10 +1051,6 @@ public class UnitMoveBrain : MonoBehaviour
         );
     }
 
-
-    // ============================================================
-    // STOP WALK ANIMATION
-    // ============================================================
 
     private void StopWalkAnimation()
     {
@@ -1106,5 +1138,13 @@ public class UnitMoveBrain : MonoBehaviour
             result,
             gameObject
         );
+    }
+
+
+    public bool CanUseAIMovement()
+    {
+        return attackUnit != null &&
+               !attackUnit.IsDead() &&
+               attackUnit.GetTeam() != Team.Player;
     }
 }
