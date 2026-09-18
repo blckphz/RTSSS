@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3645556268590786595}
   - component: {fileID: 6084967553728577720}
   - component: {fileID: 5611069024763482768}
+  - component: {fileID: 8285093502583605092}
   m_Layer: 0
   m_Name: BarrelObject
   m_TagString: Untagged
@@ -107,3 +108,23 @@ MonoBehaviour:
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 0
   unitId: 
+--- !u!114 &8285093502583605092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6537305734137153094}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fce4ece8eca951c4da0c20b80bfe4a9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AttackUnit
+  characterData: {fileID: 0}
+  unitData: {fileID: 0}
+  abilities: []
+  healthManager: {fileID: 0}
+  animationController: {fileID: 0}
+  useDirectionalEnemyAttackAnimation: 0
+  attackAnimatorLayerName: attackLayer
+  logicalGridPosition: {x: 0, y: 0}

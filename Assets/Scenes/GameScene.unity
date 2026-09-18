@@ -136797,7 +136797,7 @@ LineRenderer:
   - {x: 0, y: 0, z: 1}
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 0.30978903
+    widthMultiplier: 0.673821
     widthCurve:
       serializedVersion: 2
       m_Curve:
@@ -137338,8 +137338,8 @@ MonoBehaviour:
   mainCamera: {fileID: 0}
   lineRenderer: {fileID: 743718436}
   abilitySpawnPointName: AbilitySpawnPoint
-  lineHeight: 0.15
-  lineWidth: 0.08
+  lineHeight: 0.35
+  lineWidth: 0.2
   enableDebugLogs: 0
 --- !u!114 &804482602
 MonoBehaviour:
@@ -137875,7 +137875,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 2
   m_Value: -0.00000008975177
-  m_Size: 0.594724
+  m_Size: 0.59477836
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

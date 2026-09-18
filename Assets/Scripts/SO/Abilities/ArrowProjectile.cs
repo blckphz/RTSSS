@@ -3,291 +3,226 @@ using UnityEngine;
 
 public class ArrowProjectile : MonoBehaviour
 {
-    private GameObject owner;
+    [Header("Visual")]
+    [SerializeField] private Transform spriteTransform;
 
-    private Vector3 direction;
+    [Header("Rotation")]
+    [SerializeField]
+    private float rotationOffset = 90f;
+
+    [Header("Piercing")]
+    [SerializeField] private float collisionRadius = 0.15f;
+
+    private GameObject owner;
+    private AbilitySO ability;
+
+    private Vector2 direction;
 
     private float speed;
-
     private int damage;
-
     private int maxTargets;
 
+    private int targetsHit;
+
+    private bool initialized;
 
     private readonly HashSet<GameObject> hitTargets =
         new HashSet<GameObject>();
 
+    private void Update()
+    {
+        if (!initialized)
+            return;
 
-    private bool initialized;
-
-
-    // ============================================================
-    // INITIALIZE
-    // ============================================================
+        Move();
+        CheckForTargets();
+        RefreshRotation();
+    }
 
     public void Initialize(
         GameObject owner,
         Vector3 direction,
         float speed,
         int damage,
-        int maxTargets)
+        int maxTargets,
+        AbilitySO ability)
     {
-        this.owner =
-            owner;
+        this.owner = owner;
 
         this.direction =
-            direction.normalized;
+            new Vector2(
+                direction.x,
+                direction.y
+            ).normalized;
 
         this.speed =
-            speed;
+            Mathf.Max(0.01f, speed);
 
-        this.damage =
-            damage;
+        this.damage = damage;
 
         this.maxTargets =
-            Mathf.Max(
-                1,
-                maxTargets
-            );
+            Mathf.Max(1, maxTargets);
 
+        this.ability = ability;
+
+        targetsHit = 0;
+
+        hitTargets.Clear();
 
         initialized = true;
 
-
-        // Face the direction the arrow is travelling.
-        RotateArrow();
+        RefreshRotation();
     }
 
-
-    // ============================================================
-    // UPDATE
-    // ============================================================
-
-    private void Update()
+    private void Move()
     {
-        if (!initialized)
-        {
-            return;
-        }
+        Vector3 movement =
+            (Vector3)(direction * speed * Time.deltaTime);
 
-
-        transform.position +=
-            direction *
-            speed *
-            Time.deltaTime;
+        transform.position += movement;
     }
 
-
-    // ============================================================
-    // ROTATION
-    // ============================================================
-
-    private void RotateArrow()
+    private void CheckForTargets()
     {
-        if (direction.sqrMagnitude <= 0.001f)
-        {
-            return;
-        }
-
-
-        transform.rotation =
-            Quaternion.LookRotation(
-                direction
+        Collider2D[] hits =
+            Physics2D.OverlapCircleAll(
+                transform.position,
+                collisionRadius
             );
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hit == null)
+                continue;
+
+            GameObject target =
+                hit.gameObject;
+
+            if (target == null)
+                continue;
+
+            if (target == owner)
+                continue;
+
+            if (!target.activeInHierarchy)
+                continue;
+
+            if (hitTargets.Contains(target))
+                continue;
+
+            AttackUnit targetUnit =
+                target.GetComponent<AttackUnit>();
+
+            if (targetUnit == null)
+                continue;
+
+            HealthManager health =
+                target.GetComponent<HealthManager>();
+
+            if (health == null)
+                continue;
+
+            if (health.IsDead())
+                continue;
+
+            if (!CanDamage(target))
+                continue;
+
+            hitTargets.Add(target);
+
+            DealDamage(target);
+
+            targetsHit++;
+
+            if (targetsHit >= maxTargets)
+            {
+                Destroy(gameObject);
+                return;
+            }
+        }
     }
 
-
-    // ============================================================
-    // COLLISION
-    // ============================================================
-
-    private void OnTriggerEnter(
-        Collider other)
+    private bool CanDamage(GameObject target)
     {
-        if (!initialized)
+        if (owner == null || target == null)
+            return false;
+
+        if (ability != null)
         {
-            return;
-        }
-
-
-        GameObject target =
-            other.gameObject;
-
-
-        if (target == null)
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // Don't hit owner
-        // --------------------------------------------------------
-
-        if (target == owner)
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // Don't hit the same unit twice
-        // --------------------------------------------------------
-
-        if (
-            hitTargets.Contains(
-                target
-            )
-        )
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // Find unit
-        // --------------------------------------------------------
-
-        AttackUnit attackUnit =
-            target.GetComponent<AttackUnit>();
-
-
-        if (attackUnit == null)
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // Ignore dead units
-        // --------------------------------------------------------
-
-        if (attackUnit.IsDead())
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // Check team
-        // --------------------------------------------------------
-
-        if (
-            !IsValidTarget(
+            return ability.CanTargetObject(
                 owner,
                 target
-            )
-        )
-        {
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // Damage
-        // --------------------------------------------------------
-
-        HealthManager health =
-            target.GetComponent<HealthManager>();
-
-
-        if (health == null)
-        {
-            return;
-        }
-
-
-        hitTargets.Add(
-            target
-        );
-
-
-        health.TakeDamage(
-            damage
-        );
-
-
-        // --------------------------------------------------------
-        // Piercing
-        //
-        // IMPORTANT:
-        // We DON'T destroy the arrow here.
-        // It continues flying through the enemy.
-        // --------------------------------------------------------
-
-        if (
-            hitTargets.Count >=
-            maxTargets
-        )
-        {
-            Destroy(
-                gameObject
             );
         }
-    }
 
-
-    // ============================================================
-    // TARGET CHECK
-    // ============================================================
-
-    private bool IsValidTarget(
-        GameObject user,
-        GameObject target)
-    {
-        if (
-            user == null ||
-            target == null
-        )
-        {
-            return false;
-        }
-
-
-        AttackUnit userUnit =
-            user.GetComponent<AttackUnit>();
-
+        AttackUnit ownerUnit =
+            owner.GetComponent<AttackUnit>();
 
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
-
-        if (
-            userUnit == null ||
-            targetUnit == null
-        )
+        if (ownerUnit == null ||
+            targetUnit == null)
         {
             return false;
         }
 
+        return ownerUnit.GetTeam() !=
+               targetUnit.GetTeam();
+    }
 
-        Team userTeam =
-            userUnit.GetTeam();
+    private void DealDamage(GameObject target)
+    {
+        if (target == null)
+            return;
 
+        HealthManager health =
+            target.GetComponent<HealthManager>();
 
-        Team targetTeam =
-            targetUnit.GetTeam();
+        if (health == null)
+            return;
 
+        health.TakeDamage(damage);
+    }
 
-        if (
-            userTeam == Team.Player ||
-            userTeam == Team.Ally
-        )
+    private void RefreshRotation()
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+            return;
+
+        float angle =
+            Mathf.Atan2(
+                direction.y,
+                direction.x
+            ) * Mathf.Rad2Deg;
+
+        // rotationOffset compensates for the
+        // direction the arrow sprite faces by default.
+        float finalAngle =
+            angle + rotationOffset;
+
+        Quaternion rotation =
+            Quaternion.Euler(
+                0f,
+                0f,
+                finalAngle
+            );
+
+        if (spriteTransform != null)
         {
-            return targetTeam == Team.Enemy;
+            spriteTransform.rotation = rotation;
         }
-
-
-        if (
-            userTeam == Team.Enemy
-        )
+        else
         {
-            return
-                targetTeam == Team.Player ||
-                targetTeam == Team.Ally;
+            transform.rotation = rotation;
         }
+    }
 
-
-        return false;
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.DrawWireSphere(
+            transform.position,
+            collisionRadius
+        );
     }
 }

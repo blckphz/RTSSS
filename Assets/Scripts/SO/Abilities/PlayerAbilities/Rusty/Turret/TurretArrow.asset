@@ -21,10 +21,10 @@ MonoBehaviour:
   usesPerTurn: 2
   useDuration: 0.25
   targetType: 0
-  range: 1
+  range: 8
   minDistance: 0
-  rangeShape: 0
+  rangeShape: 3
   arrowPrefab: {fileID: 5105035218923594911, guid: 4319cfdfbd1f7994a96ff26b93c7d066, type: 3}
   arrowSpeed: 15
-  maxTargets: 99
+  maxTargets: 2
   abilitySpawnPointName: AbilitySpawnPoint
