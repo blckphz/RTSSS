@@ -97,12 +97,18 @@ public class LevelMapManager : MonoBehaviour
     [SerializeField]
     private float maxRandomOffset = 0.4f;
 
+    [SerializeField]
+    private float spawnHeightOffset = 0f;
+
     [Header("2D World Spacing")]
     [SerializeField]
     private float horizontalSpacing = 2.5f;
 
     [SerializeField]
     private float verticalSpacing = 2.0f;
+
+    [SerializeField]
+    private float spawnWidthOffset = 0f;
 
     [Header("Image Connection Settings")]
     [SerializeField]
@@ -257,7 +263,8 @@ public class LevelMapManager : MonoBehaviour
     private void SpawnNodes()
     {
         Vector2 baseOrigin =
-            transform.position;
+            transform.position +
+            Vector3.up * spawnHeightOffset;
 
         for (int row = 0; row < rows; row++)
         {
@@ -288,6 +295,9 @@ public class LevelMapManager : MonoBehaviour
                     (column -
                     (countInRow - 1) / 2f) *
                     horizontalSpacing;
+
+                // Moves the entire row/map horizontally.
+                x += spawnWidthOffset;
 
                 float y =
                     row *
