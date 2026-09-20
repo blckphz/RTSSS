@@ -23,13 +23,13 @@ MonoBehaviour:
   usesPerTurn: 2
   useDuration: 0.25
   targetType: 0
-  range: 10
+  range: 5
   minDistance: 0
   rangeShape: 0
-  maxJumps: 3
-  jumpDelay: 0.15
-  maxJumpDistance: 8
-  stunPercentage: 10
+  maxJumps: 1
+  jumpDelay: 0
+  maxJumpDistance: 5
+  stunPercentage: 15
   stunDuration: 2
   projectilePrefab: {fileID: 1253008432403029687, guid: 450c971267a451f40bb389db9cf5bd0e, type: 3}
   projectileSpeed: 12

@@ -168,7 +168,8 @@ GameObject:
   - component: {fileID: 6759585458057416862}
   - component: {fileID: 914550854846184989}
   - component: {fileID: 1999132762490980142}
-  - component: {fileID: 8257197178304534354}
+  - component: {fileID: 7370170770226757755}
+  - component: {fileID: 4280312390177596600}
   m_Layer: 0
   m_Name: THISONEturretUnit
   m_TagString: Player
@@ -437,6 +438,7 @@ MonoBehaviour:
   tilePin: {fileID: 0}
   animationController: {fileID: 0}
   moveDuration: 0.25
+  moveActionsPerTurn: 0
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
@@ -538,7 +540,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   character: {fileID: 11400000, guid: 64f350c3fa2acfe42b8b70824533b3fa, type: 2}
---- !u!114 &8257197178304534354
+--- !u!114 &7370170770226757755
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -547,7 +549,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 2871373498883412824}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7327e16efc9e8b24e84a3d028e78e127, type: 3}
+  m_Script: {fileID: 11500000, guid: d97d6da6d65f00042b2d8d459b857ae2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::turretbehav
+--- !u!114 &4280312390177596600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2871373498883412824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11b11ba9650c404c89f1c1f3c81fd7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
 --- !u!1 &5959131500837783771

@@ -81,15 +81,25 @@ public class ArrowAttack : AbilitySO
             return false;
         }
 
+        int effectiveDamage =
+            GetEffectiveDamage(user);
+
+        Debug.Log(
+            $"[ArrowAttack] FIRING | " +
+            $"User={user.name} | " +
+            $"BaseDamage={GetDamage()} | " +
+            $"EffectiveDamage={effectiveDamage}",
+            user
+        );
+
         arrow.Initialize(
             user,
             direction,
             arrowSpeed,
-            GetDamage(),
+            effectiveDamage,
             maxTargets,
             this
         );
-
         return true;
     }
 

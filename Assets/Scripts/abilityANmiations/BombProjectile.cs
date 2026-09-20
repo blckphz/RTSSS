@@ -3,6 +3,7 @@ using UnityEngine;
 public class BombProjectile : MonoBehaviour
 {
     private GameObject user;
+
     private Vector3 startPosition;
     private Vector3 targetPosition;
 
@@ -12,6 +13,11 @@ public class BombProjectile : MonoBehaviour
     private int explosionRadius;
     private float explosionDelay;
     private float speed;
+
+    // IMPORTANT:
+    // This is the damage calculated by BombAttack when
+    // the bomb was fired.
+    private int explosionDamage;
 
     private float flightTime;
     private float elapsedTime;
@@ -23,6 +29,10 @@ public class BombProjectile : MonoBehaviour
     private bool initialized;
 
 
+    // ============================================================
+    // INITIALIZE
+    // ============================================================
+
     public void Initialize(
         GameObject user,
         Vector3 targetPosition,
@@ -30,19 +40,53 @@ public class BombProjectile : MonoBehaviour
         GameObject explosionPrefab,
         int explosionRadius,
         float explosionDelay,
-        float speed)
+        float speed,
+        int explosionDamage
+    )
     {
-        this.user = user;
-        this.targetPosition = targetPosition;
-        this.gridManager = gridManager;
-        this.explosionPrefab = explosionPrefab;
-        this.explosionRadius = explosionRadius;
-        this.explosionDelay = explosionDelay;
-        this.speed = Mathf.Max(0.01f, speed);
+        this.user =
+            user;
 
-        startPosition = transform.position;
+        this.targetPosition =
+            targetPosition;
 
-        originalRotation = transform.rotation;
+        this.gridManager =
+            gridManager;
+
+        this.explosionPrefab =
+            explosionPrefab;
+
+        this.explosionRadius =
+            Mathf.Max(
+                0,
+                explosionRadius
+            );
+
+        this.explosionDelay =
+            Mathf.Max(
+                0f,
+                explosionDelay
+            );
+
+        this.speed =
+            Mathf.Max(
+                0.01f,
+                speed
+            );
+
+        this.explosionDamage =
+            Mathf.Max(
+                0,
+                explosionDamage
+            );
+
+
+        startPosition =
+            transform.position;
+
+        originalRotation =
+            transform.rotation;
+
 
         float distance =
             Vector3.Distance(
@@ -50,17 +94,31 @@ public class BombProjectile : MonoBehaviour
                 targetPosition
             );
 
+
         flightTime =
             Mathf.Max(
                 0.05f,
                 distance / this.speed
             );
 
+
         elapsedTime = 0f;
 
         initialized = true;
+
+
+        Debug.Log(
+            $"[BombProjectile] Initialized | " +
+            $"User={user?.name} | " +
+            $"ExplosionDamage={this.explosionDamage}",
+            user
+        );
     }
 
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
 
     private void Update()
     {
@@ -69,17 +127,20 @@ public class BombProjectile : MonoBehaviour
             return;
         }
 
-        elapsedTime += Time.deltaTime;
+        elapsedTime +=
+            Time.deltaTime;
+
 
         float t =
             Mathf.Clamp01(
-                elapsedTime / flightTime
+                elapsedTime /
+                flightTime
             );
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // LINEAR POSITION
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         Vector3 position =
             Vector3.Lerp(
@@ -89,9 +150,9 @@ public class BombProjectile : MonoBehaviour
             );
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // ARC
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         float arc =
             Mathf.Sin(
@@ -102,25 +163,25 @@ public class BombProjectile : MonoBehaviour
         position.y += arc;
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // MOVE
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         transform.position =
             position;
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // KEEP ORIGINAL ROTATION
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         transform.rotation =
             originalRotation;
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // ARRIVED
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         if (t >= 1f)
         {
@@ -128,6 +189,10 @@ public class BombProjectile : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // EXPLODE
+    // ============================================================
 
     private void Explode()
     {
@@ -139,9 +204,9 @@ public class BombProjectile : MonoBehaviour
         initialized = false;
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // SPAWN EXPLOSION
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         if (explosionPrefab != null)
         {
@@ -161,6 +226,11 @@ public class BombProjectile : MonoBehaviour
 
                 if (explosionAttack != null)
                 {
+                    // Set ALL explosion values before Initialize().
+                    //
+                    // Initialize() can immediately call Explode(),
+                    // so these must already be configured.
+
                     explosionAttack.SetExplosionRadius(
                         explosionRadius
                     );
@@ -169,17 +239,37 @@ public class BombProjectile : MonoBehaviour
                         explosionDelay
                     );
 
+                    explosionAttack.SetExplosionDamage(
+                        explosionDamage
+                    );
+
                     explosionAttack.Initialize(
                         user
+                    );
+
+
+                    Debug.Log(
+                        $"[BombProjectile] Explosion created | " +
+                        $"Damage={explosionDamage} | " +
+                        $"Radius={explosionRadius}",
+                        user
+                    );
+                }
+                else
+                {
+                    Debug.LogError(
+                        "[BombProjectile] Explosion prefab does not " +
+                        "contain ExplosionAttack.",
+                        explosion
                     );
                 }
             }
         }
 
 
-        // --------------------------------------------------
+        // --------------------------------------------------------
         // DESTROY BOMB
-        // --------------------------------------------------
+        // --------------------------------------------------------
 
         Destroy(
             gameObject

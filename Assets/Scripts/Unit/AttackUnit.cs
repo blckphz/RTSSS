@@ -26,6 +26,9 @@ public class AttackUnit : MonoBehaviour
     [SerializeField]
     private AnimationController animationController;
 
+    [SerializeField]
+    private UpgradeableCombatUnit upgradeableCombatUnit;
+
     [Header("Attack Animation")]
     [SerializeField]
     private bool useDirectionalEnemyAttackAnimation;
@@ -58,23 +61,31 @@ public class AttackUnit : MonoBehaviour
     {
         if (healthManager == null)
         {
-            healthManager = GetComponent<HealthManager>();
+            healthManager =
+                GetComponent<HealthManager>();
         }
 
-        moveBrain = GetComponent<UnitMoveBrain>();
+        moveBrain =
+            GetComponent<UnitMoveBrain>();
 
-        attackAnimation = GetComponent<IAttackAnimation>();
+        attackAnimation =
+            GetComponent<IAttackAnimation>();
 
-        unitTilePin = GetComponent<UnitTilePin>();
+        unitTilePin =
+            GetComponent<UnitTilePin>();
 
         if (animationController == null)
         {
-            animationController = GetComponent<AnimationController>();
+            animationController =
+                GetComponent<AnimationController>();
         }
+
+        FindUpgradeableCombatUnit();
 
         FindUnitData();
 
-        updateManager = FindFirstObjectByType<UpdateManager>();
+        updateManager =
+            FindFirstObjectByType<UpdateManager>();
 
         EnsureGridManager();
 
@@ -89,17 +100,22 @@ public class AttackUnit : MonoBehaviour
                 unitTilePin.HasTile()
             )
             {
-                initialTile = unitTilePin.GetTile();
+                initialTile =
+                    unitTilePin.GetTile();
             }
             else
             {
-                initialTile = cachedGridManager.WorldToGridPosition(
-                    transform.position
-                );
+                initialTile =
+                    cachedGridManager.WorldToGridPosition(
+                        transform.position
+                    );
             }
 
-            logicalGridPosition = initialTile;
-            hasLogicalGridPosition = true;
+            logicalGridPosition =
+                initialTile;
+
+            hasLogicalGridPosition =
+                true;
         }
 
         if (characterData != null)
@@ -107,6 +123,51 @@ public class AttackUnit : MonoBehaviour
             Initialize(characterData);
         }
     }
+
+    private void FindUpgradeableCombatUnit()
+    {
+        if (upgradeableCombatUnit != null)
+        {
+            return;
+        }
+
+        upgradeableCombatUnit =
+            GetComponent<UpgradeableCombatUnit>();
+
+        if (upgradeableCombatUnit == null)
+        {
+            upgradeableCombatUnit =
+                GetComponentInParent<UpgradeableCombatUnit>();
+        }
+
+        if (upgradeableCombatUnit == null)
+        {
+            upgradeableCombatUnit =
+                GetComponentInChildren<UpgradeableCombatUnit>();
+        }
+
+    }
+
+    private UpgradeableCombatUnit GetUpgradeableCombatUnit()
+    {
+        UpgradeableCombatUnit upgradeable =
+            GetComponent<UpgradeableCombatUnit>();
+
+        if (upgradeable == null)
+        {
+            upgradeable =
+                GetComponentInParent<UpgradeableCombatUnit>();
+        }
+
+        if (upgradeable == null)
+        {
+            upgradeable =
+                GetComponentInChildren<UpgradeableCombatUnit>();
+        }
+
+        return upgradeable;
+    }
+
 
     private void FindAttackAnimatorLayer()
     {
@@ -117,7 +178,8 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        Animator animator = animationController.GetAnimator();
+        Animator animator =
+            animationController.GetAnimator();
 
         if (animator == null)
         {
@@ -134,17 +196,20 @@ public class AttackUnit : MonoBehaviour
     {
         if (unitData == null)
         {
-            unitData = GetComponent<UnitData>();
+            unitData =
+                GetComponent<UnitData>();
         }
 
         if (unitData == null)
         {
-            unitData = GetComponentInChildren<UnitData>();
+            unitData =
+                GetComponentInChildren<UnitData>();
         }
 
         if (unitData == null)
         {
-            unitData = GetComponentInParent<UnitData>();
+            unitData =
+                GetComponentInParent<UnitData>();
         }
     }
 
@@ -155,7 +220,8 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        characterData = data;
+        characterData =
+            data;
 
         abilities.Clear();
 
@@ -260,16 +326,20 @@ public class AttackUnit : MonoBehaviour
     )
     {
         return
-            GetAbilityData(abilitySO) != null;
+            GetAbilityData(
+                abilitySO
+            ) != null;
     }
 
     public void SetLogicalGridPosition(
         Vector2Int position
     )
     {
-        logicalGridPosition = position;
+        logicalGridPosition =
+            position;
 
-        hasLogicalGridPosition = true;
+        hasLogicalGridPosition =
+            true;
 
         if (unitTilePin == null)
         {
@@ -302,7 +372,8 @@ public class AttackUnit : MonoBehaviour
             logicalGridPosition =
                 unitTilePin.GetTile();
 
-            hasLogicalGridPosition = true;
+            hasLogicalGridPosition =
+                true;
 
             return logicalGridPosition;
         }
@@ -314,7 +385,8 @@ public class AttackUnit : MonoBehaviour
                     transform.position
                 );
 
-            hasLogicalGridPosition = true;
+            hasLogicalGridPosition =
+                true;
         }
 
         return logicalGridPosition;
@@ -360,10 +432,18 @@ public class AttackUnit : MonoBehaviour
         AbilitySO abilitySO
     )
     {
-        return
-            GetAbilityCooldown(
+        AbilityData abilityData =
+            GetAbilityData(
                 abilitySO
-            ) > 0;
+            );
+
+        if (abilityData == null)
+        {
+            return false;
+        }
+
+        return
+            abilityData.IsOnCooldown();
     }
 
     public int GetAbilityUsesRemaining(
@@ -482,16 +562,6 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        int cooldown =
-            GetAbilityCooldown(
-                abilitySO
-            );
-
-        if (cooldown > 0)
-        {
-            return false;
-        }
-
         int uses =
             GetAbilityUsesRemaining(
                 abilitySO
@@ -517,16 +587,6 @@ public class AttackUnit : MonoBehaviour
         return true;
     }
 
-    public bool CanUseAbility(
-        AbilitySO abilitySO
-    )
-    {
-        return
-            IsAbilityReady(
-                abilitySO
-            );
-    }
-
     public void StartNewRound()
     {
         for (
@@ -544,32 +604,7 @@ public class AttackUnit : MonoBehaviour
             }
 
             abilityData.ReduceCooldown();
-            abilityData.ResetUses();
         }
-    }
-
-    private void StartAbilityCooldown(
-        AbilitySO abilitySO
-    )
-    {
-        if (abilitySO == null)
-        {
-            return;
-        }
-
-        AbilityData abilityData =
-            GetAbilityData(
-                abilitySO
-            );
-
-        if (abilityData == null)
-        {
-            return;
-        }
-
-        abilityData.SetCooldown(
-            abilitySO.GetCooldown()
-        );
     }
 
     public bool Attack(
@@ -625,7 +660,8 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        Team team = GetTeam();
+        Team team =
+            GetTeam();
 
         if (
             team == Team.Player ||
@@ -671,9 +707,11 @@ public class AttackUnit : MonoBehaviour
         animationEventTargetTile =
             ResolveUnitTile(target);
 
-        animationEventFired = false;
+        animationEventFired =
+            false;
 
-        attackInProgress = true;
+        attackInProgress =
+            true;
 
         if (
             useDirectionalEnemyAttackAnimation
@@ -790,7 +828,8 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        Team team = GetTeam();
+        Team team =
+            GetTeam();
 
         if (
             team == Team.Player ||
@@ -831,14 +870,17 @@ public class AttackUnit : MonoBehaviour
         animationEventAbility =
             selectedAbility;
 
-        animationEventTarget = null;
+        animationEventTarget =
+            null;
 
         animationEventTargetTile =
             targetTile;
 
-        animationEventFired = false;
+        animationEventFired =
+            false;
 
-        attackInProgress = true;
+        attackInProgress =
+            true;
 
         if (
             useDirectionalEnemyAttackAnimation &&
@@ -874,21 +916,9 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        bool usesExhausted = false;
-
-        if (
-            abilitySO.GetUsesPerTurn() > 0
-        )
+        if (abilitySO.GetUsesPerTurn() > 0)
         {
-            usesExhausted =
-                ConsumeAbilityUse(
-                    abilitySO
-                );
-        }
-
-        if (usesExhausted)
-        {
-            StartAbilityCooldown(
+            ConsumeAbilityUse(
                 abilitySO
             );
         }
@@ -911,7 +941,8 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        animationEventFired = true;
+        animationEventFired =
+            true;
 
         AbilitySO ability =
             animationEventAbility;
@@ -928,7 +959,8 @@ public class AttackUnit : MonoBehaviour
             return;
         }
 
-        bool usedSuccessfully = false;
+        bool usedSuccessfully =
+            false;
 
         if (target != null)
         {
@@ -976,8 +1008,11 @@ public class AttackUnit : MonoBehaviour
         );
 
         animationEventAbility = null;
+
         animationEventTarget = null;
-        animationEventTargetTile = Vector2Int.zero;
+
+        animationEventTargetTile =
+            Vector2Int.zero;
     }
 
     public void OnAttackAnimationFinished()
@@ -1393,9 +1428,16 @@ public class AttackUnit : MonoBehaviour
             );
     }
 
+    // ============================================================
+    // FORTRESS / UPGRADE SUPPORT
+    // ============================================================
+
     public int GetAttackRange()
     {
         int maxRange = 0;
+
+        UpgradeableCombatUnit upgradeable =
+            GetUpgradeableCombatUnit();
 
         for (
             int i = 0;
@@ -1414,17 +1456,36 @@ public class AttackUnit : MonoBehaviour
             AbilitySO abilitySO =
                 abilityData.GetAbilitySO();
 
-            if (
-                abilitySO != null &&
-                IsAbilityReady(abilitySO)
-            )
+            if (abilitySO == null)
             {
-                maxRange =
-                    Mathf.Max(
-                        maxRange,
-                        abilitySO.GetRange()
+                continue;
+            }
+
+            if (!IsAbilityReady(abilitySO))
+            {
+                continue;
+            }
+
+            int range;
+
+            if (upgradeable != null)
+            {
+                range =
+                    upgradeable.GetEffectiveRange(
+                        abilitySO
                     );
             }
+            else
+            {
+                range =
+                    abilitySO.GetRange();
+            }
+
+            maxRange =
+                Mathf.Max(
+                    maxRange,
+                    range
+                );
         }
 
         return maxRange;
@@ -1434,6 +1495,9 @@ public class AttackUnit : MonoBehaviour
     {
         int maxRange = 0;
 
+        UpgradeableCombatUnit upgradeable =
+            GetUpgradeableCombatUnit();
+
         for (
             int i = 0;
             i < abilities.Count;
@@ -1451,17 +1515,82 @@ public class AttackUnit : MonoBehaviour
             AbilitySO abilitySO =
                 abilityData.GetAbilitySO();
 
-            if (abilitySO != null)
+            if (abilitySO == null)
             {
-                maxRange =
-                    Mathf.Max(
-                        maxRange,
-                        abilitySO.GetRange()
+                continue;
+            }
+
+            int range;
+
+            if (upgradeable != null)
+            {
+                range =
+                    upgradeable.GetEffectiveRange(
+                        abilitySO
                     );
             }
+            else
+            {
+                range =
+                    abilitySO.GetRange();
+            }
+
+            maxRange =
+                Mathf.Max(
+                    maxRange,
+                    range
+                );
         }
 
         return maxRange;
+    }
+
+    public int GetEffectiveDamage(
+        AbilitySO abilitySO
+    )
+    {
+        if (abilitySO == null)
+        {
+            return 0;
+        }
+
+        UpgradeableCombatUnit upgradeable =
+            GetUpgradeableCombatUnit();
+
+        if (upgradeable != null)
+        {
+            return
+                upgradeable.GetEffectiveDamage(
+                    abilitySO
+                );
+        }
+
+        return
+            abilitySO.GetDamage();
+    }
+
+    public int GetEffectiveRange(
+        AbilitySO abilitySO
+    )
+    {
+        if (abilitySO == null)
+        {
+            return 0;
+        }
+
+        UpgradeableCombatUnit upgradeable =
+            GetUpgradeableCombatUnit();
+
+        if (upgradeable != null)
+        {
+            return
+                upgradeable.GetEffectiveRange(
+                    abilitySO
+                );
+        }
+
+        return
+            abilitySO.GetRange();
     }
 
     public List<AbilityData> GetRuntimeAbilities()
@@ -1578,6 +1707,11 @@ public class AttackUnit : MonoBehaviour
         return unitData;
     }
 
+    public UpgradeableCombatUnit GetUpgradeableCombatUnitReference()
+    {
+        return GetUpgradeableCombatUnit();
+    }
+
     public bool IsAttackInProgress()
     {
         return attackInProgress;
@@ -1592,8 +1726,10 @@ public class AttackUnit : MonoBehaviour
         animationEventTargetTile =
             Vector2Int.zero;
 
-        animationEventFired = false;
+        animationEventFired =
+            false;
 
-        attackInProgress = false;
+        attackInProgress =
+            false;
     }
 }

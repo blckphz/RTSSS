@@ -134492,7 +134492,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1238}
+  m_AnchoredPosition: {x: -1242, y: 1179.5133}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -134869,6 +134869,7 @@ MonoBehaviour:
   raycastDistance: 1000
   allowPlayerMovement: 1
   gridChainHighlight: {fileID: 0}
+  debugAbilitySelection: 1
 --- !u!114 &345656228
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -134959,6 +134960,7 @@ MonoBehaviour:
   tooltipManager: {fileID: 733581652}
   gridManager: {fileID: 804482595}
   highlightManager: {fileID: 804482593}
+  debugAbilitySelection: 1
 --- !u!114 &345656229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135147,6 +135149,8 @@ MonoBehaviour:
   lineRendererManagerObject: {fileID: 1539745032}
   lineOffset: {x: 0, y: 0, z: 0}
   showHologram: 1
+  requireMovementAction: 1
+  showDebugLogs: 1
   pulseHologram: 1
   pulseSpeed: 1
   pulseAmount: 0.08
@@ -136871,7 +136875,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 14.72
+  orthographic size: 17
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -139001,7 +139005,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 14.72
+    OrthographicSize: 17
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -140055,8 +140059,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.00000071801423
-  m_Size: 0.59466976
+  m_Value: -0.0005733344
+  m_Size: 0.5910536
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

@@ -15,8 +15,16 @@ public class UnitData : MonoBehaviour
     // RUNTIME ABILITY DATA
     // ============================================================
 
-    private Dictionary<AbilitySO, AbilityData> abilityData =
-        new Dictionary<AbilitySO, AbilityData>();
+    /*
+     * IMPORTANT:
+     *
+     * AttackUnit is the owner of the actual runtime AbilityData.
+     *
+     * Do NOT create a second AbilityData dictionary here.
+     *
+     * Otherwise a turret/player/enemy can have two different
+     * cooldown/charge states for the same AbilitySO.
+     */
 
 
     // ============================================================
@@ -44,67 +52,23 @@ public class UnitData : MonoBehaviour
     // ============================================================
 
     public void Initialize(
-        CharacterSO characterData)
+        CharacterSO characterData
+    )
     {
-        character = characterData;
+        character =
+            characterData;
 
-        // IMPORTANT:
-        //
-        // Do NOT call ResetRuntimeData() here.
-        //
-        // Initialize() may be called again when a unit is placed
-        // or recreated.
-        //
-        // Runtime upgrades must survive initialization.
-        //
-        // We only rebuild the ability data here.
-
-        abilityData.Clear();
-
-        if (character == null)
-        {
-            return;
-        }
-
-
-        List<AbilitySO> abilities =
-            character.GetAbilities();
-
-
-        if (abilities != null)
-        {
-            for (
-                int i = 0;
-                i < abilities.Count;
-                i++
-            )
-            {
-                AbilitySO ability =
-                    abilities[i];
-
-
-                if (ability == null)
-                {
-                    continue;
-                }
-
-
-                if (
-                    abilityData.ContainsKey(
-                        ability
-                    )
-                )
-                {
-                    continue;
-                }
-
-
-                abilityData[ability] =
-                    new AbilityData(
-                        ability
-                    );
-            }
-        }
+        /*
+         * IMPORTANT:
+         *
+         * We intentionally do NOT create AbilityData here.
+         *
+         * AttackUnit.Initialize() creates the runtime ability
+         * data and owns the cooldown/charge state.
+         *
+         * This prevents players, enemies and turrets from having
+         * duplicate ability states.
+         */
     }
 
 
@@ -119,45 +83,94 @@ public class UnitData : MonoBehaviour
 
 
     // ============================================================
+    // ATTACK UNIT
+    // ============================================================
+
+    private AttackUnit GetAttackUnit()
+    {
+        AttackUnit attackUnit =
+            GetComponent<AttackUnit>();
+
+        if (attackUnit == null)
+        {
+            attackUnit =
+                GetComponentInParent<AttackUnit>();
+        }
+
+        if (attackUnit == null)
+        {
+            attackUnit =
+                GetComponentInChildren<AttackUnit>();
+        }
+
+        return attackUnit;
+    }
+
+
+    // ============================================================
     // ABILITY DATA
     // ============================================================
 
     public AbilityData GetAbilityData(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         if (ability == null)
         {
             return null;
         }
 
+        AttackUnit attackUnit =
+            GetAttackUnit();
 
-        if (
-            abilityData.TryGetValue(
-                ability,
-                out AbilityData data
-            )
-        )
+        if (attackUnit == null)
         {
-            return data;
+            return null;
         }
 
+        List<AbilityData> runtimeAbilities =
+            attackUnit.GetRuntimeAbilities();
+
+        if (runtimeAbilities == null)
+        {
+            return null;
+        }
+
+        for (
+            int i = 0;
+            i < runtimeAbilities.Count;
+            i++
+        )
+        {
+            AbilityData data =
+                runtimeAbilities[i];
+
+            if (data == null)
+            {
+                continue;
+            }
+
+            if (
+                data.GetAbilitySO() ==
+                ability
+            )
+            {
+                return data;
+            }
+        }
 
         return null;
     }
 
 
     public bool HasAbilityData(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
-        if (ability == null)
-        {
-            return false;
-        }
-
-
-        return abilityData.ContainsKey(
-            ability
-        );
+        return
+            GetAbilityData(
+                ability
+            ) != null;
     }
 
 
@@ -166,39 +179,38 @@ public class UnitData : MonoBehaviour
     // ============================================================
 
     public int GetAbilityCooldown(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         AbilityData data =
             GetAbilityData(
                 ability
             );
-
 
         if (data == null)
         {
             return 0;
         }
 
-
-        return data.GetCooldownRemaining();
+        return
+            data.GetCooldownRemaining();
     }
 
 
     public void SetAbilityCooldown(
         AbilitySO ability,
-        int cooldown)
+        int cooldown
+    )
     {
         AbilityData data =
             GetAbilityData(
                 ability
             );
 
-
         if (data == null)
         {
             return;
         }
-
 
         data.SetCooldown(
             cooldown
@@ -208,16 +220,35 @@ public class UnitData : MonoBehaviour
 
     public void ReduceAbilityCooldowns()
     {
-        foreach (
-            AbilityData data
-            in abilityData.Values
+        AttackUnit attackUnit =
+            GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return;
+        }
+
+        List<AbilityData> runtimeAbilities =
+            attackUnit.GetRuntimeAbilities();
+
+        if (runtimeAbilities == null)
+        {
+            return;
+        }
+
+        for (
+            int i = 0;
+            i < runtimeAbilities.Count;
+            i++
         )
         {
+            AbilityData data =
+                runtimeAbilities[i];
+
             if (data == null)
             {
                 continue;
             }
-
 
             data.ReduceCooldown();
         }
@@ -229,86 +260,130 @@ public class UnitData : MonoBehaviour
     // ============================================================
 
     public int GetAbilityUsesRemaining(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         AbilityData data =
             GetAbilityData(
                 ability
             );
-
 
         if (data == null)
         {
             return 0;
         }
 
+        /*
+         * For unlimited abilities, AttackUnit/AbilityData handles
+         * the special case.
+         */
+        if (
+            ability != null &&
+            ability.GetUsesPerTurn() <= 0
+        )
+        {
+            return 0;
+        }
 
-        return data.GetUsesRemaining();
+        return
+            data.GetUsesRemaining();
     }
 
 
     public bool CanUseAbility(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         AbilityData data =
             GetAbilityData(
                 ability
             );
 
-
         if (data == null)
         {
             return false;
         }
 
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT do this:
+         *
+         * if (data.IsOnCooldown())
+         * {
+         *     return false;
+         * }
+         *
+         * With per-charge cooldowns:
+         *
+         * [3, 0]
+         *
+         * means one charge is cooling down and one charge
+         * is ready.
+         *
+         * CanUse() checks the actual available charges.
+         */
 
-        if (data.IsOnCooldown())
-        {
-            return false;
-        }
-
-
-        return data.CanUse();
+        return
+            data.CanUse();
     }
 
 
     public bool ConsumeAbilityUse(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         AbilityData data =
             GetAbilityData(
                 ability
             );
 
-
         if (data == null)
         {
             return false;
         }
 
+        /*
+         * ConsumeUse() itself finds a ready charge and puts
+         * that specific charge on cooldown.
+         */
 
-        if (data.IsOnCooldown())
-        {
-            return false;
-        }
-
-
-        return data.ConsumeUse();
+        return
+            data.ConsumeUse();
     }
 
 
     public void ResetAbilityUses()
     {
-        foreach (
-            AbilityData data
-            in abilityData.Values
+        AttackUnit attackUnit =
+            GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return;
+        }
+
+        List<AbilityData> runtimeAbilities =
+            attackUnit.GetRuntimeAbilities();
+
+        if (runtimeAbilities == null)
+        {
+            return;
+        }
+
+        for (
+            int i = 0;
+            i < runtimeAbilities.Count;
+            i++
         )
         {
+            AbilityData data =
+                runtimeAbilities[i];
+
             if (data == null)
             {
                 continue;
             }
-
 
             data.ResetUses();
         }
@@ -321,19 +396,18 @@ public class UnitData : MonoBehaviour
 
     public void AddBonusJumps(
         AbilitySO ability,
-        int amount)
+        int amount
+    )
     {
         if (ability == null)
         {
             return;
         }
 
-
         if (amount <= 0)
         {
             return;
         }
-
 
         if (
             !abilityBonusJumps.ContainsKey(
@@ -345,20 +419,19 @@ public class UnitData : MonoBehaviour
                 0;
         }
 
-
         abilityBonusJumps[ability] +=
             amount;
     }
 
 
     public int GetBonusJumps(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         if (ability == null)
         {
             return 0;
         }
-
 
         if (
             abilityBonusJumps.TryGetValue(
@@ -370,7 +443,6 @@ public class UnitData : MonoBehaviour
             return bonus;
         }
 
-
         return 0;
     }
 
@@ -380,7 +452,8 @@ public class UnitData : MonoBehaviour
     // ============================================================
 
     public void SetMeleeTurretHealAmount(
-        int amount)
+        int amount
+    )
     {
         meleeTurretHealAmount =
             Mathf.Max(
@@ -398,7 +471,8 @@ public class UnitData : MonoBehaviour
 
     public bool HasMeleeTurretHealUpgrade()
     {
-        return meleeTurretHealAmount > 0;
+        return
+            meleeTurretHealAmount > 0;
     }
 
 
@@ -407,13 +481,13 @@ public class UnitData : MonoBehaviour
     // ============================================================
 
     public void DebugBonusJumps(
-        AbilitySO ability)
+        AbilitySO ability
+    )
     {
         if (ability == null)
         {
             return;
         }
-
 
         int bonus =
             GetBonusJumps(
@@ -440,7 +514,11 @@ public class UnitData : MonoBehaviour
 
     public void ResetRuntimeData()
     {
-        abilityData.Clear();
+        /*
+         * AbilityData is owned by AttackUnit.
+         *
+         * Do not clear or recreate it here.
+         */
 
         abilityBonusJumps.Clear();
 

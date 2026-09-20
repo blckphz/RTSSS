@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -5,50 +6,192 @@ public class AbilityData
 {
     private AbilitySO abilitySO;
 
-    private int cooldownRemaining;
-    private int usesRemaining;
+    // One cooldown per charge.
+    // 0 = ready.
+    private List<int> chargeCooldowns =
+        new List<int>();
 
-    public AbilityData(AbilitySO source)
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
+    public AbilityData(AbilitySO ability)
     {
-        abilitySO = source;
+        abilitySO = ability;
 
-        cooldownRemaining = 0;
-
-        usesRemaining =
-            source != null
-                ? source.GetUsesPerTurn()
-                : 0;
+        InitializeCharges();
     }
+
+
+    // =========================================================
+    // INITIALIZE CHARGES
+    // =========================================================
+
+    public void InitializeCharges()
+    {
+        chargeCooldowns.Clear();
+
+        if (abilitySO == null)
+        {
+            return;
+        }
+
+        int maxUses =
+            abilitySO.GetUsesPerTurn();
+
+        // 0 or less = unlimited.
+        if (maxUses <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < maxUses; i++)
+        {
+            chargeCooldowns.Add(0);
+        }
+    }
+
+
+    // =========================================================
+    // GET ABILITY
+    // =========================================================
 
     public AbilitySO GetAbilitySO()
     {
         return abilitySO;
     }
 
+
+    // =========================================================
+    // COOLDOWN
+    // =========================================================
+
     public int GetCooldownRemaining()
     {
-        return cooldownRemaining;
+        if (abilitySO == null)
+        {
+            return 0;
+        }
+
+        // Unlimited abilities don't have a cooldown
+        // between charges.
+        if (abilitySO.GetUsesPerTurn() <= 0)
+        {
+            return 0;
+        }
+
+        if (chargeCooldowns.Count == 0)
+        {
+            return 0;
+        }
+
+        int lowestCooldown =
+            int.MaxValue;
+
+        foreach (int cooldown
+                 in chargeCooldowns)
+        {
+            if (cooldown < lowestCooldown)
+            {
+                lowestCooldown = cooldown;
+            }
+        }
+
+        if (lowestCooldown ==
+            int.MaxValue)
+        {
+            return 0;
+        }
+
+        return lowestCooldown;
     }
+
 
     public void SetCooldown(int value)
     {
-        cooldownRemaining =
-            Mathf.Max(0, value);
+        value = Mathf.Max(0, value);
+
+        for (int i = 0;
+             i < chargeCooldowns.Count;
+             i++)
+        {
+            chargeCooldowns[i] = value;
+        }
     }
+
 
     public void ReduceCooldown()
     {
-        cooldownRemaining =
-            Mathf.Max(
-                0,
-                cooldownRemaining - 1
-            );
+        for (int i = 0;
+             i < chargeCooldowns.Count;
+             i++)
+        {
+            chargeCooldowns[i] =
+                Mathf.Max(
+                    0,
+                    chargeCooldowns[i] - 1
+                );
+        }
     }
+
+
+    public bool IsOnCooldown()
+    {
+        if (abilitySO == null)
+        {
+            return false;
+        }
+
+        if (abilitySO.GetUsesPerTurn() <= 0)
+        {
+            return false;
+        }
+
+        foreach (int cooldown
+                 in chargeCooldowns)
+        {
+            if (cooldown > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    // =========================================================
+    // USES
+    // =========================================================
 
     public int GetUsesRemaining()
     {
-        return usesRemaining;
+        if (abilitySO == null)
+        {
+            return 0;
+        }
+
+        // 0 = unlimited.
+        if (abilitySO.GetUsesPerTurn() <= 0)
+        {
+            return 0;
+        }
+
+        int readyCharges = 0;
+
+        foreach (int cooldown
+                 in chargeCooldowns)
+        {
+            if (cooldown <= 0)
+            {
+                readyCharges++;
+            }
+        }
+
+        return readyCharges;
     }
+
 
     public void ResetUses()
     {
@@ -57,9 +200,23 @@ public class AbilityData
             return;
         }
 
-        usesRemaining =
-            abilitySO.GetUsesPerTurn();
+        if (abilitySO.GetUsesPerTurn() <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0;
+             i < chargeCooldowns.Count;
+             i++)
+        {
+            chargeCooldowns[i] = 0;
+        }
     }
+
+
+    // =========================================================
+    // CAN USE
+    // =========================================================
 
     public bool CanUse()
     {
@@ -68,22 +225,19 @@ public class AbilityData
             return false;
         }
 
-        // 0 = unlimited uses.
+        // Unlimited.
         if (abilitySO.GetUsesPerTurn() <= 0)
         {
             return true;
         }
 
-        bool result =
-            usesRemaining > 0;
-
-        return result;
+        return GetUsesRemaining() > 0;
     }
 
-    public bool IsOnCooldown()
-    {
-        return cooldownRemaining > 0;
-    }
+
+    // =========================================================
+    // CONSUME USE
+    // =========================================================
 
     public bool ConsumeUse()
     {
@@ -92,41 +246,52 @@ public class AbilityData
             return false;
         }
 
-        int maximumUses =
-            abilitySO.GetUsesPerTurn();
-
-        // 0 = unlimited uses.
-        if (maximumUses <= 0)
-        {
-            return false;
-        }
-
-        if (usesRemaining <= 0)
+        // Unlimited ability.
+        // This is a successful use.
+        if (abilitySO.GetUsesPerTurn() <= 0)
         {
             return true;
         }
 
-        usesRemaining =
+        int abilityCooldown =
             Mathf.Max(
                 0,
-                usesRemaining - 1
+                abilitySO.GetCooldown()
             );
 
-        bool exhausted =
-            usesRemaining == 0;
+        for (int i = 0;
+             i < chargeCooldowns.Count;
+             i++)
+        {
+            if (chargeCooldowns[i] <= 0)
+            {
+                chargeCooldowns[i] =
+                    abilityCooldown;
 
-        return exhausted;
+                return true;
+            }
+        }
+
+        return false;
     }
+
+
+    // =========================================================
+    // DEBUG
+    // =========================================================
 
     public override string ToString()
     {
+        if (abilitySO == null)
+        {
+            return "AbilityData: NULL";
+        }
+
         return
-            abilitySO != null
-                ? abilitySO.GetAbilityName() +
-                  " | Uses=" +
-                  usesRemaining +
-                  " | Cooldown=" +
-                  cooldownRemaining
-                : "NULL Ability";
+            abilitySO.GetAbilityName()
+            + " | Uses: "
+            + GetUsesRemaining()
+            + " | Cooldown: "
+            + GetCooldownRemaining();
     }
 }

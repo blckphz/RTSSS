@@ -852,17 +852,13 @@ public class CardUI :
         // ==================================================
 
         UnitData unitData =
-            placedObject.GetComponent<
-                UnitData
-            >();
+            placedObject.GetComponent<UnitData>();
 
 
         if (unitData == null)
         {
             unitData =
-                placedObject.AddComponent<
-                    UnitData
-                >();
+                placedObject.AddComponent<UnitData>();
         }
 
 
@@ -876,9 +872,7 @@ public class CardUI :
         // ==================================================
 
         HealthManager healthManager =
-            placedObject.GetComponent<
-                HealthManager
-            >();
+            placedObject.GetComponent<HealthManager>();
 
 
         if (healthManager == null)
@@ -908,9 +902,7 @@ public class CardUI :
         // ==================================================
 
         AttackUnit attackUnit =
-            placedObject.GetComponent<
-                AttackUnit
-            >();
+            placedObject.GetComponent<AttackUnit>();
 
 
         if (attackUnit == null)
@@ -951,6 +943,22 @@ public class CardUI :
         attackUnit.Initialize(
             character
         );
+
+
+        // ==================================================
+        // REGISTER FORTRESS TARGET
+        // ==================================================
+
+        UpgradeableCombatUnit upgradeableCombatUnit =
+            placedObject.GetComponent<
+                UpgradeableCombatUnit
+            >();
+
+
+        if (upgradeableCombatUnit != null)
+        {
+            upgradeableCombatUnit.RegisterAsFortressTarget();
+        }
 
 
         // ==================================================
@@ -995,12 +1003,6 @@ public class CardUI :
             currentGridPosition
         );
 
-
-        // ==================================================
-        // SUCCESS
-        // ==================================================
-
-   
 
         // ==================================================
         // REMOVE CARD

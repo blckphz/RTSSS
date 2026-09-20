@@ -1497,4 +1497,35 @@ public class HealthManager : MonoBehaviour
 
         NotifyHealthChanged();
     }
+
+    public void AddMaxHealth(
+    int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        maxHealth += amount;
+
+        health += amount;
+
+        maxHealth =
+            Mathf.Max(
+                1,
+                maxHealth
+            );
+
+        health =
+            Mathf.Clamp(
+                health,
+                0,
+                maxHealth
+            );
+
+        SavePlayerHealth();
+
+        NotifyHealthChanged();
+    }
+
 }

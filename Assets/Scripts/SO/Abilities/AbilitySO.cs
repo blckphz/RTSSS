@@ -18,7 +18,6 @@ public abstract class AbilitySO : ScriptableObject
         Any
     }
 
-
     // ============================================================
     // ABILITY
     // ============================================================
@@ -154,6 +153,80 @@ public abstract class AbilitySO : ScriptableObject
 
 
     // ============================================================
+    // EFFECTIVE DAMAGE
+    // ============================================================
+
+    public virtual int GetEffectiveDamage(
+        GameObject user
+    )
+    {
+        if (user == null)
+        {
+            return damage;
+        }
+
+        UpgradeableCombatUnit upgradeable =
+            user.GetComponent<UpgradeableCombatUnit>();
+
+        if (upgradeable == null)
+        {
+            upgradeable =
+                user.GetComponentInParent<UpgradeableCombatUnit>();
+        }
+
+        if (upgradeable == null)
+        {
+            upgradeable =
+                user.GetComponentInChildren<UpgradeableCombatUnit>();
+        }
+
+        if (upgradeable == null)
+        {
+            return damage;
+        }
+
+        return upgradeable.GetEffectiveDamage(this);
+    }
+
+
+    // ============================================================
+    // EFFECTIVE RANGE
+    // ============================================================
+
+    public virtual int GetEffectiveRange(
+        GameObject user
+    )
+    {
+        if (user == null)
+        {
+            return Mathf.Max(1, range);
+        }
+
+        UpgradeableCombatUnit upgradeable =
+            user.GetComponent<UpgradeableCombatUnit>();
+
+        if (upgradeable == null)
+        {
+            upgradeable =
+                user.GetComponentInParent<UpgradeableCombatUnit>();
+        }
+
+        if (upgradeable == null)
+        {
+            upgradeable =
+                user.GetComponentInChildren<UpgradeableCombatUnit>();
+        }
+
+        if (upgradeable == null)
+        {
+            return Mathf.Max(1, range);
+        }
+
+        return upgradeable.GetEffectiveRange(this);
+    }
+
+
+    // ============================================================
     // GET USER TILE
     // ============================================================
 
@@ -244,7 +317,7 @@ public abstract class AbilitySO : ScriptableObject
         int abilityRange =
             Mathf.Max(
                 1,
-                range
+                GetEffectiveRange(user)
             );
 
         int minimumDistance =
