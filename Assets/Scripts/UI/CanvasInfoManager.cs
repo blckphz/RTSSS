@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -5,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 public class CanvasInfoManager : MonoBehaviour
 {
@@ -1007,28 +1009,6 @@ public class CanvasInfoManager : MonoBehaviour
                     );
                 }
 
-                // =================================================
-                // EFFECTIVE DAMAGE / RANGE
-                // =================================================
-                //
-                // IMPORTANT:
-                //
-                // We use the active unit here instead of directly
-                // accessing UpgradeableCombatUnit.
-                //
-                // That keeps this UI generic for all units.
-                //
-                // For a normal unit:
-                //     effective damage = base damage
-                //
-                // For an upgraded Fortress/turret:
-                //     effective damage = base + bonus
-                //
-                // AbilitySO.GetEffectiveDamage() also safely falls
-                // back to base damage if the unit has no upgradeable
-                // combat component.
-                // =================================================
-
                 if (
                     ability is HealAbilitySO healAbility
                 )
@@ -1662,10 +1642,6 @@ public class CanvasInfoManager : MonoBehaviour
             canUseAfterMovement
         );
 
-        // --------------------------------------------------------
-        // Movement restriction
-        // --------------------------------------------------------
-
         if (!canUseAfterMovement)
         {
             DebugAbilityWarning(
@@ -1676,10 +1652,6 @@ public class CanvasInfoManager : MonoBehaviour
             return false;
         }
 
-        // --------------------------------------------------------
-        // Unlimited
-        // --------------------------------------------------------
-
         if (usesPerTurn <= 0)
         {
             DebugAbility(
@@ -1688,10 +1660,6 @@ public class CanvasInfoManager : MonoBehaviour
 
             return true;
         }
-
-        // --------------------------------------------------------
-        // Per-charge uses
-        // --------------------------------------------------------
 
         if (remainingUses <= 0)
         {
@@ -1973,6 +1941,29 @@ public class CanvasInfoManager : MonoBehaviour
         // --------------------------------------------------------
 
         RefreshCurrentSelection();
+
+        // --------------------------------------------------------
+        // CAMERA
+        // --------------------------------------------------------
+        // IMPORTANT:
+        //
+        // This is now inside SelectAbility().
+        //
+        // Therefore it runs for:
+        //
+        // 1. Keyboard / Input System selection
+        // 2. Mouse ability-link selection
+        // 3. Any future code that calls SelectAbility()
+        //
+        // This prevents the mouse and keyboard selection paths
+        // from behaving differently.
+        // --------------------------------------------------------
+
+        if (CanvasJuiceManager.Instance != null)
+        {
+            CanvasJuiceManager.Instance
+                .MoveCameraToAbilityPosition();
+        }
 
         // --------------------------------------------------------
         // RANGE

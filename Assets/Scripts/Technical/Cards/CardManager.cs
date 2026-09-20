@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CardManager : MonoBehaviour
 {
@@ -43,6 +44,24 @@ public class CardManager : MonoBehaviour
 
 
     // ==================================================
+    // RUNTIME CARD TEST
+    // ==================================================
+
+    [Header("Runtime Card Test")]
+    [SerializeField]
+    private CharacterSO testCharacter;
+
+
+    // ==================================================
+    // INPUT
+    // ==================================================
+
+    [Header("Input")]
+    [SerializeField]
+    private InputActionReference spawnCardAction;
+
+
+    // ==================================================
     // HAND
     // ==================================================
 
@@ -68,6 +87,52 @@ public class CardManager : MonoBehaviour
         //
         // EncounterManager will create the hand
         // whenever a new encounter starts.
+    }
+
+
+    private void OnEnable()
+    {
+        if (spawnCardAction != null)
+        {
+            spawnCardAction.action.performed += OnSpawnCard;
+
+            spawnCardAction.action.Enable();
+        }
+    }
+
+
+    private void OnDisable()
+    {
+        if (spawnCardAction != null)
+        {
+            spawnCardAction.action.performed -= OnSpawnCard;
+
+            spawnCardAction.action.Disable();
+        }
+    }
+
+
+    // ==================================================
+    // INPUT
+    // ==================================================
+
+    private void OnSpawnCard(
+        InputAction.CallbackContext context)
+    {
+        if (testCharacter == null)
+        {
+            Debug.LogWarning(
+                "[CardManager] Test Character is not assigned.",
+                this
+            );
+
+            return;
+        }
+
+
+        CreateCard(
+            testCharacter
+        );
     }
 
 
@@ -132,6 +197,15 @@ public class CardManager : MonoBehaviour
                 this
             );
         }
+
+
+        if (spawnCardAction == null)
+        {
+            Debug.LogWarning(
+                "[CardManager] Spawn Card Input Action is not assigned.",
+                this
+            );
+        }
     }
 
 
@@ -141,7 +215,6 @@ public class CardManager : MonoBehaviour
 
     public void StartNewEncounterHand()
     {
-
         // Remove any cards left from the previous encounter.
         ClearHand();
 
@@ -333,6 +406,11 @@ public class CardManager : MonoBehaviour
         hand.Add(
             card
         );
+
+
+        // Automatically rearrange
+        // after spawning a card.
+        ArrangeHand();
     }
 
 
@@ -488,3 +566,4 @@ public class CardManager : MonoBehaviour
         return mainCamera;
     }
 }
+

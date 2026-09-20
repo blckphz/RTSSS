@@ -8,7 +8,9 @@ public abstract class AbilitySO : ScriptableObject
         Diamond,
         Box,
         FourDirections,
-        Diagonal
+        Diagonal,
+        FourdirectionsAndDiragonal
+
     }
 
     public enum TargetType

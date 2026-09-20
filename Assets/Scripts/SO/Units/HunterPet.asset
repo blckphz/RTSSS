@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
+  m_Name: HunterPet
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
+  characterName: 
+  icon: {fileID: 0}
+  prefabToSpawn: {fileID: 0}
+  team: 0
+  isPlayerCharacter: 0
+  maxHealth: 100
+  moveRange: 0
+  canwalkdiagonally: 0
+  abilities: []
+  RangedAttacker: 0
+  upgrades: []
