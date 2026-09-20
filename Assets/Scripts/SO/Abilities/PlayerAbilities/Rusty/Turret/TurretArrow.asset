@@ -16,12 +16,12 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: A Volley of Pointy Arrows
   damage: 10
-  cooldown: 0
+  cooldown: 1
   canAttackWithThisAfterMove: 1
   usesPerTurn: 2
   useDuration: 0.25
   targetType: 0
-  range: 8
+  range: 5
   minDistance: 0
   rangeShape: 2
   arrowPrefab: {fileID: 5105035218923594911, guid: 4319cfdfbd1f7994a96ff26b93c7d066, type: 3}

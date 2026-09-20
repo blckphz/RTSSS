@@ -514,11 +514,22 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
             );
         }
 
-        if (canvasInfoManager != null)
+        // ========================================================
+        // IMPORTANT UI BEHAVIOR
+        // ========================================================
+        //
+        // If another unit is already selected, DO NOT replace
+        // the selected unit's information with this hovered unit.
+        //
+        // Only show hover information when there is no selection.
+        //
+
+        if (
+            canvasInfoManager != null &&
+            UIManager.CurrentSelection == null
+        )
         {
-            canvasInfoManager.ShowCharacter(
-                this
-            );
+            canvasInfoManager.ShowCharacter(this);
         }
 
         UpdateAbilityTargetHover();
@@ -535,18 +546,24 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
 
         UpdateHealthBarTarget();
 
+        // ========================================================
+        // IMPORTANT UI BEHAVIOR
+        // ========================================================
+        //
+        // If a unit is selected, leave its UI completely alone.
+        //
+        // Previously this called ShowCharacter() again for the
+        // selected unit. That caused the UI to be refreshed every
+        // time the mouse entered/exited another unit.
+        //
+
         if (UIManager.CurrentSelection != null)
         {
-            if (canvasInfoManager != null)
-            {
-                canvasInfoManager.ShowCharacter(
-                    UIManager.CurrentSelection
-                );
-            }
-
             return;
         }
 
+        // No unit selected.
+        // Clear the hover information when we stop hovering.
         if (
             !isSelected &&
             canvasInfoManager != null
@@ -782,6 +799,7 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         {
             if (selected)
             {
+                // Selecting a unit SHOULD update the UI.
                 canvasInfoManager.ShowCharacter(
                     this
                 );
@@ -796,8 +814,6 @@ public class HoverInfoTrigger : MonoBehaviour, ICharacterHolder
         // ========================================================
         // SELECTION EVENT
         // ========================================================
-        //
-        // IMPORTANT:
         //
         // EnemyHologramManager listens to this event.
         //

@@ -10,8 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1486bf4c934a15845bdf6e8df3395bf4, type: 3}
-  m_Name: RUSTY SQUAD
+  m_Name: HunterSquad
   m_EditorClassIdentifier: Assembly-CSharp::SquadSO
-  squadMembers:
-  - {fileID: 11400000, guid: ad18bbb26e16b984498d916f39746623, type: 2}
-  - {fileID: 11400000, guid: 64f350c3fa2acfe42b8b70824533b3fa, type: 2}
+  squadMembers: []

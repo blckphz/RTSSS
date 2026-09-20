@@ -26,9 +26,9 @@ MonoBehaviour:
   range: 5
   minDistance: 0
   rangeShape: 0
-  maxJumps: 1
+  maxJumps: 2
   jumpDelay: 0
-  maxJumpDistance: 5
+  maxJumpDistance: 4
   stunPercentage: 15
   stunDuration: 2
   projectilePrefab: {fileID: 1253008432403029687, guid: 450c971267a451f40bb389db9cf5bd0e, type: 3}

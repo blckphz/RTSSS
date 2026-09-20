@@ -16,7 +16,7 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: 
   damage: 30
-  cooldown: 4
+  cooldown: 5
   canAttackWithThisAfterMove: 1
   usesPerTurn: 1
   useDuration: 0.25

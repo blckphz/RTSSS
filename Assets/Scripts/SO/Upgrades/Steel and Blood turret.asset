@@ -15,5 +15,5 @@ MonoBehaviour:
   UpgradeName: 
   Description: 
   bonusHealth: 20
-  bonusDamage: 5
+  bonusDamage: 10
   bonusRange: 1

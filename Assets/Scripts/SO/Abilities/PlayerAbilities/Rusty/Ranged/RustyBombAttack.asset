@@ -16,9 +16,9 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: Explodes in a Radius
   damage: 30
-  cooldown: 3
+  cooldown: 4
   canAttackWithThisAfterMove: 1
-  usesPerTurn: 3
+  usesPerTurn: 1
   useDuration: 3
   targetType: 0
   range: 4
