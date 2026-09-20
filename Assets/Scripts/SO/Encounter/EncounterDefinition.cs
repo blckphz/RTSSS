@@ -16,6 +16,17 @@ public enum VictoryCondition
 
 
 // ============================================================
+// DAY / NIGHT
+// ============================================================
+
+public enum DayNight
+{
+    Day,
+    Night
+}
+
+
+// ============================================================
 // ENCOUNTER DEFINITION
 // ============================================================
 
@@ -59,6 +70,18 @@ public class EncounterDefinition : ScriptableObject
         "Example: Grass or Dirt."
     )]
     public string biomeGameObjectName;
+
+
+    // ============================================================
+    // DAY / NIGHT
+    // ============================================================
+
+    [Header("Day / Night")]
+    [Tooltip(
+        "Determines whether this encounter uses the Day or Night " +
+        "Global Light 2D settings."
+    )]
+    public DayNight dayNight = DayNight.Day;
 
 
     // ============================================================

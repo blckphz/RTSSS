@@ -133,11 +133,6 @@ public class musicManager : MonoBehaviour
         musicSource.Play();
 
 
-        Debug.Log(
-            "[MusicManager] Playing music: " +
-            clip.name,
-            this
-        );
     }
 
 

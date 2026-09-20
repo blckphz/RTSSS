@@ -6,6 +6,7 @@ public class EncounterManager : MonoBehaviour
 {
     public static event Action<EncounterDefinition> OnEncounterVictory;
 
+
     public enum EncounterState
     {
         None,
@@ -18,7 +19,13 @@ public class EncounterManager : MonoBehaviour
         Defeat
     }
 
+
+    // =========================================================
+    // REFERENCES
+    // =========================================================
+
     [Header("References")]
+
     [SerializeField]
     private GameStateManager gameStateManager;
 
@@ -43,11 +50,26 @@ public class EncounterManager : MonoBehaviour
     [SerializeField]
     private musicManager musicManager;
 
+    [SerializeField]
+    private DayNightManager dayNightManager;
+
+
+    // =========================================================
+    // CURRENT ENCOUNTER
+    // =========================================================
+
     [Header("Current Encounter")]
+
     [SerializeField]
     private EncounterDefinition currentEncounter;
 
+
+    // =========================================================
+    // TIMING
+    // =========================================================
+
     [Header("Timing")]
+
     [SerializeField]
     private float gridSpawnDelay = 0.1f;
 
@@ -57,17 +79,21 @@ public class EncounterManager : MonoBehaviour
     [SerializeField]
     private float combatStartDelay = 0.25f;
 
+
     private EncounterState currentState =
         EncounterState.None;
 
     private bool encounterRunning;
+
     private bool startingRound;
+
 
     public EncounterState CurrentState =>
         currentState;
 
     public EncounterDefinition CurrentEncounter =>
         currentEncounter;
+
 
     public VictoryCondition CurrentVictoryCondition
     {
@@ -82,6 +108,7 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
     public string TargetEnemyId
     {
         get
@@ -94,6 +121,7 @@ public class EncounterManager : MonoBehaviour
             return currentEncounter.targetEnemyId;
         }
     }
+
 
     public int RoundsToSurvive
     {
@@ -111,10 +139,16 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
+    // =========================================================
+    // UNITY
+    // =========================================================
+
     private void Awake()
     {
         FindDependencies();
     }
+
 
     private void OnEnable()
     {
@@ -122,11 +156,17 @@ public class EncounterManager : MonoBehaviour
             HandleHealthChanged;
     }
 
+
     private void OnDisable()
     {
         HealthManager.OnHealthChanged -=
             HandleHealthChanged;
     }
+
+
+    // =========================================================
+    // FIND DEPENDENCIES
+    // =========================================================
 
     private void FindDependencies()
     {
@@ -177,7 +217,14 @@ public class EncounterManager : MonoBehaviour
             musicManager =
                 FindFirstObjectByType<musicManager>();
         }
+
+        if (dayNightManager == null)
+        {
+            dayNightManager =
+                FindFirstObjectByType<DayNightManager>();
+        }
     }
+
 
     // =========================================================
     // ENCOUNTER START
@@ -215,21 +262,16 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
+
     private IEnumerator StartEncounterRoutine()
     {
         encounterRunning = true;
         startingRound = false;
 
-        /*
-         * Round 1 begins in Prepare.
-         *
-         * The initial Wave 1 is spawned below.
-         * It is deliberately NOT locked, so it can act
-         * during Round 1.
-         */
         SetEncounterState(
             EncounterState.Preparing
         );
+
 
         if (!ValidateDependencies())
         {
@@ -242,6 +284,7 @@ public class EncounterManager : MonoBehaviour
             yield break;
         }
 
+
         // -----------------------------------------------------
         // RESET ROUND SYSTEM
         // -----------------------------------------------------
@@ -251,19 +294,22 @@ public class EncounterManager : MonoBehaviour
             roundManager.ResetRounds();
         }
 
+
         // -----------------------------------------------------
         // CLEAR PREVIOUS ENCOUNTER
         // -----------------------------------------------------
 
         ClearPreviousEncounter();
 
+
         // -----------------------------------------------------
-        // BIOME / MUSIC
+        // ENVIRONMENT
         // -----------------------------------------------------
 
-        SetupBiomeAndMusic();
+        SetupEncounterEnvironment();
 
         yield return null;
+
 
         // -----------------------------------------------------
         // CARDS
@@ -275,6 +321,7 @@ public class EncounterManager : MonoBehaviour
         }
 
         yield return null;
+
 
         // -----------------------------------------------------
         // CREATE GRID
@@ -293,6 +340,7 @@ public class EncounterManager : MonoBehaviour
             );
         }
 
+
         // -----------------------------------------------------
         // INITIAL ENCOUNTER SPAWN
         // -----------------------------------------------------
@@ -301,14 +349,6 @@ public class EncounterManager : MonoBehaviour
             EncounterState.SpawningUnits
         );
 
-        /*
-         * SpawnEncounter() creates Wave 1.
-         *
-         * IMPORTANT:
-         * Wave 1 is spawned UNLOCKED.
-         *
-         * Therefore initial enemies can act in Round 1.
-         */
         encounterSpawner.SpawnEncounter(
             currentEncounter
         );
@@ -319,6 +359,7 @@ public class EncounterManager : MonoBehaviour
                 unitSpawnDelay
             );
         }
+
 
         // -----------------------------------------------------
         // ROUND 1 PREPARE
@@ -334,6 +375,66 @@ public class EncounterManager : MonoBehaviour
             this
         );
     }
+
+
+    // =========================================================
+    // ENVIRONMENT
+    // =========================================================
+
+    private void SetupEncounterEnvironment()
+    {
+        if (currentEncounter == null)
+        {
+            return;
+        }
+
+
+        // -----------------------------------------------------
+        // DAY / NIGHT
+        // -----------------------------------------------------
+
+        if (dayNightManager != null)
+        {
+            dayNightManager.SetDayNight(
+                currentEncounter.dayNight
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // BIOME
+        // -----------------------------------------------------
+
+        if (biomesManager != null)
+        {
+            if (
+                !string.IsNullOrWhiteSpace(
+                    currentEncounter.biomeGameObjectName
+                )
+            )
+            {
+                biomesManager.SetBiome(
+                    currentEncounter.biomeGameObjectName
+                );
+            }
+        }
+
+
+        // -----------------------------------------------------
+        // MUSIC
+        // -----------------------------------------------------
+
+        if (musicManager != null)
+        {
+            if (currentEncounter.music != null)
+            {
+                musicManager.PlayMusic(
+                    currentEncounter.music
+                );
+            }
+        }
+    }
+
 
     // =========================================================
     // SURVIVAL WAVE SPAWNING
@@ -378,24 +479,15 @@ public class EncounterManager : MonoBehaviour
             this
         );
 
-        /*
-         * IMPORTANT:
-         *
-         * Every survival wave after the initial encounter
-         * is locked for the round in which it spawns.
-         *
-         * Wave 2 -> locked during Round 2
-         * Wave 3 -> locked during Round 3
-         * etc.
-         */
         encounterSpawner.SpawnWave(
             currentEncounter,
             true
         );
     }
 
+
     // =========================================================
-    // NEXT ROUND BUTTON
+    // NEXT ROUND
     // =========================================================
 
     public void NextRound()
@@ -427,53 +519,25 @@ public class EncounterManager : MonoBehaviour
 
         if (startingRound)
         {
-            Debug.Log(
-                "[EncounterManager] NextRound ignored. " +
-                "A round is already starting.",
-                this
-            );
-
             return;
         }
 
         if (roundManager.IsRoundRunning())
         {
-            Debug.Log(
-                "[EncounterManager] NextRound ignored. " +
-                "Round is still running.",
-                this
-            );
-
             return;
         }
 
         if (!roundManager.IsSetupPhase())
         {
-            Debug.Log(
-                "[EncounterManager] NextRound ignored. " +
-                "RoundManager is not in Setup.",
-                this
-            );
-
             return;
         }
-
-        int round =
-            roundManager.GetCurrentRound();
-
-        Debug.Log(
-            "[EncounterManager] Next Round pressed. " +
-            "Leaving Prepare Phase for Round " +
-            round +
-            ".",
-            this
-        );
 
         StartNextRound();
     }
 
+
     // =========================================================
-    // START CURRENT PREPARED ROUND
+    // START ROUND
     // =========================================================
 
     private void StartNextRound()
@@ -495,63 +559,26 @@ public class EncounterManager : MonoBehaviour
 
         if (roundManager.IsRoundRunning())
         {
-            Debug.Log(
-                "[EncounterManager] StartNextRound blocked. " +
-                "Round is still running.",
-                this
-            );
-
             return;
         }
 
         if (!roundManager.IsSetupPhase())
         {
-            Debug.Log(
-                "[EncounterManager] StartNextRound blocked. " +
-                "RoundManager is not in Setup.",
-                this
-            );
-
             return;
         }
 
         if (!HasLivingPlayer())
         {
-            Debug.LogWarning(
-                "[EncounterManager] Cannot start round. " +
-                "No living player found.",
-                this
-            );
-
+            EncounterDefeat();
             return;
         }
 
         int round =
             roundManager.GetCurrentRound();
 
-        /*
-         * For survival encounters:
-         *
-         * Round 1 -> Spawn Wave 1
-         * Round 2 -> Spawn Wave 2
-         * Round 3 -> Spawn Wave 3
-         *
-         * Wave 1 is handled by SpawnEncounter() and is
-         * unlocked.
-         *
-         * Waves 2+ are handled here and are locked.
-         */
+
         if (UsesSurvival())
         {
-            Debug.Log(
-                "[EncounterManager] Spawning Wave " +
-                round +
-                " before starting Round " +
-                round +
-                ".",
-                this
-            );
-
             SpawnNextRoundEnemies();
         }
 
@@ -586,6 +613,7 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
     private IEnumerator StartCombatAfterDelay()
     {
         yield return new WaitForSeconds(
@@ -607,6 +635,7 @@ public class EncounterManager : MonoBehaviour
 
         StartCombatRound();
     }
+
 
     private void StartCombatRound()
     {
@@ -635,17 +664,9 @@ public class EncounterManager : MonoBehaviour
             this
         );
 
-        /*
-         * IMPORTANT:
-         *
-         * Wave locks have already been registered by
-         * EncounterSpawner.
-         *
-         * RoundManager.StartRound() deliberately DOES NOT
-         * clear them.
-         */
         roundManager.StartRound();
     }
+
 
     // =========================================================
     // UNIT DEATH
@@ -706,8 +727,9 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
     // =========================================================
-    // HEALTH CHANGES
+    // HEALTH
     // =========================================================
 
     private void HandleHealthChanged(
@@ -760,6 +782,7 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
     // =========================================================
     // PLAYER DEFEAT
     // =========================================================
@@ -777,8 +800,9 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
     // =========================================================
-    // VICTORY CHECKING
+    // VICTORY
     // =========================================================
 
     public bool CheckVictoryConditions()
@@ -827,8 +851,9 @@ public class EncounterManager : MonoBehaviour
         return false;
     }
 
+
     // =========================================================
-    // CHECK VICTORY AFTER ROUND
+    // VICTORY AFTER ROUND
     // =========================================================
 
     public void CheckVictoryAfterRound()
@@ -848,14 +873,6 @@ public class EncounterManager : MonoBehaviour
             int completedRound =
                 roundManager.GetCurrentRound();
 
-            Debug.Log(
-                "[EncounterManager] Completed survival round: " +
-                completedRound +
-                " / " +
-                RoundsToSurvive,
-                this
-            );
-
             if (
                 completedRound >=
                 RoundsToSurvive
@@ -867,17 +884,6 @@ public class EncounterManager : MonoBehaviour
 
             SetEncounterState(
                 EncounterState.Preparing
-            );
-
-            Debug.Log(
-                "[EncounterManager] Round " +
-                completedRound +
-                " complete. " +
-                "Waiting for Next Round button " +
-                "for Round " +
-                (completedRound + 1) +
-                ".",
-                this
             );
 
             return;
@@ -895,8 +901,9 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
+
     // =========================================================
-    // LIVING UNITS
+    // LIVING PLAYER
     // =========================================================
 
     private bool HasLivingPlayer()
@@ -943,6 +950,11 @@ public class EncounterManager : MonoBehaviour
         return false;
     }
 
+
+    // =========================================================
+    // LIVING ENEMIES
+    // =========================================================
+
     private bool HasLivingEnemies()
     {
         AttackUnit[] units =
@@ -986,6 +998,11 @@ public class EncounterManager : MonoBehaviour
 
         return false;
     }
+
+
+    // =========================================================
+    // TARGET ENEMY
+    // =========================================================
 
     private bool IsTargetEnemyDead()
     {
@@ -1069,6 +1086,7 @@ public class EncounterManager : MonoBehaviour
         return targetFound;
     }
 
+
     // =========================================================
     // ENCOUNTER VICTORY
     // =========================================================
@@ -1118,9 +1136,6 @@ public class EncounterManager : MonoBehaviour
 
         StopAllCoroutines();
 
-        /*
-         * Make sure no wave locks survive into a later encounter.
-         */
         if (combatManager != null)
         {
             combatManager.ClearEnemyTurnLocks();
@@ -1145,6 +1160,7 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
+
     // =========================================================
     // ENCOUNTER DEFEAT
     // =========================================================
@@ -1161,9 +1177,6 @@ public class EncounterManager : MonoBehaviour
 
         StopAllCoroutines();
 
-        /*
-         * Clean up any wave locks.
-         */
         if (combatManager != null)
         {
             combatManager.ClearEnemyTurnLocks();
@@ -1183,6 +1196,7 @@ public class EncounterManager : MonoBehaviour
             gameStateManager.EncounterDefeat();
         }
     }
+
 
     // =========================================================
     // VALIDATION
@@ -1216,12 +1230,14 @@ public class EncounterManager : MonoBehaviour
         return true;
     }
 
+
     private bool ValidateDependencies()
     {
         return gridManager != null &&
                encounterSpawner != null &&
                roundManager != null;
     }
+
 
     // =========================================================
     // GRID
@@ -1249,41 +1265,6 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-    // =========================================================
-    // BIOME / MUSIC
-    // =========================================================
-
-    private void SetupBiomeAndMusic()
-    {
-        if (currentEncounter == null)
-        {
-            return;
-        }
-
-        if (biomesManager != null)
-        {
-            if (
-                !string.IsNullOrWhiteSpace(
-                    currentEncounter.biomeGameObjectName
-                )
-            )
-            {
-                biomesManager.SetBiome(
-                    currentEncounter.biomeGameObjectName
-                );
-            }
-        }
-
-        if (musicManager != null)
-        {
-            if (currentEncounter.music != null)
-            {
-                musicManager.PlayMusic(
-                    currentEncounter.music
-                );
-            }
-        }
-    }
 
     // =========================================================
     // CLEANUP
@@ -1333,6 +1314,7 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
+
     // =========================================================
     // HELPERS
     // =========================================================
@@ -1342,6 +1324,7 @@ public class EncounterManager : MonoBehaviour
         return CurrentVictoryCondition ==
                VictoryCondition.SurviveRounds;
     }
+
 
     private void SetEncounterState(
         EncounterState state
@@ -1361,6 +1344,7 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
+
     public void SetCurrentEncounter(
         EncounterDefinition encounter
     )
@@ -1373,10 +1357,12 @@ public class EncounterManager : MonoBehaviour
         currentEncounter = encounter;
     }
 
+
     public bool IsEncounterRunning()
     {
         return encounterRunning;
     }
+
 
     public bool IsFinished()
     {
@@ -1386,17 +1372,20 @@ public class EncounterManager : MonoBehaviour
                    EncounterState.Defeat;
     }
 
+
     public bool IsPreparing()
     {
         return currentState ==
                EncounterState.Preparing;
     }
 
+
     public bool IsInCombat()
     {
         return currentState ==
                EncounterState.Combat;
     }
+
 
     public bool CanPressNextRound()
     {

@@ -5,7 +5,6 @@ public class UpdateManager : MonoBehaviour
 {
     public static UpdateManager Instance { get; private set; }
 
-
     // =========================================================
     // CURRENT PLAYER
     // =========================================================
@@ -76,7 +75,8 @@ public class UpdateManager : MonoBehaviour
         CharacterSO character
     )
     {
-        currentCharacter = character;
+        currentCharacter =
+            character;
 
         if (character == null)
         {
@@ -112,30 +112,25 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        // Only player characters can become
-        // the current unit.
-
         if (!unitCharacter.isPlayerCharacter)
         {
             return;
         }
-
-        // Prevent duplicate registration.
 
         if (currentUnit == unit)
         {
             return;
         }
 
-        currentUnit = unit;
-        currentCharacter = unitCharacter;
+        currentUnit =
+            unit;
 
-        // Reapply normal player upgrades.
+        currentCharacter =
+            unitCharacter;
 
-        ApplyRuntimeUpgradesToUnit(unit);
-
-        // Fortress upgrades are NOT applied here.
-        // The actual turret/pet registers itself when spawned.
+        ApplyRuntimeUpgradesToUnit(
+            unit
+        );
     }
 
 
@@ -164,56 +159,27 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            $"[UpdateManager] RegisterFortressTarget | " +
-            $"Target={target.gameObject.name}",
-            target
-        );
-
-
-        // -----------------------------------------------------
-        // SAME TARGET
-        // -----------------------------------------------------
-
         if (fortressTarget == target)
         {
-            Debug.Log(
-                $"[UpdateManager] {target.gameObject.name} " +
-                $"is already the Fortress target.",
+            ApplyStoredFortressUpgrades(
                 target
             );
-
-            ApplyStoredFortressUpgrades(target);
 
             return;
         }
 
+        fortressTarget =
+            target;
 
-        // -----------------------------------------------------
-        // NEW TARGET
-        // -----------------------------------------------------
+        lastFortressTarget =
+            target;
 
-        fortressTarget = target;
+        lastAppliedFortressUpgradeCount =
+            0;
 
-        lastFortressTarget = target;
-
-        // New turret has received none of the stored upgrades.
-
-        lastAppliedFortressUpgradeCount = 0;
-
-
-        Debug.Log(
-            $"[UpdateManager] New Fortress target registered: " +
-            $"{target.gameObject.name}",
+        ApplyStoredFortressUpgrades(
             target
         );
-
-
-        // -----------------------------------------------------
-        // APPLY STORED UPGRADES
-        // -----------------------------------------------------
-
-        ApplyStoredFortressUpgrades(target);
     }
 
 
@@ -230,74 +196,28 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            $"[UpdateManager] ApplyUpgrade | " +
-            $"Upgrade={upgrade.name} | " +
-            $"Type={upgrade.GetType().Name}",
-            this
-        );
-
-
-        // =====================================================
-        // FORTRESS UPGRADE
-        // =====================================================
-
         FortressUpgrade fortressUpgrade =
             upgrade as FortressUpgrade;
 
         if (fortressUpgrade != null)
         {
-            // Store purchase.
-
-            purchasedUpgrades.Add(upgrade);
-
-            Debug.Log(
-                $"[UpdateManager] FortressUpgrade purchased: " +
-                $"{upgrade.name}",
-                this
+            purchasedUpgrades.Add(
+                upgrade
             );
-
-
-            // -------------------------------------------------
-            // APPLY TO CURRENT TURRET
-            // -------------------------------------------------
 
             if (fortressTarget != null)
             {
-                ApplyFortressUpgrade(fortressUpgrade);
-
-                // IMPORTANT:
-                // This upgrade has now been applied to the
-                // current target, so advance the counter.
-                lastAppliedFortressUpgradeCount =
-                    purchasedUpgrades.Count;
-
-                lastFortressTarget =
-                    fortressTarget;
-            }
-            else
-            {
-                Debug.Log(
-                    "[UpdateManager] No Fortress target currently " +
-                    "exists. Upgrade stored for the next turret/pet.",
-                    this
+                ApplyFortressUpgrade(
+                    fortressUpgrade
                 );
             }
 
             return;
         }
 
-
-        // =====================================================
-        // STORE NORMAL PLAYER UPGRADE
-        // =====================================================
-
-        purchasedUpgrades.Add(upgrade);
-
-
-        // =====================================================
-        // CHAIN BOUNCE
-        // =====================================================
+        purchasedUpgrades.Add(
+            upgrade
+        );
 
         ChainBounceUpgrade chainBounceUpgrade =
             upgrade as ChainBounceUpgrade;
@@ -315,14 +235,10 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-
-        // =====================================================
-        // ENGINEER MELEE TURRET HEAL
-        // =====================================================
-
         EngineerMeleeTurretHealUpgrade
             turretHealUpgrade =
-            upgrade as EngineerMeleeTurretHealUpgrade;
+            upgrade as
+            EngineerMeleeTurretHealUpgrade;
 
         if (turretHealUpgrade != null)
         {
@@ -336,11 +252,6 @@ public class UpdateManager : MonoBehaviour
 
             return;
         }
-
-
-        // =====================================================
-        // RUSTY UPGRADES
-        // =====================================================
 
         RustyUpgrades rustyUpgrade =
             upgrade as RustyUpgrades;
@@ -374,23 +285,12 @@ public class UpdateManager : MonoBehaviour
 
         if (fortressTarget == null)
         {
-            Debug.Log(
-                "[UpdateManager] Fortress target is currently null. " +
-                "Upgrade will remain stored.",
-                this
-            );
-
             return;
         }
 
-        Debug.Log(
-            $"[UpdateManager] Applying FortressUpgrade to " +
-            $"{fortressTarget.gameObject.name}: " +
-            $"{upgrade.name}",
-            fortressTarget
+        fortressTarget.ApplyUpgrade(
+            upgrade
         );
-
-        fortressTarget.ApplyUpgrade(upgrade);
 
         lastFortressTarget =
             fortressTarget;
@@ -410,57 +310,36 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-
         if (purchasedUpgrades.Count == 0)
         {
-            Debug.Log(
-                $"[UpdateManager] No purchased upgrades to apply " +
-                $"to {target.gameObject.name}.",
-                target
-            );
-
             return;
         }
 
-
-        // -----------------------------------------------------
-        // NEW TARGET
-        // -----------------------------------------------------
-
-        if (lastFortressTarget != target)
-        {
-            lastAppliedFortressUpgradeCount = 0;
-
-            lastFortressTarget = target;
-        }
-
-
-        // -----------------------------------------------------
-        // SAME TARGET - NOTHING NEW
-        // -----------------------------------------------------
-
         if (
+            lastFortressTarget == target &&
             lastAppliedFortressUpgradeCount >=
             purchasedUpgrades.Count
         )
         {
-            Debug.Log(
-                $"[UpdateManager] All stored Fortress upgrades " +
-                $"already applied to {target.gameObject.name}.",
-                target
-            );
-
             return;
         }
 
+        if (lastFortressTarget != target)
+        {
+            lastAppliedFortressUpgradeCount =
+                0;
 
-        // -----------------------------------------------------
-        // APPLY ONLY NEW FORTRESS UPGRADES
-        // -----------------------------------------------------
+            lastFortressTarget =
+                target;
+        }
 
         for (
-            int i = lastAppliedFortressUpgradeCount;
-            i < purchasedUpgrades.Count;
+            int i =
+                lastAppliedFortressUpgradeCount;
+
+            i <
+            purchasedUpgrades.Count;
+
             i++
         )
         {
@@ -475,27 +354,15 @@ public class UpdateManager : MonoBehaviour
             FortressUpgrade fortressUpgrade =
                 upgrade as FortressUpgrade;
 
-            // Ignore normal player upgrades.
-
             if (fortressUpgrade == null)
             {
                 continue;
             }
 
-            Debug.Log(
-                $"[UpdateManager] Reapplying stored FortressUpgrade " +
-                $"to {target.gameObject.name}: " +
-                $"{fortressUpgrade.name}",
-                target
-            );
-
             target.ApplyUpgrade(
                 fortressUpgrade
             );
         }
-
-
-        // Everything currently stored has now been processed.
 
         lastAppliedFortressUpgradeCount =
             purchasedUpgrades.Count;
@@ -532,32 +399,22 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        // Never apply player upgrades to enemies.
-
         if (!character.isPlayerCharacter)
         {
             return;
         }
-
-
-        // -----------------------------------------------------
-        // CHAIN BOUNCE
-        // -----------------------------------------------------
 
         ChainBounceUpgrade chainBounceUpgrade =
             upgrade as ChainBounceUpgrade;
 
         if (chainBounceUpgrade != null)
         {
-            chainBounceUpgrade.ApplyToUnit(unit);
+            chainBounceUpgrade.ApplyToUnit(
+                unit
+            );
 
             return;
         }
-
-
-        // -----------------------------------------------------
-        // ENGINEER MELEE TURRET HEAL
-        // -----------------------------------------------------
 
         EngineerMeleeTurretHealUpgrade
             turretHealUpgrade =
@@ -566,7 +423,9 @@ public class UpdateManager : MonoBehaviour
 
         if (turretHealUpgrade != null)
         {
-            turretHealUpgrade.ApplyToUnit(unit);
+            turretHealUpgrade.ApplyToUnit(
+                unit
+            );
 
             return;
         }
@@ -604,7 +463,6 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-
         for (
             int i = 0;
             i < purchasedUpgrades.Count;
@@ -619,19 +477,10 @@ public class UpdateManager : MonoBehaviour
                 continue;
             }
 
-
-            // Fortress upgrades NEVER go to
-            // the player character.
-
             if (upgrade is FortressUpgrade)
             {
                 continue;
             }
-
-
-            // -------------------------------------------------
-            // CHAIN BOUNCE
-            // -------------------------------------------------
 
             if (
                 upgrade is
@@ -645,11 +494,6 @@ public class UpdateManager : MonoBehaviour
 
                 continue;
             }
-
-
-            // -------------------------------------------------
-            // ENGINEER TURRET HEAL
-            // -------------------------------------------------
 
             if (
                 upgrade is
@@ -675,20 +519,25 @@ public class UpdateManager : MonoBehaviour
     {
         purchasedUpgrades.Clear();
 
-
         if (currentUnit != null)
         {
             currentUnit.ResetRuntimeUpgrades();
         }
 
+        currentUnit =
+            null;
 
-        currentUnit = null;
-        currentCharacter = null;
+        currentCharacter =
+            null;
 
-        fortressTarget = null;
-        lastFortressTarget = null;
+        fortressTarget =
+            null;
 
-        lastAppliedFortressUpgradeCount = 0;
+        lastFortressTarget =
+            null;
+
+        lastAppliedFortressUpgradeCount =
+            0;
     }
 
 
@@ -700,17 +549,19 @@ public class UpdateManager : MonoBehaviour
     {
         purchasedUpgrades.Clear();
 
-
         if (currentUnit != null)
         {
             currentUnit.ResetRuntimeUpgrades();
         }
 
+        fortressTarget =
+            null;
 
-        fortressTarget = null;
-        lastFortressTarget = null;
+        lastFortressTarget =
+            null;
 
-        lastAppliedFortressUpgradeCount = 0;
+        lastAppliedFortressUpgradeCount =
+            0;
     }
 
 
