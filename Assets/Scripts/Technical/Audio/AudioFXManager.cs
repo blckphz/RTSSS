@@ -4,7 +4,6 @@ public class AudioFXManager : MonoBehaviour
 {
     public static AudioFXManager Instance { get; private set; }
 
-
     [Header("Audio Source")]
     [SerializeField]
     private AudioSource audioSource;
@@ -80,6 +79,18 @@ public class AudioFXManager : MonoBehaviour
 
     [SerializeField, Range(0f, 1f)]
     private float unitHealVolume = 1f;
+
+
+    // ============================================================
+    // UNIT FOOTSTEP
+    // ============================================================
+
+    [Header("Unit Footstep")]
+    [SerializeField]
+    private AudioClip unitFootstepClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float unitFootstepVolume = 1f;
 
 
     // ============================================================
@@ -273,6 +284,27 @@ public class AudioFXManager : MonoBehaviour
         audioSource.PlayOneShot(
             unitHealClip,
             unitHealVolume
+        );
+    }
+
+
+    // ============================================================
+    // UNIT FOOTSTEP
+    // ============================================================
+
+    public void PlayUnitFootstep()
+    {
+        if (
+            unitFootstepClip == null ||
+            audioSource == null
+        )
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            unitFootstepClip,
+            unitFootstepVolume
         );
     }
 

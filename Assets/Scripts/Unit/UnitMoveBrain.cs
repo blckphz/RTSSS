@@ -41,6 +41,11 @@ public class UnitMoveBrain : MonoBehaviour
     private bool isMoving;
     private int movementSequence;
 
+
+    // ============================================================
+    // UNITY
+    // ============================================================
+
     private void Awake()
     {
         EnsureComponents();
@@ -63,6 +68,11 @@ public class UnitMoveBrain : MonoBehaviour
         StopWalkAnimation();
     }
 
+
+    // ============================================================
+    // COMPONENTS
+    // ============================================================
+
     private void EnsureComponents()
     {
         if (attackUnit == null)
@@ -76,6 +86,11 @@ public class UnitMoveBrain : MonoBehaviour
                 GetComponent<AnimationController>();
     }
 
+
+    // ============================================================
+    // MOVING STATE
+    // ============================================================
+
     private void SetMovingState(bool moving)
     {
         if (moving)
@@ -84,6 +99,7 @@ public class UnitMoveBrain : MonoBehaviour
                 return;
 
             isMoving = true;
+
             movingUnitCount++;
 
             IsAnyUnitMoving =
@@ -99,7 +115,8 @@ public class UnitMoveBrain : MonoBehaviour
             movingUnitCount =
                 Mathf.Max(
                     0,
-                    movingUnitCount - 1);
+                    movingUnitCount - 1
+                );
 
             IsAnyUnitMoving =
                 movingUnitCount > 0;
@@ -115,6 +132,34 @@ public class UnitMoveBrain : MonoBehaviour
     {
         return movingUnitCount;
     }
+
+
+    // ============================================================
+    // ANIMATION EVENTS
+    // ============================================================
+
+    /// <summary>
+    /// Called directly by a Unity Animation Event
+    /// placed on the walking animation clip.
+    /// </summary>
+    public void AnimationEvent_Footstep()
+    {
+        Debug.Log($"[UnitMoveBrain] AnimationEvent_Footstep triggered on unit: {name}", this);
+
+        if (AudioFXManager.Instance == null)
+        {
+            Debug.LogWarning($"[UnitMoveBrain] AudioFXManager.Instance is NULL! Cannot play footstep sound for {name}.", this);
+            return;
+        }
+
+        Debug.Log($"[UnitMoveBrain] Playing footstep sound via AudioFXManager for {name}.", this);
+        AudioFXManager.Instance.PlayUnitFootstep();
+    }
+
+
+    // ============================================================
+    // MOVEMENT ACTIONS
+    // ============================================================
 
     public bool CanMoveThisTurn()
     {
@@ -139,15 +184,17 @@ public class UnitMoveBrain : MonoBehaviour
         moveActionsRemaining =
             Mathf.Max(
                 0,
-                moveActionsPerTurn);
+                moveActionsPerTurn
+            );
 
         OnMovementActionsChanged?.Invoke(this);
     }
 
     public bool HasConsumedMovement()
     {
-        return moveActionsRemaining <
-               moveActionsPerTurn;
+        return
+            moveActionsRemaining <
+            moveActionsPerTurn;
     }
 
     public int GetMoveActionsRemaining()
@@ -177,9 +224,15 @@ public class UnitMoveBrain : MonoBehaviour
 
     private bool CanMove()
     {
-        return attackUnit != null &&
-               !attackUnit.IsDead();
+        return
+            attackUnit != null &&
+            !attackUnit.IsDead();
     }
+
+
+    // ============================================================
+    // GRID
+    // ============================================================
 
     public GridManager GetGridManager()
     {
@@ -198,6 +251,7 @@ public class UnitMoveBrain : MonoBehaviour
         return attackUnit.GetCharacterData();
     }
 
+
     // ============================================================
     // EFFECTIVE MOVE RANGE
     // ============================================================
@@ -210,7 +264,10 @@ public class UnitMoveBrain : MonoBehaviour
         int range =
             attackUnit.GetEffectiveMoveRange();
 
-        return Mathf.Max(0, range);
+        return Mathf.Max(
+            0,
+            range
+        );
     }
 
     public bool CanWalkDiagonally()
@@ -233,6 +290,11 @@ public class UnitMoveBrain : MonoBehaviour
         return GetMoveRange() > 0;
     }
 
+
+    // ============================================================
+    // CURRENT TILE
+    // ============================================================
+
     public bool TryGetCurrentTile(
         out Vector2Int tile)
     {
@@ -244,28 +306,41 @@ public class UnitMoveBrain : MonoBehaviour
         if (gridManager == null)
             return false;
 
-        if (tilePin != null &&
-            tilePin.HasTile())
+        if (
+            tilePin != null &&
+            tilePin.HasTile()
+        )
         {
             tile = tilePin.GetTile();
 
-            return gridManager.IsInsideGrid(tile);
+            return gridManager.IsInsideGrid(
+                tile
+            );
         }
 
         tile =
             gridManager.WorldToGridPosition(
-                transform.position);
+                transform.position
+            );
 
-        return gridManager.IsInsideGrid(tile);
+        return gridManager.IsInsideGrid(
+            tile
+        );
     }
 
     public Vector2Int GetCurrentTile()
     {
         TryGetCurrentTile(
-            out Vector2Int tile);
+            out Vector2Int tile
+        );
 
         return tile;
     }
+
+
+    // ============================================================
+    // PREDICTED AI MOVE
+    // ============================================================
 
     public bool TryGetPredictedMoveTile(
         out Vector2Int predictedTile)
@@ -297,7 +372,8 @@ public class UnitMoveBrain : MonoBehaviour
                 preferCloserEnemies,
                 preferLowHealthEnemies,
                 attackRange,
-                CanWalkDiagonally());
+                CanWalkDiagonally()
+            );
 
         if (target == null)
             return false;
@@ -307,13 +383,15 @@ public class UnitMoveBrain : MonoBehaviour
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
-                target.transform.position);
+                target.transform.position
+            );
 
         int distance =
             manager.GetMovementDistance(
                 currentPosition,
                 targetPosition,
-                CanWalkDiagonally());
+                CanWalkDiagonally()
+            );
 
         if (distance <= attackRange)
             return false;
@@ -327,7 +405,8 @@ public class UnitMoveBrain : MonoBehaviour
                 preferCloserAttackPosition,
                 preferMoreOpenPositions,
                 preferSidePositions,
-                gameObject);
+                gameObject
+            );
 
         if (attackPosition == currentPosition)
             return false;
@@ -341,7 +420,8 @@ public class UnitMoveBrain : MonoBehaviour
                 attackPosition,
                 CanWalkDiagonally(),
                 path,
-                gameObject);
+                gameObject
+            );
 
         if (!foundPath)
             return false;
@@ -352,7 +432,8 @@ public class UnitMoveBrain : MonoBehaviour
         int availableSteps =
             Mathf.Min(
                 GetMoveRange(),
-                path.Count - 1);
+                path.Count - 1
+            );
 
         if (availableSteps <= 0)
             return false;
@@ -360,8 +441,15 @@ public class UnitMoveBrain : MonoBehaviour
         predictedTile =
             path[availableSteps];
 
-        return predictedTile != currentPosition;
+        return
+            predictedTile !=
+            currentPosition;
     }
+
+
+    // ============================================================
+    // DIRECT MOVEMENT
+    // ============================================================
 
     public bool TryMoveTo(
         Vector2Int destination)
@@ -387,8 +475,11 @@ public class UnitMoveBrain : MonoBehaviour
         if (start == destination)
             return false;
 
-        if (!gridManager.IsInsideGrid(destination))
+        if (!gridManager.IsInsideGrid(
+                destination))
+        {
             return false;
+        }
 
         if (!gridManager.CanMoveToCell(
                 gameObject,
@@ -401,7 +492,8 @@ public class UnitMoveBrain : MonoBehaviour
             manager.GetMovementDistance(
                 start,
                 destination,
-                CanWalkDiagonally());
+                CanWalkDiagonally()
+            );
 
         if (distance > GetMoveRange())
             return false;
@@ -415,7 +507,8 @@ public class UnitMoveBrain : MonoBehaviour
                 destination,
                 CanWalkDiagonally(),
                 path,
-                gameObject);
+                gameObject
+            );
 
         if (!foundPath)
             return false;
@@ -426,7 +519,8 @@ public class UnitMoveBrain : MonoBehaviour
         int steps =
             Mathf.Min(
                 GetMoveRange(),
-                path.Count - 1);
+                path.Count - 1
+            );
 
         if (steps <= 0)
             return false;
@@ -436,10 +530,17 @@ public class UnitMoveBrain : MonoBehaviour
         StartCoroutine(
             ExecuteMoveRoutine(
                 path,
-                steps));
+                steps
+            )
+        );
 
         return true;
     }
+
+
+    // ============================================================
+    // AI MOVEMENT
+    // ============================================================
 
     public void TryMoveTowardsEnemy()
     {
@@ -447,7 +548,8 @@ public class UnitMoveBrain : MonoBehaviour
             return;
 
         StartCoroutine(
-            MoveTowardsEnemy());
+            MoveTowardsEnemy()
+        );
     }
 
     public IEnumerator MoveTowardsEnemy()
@@ -473,7 +575,8 @@ public class UnitMoveBrain : MonoBehaviour
                 preferCloserEnemies,
                 preferLowHealthEnemies,
                 attackRange,
-                CanWalkDiagonally());
+                CanWalkDiagonally()
+            );
 
         if (target == null)
             yield break;
@@ -483,13 +586,15 @@ public class UnitMoveBrain : MonoBehaviour
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
-                target.transform.position);
+                target.transform.position
+            );
 
         int distance =
             manager.GetMovementDistance(
                 currentPosition,
                 targetPosition,
-                CanWalkDiagonally());
+                CanWalkDiagonally()
+            );
 
         if (distance <= attackRange)
             yield break;
@@ -503,7 +608,8 @@ public class UnitMoveBrain : MonoBehaviour
                 preferCloserAttackPosition,
                 preferMoreOpenPositions,
                 preferSidePositions,
-                gameObject);
+                gameObject
+            );
 
         if (attackPosition == currentPosition)
             yield break;
@@ -517,7 +623,8 @@ public class UnitMoveBrain : MonoBehaviour
                 attackPosition,
                 CanWalkDiagonally(),
                 path,
-                gameObject);
+                gameObject
+            );
 
         if (!foundPath)
             yield break;
@@ -528,7 +635,8 @@ public class UnitMoveBrain : MonoBehaviour
         int availableSteps =
             Mathf.Min(
                 GetMoveRange(),
-                path.Count - 1);
+                path.Count - 1
+            );
 
         if (availableSteps <= 0)
             yield break;
@@ -537,16 +645,24 @@ public class UnitMoveBrain : MonoBehaviour
 
         yield return ExecuteMoveRoutine(
             path,
-            availableSteps);
+            availableSteps
+        );
     }
+
+
+    // ============================================================
+    // MOVEMENT EXECUTION
+    // ============================================================
 
     private IEnumerator ExecuteMoveRoutine(
         List<Vector2Int> path,
         int steps)
     {
-        if (path == null ||
+        if (
+            path == null ||
             path.Count < 2 ||
-            steps <= 0)
+            steps <= 0
+        )
         {
             yield break;
         }
@@ -567,11 +683,13 @@ public class UnitMoveBrain : MonoBehaviour
         int actualSteps =
             Mathf.Min(
                 steps,
-                path.Count - 1);
+                path.Count - 1
+            );
 
-        for (int i = 1;
-             i <= actualSteps;
-             i++)
+        for (
+            int i = 1;
+            i <= actualSteps;
+            i++)
         {
             Vector2Int fromTile =
                 path[i - 1];
@@ -585,49 +703,58 @@ public class UnitMoveBrain : MonoBehaviour
                     toTile - fromTile;
 
                 animationController.SetMovementDirection(
-                    direction);
+                    direction
+                );
             }
 
             bool started =
                 gridManager.StartMoveUnit(
                     gameObject,
                     fromTile,
-                    toTile);
+                    toTile
+                );
 
             if (!started)
             {
                 Debug.LogWarning(
                     $"[Movement] {name} failed to move from {fromTile} to {toTile}.",
-                    this);
+                    this
+                );
 
                 break;
             }
 
             Vector3 startPosition =
                 gridManager.GridToWorldPosition(
-                    fromTile);
+                    fromTile
+                );
 
             Vector3 endPosition =
                 gridManager.GridToWorldPosition(
-                    toTile);
+                    toTile
+                );
 
             float elapsed = 0f;
 
             while (elapsed < moveDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsed +=
+                    Time.deltaTime;
 
                 float t =
                     moveDuration <= 0f
                         ? 1f
                         : Mathf.Clamp01(
-                            elapsed / moveDuration);
+                            elapsed /
+                            moveDuration
+                        );
 
                 transform.position =
                     Vector3.Lerp(
                         startPosition,
                         endPosition,
-                        t);
+                        t
+                    );
 
                 yield return null;
             }
@@ -637,23 +764,29 @@ public class UnitMoveBrain : MonoBehaviour
 
             gridManager.FinishMoveUnit(
                 gameObject,
-                toTile);
+                toTile
+            );
 
             if (tilePin != null)
-                tilePin.SetTile(toTile);
+                tilePin.SetTile(
+                    toTile
+                );
 
             if (attackUnit != null)
             {
                 attackUnit.SetLogicalGridPosition(
-                    toTile);
+                    toTile
+                );
             }
 
             Vector3 particlePosition =
                 gridManager.GridToWorldPosition(
-                    toTile);
+                    toTile
+                );
 
             OnWalkParticleTile?.Invoke(
-                particlePosition);
+                particlePosition
+            );
 
             yield return null;
         }
@@ -663,6 +796,11 @@ public class UnitMoveBrain : MonoBehaviour
         SetMovingState(false);
     }
 
+
+    // ============================================================
+    // WALK ANIMATION
+    // ============================================================
+
     private void UpdateWalkAnimation(
         Vector2Int direction)
     {
@@ -670,7 +808,8 @@ public class UnitMoveBrain : MonoBehaviour
             return;
 
         animationController.SetMovementDirection(
-            direction);
+            direction
+        );
     }
 
     private void StopWalkAnimation()
@@ -680,6 +819,11 @@ public class UnitMoveBrain : MonoBehaviour
 
         animationController.PlayIdle();
     }
+
+
+    // ============================================================
+    // PREVIEW PATH
+    // ============================================================
 
     public bool GetPreviewPath(
         Vector2Int destination,
@@ -704,8 +848,14 @@ public class UnitMoveBrain : MonoBehaviour
             destination,
             CanWalkDiagonally(),
             result,
-            gameObject);
+            gameObject
+        );
     }
+
+
+    // ============================================================
+    // REACHABLE CELLS
+    // ============================================================
 
     public void GetReachableCells(
         List<Vector2Int> result)
@@ -732,13 +882,20 @@ public class UnitMoveBrain : MonoBehaviour
             GetMoveRange(),
             CanWalkDiagonally(),
             result,
-            gameObject);
+            gameObject
+        );
     }
+
+
+    // ============================================================
+    // AI MOVEMENT CHECK
+    // ============================================================
 
     public bool CanUseAIMovement()
     {
-        return attackUnit != null &&
-               !attackUnit.IsDead() &&
-               attackUnit.GetTeam() != Team.Player;
+        return
+            attackUnit != null &&
+            !attackUnit.IsDead() &&
+            attackUnit.GetTeam() != Team.Player;
     }
 }
