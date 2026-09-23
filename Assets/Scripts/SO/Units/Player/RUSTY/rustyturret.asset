@@ -10,16 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
-  m_Name: Huntress
+  m_Name: rustyturret
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
-  characterName: Hunter
-  icon: {fileID: 0}
-  prefabToSpawn: {fileID: 0}
+  characterName: Sentry
+  icon: {fileID: 21300000, guid: 4608aeff7fde6c34bb778f83f9549618, type: 3}
+  prefabToSpawn: {fileID: 2871373498883412824, guid: 19609389b5d1dd34ab85a61ed83be898, type: 3}
   team: 0
-  isPlayerCharacter: 0
-  maxHealth: 90
-  moveRange: 6
+  isPlayerCharacter: 1
+  maxHealth: 100
+  moveRange: 0
   canwalkdiagonally: 0
-  abilities: []
-  RangedAttacker: 0
+  abilities:
+  - {fileID: 11400000, guid: 109a7efc67cd25c4b988c419c6fe8957, type: 2}
+  - {fileID: 11400000, guid: 0c02b83e3d1e4b64691bfc1d3c2108e0, type: 2}
+  RangedAttacker: 1
   upgrades: []

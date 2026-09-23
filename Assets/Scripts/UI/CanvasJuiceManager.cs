@@ -1,120 +1,85 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using System.Collections;
 
 public class CanvasJuiceManager : MonoBehaviour
 {
     public static CanvasJuiceManager Instance;
 
-
-    // ============================================================
-    // UI REFERENCES
-    // ============================================================
-
-    [Header("UI References")]
-    [SerializeField] private CanvasGroup hoverInfoCanvas;
-
-
-    // ============================================================
-    // TOOLTIP SETTINGS
-    // ============================================================
+    [Header("Canvas / Tooltip")]
+    [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private RectTransform tooltip;
+    [SerializeField] private Camera uiCamera;
 
     [Header("Tooltip Settings")]
+    [SerializeField] private float hoverTransparency = 1f;
     [SerializeField] private float fadeDuration = 0.15f;
 
-    [SerializeField] private bool followMouse = true;
-
-    [SerializeField]
-    private Vector3 mouseOffset =
-        new Vector3(15f, -15f, 0f);
-
-
-    // ============================================================
-    // TRANSPARENCY
-    // ============================================================
-
-    [Header("Transparency")]
-    [SerializeField, Range(0f, 1f)]
-    private float hoverTransparency = 1f;
-
-
-    // ============================================================
-    // CAMERA TARGET
-    // ============================================================
-
-    [Header("Camera Target")]
-    [Tooltip(
-        "The GameObject that your Cinemachine Camera follows."
-    )]
+    [Header("Camera")]
     [SerializeField] private Transform cameraTarget;
 
-    [Tooltip(
-        "Position the camera target returns to when no unit is selected."
-    )]
+    [Tooltip("Position used as the fallback/default camera position.")]
     [SerializeField] private Transform normalPosition;
 
-    [Tooltip(
-        "Position used when an ability is selected."
-    )]
+    [Tooltip("Position used while an ability is selected in inspect mode.")]
     [SerializeField] private Transform abilityCameraPosition;
 
-    [Tooltip(
-        "Optional offset from the selected unit."
-    )]
-    [SerializeField]
-    private Vector3 unitCameraOffset =
-        Vector3.zero;
+    [Tooltip("Offset from the selected unit.")]
+    [SerializeField] private Vector3 unitCameraOffset;
 
-    [SerializeField]
-    private float cameraMoveDuration = 0.25f;
+    [SerializeField] private float cameraMoveDuration = 0.5f;
 
+    [Header("Camera Lock")]
+    [SerializeField] private bool inspectMode = false;
 
-    // ============================================================
-    // FREE CAMERA
-    // ============================================================
+    [Tooltip("Input used to toggle camera lock.")]
+    [SerializeField] private InputActionReference cameraLockAction;
 
     [Header("Free Camera")]
-    [Tooltip(
-        "Camera movement script responsible for mouse edge scrolling."
-    )]
     [SerializeField] private cameraMoveScript freeCamera;
 
+    [Header("Unit Following")]
+    [SerializeField] private float unitFollowSpeed = 8f;
 
-    // ============================================================
-    // UNIT CAMERA FOLLOW
-    // ============================================================
+    [Header("Managers")]
+    [SerializeField] private CanvasInfoManager canvasInfoManager;
 
-    [Header("Unit Camera Follow")]
-    [Tooltip(
-        "How quickly the camera follows a moving unit."
-    )]
-    [SerializeField]
-    private float unitFollowSpeed = 10f;
+    // =========================================================
+    // SELECTION
+    // =========================================================
 
-
-    // ============================================================
-    // INTERNAL
-    // ============================================================
-
-    private RectTransform hoverRectTransform;
-
-    private Coroutine fadeCoroutine;
-    private Coroutine cameraCoroutine;
-    private Coroutine followCoroutine;
-
+    private Transform currentSelectedUnit;
     private Transform currentFollowTarget;
 
+    // =========================================================
+    // SAVED FREE CAMERA POSITION
+    // =========================================================
+    //
+    // When the player turns LOCK ON, we save the exact camera
+    // position from free mode.
+    //
+    // When LOCK is turned OFF, the camera returns to this
+    // position instead of normalPosition.
+    //
 
-    // ============================================================
+    private Vector3 savedFreeCameraPosition;
+    private bool hasSavedFreeCameraPosition = false;
+
+    // =========================================================
+    // COROUTINES
+    // =========================================================
+
+    private Coroutine fadeCoroutine;
+    private Coroutine cameraMoveCoroutine;
+    private Coroutine followCoroutine;
+    private Coroutine normalCameraCoroutine;
+
+    // =========================================================
     // UNITY
-    // ============================================================
+    // =========================================================
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // SINGLETON
-        // --------------------------------------------------------
-
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -123,419 +88,573 @@ public class CanvasJuiceManager : MonoBehaviour
 
         Instance = this;
 
-
-        // --------------------------------------------------------
-        // CANVAS
-        // --------------------------------------------------------
-
-        if (hoverInfoCanvas == null)
+        if (canvasInfoManager == null)
         {
-            Debug.LogWarning(
-                "CanvasJuiceManager: Hover Info Canvas is not assigned."
-            );
+            canvasInfoManager =
+                FindFirstObjectByType<CanvasInfoManager>();
+        }
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+        }
+
+        // Start in the correct camera mode.
+        if (inspectMode)
+        {
+            DisableFreeCamera();
         }
         else
         {
-            hoverRectTransform =
-                hoverInfoCanvas.GetComponent<RectTransform>();
-
-            hoverInfoCanvas.alpha = 0f;
-
-            hoverInfoCanvas.interactable = false;
-
-            hoverInfoCanvas.blocksRaycasts = false;
-        }
-
-
-        // --------------------------------------------------------
-        // CAMERA
-        // --------------------------------------------------------
-
-        if (cameraTarget == null)
-        {
-            Debug.LogWarning(
-                "CanvasJuiceManager: Camera Target is not assigned."
-            );
-        }
-
-        if (normalPosition == null)
-        {
-            Debug.LogWarning(
-                "CanvasJuiceManager: Normal Position is not assigned."
-            );
-        }
-
-        if (abilityCameraPosition == null)
-        {
-            Debug.LogWarning(
-                "CanvasJuiceManager: Ability Camera Position is not assigned."
-            );
-        }
-
-        if (freeCamera == null)
-        {
-            Debug.LogWarning(
-                "CanvasJuiceManager: Free Camera is not assigned."
-            );
-        }
-
-
-        // --------------------------------------------------------
-        // START IN FREE CAMERA MODE
-        // --------------------------------------------------------
-
-        if (freeCamera != null)
-        {
-            freeCamera.EnableFreeMode();
+            EnableFreeCamera();
         }
     }
 
+    private void OnEnable()
+    {
+        if (cameraLockAction != null)
+        {
+            cameraLockAction.action.performed +=
+                OnCameraLockPerformed;
+
+            cameraLockAction.action.Enable();
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (cameraLockAction != null)
+        {
+            cameraLockAction.action.performed -=
+                OnCameraLockPerformed;
+
+            cameraLockAction.action.Disable();
+        }
+    }
 
     private void Update()
     {
         UpdateTooltipPosition();
     }
 
+    // =========================================================
+    // CAMERA LOCK INPUT
+    // =========================================================
 
-    // ============================================================
-    // TOOLTIP
-    // ============================================================
-
-    private void UpdateTooltipPosition()
+    private void OnCameraLockPerformed(
+        InputAction.CallbackContext context)
     {
-        if (!followMouse)
-            return;
-
-        if (hoverInfoCanvas == null)
-            return;
-
-        if (hoverInfoCanvas.alpha <= 0.01f)
-            return;
-
-        if (hoverRectTransform == null)
-            return;
-
-
-        Vector2 mousePosition =
-            Input.mousePosition;
-
-
-        hoverRectTransform.position =
-            mousePosition +
-            (Vector2)mouseOffset;
+        ToggleInspectMode();
     }
 
+    public void ToggleInspectMode()
+    {
+        SetInspectMode(!inspectMode);
+    }
 
-    // ============================================================
+    public void SetInspectMode(bool enabled)
+    {
+        // =====================================================
+        // TURNING LOCK OFF
+        // =====================================================
+
+        if (!enabled)
+        {
+            inspectMode = false;
+
+            StopFollowingUnit();
+
+            if (normalCameraCoroutine != null)
+            {
+                StopCoroutine(normalCameraCoroutine);
+                normalCameraCoroutine = null;
+            }
+
+            // Return to the exact free-camera position that
+            // existed when lock was activated.
+            MoveCameraBackToSavedFreePosition();
+
+            return;
+        }
+
+        // =====================================================
+        // TURNING LOCK ON
+        // =====================================================
+
+        // IMPORTANT:
+        //
+        // Save the CURRENT free camera position BEFORE moving
+        // to the selected unit or ability.
+        //
+        // This only happens when going from FREE -> LOCK.
+        //
+        if (
+            cameraTarget != null &&
+            !inspectMode
+        )
+        {
+            savedFreeCameraPosition =
+                cameraTarget.position;
+
+            hasSavedFreeCameraPosition = true;
+        }
+
+        inspectMode = true;
+
+        if (normalCameraCoroutine != null)
+        {
+            StopCoroutine(normalCameraCoroutine);
+            normalCameraCoroutine = null;
+        }
+
+        // =====================================================
+        // ABILITY HAS PRIORITY
+        // =====================================================
+
+        if (HasSelectedAbility())
+        {
+            MoveCameraToAbilityPosition();
+            return;
+        }
+
+        // =====================================================
+        // UNIT SECOND
+        // =====================================================
+
+        if (currentSelectedUnit != null)
+        {
+            MoveCameraToUnit(
+                currentSelectedUnit
+            );
+
+            return;
+        }
+
+        // =====================================================
+        // NOTHING SELECTED
+        // =====================================================
+
+        DisableFreeCamera();
+    }
+
+    public bool IsInspectMode()
+    {
+        return inspectMode;
+    }
+
+    // =========================================================
+    // ABILITY CHECK
+    // =========================================================
+
+    private bool HasSelectedAbility()
+    {
+        return
+            canvasInfoManager != null &&
+            canvasInfoManager.HasSelectedAbility();
+    }
+
+    // =========================================================
     // UNIT SELECTION
-    // ============================================================
+    // =========================================================
 
     public void ShowUnitInfo(Transform unit)
     {
         if (unit == null)
+        {
             return;
+        }
 
+        currentSelectedUnit = unit;
 
-        // Disable free camera while a unit is selected.
-        DisableFreeCamera();
+        FadeCanvasTo(hoverTransparency);
 
+        // =====================================================
+        // FREE MODE
+        // =====================================================
+        //
+        // Selecting a unit MUST NOT move the camera.
+        //
 
-        FadeCanvasTo(
-            hoverTransparency
-        );
+        if (!inspectMode)
+        {
+            EnableFreeCamera();
+            return;
+        }
 
+        // =====================================================
+        // LOCKED MODE
+        // =====================================================
 
-        MoveCameraToUnit(unit);
+        if (HasSelectedAbility())
+        {
+            MoveCameraToAbilityPosition();
+        }
+        else
+        {
+            MoveCameraToUnit(unit);
+        }
     }
 
-
-    // ============================================================
-    // MOVE CAMERA TO UNIT
-    // ============================================================
-
-    public void MoveCameraToUnit(Transform unit)
+    public void MoveCameraToUnit(
+        Transform unit)
     {
-        if (unit == null)
+        if (
+            unit == null ||
+            cameraTarget == null
+        )
+        {
             return;
+        }
 
-        if (cameraTarget == null)
+        currentSelectedUnit = unit;
+
+        // =====================================================
+        // FREE MODE
+        // =====================================================
+        //
+        // Never move camera because of unit selection while
+        // lock is OFF.
+        //
+
+        if (!inspectMode)
+        {
+            EnableFreeCamera();
             return;
+        }
 
+        // =====================================================
+        // ABILITY HAS PRIORITY
+        // =====================================================
 
-        // --------------------------------------------------------
-        // DISABLE FREE CAMERA
-        // --------------------------------------------------------
+        if (HasSelectedAbility())
+        {
+            MoveCameraToAbilityPosition();
+            return;
+        }
+
+        // =====================================================
+        // FOLLOW UNIT
+        // =====================================================
 
         DisableFreeCamera();
-
-
-        // --------------------------------------------------------
-        // STOP FOLLOWING PREVIOUS UNIT
-        // --------------------------------------------------------
 
         StopFollowingUnit();
 
-
-        // --------------------------------------------------------
-        // SET NEW FOLLOW TARGET
-        // --------------------------------------------------------
-
         currentFollowTarget = unit;
 
-
-        // --------------------------------------------------------
-        // CALCULATE TARGET POSITION
-        // --------------------------------------------------------
+        if (cameraMoveCoroutine != null)
+        {
+            StopCoroutine(cameraMoveCoroutine);
+            cameraMoveCoroutine = null;
+        }
 
         Vector3 targetPosition =
             unit.position +
             unitCameraOffset;
 
+        targetPosition.z =
+            cameraTarget.position.z;
 
-        Quaternion targetRotation =
-            cameraTarget.rotation;
-
-
-        // --------------------------------------------------------
-        // STOP PREVIOUS CAMERA MOVEMENT
-        // --------------------------------------------------------
-
-        if (cameraCoroutine != null)
-        {
-            StopCoroutine(
-                cameraCoroutine
-            );
-
-            cameraCoroutine = null;
-        }
-
-
-        // --------------------------------------------------------
-        // IMMEDIATE MOVE IF OBJECT IS INACTIVE
-        // --------------------------------------------------------
-
-        if (!gameObject.activeInHierarchy)
-        {
-            cameraTarget.position =
-                targetPosition;
-
-            cameraTarget.rotation =
-                targetRotation;
-
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // SMOOTH MOVE TO UNIT
-        // --------------------------------------------------------
-
-        cameraCoroutine =
+        cameraMoveCoroutine =
             StartCoroutine(
-                MoveCameraTargetCoroutine(
-                    targetPosition,
-                    targetRotation
+                MoveCameraCoroutine(
+                    targetPosition
                 )
             );
 
-
-        // --------------------------------------------------------
-        // START CONTINUOUS FOLLOW
-        // --------------------------------------------------------
-
-        if (gameObject.activeInHierarchy)
+        if (followCoroutine != null)
         {
-            followCoroutine =
-                StartCoroutine(
-                    FollowUnitCoroutine(unit)
-                );
+            StopCoroutine(followCoroutine);
+            followCoroutine = null;
         }
+
+        followCoroutine =
+            StartCoroutine(
+                FollowUnitCoroutine(unit)
+            );
     }
 
-
-    // ============================================================
-    // FOLLOW UNIT
-    // ============================================================
-
     private IEnumerator FollowUnitCoroutine(
-        Transform unit
-    )
+        Transform unit)
     {
-        if (unit == null)
-            yield break;
-
-
-        // --------------------------------------------------------
-        // WAIT FOR INITIAL CAMERA MOVEMENT
-        // --------------------------------------------------------
-
-        if (cameraCoroutine != null)
-        {
-            yield return cameraCoroutine;
-        }
-
-
-        cameraCoroutine = null;
-
-
-        // --------------------------------------------------------
-        // CONTINUOUS FOLLOW
-        // --------------------------------------------------------
-
         while (
             currentFollowTarget == unit &&
+            currentSelectedUnit == unit &&
             unit != null &&
-            cameraTarget != null
+            cameraTarget != null &&
+            inspectMode &&
+            !HasSelectedAbility()
         )
         {
-            Vector3 desiredPosition =
+            Vector3 targetPosition =
                 unit.position +
                 unitCameraOffset;
 
-
-            float smoothAmount =
-                1f -
-                Mathf.Exp(
-                    -unitFollowSpeed *
-                    Time.deltaTime
-                );
-
+            targetPosition.z =
+                cameraTarget.position.z;
 
             cameraTarget.position =
                 Vector3.Lerp(
                     cameraTarget.position,
-                    desiredPosition,
-                    smoothAmount
+                    targetPosition,
+                    unitFollowSpeed *
+                    Time.deltaTime
                 );
-
 
             yield return null;
         }
 
-
         followCoroutine = null;
     }
 
-
-    // ============================================================
+    // =========================================================
     // STOP FOLLOWING
-    // ============================================================
+    // =========================================================
 
     public void StopFollowingUnit()
     {
+        // IMPORTANT:
+        //
+        // Do NOT clear currentSelectedUnit here.
+        //
+        // currentSelectedUnit = what is selected.
+        // currentFollowTarget = what camera is following.
+        //
         currentFollowTarget = null;
-
 
         if (followCoroutine != null)
         {
-            StopCoroutine(
-                followCoroutine
-            );
-
+            StopCoroutine(followCoroutine);
             followCoroutine = null;
         }
     }
 
+    public void ClearSelectedUnit()
+    {
+        currentSelectedUnit = null;
 
-    // ============================================================
+        StopFollowingUnit();
+    }
+
+    // =========================================================
     // ABILITY CAMERA
-    // ============================================================
+    // =========================================================
 
     public void MoveCameraToAbilityPosition()
     {
-        // --------------------------------------------------------
-        // STOP UNIT FOLLOW
-        // --------------------------------------------------------
+        // =====================================================
+        // FREE MODE PROTECTION
+        // =====================================================
+        //
+        // Selecting an ability while free MUST NOT move camera.
+        //
 
+        if (!inspectMode)
+        {
+            EnableFreeCamera();
+            return;
+        }
+
+        if (
+            abilityCameraPosition == null ||
+            cameraTarget == null
+        )
+        {
+            return;
+        }
+
+        // Ability camera takes priority over unit following.
         StopFollowingUnit();
-
-
-        // --------------------------------------------------------
-        // DISABLE FREE CAMERA
-        // --------------------------------------------------------
 
         DisableFreeCamera();
 
+        Vector3 targetPosition =
+            abilityCameraPosition.position;
 
-        // --------------------------------------------------------
-        // VALIDATE
-        // --------------------------------------------------------
+        targetPosition.z =
+            cameraTarget.position.z;
 
-        if (cameraTarget == null)
-            return;
+        if (cameraMoveCoroutine != null)
+        {
+            StopCoroutine(cameraMoveCoroutine);
+            cameraMoveCoroutine = null;
+        }
 
-        if (abilityCameraPosition == null)
-            return;
-
-
-        // --------------------------------------------------------
-        // MOVE TO ABILITY POSITION
-        // --------------------------------------------------------
-
-        MoveCameraTargetTo(
-            abilityCameraPosition.position,
-            abilityCameraPosition.rotation
-        );
+        cameraMoveCoroutine =
+            StartCoroutine(
+                MoveCameraCoroutine(
+                    targetPosition
+                )
+            );
     }
 
+    // =========================================================
+    // RETURN TO SAVED FREE CAMERA POSITION
+    // =========================================================
 
-    // ============================================================
+    private void MoveCameraBackToSavedFreePosition()
+    {
+        if (cameraTarget == null)
+        {
+            return;
+        }
+
+        StopFollowingUnit();
+
+        DisableFreeCamera();
+
+        if (cameraMoveCoroutine != null)
+        {
+            StopCoroutine(cameraMoveCoroutine);
+            cameraMoveCoroutine = null;
+        }
+
+        Vector3 targetPosition;
+
+        // =====================================================
+        // USE SAVED FREE POSITION
+        // =====================================================
+
+        if (hasSavedFreeCameraPosition)
+        {
+            targetPosition =
+                savedFreeCameraPosition;
+
+            // Preserve the current camera Z.
+            targetPosition.z =
+                cameraTarget.position.z;
+        }
+
+        // =====================================================
+        // FALLBACK
+        // =====================================================
+
+        else if (normalPosition != null)
+        {
+            targetPosition =
+                normalPosition.position;
+
+            targetPosition.z =
+                cameraTarget.position.z;
+        }
+
+        else
+        {
+            targetPosition =
+                cameraTarget.position;
+        }
+
+        // =====================================================
+        // MOVE TO SAVED POSITION
+        // =====================================================
+
+        cameraMoveCoroutine =
+            StartCoroutine(
+                MoveCameraCoroutine(
+                    targetPosition
+                )
+            );
+
+        if (normalCameraCoroutine != null)
+        {
+            StopCoroutine(normalCameraCoroutine);
+        }
+
+        normalCameraCoroutine =
+            StartCoroutine(
+                EnableFreeCameraAfterMove()
+            );
+    }
+
+    // =========================================================
     // NORMAL CAMERA
-    // ============================================================
+    // =========================================================
+    //
+    // Kept as a public method in case another system needs to
+    // explicitly move to normalPosition.
+    //
+    // Camera LOCK OFF uses MoveCameraBackToSavedFreePosition()
+    // instead.
+    //
 
     public void MoveCameraToNormalPosition()
     {
-        // --------------------------------------------------------
-        // STOP UNIT FOLLOW
-        // --------------------------------------------------------
+        if (cameraTarget == null)
+        {
+            return;
+        }
 
         StopFollowingUnit();
 
+        DisableFreeCamera();
 
-        if (cameraTarget == null)
-            return;
+        if (cameraMoveCoroutine != null)
+        {
+            StopCoroutine(cameraMoveCoroutine);
+            cameraMoveCoroutine = null;
+        }
 
-        if (normalPosition == null)
-            return;
+        Vector3 targetPosition;
 
+        if (normalPosition != null)
+        {
+            targetPosition =
+                normalPosition.position;
 
-        // --------------------------------------------------------
-        // MOVE TO NORMAL POSITION
-        // --------------------------------------------------------
+            targetPosition.z =
+                cameraTarget.position.z;
+        }
+        else
+        {
+            targetPosition =
+                cameraTarget.position;
+        }
 
-        MoveCameraTargetTo(
-            normalPosition.position,
-            normalPosition.rotation
-        );
+        cameraMoveCoroutine =
+            StartCoroutine(
+                MoveCameraCoroutine(
+                    targetPosition
+                )
+            );
 
+        if (normalCameraCoroutine != null)
+        {
+            StopCoroutine(normalCameraCoroutine);
+        }
 
-        // --------------------------------------------------------
-        // ENABLE FREE CAMERA
-        // --------------------------------------------------------
-
-        EnableFreeCamera();
+        normalCameraCoroutine =
+            StartCoroutine(
+                EnableFreeCameraAfterMove()
+            );
     }
 
+    private IEnumerator EnableFreeCameraAfterMove()
+    {
+        yield return new WaitForSeconds(
+            cameraMoveDuration
+        );
 
-    // ============================================================
-    // ENABLE FREE CAMERA
-    // ============================================================
+        normalCameraCoroutine = null;
+
+        if (!inspectMode)
+        {
+            EnableFreeCamera();
+        }
+    }
+
+    // =========================================================
+    // FREE CAMERA
+    // =========================================================
 
     public void EnableFreeCamera()
     {
-        StopFollowingUnit();
-
-
         if (freeCamera != null)
         {
             freeCamera.EnableFreeMode();
         }
     }
-
-
-    // ============================================================
-    // DISABLE FREE CAMERA
-    // ============================================================
 
     public void DisableFreeCamera()
     {
@@ -545,141 +664,78 @@ public class CanvasJuiceManager : MonoBehaviour
         }
     }
 
-
-    // ============================================================
-    // HIDE / DESELECT
-    // ============================================================
+    // =========================================================
+    // DESELECT / HIDE
+    // =========================================================
 
     public void HideHoverInfo()
     {
         FadeCanvasTo(0f);
 
+        currentSelectedUnit = null;
 
-        // --------------------------------------------------------
-        // Return to normal position and then free camera.
-        // --------------------------------------------------------
+        StopFollowingUnit();
 
-        MoveCameraToNormalPosition();
+        // =====================================================
+        // FREE MODE
+        // =====================================================
+        //
+        // Deselecting while free does NOT move camera.
+        //
+
+        if (!inspectMode)
+        {
+            EnableFreeCamera();
+            return;
+        }
+
+        // =====================================================
+        // LOCKED MODE
+        // =====================================================
+        //
+        // Deselecting while locked exits lock and returns to
+        // the saved free position.
+        //
+
+        inspectMode = false;
+
+        MoveCameraBackToSavedFreePosition();
     }
 
-
-    // ============================================================
+    // =========================================================
     // CAMERA MOVEMENT
-    // ============================================================
+    // =========================================================
 
-    private void MoveCameraTargetTo(
-        Vector3 targetPosition,
-        Quaternion targetRotation
-    )
+    private IEnumerator MoveCameraCoroutine(
+        Vector3 targetPosition)
     {
         if (cameraTarget == null)
-            return;
-
-
-        // --------------------------------------------------------
-        // STOP PREVIOUS MOVEMENT
-        // --------------------------------------------------------
-
-        if (cameraCoroutine != null)
         {
-            StopCoroutine(
-                cameraCoroutine
-            );
-
-            cameraCoroutine = null;
-        }
-
-
-        // --------------------------------------------------------
-        // IMMEDIATE MOVE IF INACTIVE
-        // --------------------------------------------------------
-
-        if (!gameObject.activeInHierarchy)
-        {
-            cameraTarget.position =
-                targetPosition;
-
-            cameraTarget.rotation =
-                targetRotation;
-
-            cameraCoroutine = null;
-
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // SMOOTH MOVEMENT
-        // --------------------------------------------------------
-
-        cameraCoroutine =
-            StartCoroutine(
-                MoveCameraTargetCoroutine(
-                    targetPosition,
-                    targetRotation
-                )
-            );
-    }
-
-
-    private IEnumerator MoveCameraTargetCoroutine(
-        Vector3 targetPosition,
-        Quaternion targetRotation
-    )
-    {
-        if (cameraTarget == null)
             yield break;
-
+        }
 
         Vector3 startPosition =
             cameraTarget.position;
 
-        Quaternion startRotation =
-            cameraTarget.rotation;
-
         float elapsed = 0f;
 
-
-        // --------------------------------------------------------
-        // INSTANT MOVEMENT
-        // --------------------------------------------------------
-
-        if (cameraMoveDuration <= 0f)
+        while (
+            elapsed <
+            cameraMoveDuration
+        )
         {
-            cameraTarget.position =
-                targetPosition;
-
-            cameraTarget.rotation =
-                targetRotation;
-
-            cameraCoroutine = null;
-
-            yield break;
-        }
-
-
-        // --------------------------------------------------------
-        // SMOOTH MOVEMENT
-        // --------------------------------------------------------
-
-        while (elapsed < cameraMoveDuration)
-        {
-            elapsed += Time.deltaTime;
-
+            elapsed +=
+                Time.deltaTime;
 
             float t =
-                Mathf.Clamp01(
-                    elapsed /
-                    cameraMoveDuration
-                );
+                elapsed /
+                cameraMoveDuration;
 
-
-            // SmoothStep
+            // SmoothStep easing.
             t =
                 t *
                 t *
                 (3f - 2f * t);
-
 
             cameraTarget.position =
                 Vector3.Lerp(
@@ -688,77 +744,31 @@ public class CanvasJuiceManager : MonoBehaviour
                     t
                 );
 
-
-            cameraTarget.rotation =
-                Quaternion.Slerp(
-                    startRotation,
-                    targetRotation,
-                    t
-                );
-
-
             yield return null;
         }
-
-
-        // --------------------------------------------------------
-        // FINAL POSITION
-        // --------------------------------------------------------
 
         cameraTarget.position =
             targetPosition;
 
-        cameraTarget.rotation =
-            targetRotation;
-
-        cameraCoroutine = null;
+        cameraMoveCoroutine = null;
     }
 
-
-    // ============================================================
+    // =========================================================
     // CANVAS FADE
-    // ============================================================
+    // =========================================================
 
     private void FadeCanvasTo(
-        float targetAlpha
-    )
+        float targetAlpha)
     {
-        if (hoverInfoCanvas == null)
+        if (canvasGroup == null)
+        {
             return;
-
-
-        // --------------------------------------------------------
-        // STOP PREVIOUS FADE
-        // --------------------------------------------------------
+        }
 
         if (fadeCoroutine != null)
         {
-            StopCoroutine(
-                fadeCoroutine
-            );
-
-            fadeCoroutine = null;
+            StopCoroutine(fadeCoroutine);
         }
-
-
-        // --------------------------------------------------------
-        // INSTANT FADE IF INACTIVE
-        // --------------------------------------------------------
-
-        if (!gameObject.activeInHierarchy)
-        {
-            hoverInfoCanvas.alpha =
-                targetAlpha;
-
-            fadeCoroutine = null;
-
-            return;
-        }
-
-
-        // --------------------------------------------------------
-        // START FADE
-        // --------------------------------------------------------
 
         fadeCoroutine =
             StartCoroutine(
@@ -768,67 +778,66 @@ public class CanvasJuiceManager : MonoBehaviour
             );
     }
 
-
     private IEnumerator FadeCanvasCoroutine(
-        float targetAlpha
-    )
+        float targetAlpha)
     {
         float startAlpha =
-            hoverInfoCanvas.alpha;
+            canvasGroup.alpha;
 
         float elapsed = 0f;
 
-
-        // --------------------------------------------------------
-        // INSTANT FADE
-        // --------------------------------------------------------
-
-        if (fadeDuration <= 0f)
+        while (
+            elapsed <
+            fadeDuration
+        )
         {
-            hoverInfoCanvas.alpha =
-                targetAlpha;
-
-            fadeCoroutine = null;
-
-            yield break;
-        }
-
-
-        // --------------------------------------------------------
-        // SMOOTH FADE
-        // --------------------------------------------------------
-
-        while (elapsed < fadeDuration)
-        {
-            elapsed += Time.deltaTime;
-
+            elapsed +=
+                Time.deltaTime;
 
             float t =
-                Mathf.Clamp01(
-                    elapsed /
-                    fadeDuration
-                );
+                elapsed /
+                fadeDuration;
 
-
-            hoverInfoCanvas.alpha =
+            canvasGroup.alpha =
                 Mathf.Lerp(
                     startAlpha,
                     targetAlpha,
                     t
                 );
 
-
             yield return null;
         }
 
-
-        // --------------------------------------------------------
-        // FINAL ALPHA
-        // --------------------------------------------------------
-
-        hoverInfoCanvas.alpha =
+        canvasGroup.alpha =
             targetAlpha;
 
+        canvasGroup.interactable =
+            targetAlpha > 0f;
+
+        canvasGroup.blocksRaycasts =
+            targetAlpha > 0f;
+
         fadeCoroutine = null;
+    }
+
+    // =========================================================
+    // TOOLTIP
+    // =========================================================
+
+    private void UpdateTooltipPosition()
+    {
+        if (
+            tooltip == null ||
+            Mouse.current == null
+        )
+        {
+            return;
+        }
+
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
+
+        tooltip.position =
+            mousePosition;
     }
 }

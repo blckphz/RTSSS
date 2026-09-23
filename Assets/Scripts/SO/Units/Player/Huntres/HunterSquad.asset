@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1486bf4c934a15845bdf6e8df3395bf4, type: 3}
   m_Name: HunterSquad
   m_EditorClassIdentifier: Assembly-CSharp::SquadSO
-  squadMembers: []
+  squadMembers:
+  - {fileID: 11400000, guid: 272638e81450b984e9b3cd1cbe0a848d, type: 2}
+  - {fileID: 11400000, guid: 167a59118c67cd44b9c74b9e75b2182e, type: 2}

@@ -214,7 +214,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: fb4133cde8645db47bd19b13ff0590fb, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -222,7 +222,7 @@ SpriteRenderer:
   m_Size: {x: 0.969697, y: 0.969697}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 1
 --- !u!114 &7781654838360763359
@@ -280,8 +280,15 @@ MonoBehaviour:
   abilities: []
   healthManager: {fileID: 7781654838360763359}
   animationController: {fileID: 0}
+  upgradeableCombatUnit: {fileID: 0}
+  dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 0
   attackAnimatorLayerName: attackLayer
+  dayNightType: 2
+  dayDamageBonus: 0
+  nightDamageBonus: 0
+  dayMoveRangeBonus: 0
+  nightMoveRangeBonus: 0
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &8427803419809321729
 MonoBehaviour:

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static AbilitySO;
 
 public abstract class AbilitySO : ScriptableObject
 {
@@ -10,7 +11,6 @@ public abstract class AbilitySO : ScriptableObject
         FourDirections,
         Diagonal,
         FourdirectionsAndDiragonal
-
     }
 
     public enum TargetType
@@ -103,6 +103,11 @@ public abstract class AbilitySO : ScriptableObject
         return abilityName;
     }
 
+    public Sprite GetAbilityIcon()
+    {
+        return abilityIcon;
+    }
+
     public string GetDescription()
     {
         return description;
@@ -158,9 +163,7 @@ public abstract class AbilitySO : ScriptableObject
     // EFFECTIVE DAMAGE
     // ============================================================
 
-    public virtual int GetEffectiveDamage(
-        GameObject user
-    )
+    public virtual int GetEffectiveDamage(GameObject user)
     {
         if (user == null)
         {
@@ -195,9 +198,7 @@ public abstract class AbilitySO : ScriptableObject
     // EFFECTIVE RANGE
     // ============================================================
 
-    public virtual int GetEffectiveRange(
-        GameObject user
-    )
+    public virtual int GetEffectiveRange(GameObject user)
     {
         if (user == null)
         {
@@ -237,10 +238,7 @@ public abstract class AbilitySO : ScriptableObject
         GameObject user
     )
     {
-        if (
-            gridManager == null ||
-            user == null
-        )
+        if (gridManager == null || user == null)
         {
             return Vector2Int.zero;
         }
@@ -261,9 +259,7 @@ public abstract class AbilitySO : ScriptableObject
     // MOVEMENT RESTRICTION
     // ============================================================
 
-    public bool CanUseAfterMovement(
-        GameObject user
-    )
+    public bool CanUseAfterMovement(GameObject user)
     {
         if (user == null)
         {
@@ -302,10 +298,7 @@ public abstract class AbilitySO : ScriptableObject
         List<Vector2Int> tiles =
             new List<Vector2Int>();
 
-        if (
-            gridManager == null ||
-            user == null
-        )
+        if (gridManager == null || user == null)
         {
             return tiles;
         }
@@ -329,8 +322,13 @@ public abstract class AbilitySO : ScriptableObject
                 abilityRange
             );
 
+
         switch (rangeShape)
         {
+            // ====================================================
+            // DIAMOND
+            // ====================================================
+
             case RangeShape.Diamond:
 
                 for (
@@ -345,10 +343,7 @@ public abstract class AbilitySO : ScriptableObject
                         y++
                     )
                     {
-                        if (
-                            x == 0 &&
-                            y == 0
-                        )
+                        if (x == 0 && y == 0)
                         {
                             continue;
                         }
@@ -357,18 +352,12 @@ public abstract class AbilitySO : ScriptableObject
                             Mathf.Abs(x) +
                             Mathf.Abs(y);
 
-                        if (
-                            distance >
-                            abilityRange
-                        )
+                        if (distance > abilityRange)
                         {
                             continue;
                         }
 
-                        if (
-                            distance <
-                            minimumDistance
-                        )
+                        if (distance < minimumDistance)
                         {
                             continue;
                         }
@@ -377,16 +366,17 @@ public abstract class AbilitySO : ScriptableObject
                             gridManager,
                             tiles,
                             origin +
-                            new Vector2Int(
-                                x,
-                                y
-                            )
+                            new Vector2Int(x, y)
                         );
                     }
                 }
 
                 break;
 
+
+            // ====================================================
+            // BOX
+            // ====================================================
 
             case RangeShape.Box:
 
@@ -402,10 +392,7 @@ public abstract class AbilitySO : ScriptableObject
                         y++
                     )
                     {
-                        if (
-                            x == 0 &&
-                            y == 0
-                        )
+                        if (x == 0 && y == 0)
                         {
                             continue;
                         }
@@ -416,18 +403,12 @@ public abstract class AbilitySO : ScriptableObject
                                 Mathf.Abs(y)
                             );
 
-                        if (
-                            distance >
-                            abilityRange
-                        )
+                        if (distance > abilityRange)
                         {
                             continue;
                         }
 
-                        if (
-                            distance <
-                            minimumDistance
-                        )
+                        if (distance < minimumDistance)
                         {
                             continue;
                         }
@@ -436,16 +417,17 @@ public abstract class AbilitySO : ScriptableObject
                             gridManager,
                             tiles,
                             origin +
-                            new Vector2Int(
-                                x,
-                                y
-                            )
+                            new Vector2Int(x, y)
                         );
                     }
                 }
 
                 break;
 
+
+            // ====================================================
+            // FOUR DIRECTIONS
+            // ====================================================
 
             case RangeShape.FourDirections:
 
@@ -455,14 +437,12 @@ public abstract class AbilitySO : ScriptableObject
                     i++
                 )
                 {
-                    if (
-                        i <
-                        minimumDistance
-                    )
+                    if (i < minimumDistance)
                     {
                         continue;
                     }
 
+                    // UP
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -470,6 +450,7 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.up * i
                     );
 
+                    // DOWN
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -477,6 +458,7 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.down * i
                     );
 
+                    // LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -484,6 +466,7 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.left * i
                     );
 
+                    // RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -495,6 +478,10 @@ public abstract class AbilitySO : ScriptableObject
                 break;
 
 
+            // ====================================================
+            // DIAGONAL
+            // ====================================================
+
             case RangeShape.Diagonal:
 
                 for (
@@ -503,14 +490,12 @@ public abstract class AbilitySO : ScriptableObject
                     i++
                 )
                 {
-                    if (
-                        i <
-                        minimumDistance
-                    )
+                    if (i < minimumDistance)
                     {
                         continue;
                     }
 
+                    // UP + RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -521,6 +506,7 @@ public abstract class AbilitySO : ScriptableObject
                         )
                     );
 
+                    // UP + LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -531,6 +517,7 @@ public abstract class AbilitySO : ScriptableObject
                         )
                     );
 
+                    // DOWN + RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -541,6 +528,113 @@ public abstract class AbilitySO : ScriptableObject
                         )
                     );
 
+                    // DOWN + LEFT
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(
+                            -i,
+                            -i
+                        )
+                    );
+                }
+
+                break;
+
+
+            // ====================================================
+            // FOUR DIRECTIONS + DIAGONALS
+            // ====================================================
+
+            case RangeShape.FourdirectionsAndDiragonal:
+
+                for (
+                    int i = 1;
+                    i <= abilityRange;
+                    i++
+                )
+                {
+                    if (i < minimumDistance)
+                    {
+                        continue;
+                    }
+
+                    // ----------------------------
+                    // FOUR DIRECTIONS
+                    // ----------------------------
+
+                    // UP
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.up * i
+                    );
+
+                    // DOWN
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.down * i
+                    );
+
+                    // LEFT
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.left * i
+                    );
+
+                    // RIGHT
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        Vector2Int.right * i
+                    );
+
+
+                    // ----------------------------
+                    // FOUR DIAGONALS
+                    // ----------------------------
+
+                    // UP + RIGHT
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(
+                            i,
+                            i
+                        )
+                    );
+
+                    // UP + LEFT
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(
+                            -i,
+                            i
+                        )
+                    );
+
+                    // DOWN + RIGHT
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin +
+                        new Vector2Int(
+                            i,
+                            -i
+                        )
+                    );
+
+                    // DOWN + LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -591,20 +685,12 @@ public abstract class AbilitySO : ScriptableObject
             return;
         }
 
-        if (
-            !gridManager.IsInsideGrid(
-                position
-            )
-        )
+        if (!gridManager.IsInsideGrid(position))
         {
             return;
         }
 
-        if (
-            !tiles.Contains(
-                position
-            )
-        )
+        if (!tiles.Contains(position))
         {
             tiles.Add(position);
         }
@@ -645,10 +731,13 @@ public abstract class AbilitySO : ScriptableObject
                 target.transform.position
             );
 
-        if (!CanHitTile(
+        if (
+            !CanHitTile(
                 gridManager,
                 user,
-                targetPosition))
+                targetPosition
+            )
+        )
         {
             return false;
         }
@@ -666,10 +755,7 @@ public abstract class AbilitySO : ScriptableObject
         GameObject target
     )
     {
-        if (
-            user == null ||
-            target == null
-        )
+        if (user == null || target == null)
         {
             return false;
         }
@@ -694,10 +780,12 @@ public abstract class AbilitySO : ScriptableObject
         Team targetTeam =
             targetUnit.GetTeam();
 
-        if (
-            targetType ==
-            TargetType.Enemy
-        )
+
+        // ========================================================
+        // ENEMY
+        // ========================================================
+
+        if (targetType == TargetType.Enemy)
         {
             if (
                 userTeam == Team.Player ||
@@ -707,10 +795,7 @@ public abstract class AbilitySO : ScriptableObject
                 return targetTeam == Team.Enemy;
             }
 
-            if (
-                userTeam ==
-                Team.Enemy
-            )
+            if (userTeam == Team.Enemy)
             {
                 return
                     targetTeam == Team.Player ||
@@ -720,10 +805,12 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        if (
-            targetType ==
-            TargetType.Ally
-        )
+
+        // ========================================================
+        // ALLY
+        // ========================================================
+
+        if (targetType == TargetType.Ally)
         {
             if (
                 userTeam == Team.Player ||
@@ -735,22 +822,20 @@ public abstract class AbilitySO : ScriptableObject
                     targetTeam == Team.Ally;
             }
 
-            if (
-                userTeam ==
-                Team.Enemy
-            )
+            if (userTeam == Team.Enemy)
             {
-                return
-                    targetTeam == Team.Enemy;
+                return targetTeam == Team.Enemy;
             }
 
             return false;
         }
 
-        if (
-            targetType ==
-            TargetType.Any
-        )
+
+        // ========================================================
+        // ANY
+        // ========================================================
+
+        if (targetType == TargetType.Any)
         {
             return true;
         }
@@ -869,15 +954,5 @@ public abstract class AbilitySO : ScriptableObject
         }
 
         return true;
-    }
-
-
-    // ============================================================
-    // ICON
-    // ============================================================
-
-    public Sprite GetAbilityIcon()
-    {
-        return abilityIcon;
     }
 }

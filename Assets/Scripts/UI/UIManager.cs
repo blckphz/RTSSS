@@ -32,6 +32,10 @@ public class UIManager : MonoBehaviour
 
     private CanvasInfoManager canvasInfoManager;
 
+    // =========================================================
+    // UNITY
+    // =========================================================
+
     private void Awake()
     {
         if (
@@ -67,6 +71,10 @@ public class UIManager : MonoBehaviour
         UpdateChainLightningPreview();
     }
 
+    // =========================================================
+    // RIGHT CLICK
+    // =========================================================
+
     private void CheckRightClick()
     {
         if (Mouse.current == null)
@@ -83,17 +91,23 @@ public class UIManager : MonoBehaviour
             return;
         }
 
+        // Clear ability first.
         if (HasSelectedAbility())
         {
             ClearSelectedAbility(true);
             return;
         }
 
+        // Otherwise clear unit selection.
         if (CurrentSelection != null)
         {
             ClearSelection();
         }
     }
+
+    // =========================================================
+    // LEFT CLICK
+    // =========================================================
 
     private void CheckMouseClick()
     {
@@ -119,6 +133,7 @@ public class UIManager : MonoBehaviour
                 .position
                 .ReadValue();
 
+        // Ability UI gets checked first.
         if (TryHandleAbilityUI())
         {
             return;
@@ -139,6 +154,7 @@ public class UIManager : MonoBehaviour
         HoverInfoTrigger clickedTrigger =
             GetClickedTrigger(hit);
 
+        // Ability is currently selected.
         if (HasSelectedAbility())
         {
             TryUseSelectedAbility(
@@ -149,12 +165,14 @@ public class UIManager : MonoBehaviour
             return;
         }
 
+        // Clicked a unit.
         if (clickedTrigger != null)
         {
             SelectObject(clickedTrigger);
             return;
         }
 
+        // Try moving the selected unit.
         if (
             allowPlayerMovement &&
             CurrentSelection != null
@@ -170,8 +188,13 @@ public class UIManager : MonoBehaviour
             }
         }
 
+        // Nothing useful was clicked.
         ClearSelection();
     }
+
+    // =========================================================
+    // ABILITY UI
+    // =========================================================
 
     private bool TryHandleAbilityUI()
     {
@@ -227,7 +250,21 @@ public class UIManager : MonoBehaviour
             return true;
         }
 
-        if (CanvasJuiceManager.Instance != null)
+        // =====================================================
+        // IMPORTANT CAMERA RULE
+        // =====================================================
+        //
+        // If the camera is FREE:
+        //     DO NOT MOVE IT.
+        //
+        // If the camera is LOCKED:
+        //     Move to the ability camera position.
+        //
+
+        if (
+            CanvasJuiceManager.Instance != null &&
+            CanvasJuiceManager.Instance.IsInspectMode()
+        )
         {
             CanvasJuiceManager.Instance
                 .MoveCameraToAbilityPosition();
@@ -235,6 +272,10 @@ public class UIManager : MonoBehaviour
 
         return true;
     }
+
+    // =========================================================
+    // CLICKED UNIT
+    // =========================================================
 
     private HoverInfoTrigger GetClickedTrigger(
         RaycastHit2D hit)
@@ -252,6 +293,10 @@ public class UIManager : MonoBehaviour
 
         return trigger;
     }
+
+    // =========================================================
+    // CHAIN LIGHTNING
+    // =========================================================
 
     private void UpdateChainLightningPreview()
     {
@@ -323,7 +368,11 @@ public class UIManager : MonoBehaviour
         );
     }
 
-    private bool HasSelectedAbility()
+    // =========================================================
+    // ABILITY STATE
+    // =========================================================
+
+    public bool HasSelectedAbility()
     {
         return
             canvasInfoManager != null &&
@@ -346,10 +395,21 @@ public class UIManager : MonoBehaviour
                 .ClearSelectedAbility();
         }
 
+        // =====================================================
+        // IMPORTANT CAMERA RULE
+        // =====================================================
+        //
+        // Only return to the unit if LOCK MODE is active.
+        //
+        // In FREE MODE:
+        //     Do not touch the camera.
+        //
+
         if (
             returnCameraToUnit &&
             CurrentSelection != null &&
-            CanvasJuiceManager.Instance != null
+            CanvasJuiceManager.Instance != null &&
+            CanvasJuiceManager.Instance.IsInspectMode()
         )
         {
             CanvasJuiceManager.Instance
@@ -358,6 +418,10 @@ public class UIManager : MonoBehaviour
                 );
         }
     }
+
+    // =========================================================
+    // USE SELECTED ABILITY
+    // =========================================================
 
     private bool TryUseSelectedAbility(
         Vector2 mousePosition,
@@ -428,6 +492,10 @@ public class UIManager : MonoBehaviour
         {
             return false;
         }
+
+        // =====================================================
+        // TARGETED UNIT
+        // =====================================================
 
         if (clickedTrigger != null)
         {
@@ -507,6 +575,10 @@ public class UIManager : MonoBehaviour
             );
         }
 
+        // =====================================================
+        // TARGET TILE
+        // =====================================================
+
         Vector2Int targetTileFromMouse =
             ScreenToGridPosition(
                 mousePosition,
@@ -551,6 +623,10 @@ public class UIManager : MonoBehaviour
         return false;
     }
 
+    // =========================================================
+    // BOMB
+    // =========================================================
+
     private bool UseBombAbility(
         AttackUnit attackUnit,
         AbilitySO ability,
@@ -567,10 +643,15 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
+        // Ability clears without moving camera.
         ClearSelectedAbility(false);
 
         return true;
     }
+
+    // =========================================================
+    // NORMAL ABILITY
+    // =========================================================
 
     private bool UseNormalAbility(
         AttackUnit attackUnit,
@@ -610,10 +691,15 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
+        // Ability clears without moving camera.
         ClearSelectedAbility(false);
 
         return true;
     }
+
+    // =========================================================
+    // SCREEN TO GRID
+    // =========================================================
 
     private Vector2Int ScreenToGridPosition(
         Vector2 screenPosition,
@@ -639,6 +725,10 @@ public class UIManager : MonoBehaviour
                     worldPosition
                 );
     }
+
+    // =========================================================
+    // PLAYER CONTROL CHECK
+    // =========================================================
 
     private bool IsPlayerControlledUnit(
         GameObject unit)
@@ -675,6 +765,10 @@ public class UIManager : MonoBehaviour
 
         return controlled;
     }
+
+    // =========================================================
+    // MOVE SELECTED UNIT
+    // =========================================================
 
     private bool TryMoveSelectedUnit(
         Vector2 mousePosition)
@@ -812,6 +906,10 @@ public class UIManager : MonoBehaviour
         return true;
     }
 
+    // =========================================================
+    // SELECT OBJECT
+    // =========================================================
+
     public static void SelectObject(
         HoverInfoTrigger trigger)
     {
@@ -849,9 +947,10 @@ public class UIManager : MonoBehaviour
             trigger
         );
 
-        AttackUnit selectedAttackUnit =
-            trigger.GetAttackUnit();
-
+        // CanvasJuiceManager itself handles whether
+        // the camera is locked or in free mode.
+        //
+        // In free mode this will NOT move the camera.
         if (CanvasJuiceManager.Instance != null)
         {
             CanvasJuiceManager.Instance
@@ -860,6 +959,10 @@ public class UIManager : MonoBehaviour
                 );
         }
     }
+
+    // =========================================================
+    // CLEAR SELECTION
+    // =========================================================
 
     public static void ClearSelection()
     {
@@ -921,6 +1024,10 @@ public class UIManager : MonoBehaviour
             ClearSelection();
         }
     }
+
+    // =========================================================
+    // MOVEMENT RANGE
+    // =========================================================
 
     private static void ShowMovementRange(
         HoverInfoTrigger trigger)

@@ -10,16 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
-  m_Name: HunterPet
+  m_Name: Huntress
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
-  characterName: 
-  icon: {fileID: 0}
-  prefabToSpawn: {fileID: 0}
+  characterName: Hunter
+  icon: {fileID: 21300000, guid: 20e4666103db6274f98b3375b68a338d, type: 3}
+  prefabToSpawn: {fileID: 2305230657848179651, guid: 9fea782588f72b74b9b9cc4baf5c27d7, type: 3}
   team: 0
-  isPlayerCharacter: 0
-  maxHealth: 100
-  moveRange: 0
+  isPlayerCharacter: 1
+  maxHealth: 90
+  moveRange: 6
   canwalkdiagonally: 0
-  abilities: []
+  abilities:
+  - {fileID: 11400000, guid: 3958a97feaad6bf42abec88350df97d2, type: 2}
   RangedAttacker: 0
   upgrades: []

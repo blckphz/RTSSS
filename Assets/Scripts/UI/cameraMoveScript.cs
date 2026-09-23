@@ -49,7 +49,16 @@ public class cameraMoveScript : MonoBehaviour
     [SerializeField]
     private Vector2 maxBounds;
 
+    // =========================================================
+    // INTERNAL
+    // =========================================================
+
     private bool freeMode = true;
+
+
+    // =========================================================
+    // UNITY
+    // =========================================================
 
     private void Awake()
     {
@@ -70,6 +79,7 @@ public class cameraMoveScript : MonoBehaviour
         }
     }
 
+
     private void Update()
     {
         if (!freeMode)
@@ -81,6 +91,7 @@ public class cameraMoveScript : MonoBehaviour
         HandleEdgeScrolling();
         HandleZoom();
     }
+
 
     // =========================================================
     // EDGE SCROLLING
@@ -99,11 +110,13 @@ public class cameraMoveScript : MonoBehaviour
 
         Vector3 movement = Vector3.zero;
 
+
         // LEFT
         if (mousePosition.x <= screenWidth * edgeSize)
         {
             movement.x -= 1f;
         }
+
 
         // RIGHT
         if (mousePosition.x >= screenWidth * (1f - edgeSize))
@@ -111,11 +124,13 @@ public class cameraMoveScript : MonoBehaviour
             movement.x += 1f;
         }
 
+
         // BOTTOM
         if (mousePosition.y <= screenHeight * edgeSize)
         {
             movement.y -= 1f;
         }
+
 
         // TOP
         if (mousePosition.y >= screenHeight * (1f - edgeSize))
@@ -123,12 +138,16 @@ public class cameraMoveScript : MonoBehaviour
             movement.y += 1f;
         }
 
-        // No movement needed
+
+        // No movement
         if (movement == Vector3.zero)
             return;
 
-        // Prevent diagonal movement from being faster
+
+        // Prevent diagonal movement
+        // from being faster
         movement.Normalize();
+
 
         Vector3 newPosition =
             cameraTarget.position +
@@ -136,7 +155,8 @@ public class cameraMoveScript : MonoBehaviour
             moveSpeed *
             Time.deltaTime;
 
-        // Apply movement bounds if enabled
+
+        // Apply bounds
         if (useBounds)
         {
             newPosition.x = Mathf.Clamp(
@@ -152,12 +172,16 @@ public class cameraMoveScript : MonoBehaviour
             );
         }
 
-        // IMPORTANT:
-        // This is a 2D game, so Z stays EXACTLY the same.
-        newPosition.z = cameraTarget.position.z;
 
-        cameraTarget.position = newPosition;
+        // Keep Z exactly the same
+        newPosition.z =
+            cameraTarget.position.z;
+
+
+        cameraTarget.position =
+            newPosition;
     }
+
 
     // =========================================================
     // MOUSE WHEEL ZOOM
@@ -171,15 +195,18 @@ public class cameraMoveScript : MonoBehaviour
         if (cinemachineCamera == null)
             return;
 
+
         Vector2 scroll =
             Mouse.current.scroll.ReadValue();
+
 
         if (Mathf.Abs(scroll.y) < 0.01f)
             return;
 
-        // Cinemachine 3 orthographic size
+
         float currentSize =
             cinemachineCamera.Lens.OrthographicSize;
+
 
         // Scroll up = zoom in
         // Scroll down = zoom out
@@ -189,18 +216,21 @@ public class cameraMoveScript : MonoBehaviour
             zoomSpeed *
             0.01f;
 
+
         newSize = Mathf.Clamp(
             newSize,
             minZoom,
             maxZoom
         );
 
+
         cinemachineCamera.Lens.OrthographicSize =
             newSize;
     }
 
+
     // =========================================================
-    // FREE MODE
+    // FREE CAMERA MODE
     // =========================================================
 
     public void EnableFreeMode()
@@ -208,24 +238,28 @@ public class cameraMoveScript : MonoBehaviour
         freeMode = true;
     }
 
+
     public void DisableFreeMode()
     {
         freeMode = false;
     }
+
 
     public bool IsFreeMode()
     {
         return freeMode;
     }
 
+
     // =========================================================
-    // OPTIONAL: RESET ZOOM
+    // RESET ZOOM
     // =========================================================
 
     public void ResetZoom()
     {
         if (cinemachineCamera == null)
             return;
+
 
         cinemachineCamera.Lens.OrthographicSize =
             Mathf.Clamp(
