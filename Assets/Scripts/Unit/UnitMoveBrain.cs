@@ -41,6 +41,8 @@ public class UnitMoveBrain : MonoBehaviour
     private bool isMoving;
     private int movementSequence;
 
+    private Coroutine movementCoroutine;
+
 
     // ============================================================
     // UNITY
@@ -60,8 +62,16 @@ public class UnitMoveBrain : MonoBehaviour
 
     private void OnDisable()
     {
+        if (movementCoroutine != null)
+        {
+            StopCoroutine(movementCoroutine);
+            movementCoroutine = null;
+        }
+
         if (isMoving)
+        {
             SetMovingState(false);
+        }
 
         isMoving = false;
 
@@ -144,15 +154,11 @@ public class UnitMoveBrain : MonoBehaviour
     /// </summary>
     public void AnimationEvent_Footstep()
     {
-        Debug.Log($"[UnitMoveBrain] AnimationEvent_Footstep triggered on unit: {name}", this);
-
         if (AudioFXManager.Instance == null)
         {
-            Debug.LogWarning($"[UnitMoveBrain] AudioFXManager.Instance is NULL! Cannot play footstep sound for {name}.", this);
             return;
         }
 
-        Debug.Log($"[UnitMoveBrain] Playing footstep sound via AudioFXManager for {name}.", this);
         AudioFXManager.Instance.PlayUnitFootstep();
     }
 
@@ -227,6 +233,29 @@ public class UnitMoveBrain : MonoBehaviour
         return
             attackUnit != null &&
             !attackUnit.IsDead();
+    }
+
+
+    // ============================================================
+    // STOP MOVEMENT
+    // ============================================================
+
+    public void StopMovement()
+    {
+        movementSequence++;
+
+        if (movementCoroutine != null)
+        {
+            StopCoroutine(movementCoroutine);
+            movementCoroutine = null;
+        }
+
+        StopWalkAnimation();
+
+        if (isMoving)
+        {
+            SetMovingState(false);
+        }
     }
 
 
@@ -527,12 +556,13 @@ public class UnitMoveBrain : MonoBehaviour
 
         ConsumeMovement();
 
-        StartCoroutine(
-            ExecuteMoveRoutine(
-                path,
-                steps
-            )
-        );
+        movementCoroutine =
+            StartCoroutine(
+                ExecuteMoveRoutine(
+                    path,
+                    steps
+                )
+            );
 
         return true;
     }
@@ -664,6 +694,7 @@ public class UnitMoveBrain : MonoBehaviour
             steps <= 0
         )
         {
+            movementCoroutine = null;
             yield break;
         }
 
@@ -671,7 +702,10 @@ public class UnitMoveBrain : MonoBehaviour
             GetGridManager();
 
         if (gridManager == null)
+        {
+            movementCoroutine = null;
             yield break;
+        }
 
         SetMovingState(true);
 
@@ -691,6 +725,14 @@ public class UnitMoveBrain : MonoBehaviour
             i <= actualSteps;
             i++)
         {
+            if (
+                currentMovementSequence !=
+                movementSequence
+            )
+            {
+                break;
+            }
+
             Vector2Int fromTile =
                 path[i - 1];
 
@@ -716,11 +758,6 @@ public class UnitMoveBrain : MonoBehaviour
 
             if (!started)
             {
-                Debug.LogWarning(
-                    $"[Movement] {name} failed to move from {fromTile} to {toTile}.",
-                    this
-                );
-
                 break;
             }
 
@@ -736,7 +773,11 @@ public class UnitMoveBrain : MonoBehaviour
 
             float elapsed = 0f;
 
-            while (elapsed < moveDuration)
+            while (
+                elapsed < moveDuration &&
+                currentMovementSequence ==
+                movementSequence
+            )
             {
                 elapsed +=
                     Time.deltaTime;
@@ -759,6 +800,14 @@ public class UnitMoveBrain : MonoBehaviour
                 yield return null;
             }
 
+            if (
+                currentMovementSequence !=
+                movementSequence
+            )
+            {
+                break;
+            }
+
             transform.position =
                 endPosition;
 
@@ -768,9 +817,11 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
             if (tilePin != null)
+            {
                 tilePin.SetTile(
                     toTile
                 );
+            }
 
             if (attackUnit != null)
             {
@@ -794,6 +845,8 @@ public class UnitMoveBrain : MonoBehaviour
         StopWalkAnimation();
 
         SetMovingState(false);
+
+        movementCoroutine = null;
     }
 
 

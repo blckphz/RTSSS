@@ -36,6 +36,12 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField]
     private string description;
 
+    [Tooltip(
+        "If TRUE, this ability requires an enemy/object target. " +
+        "If FALSE, it can be used directly on a tile."
+    )]
+    public bool NeedEnemy;
+
 
     // ============================================================
     // COMBAT
@@ -156,6 +162,11 @@ public abstract class AbilitySO : ScriptableObject
     public bool CanAttackWithThisAfterMove()
     {
         return canAttackWithThisAfterMove;
+    }
+
+    public bool NeedsEnemy()
+    {
+        return NeedEnemy;
     }
 
 
@@ -442,7 +453,6 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
-                    // UP
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -450,7 +460,6 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.up * i
                     );
 
-                    // DOWN
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -458,7 +467,6 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.down * i
                     );
 
-                    // LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -466,7 +474,6 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.left * i
                     );
 
-                    // RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -495,48 +502,32 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
-                    // UP + RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            i,
-                            i
-                        )
+                        new Vector2Int(i, i)
                     );
 
-                    // UP + LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            -i,
-                            i
-                        )
+                        new Vector2Int(-i, i)
                     );
 
-                    // DOWN + RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            i,
-                            -i
-                        )
+                        new Vector2Int(i, -i)
                     );
 
-                    // DOWN + LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            -i,
-                            -i
-                        )
+                        new Vector2Int(-i, -i)
                     );
                 }
 
@@ -560,11 +551,6 @@ public abstract class AbilitySO : ScriptableObject
                         continue;
                     }
 
-                    // ----------------------------
-                    // FOUR DIRECTIONS
-                    // ----------------------------
-
-                    // UP
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -572,7 +558,6 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.up * i
                     );
 
-                    // DOWN
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -580,7 +565,6 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.down * i
                     );
 
-                    // LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -588,7 +572,6 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.left * i
                     );
 
-                    // RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
@@ -596,53 +579,32 @@ public abstract class AbilitySO : ScriptableObject
                         Vector2Int.right * i
                     );
 
-
-                    // ----------------------------
-                    // FOUR DIAGONALS
-                    // ----------------------------
-
-                    // UP + RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            i,
-                            i
-                        )
+                        new Vector2Int(i, i)
                     );
 
-                    // UP + LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            -i,
-                            i
-                        )
+                        new Vector2Int(-i, i)
                     );
 
-                    // DOWN + RIGHT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            i,
-                            -i
-                        )
+                        new Vector2Int(i, -i)
                     );
 
-                    // DOWN + LEFT
                     AddValidTile(
                         gridManager,
                         tiles,
                         origin +
-                        new Vector2Int(
-                            -i,
-                            -i
-                        )
+                        new Vector2Int(-i, -i)
                     );
                 }
 
@@ -721,7 +683,7 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-        if (!CanTargetObject(user, target))
+        if (NeedEnemy && !CanTargetObject(user, target))
         {
             return false;
         }
@@ -781,10 +743,6 @@ public abstract class AbilitySO : ScriptableObject
             targetUnit.GetTeam();
 
 
-        // ========================================================
-        // ENEMY
-        // ========================================================
-
         if (targetType == TargetType.Enemy)
         {
             if (
@@ -806,10 +764,6 @@ public abstract class AbilitySO : ScriptableObject
         }
 
 
-        // ========================================================
-        // ALLY
-        // ========================================================
-
         if (targetType == TargetType.Ally)
         {
             if (
@@ -830,10 +784,6 @@ public abstract class AbilitySO : ScriptableObject
             return false;
         }
 
-
-        // ========================================================
-        // ANY
-        // ========================================================
 
         if (targetType == TargetType.Any)
         {

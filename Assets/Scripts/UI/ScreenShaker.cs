@@ -1,11 +1,9 @@
 using UnityEngine;
 using Unity.Cinemachine;
-using Diagnostics = System.Diagnostics;
 
 public class ScreenShaker : MonoBehaviour
 {
     public static ScreenShaker Instance { get; private set; }
-
 
     // =====================================================
     // CINEMACHINE
@@ -17,17 +15,13 @@ public class ScreenShaker : MonoBehaviour
 
     private CinemachineBasicMultiChannelPerlin perlin;
 
-
     // =====================================================
     // SHAKE STATE
     // =====================================================
 
     private float shakeTimer;
-
     private float shakeTimerTotal;
-
     private float startingIntensity;
-
 
     // =====================================================
     // DEBUG
@@ -36,7 +30,6 @@ public class ScreenShaker : MonoBehaviour
     [Header("Debug")]
     [SerializeField]
     private bool debugShakeCalls = true;
-
 
     // =====================================================
     // UNITY
@@ -47,7 +40,6 @@ public class ScreenShaker : MonoBehaviour
         // -------------------------------------------------
         // SINGLETON
         // -------------------------------------------------
-
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -56,238 +48,109 @@ public class ScreenShaker : MonoBehaviour
 
         Instance = this;
 
-
         // -------------------------------------------------
-        // FIND CAMERA
+        // FIND CAMERA & PERLIN
         // -------------------------------------------------
-
         if (cinemachineCamera == null)
         {
-            cinemachineCamera =
-                GetComponent<CinemachineCamera>();
+            cinemachineCamera = GetComponent<CinemachineCamera>() ?? FindFirstObjectByType<CinemachineCamera>();
         }
-
-
-        if (cinemachineCamera == null)
-        {
-            cinemachineCamera =
-                FindFirstObjectByType<CinemachineCamera>();
-        }
-
-
-        // -------------------------------------------------
-        // FIND PERLIN
-        // -------------------------------------------------
 
         if (cinemachineCamera != null)
         {
-            perlin =
-                cinemachineCamera.GetComponent<
-                    CinemachineBasicMultiChannelPerlin>();
+            perlin = cinemachineCamera.GetComponent<CinemachineBasicMultiChannelPerlin>();
         }
-
 
         // -------------------------------------------------
         // VALIDATION
         // -------------------------------------------------
-
         if (cinemachineCamera == null)
         {
-            Debug.LogError(
-                "[ScreenShaker] Could not find a CinemachineCamera!"
-            );
-
+            Debug.LogError("[ScreenShaker] Could not find a CinemachineCamera!");
             return;
         }
-
 
         if (perlin == null)
         {
             Debug.LogError(
-                "[ScreenShaker] CinemachineCamera was found, " +
-                "but it does NOT have a " +
-                "CinemachineBasicMultiChannelPerlin component!",
+                "[ScreenShaker] CinemachineCamera was found, but it does NOT have a CinemachineBasicMultiChannelPerlin component!",
                 cinemachineCamera
             );
-
             return;
         }
 
-
-
-        // Make sure it starts with no shake.
-        perlin.AmplitudeGain = 0f;
-        perlin.FrequencyGain = 0f;
+        ResetPerlin();
     }
-
-
-    // =====================================================
-    // UPDATE
-    // =====================================================
 
     private void Update()
     {
-        if (perlin == null)
+        if (perlin == null || shakeTimer <= 0f)
         {
             return;
         }
 
+        shakeTimer -= Time.unscaledDeltaTime;
 
         if (shakeTimer > 0f)
         {
-            shakeTimer -=
-                Time.unscaledDeltaTime;
-
-
-            float t =
-                shakeTimer /
-                shakeTimerTotal;
-
-
-            // Smooth fade out.
-            float intensity =
-                Mathf.Lerp(
-                    0f,
-                    startingIntensity,
-                    t
-                );
-
-
-            perlin.AmplitudeGain =
-                intensity;
-
-            perlin.FrequencyGain =
-                1f;
+            float t = shakeTimer / shakeTimerTotal;
+            perlin.AmplitudeGain = Mathf.Lerp(0f, startingIntensity, t);
+            perlin.FrequencyGain = 1f;
         }
         else
         {
-            perlin.AmplitudeGain = 0f;
-            perlin.FrequencyGain = 0f;
+            ResetPerlin();
         }
     }
-
 
     // =====================================================
     // SHAKE
     // =====================================================
 
-    public void Shake(
-        float intensity,
-        float duration = 0.15f)
+    public void Shake(float intensity, float duration = 0.15f)
     {
         if (perlin == null)
         {
-            Debug.LogWarning(
-                "[ScreenShaker] Shake requested, " +
-                "but Perlin noise is not connected!"
-            );
-
+            Debug.LogWarning("[ScreenShaker] Shake requested, but Perlin noise is not connected!");
             return;
         }
-
-
-        // -------------------------------------------------
-        // DEBUG
-        // -------------------------------------------------
-
-        if (debugShakeCalls)
-        {
-            Diagnostics.StackTrace trace =
-                new Diagnostics.StackTrace();
-
-
-            string caller =
-                "Unknown Caller";
-
-
-            if (trace.FrameCount > 1)
-            {
-                var frame =
-                    trace.GetFrame(1);
-
-
-                if (frame != null)
-                {
-                    var method =
-                        frame.GetMethod();
-
-
-                    if (method != null)
-                    {
-                        caller =
-                            $"{method.DeclaringType.Name}." +
-                            $"{method.Name}";
-                    }
-                }
-            }
-
-        }
-
 
         // -------------------------------------------------
         // PROTECT AGAINST INVALID VALUES
         // -------------------------------------------------
+        startingIntensity = Mathf.Max(0f, intensity);
+        shakeTimerTotal = Mathf.Max(0.01f, duration);
+        shakeTimer = shakeTimerTotal;
 
-        intensity =
-            Mathf.Max(
-                0f,
-                intensity
-            );
-
-
-        duration =
-            Mathf.Max(
-                0.01f,
-                duration
-            );
-
-
-        // -------------------------------------------------
-        // APPLY SHAKE
-        // -------------------------------------------------
-
-        startingIntensity =
-            intensity;
-
-
-        shakeTimerTotal =
-            duration;
-
-
-        shakeTimer =
-            duration;
-
-
-        perlin.AmplitudeGain =
-            intensity;
-
-
-        perlin.FrequencyGain =
-            1f;
+        perlin.AmplitudeGain = startingIntensity;
+        perlin.FrequencyGain = 1f;
     }
-
 
     // =====================================================
     // STATIC SHAKE
     // =====================================================
 
-    public static void ShakeScreen(
-        float intensity,
-        float duration = 0.15f)
+    public static void ShakeScreen(float intensity, float duration = 0.15f)
     {
         if (Instance == null)
         {
-            Debug.LogWarning(
-                "[ScreenShaker] Instance not found!"
-            );
-
+            Debug.LogWarning("[ScreenShaker] Instance not found!");
             return;
         }
 
+        Instance.Shake(intensity, duration);
+    }
 
-        Instance.Shake(
-            intensity,
-            duration
-        );
+    // =====================================================
+    // HELPER METHODS
+    // =====================================================
+
+    private void ResetPerlin()
+    {
+        if (perlin != null)
+        {
+            perlin.AmplitudeGain = 0f;
+            perlin.FrequencyGain = 0f;
+        }
     }
 }

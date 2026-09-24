@@ -1,25 +1,10 @@
 fileFormatVersion: 2
-guid: e8634a34c1a0da24ea25b39528a2738e
+guid: 2fa356b8140b48543b7bef9f8a28bcd3
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 2435301500484193355
-    second: Bear_Trap_0
-  - first:
-      213: -9080635200827685749
-    second: Bear_Trap_1
-  - first:
-      213: -2400208759518429876
-    second: Bear_Trap_2
-  - first:
-      213: 1351451857679782963
-    second: Bear_Trap_3
-  - first:
-      213: -894080948239011975
-    second: Bear_Trap_4
-  - first:
-      213: 6489366200590883201
-    second: Bear_Trap_5
+      213: 7809447051014480680
+    second: turretsiluhette_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -66,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 33
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -89,7 +74,7 @@ TextureImporter:
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
-    textureFormat: 4
+    textureFormat: -1
     textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
@@ -141,89 +126,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Bear_Trap_0
+      name: turretsiluhette_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
+        width: 31
+        height: 61
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 7bd0e2b9a1122e94f8e0711b989b3918
-      internalID: 2435301500484193355
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Bear_Trap_1
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 00ddc184f094b734587b527688e499a5
-      internalID: -9080635200827685749
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Bear_Trap_2
-      rect:
-        serializedVersion: 2
-        x: 64
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 1ee63c6596cf8e44b8254f08aee4f90c
-      internalID: -2400208759518429876
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Bear_Trap_3
-      rect:
-        serializedVersion: 2
-        x: 96
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: b35575d3817b8ed4aa6506eba7ab425c
-      internalID: 1351451857679782963
+      spriteID: 823a0f777bab06c60800000000000000
+      internalID: 7809447051014480680
       vertices: []
       indices: 
       edges: []
@@ -232,7 +151,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 756b100f6d8e21e478d57b9fc1210370
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -240,14 +159,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries:
-      - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+      entries: []
     nameFileIdTable:
-      Bear_Trap_0: 2435301500484193355
-      Bear_Trap_1: -9080635200827685749
-      Bear_Trap_2: -2400208759518429876
-      Bear_Trap_3: 1351451857679782963
+      turretsiluhette_0: 7809447051014480680
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

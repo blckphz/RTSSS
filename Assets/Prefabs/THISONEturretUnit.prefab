@@ -308,8 +308,15 @@ MonoBehaviour:
   abilities: []
   healthManager: {fileID: 4933836166059831416}
   animationController: {fileID: 0}
+  upgradeableCombatUnit: {fileID: 0}
+  dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 0
   attackAnimatorLayerName: attackLayer
+  dayNightType: 2
+  dayDamageBonus: 0
+  nightDamageBonus: 0
+  dayMoveRangeBonus: 0
+  nightMoveRangeBonus: 0
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &8247258341616857218
 MonoBehaviour:
@@ -564,6 +571,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d11b11ba9650c404c89f1c1f3c81fd7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  bonusHealth: 0
+  bonusDamage: 0
+  bonusRange: 0
 --- !u!1 &5959131500837783771
 GameObject:
   m_ObjectHideFlags: 0

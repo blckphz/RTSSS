@@ -91,14 +91,12 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Clear ability first.
         if (HasSelectedAbility())
         {
             ClearSelectedAbility(true);
             return;
         }
 
-        // Otherwise clear unit selection.
         if (CurrentSelection != null)
         {
             ClearSelection();
@@ -133,7 +131,6 @@ public class UIManager : MonoBehaviour
                 .position
                 .ReadValue();
 
-        // Ability UI gets checked first.
         if (TryHandleAbilityUI())
         {
             return;
@@ -154,7 +151,6 @@ public class UIManager : MonoBehaviour
         HoverInfoTrigger clickedTrigger =
             GetClickedTrigger(hit);
 
-        // Ability is currently selected.
         if (HasSelectedAbility())
         {
             TryUseSelectedAbility(
@@ -165,14 +161,12 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Clicked a unit.
         if (clickedTrigger != null)
         {
             SelectObject(clickedTrigger);
             return;
         }
 
-        // Try moving the selected unit.
         if (
             allowPlayerMovement &&
             CurrentSelection != null
@@ -188,7 +182,6 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // Nothing useful was clicked.
         ClearSelection();
     }
 
@@ -249,17 +242,6 @@ public class UIManager : MonoBehaviour
         {
             return true;
         }
-
-        // =====================================================
-        // IMPORTANT CAMERA RULE
-        // =====================================================
-        //
-        // If the camera is FREE:
-        //     DO NOT MOVE IT.
-        //
-        // If the camera is LOCKED:
-        //     Move to the ability camera position.
-        //
 
         if (
             CanvasJuiceManager.Instance != null &&
@@ -395,16 +377,6 @@ public class UIManager : MonoBehaviour
                 .ClearSelectedAbility();
         }
 
-        // =====================================================
-        // IMPORTANT CAMERA RULE
-        // =====================================================
-        //
-        // Only return to the unit if LOCK MODE is active.
-        //
-        // In FREE MODE:
-        //     Do not touch the camera.
-        //
-
         if (
             returnCameraToUnit &&
             CurrentSelection != null &&
@@ -491,6 +463,50 @@ public class UIManager : MonoBehaviour
         if (gridManager == null)
         {
             return false;
+        }
+
+        // =====================================================
+        // BEAR TRAP - TILE TARGETED
+        // =====================================================
+
+        if (ability is BearTrapAttack)
+        {
+            Vector2Int bearTrapTile =
+                ScreenToGridPosition(
+                    mousePosition,
+                    gridManager
+                );
+
+            if (
+                !gridManager.IsInsideGrid(
+                    bearTrapTile
+                )
+            )
+            {
+                return false;
+            }
+
+            List<Vector2Int> bearTrapRange =
+                ability.GetRangeTiles(
+                    gridManager,
+                    selectedObject
+                );
+
+            if (
+                bearTrapRange == null ||
+                !bearTrapRange.Contains(
+                    bearTrapTile
+                )
+            )
+            {
+                return false;
+            }
+
+            return UseBearTrapAbility(
+                attackUnit,
+                ability,
+                bearTrapTile
+            );
         }
 
         // =====================================================
@@ -643,7 +659,66 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-        // Ability clears without moving camera.
+        ClearSelectedAbility(false);
+
+        return true;
+    }
+
+    // =========================================================
+    // BEAR TRAP
+    // =========================================================
+
+    private bool UseBearTrapAbility(
+        AttackUnit attackUnit,
+        AbilitySO ability,
+        Vector2Int targetTile)
+    {
+        if (
+            attackUnit == null ||
+            ability == null
+        )
+        {
+            return false;
+        }
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            return false;
+        }
+
+        GridManager gridManager =
+            moveBrain.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+        if (
+            !ability.CanHitTile(
+                gridManager,
+                attackUnit.gameObject,
+                targetTile
+            )
+        )
+        {
+            return false;
+        }
+
+        bool used =
+            attackUnit.AttackAtTile(
+                targetTile,
+                ability
+            );
+
+        if (!used)
+        {
+            return false;
+        }
+
         ClearSelectedAbility(false);
 
         return true;
@@ -691,7 +766,6 @@ public class UIManager : MonoBehaviour
             return false;
         }
 
-        // Ability clears without moving camera.
         ClearSelectedAbility(false);
 
         return true;
@@ -947,10 +1021,6 @@ public class UIManager : MonoBehaviour
             trigger
         );
 
-        // CanvasJuiceManager itself handles whether
-        // the camera is locked or in free mode.
-        //
-        // In free mode this will NOT move the camera.
         if (CanvasJuiceManager.Instance != null)
         {
             CanvasJuiceManager.Instance
