@@ -45,6 +45,69 @@ public class ChainLightning : AbilitySO
 
 
     // ============================================================
+    // EFFECTIVE JUMPS
+    // ============================================================
+
+    /*
+     * The ChainLightning ScriptableObject remains unchanged.
+     *
+     * Base value:
+     *
+     *     maxJumps
+     *
+     * Runtime upgrade:
+     *
+     *     UnitData.GetBonusJumps(this)
+     *
+     * Example:
+     *
+     *     maxJumps = 5
+     *     bonus    = 2
+     *
+     *     effective jumps = 7
+     *
+     * This means different units can have different runtime
+     * Chain Lightning values while sharing the same ScriptableObject.
+     */
+
+    private int GetEffectiveMaxJumps(
+        GameObject user
+    )
+    {
+        int bonusJumps = 0;
+
+        if (user != null)
+        {
+            UnitData unitData =
+                user.GetComponent<UnitData>();
+
+            if (unitData == null)
+            {
+                unitData =
+                    user.GetComponentInParent<UnitData>();
+            }
+
+            if (unitData == null)
+            {
+                unitData =
+                    user.GetComponentInChildren<UnitData>();
+            }
+
+            if (unitData != null)
+            {
+                bonusJumps =
+                    unitData.GetBonusJumps(this);
+            }
+        }
+
+        return Mathf.Max(
+            1,
+            maxJumps + bonusJumps
+        );
+    }
+
+
+    // ============================================================
     // CAN HIT
     // ============================================================
 
@@ -181,11 +244,25 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // EFFECTIVE JUMP COUNT
+        // ========================================================
+
+        int effectiveMaxJumps =
+            GetEffectiveMaxJumps(user);
+
+
+        // ========================================================
+        // CREATE CHAIN
+        // ========================================================
+
         List<GameObject> chain =
             GetChainPreview(
                 user,
                 target,
-                gridManager
+                gridManager,
+                effectiveMaxJumps
             );
 
         if (
@@ -196,6 +273,11 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // SPAWN POINT
+        // ========================================================
+
         Transform spawnPoint =
             FindAbilitySpawnPoint(user);
 
@@ -203,6 +285,11 @@ public class ChainLightning : AbilitySO
             spawnPoint != null
                 ? spawnPoint.position
                 : user.transform.position;
+
+
+        // ========================================================
+        // PROJECTILE
+        // ========================================================
 
         GameObject projectile =
             Instantiate(
@@ -226,14 +313,21 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-        /*
-         * Determine how many bounces remain when
-         * the turret is encountered.
-         */
+
+        // ========================================================
+        // TURRET CHARGES
+        // ========================================================
+
         int turretCharges =
             GetTurretCharges(
-                chain
+                chain,
+                effectiveMaxJumps
             );
+
+
+        // ========================================================
+        // INITIALIZE PROJECTILE
+        // ========================================================
 
         projectileComponent.Initialize(
             user,
@@ -254,7 +348,8 @@ public class ChainLightning : AbilitySO
     // ============================================================
 
     private int GetTurretCharges(
-        List<GameObject> chain)
+        List<GameObject> chain,
+        int effectiveMaxJumps)
     {
         if (
             chain == null ||
@@ -267,23 +362,17 @@ public class ChainLightning : AbilitySO
         /*
          * Find the turret in the chain.
          *
-         * Example with maxJumps = 2:
+         * Example:
          *
-         * chain:
+         * Base maxJumps = 5
+         * Bonus        = 2
+         * Effective    = 7
          *
-         * [0] Turret
+         * If turret is at index 3:
          *
-         * turretIndex = 0
-         * remaining = 2
+         *     remaining = 7 - 3
          *
-         *
-         * chain:
-         *
-         * [0] Enemy
-         * [1] Turret
-         *
-         * turretIndex = 1
-         * remaining = 1
+         *                 = 4
          */
 
         for (
@@ -310,7 +399,7 @@ public class ChainLightning : AbilitySO
             }
 
             int remainingBounces =
-                maxJumps - i;
+                effectiveMaxJumps - i;
 
             return Mathf.Max(
                 1,
@@ -377,6 +466,29 @@ public class ChainLightning : AbilitySO
         GameObject firstTarget,
         GridManager gridManager)
     {
+        /*
+         * This overload is kept so any other code already calling
+         * GetChainPreview() does not break.
+         */
+
+        int effectiveMaxJumps =
+            GetEffectiveMaxJumps(user);
+
+        return GetChainPreview(
+            user,
+            firstTarget,
+            gridManager,
+            effectiveMaxJumps
+        );
+    }
+
+
+    public List<GameObject> GetChainPreview(
+        GameObject user,
+        GameObject firstTarget,
+        GridManager gridManager,
+        int effectiveMaxJumps)
+    {
         List<GameObject> chain =
             new List<GameObject>();
 
@@ -389,6 +501,12 @@ public class ChainLightning : AbilitySO
             return chain;
         }
 
+        effectiveMaxJumps =
+            Mathf.Max(
+                1,
+                effectiveMaxJumps
+            );
+
         HashSet<GameObject> hitTargets =
             new HashSet<GameObject>();
 
@@ -398,7 +516,12 @@ public class ChainLightning : AbilitySO
         int jump = 0;
 
         int maximumJumps =
-            maxJumps;
+            effectiveMaxJumps;
+
+
+        // ========================================================
+        // BUILD CHAIN
+        // ========================================================
 
         while (
             currentTarget != null &&
@@ -446,13 +569,11 @@ public class ChainLightning : AbilitySO
                  * Add the turret as the final visual
                  * destination.
                  *
-                 * IMPORTANT:
-                 *
                  * We do NOT calculate another enemy after
                  * the turret.
                  *
-                 * The remaining bounce count will later
-                 * be converted into turret charges.
+                 * The remaining bounce count is converted
+                 * into turret charges later.
                  */
 
                 chain.Add(
@@ -605,9 +726,7 @@ public class ChainLightning : AbilitySO
          * Subsequent normal chain targets remain
          * enemy-only.
          *
-         * The turret is handled separately by the
-         * initial target logic or by the targeting
-         * system.
+         * The turret is handled separately.
          */
         return CanTargetObject(
             user,
@@ -873,6 +992,7 @@ public class ChainLightning : AbilitySO
     {
         return stunPercentage;
     }
+
 
     public int GetStunDuration()
     {
