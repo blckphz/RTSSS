@@ -22,5 +22,6 @@ MonoBehaviour:
   canwalkdiagonally: 0
   abilities:
   - {fileID: 11400000, guid: 3958a97feaad6bf42abec88350df97d2, type: 2}
+  - {fileID: 11400000, guid: 02e442e2531c5544bb4ef723fb26a5ea, type: 2}
   RangedAttacker: 0
   upgrades: []

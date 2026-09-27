@@ -15,6 +15,7 @@ MonoBehaviour:
   abilityName: Bomb Throw
   abilityIcon: {fileID: 0}
   description: Explodes in a Radius
+  NeedEnemy: 0
   damage: 30
   cooldown: 4
   canAttackWithThisAfterMove: 1

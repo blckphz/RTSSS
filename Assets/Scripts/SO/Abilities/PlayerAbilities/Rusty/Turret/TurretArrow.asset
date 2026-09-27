@@ -15,9 +15,10 @@ MonoBehaviour:
   abilityName: Arrow Shot
   abilityIcon: {fileID: 0}
   description: A Volley of Pointy Arrows
+  NeedEnemy: 0
   damage: 10
   cooldown: 1
-  canAttackWithThisAfterMove: 1
+  canAttackWithThisAfterMove: 0
   usesPerTurn: 2
   useDuration: 0.25
   targetType: 0

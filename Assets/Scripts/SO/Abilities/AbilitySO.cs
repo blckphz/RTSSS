@@ -36,6 +36,8 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField]
     private string description;
 
+    public AudioClip launchSFX;
+
     [Tooltip(
         "If TRUE, this ability requires an enemy/object target. " +
         "If FALSE, it can be used directly on a tile."

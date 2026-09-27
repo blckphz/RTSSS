@@ -14,15 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BearTrapAttack
   abilityName: BearTrap
   abilityIcon: {fileID: 2435301500484193355, guid: e8634a34c1a0da24ea25b39528a2738e, type: 3}
-  description: 'Trap your enemies! '
+  description: Trap your enemies!
+  NeedEnemy: 0
   damage: 10
-  cooldown: 0
-  canAttackWithThisAfterMove: 0
+  cooldown: 3
+  canAttackWithThisAfterMove: 1
   usesPerTurn: 1
   useDuration: 0.25
-  targetType: 0
+  targetType: 2
   range: 3
   minDistance: 0
   rangeShape: 0
-  trapPrefab: {fileID: 536419472457690279, guid: 8cdcb0086d616a84d8857fcb045fb3e0, type: 3}
+  bearTrapPrefab: {fileID: 536419472457690279, guid: 8cdcb0086d616a84d8857fcb045fb3e0, type: 3}
   destroyAfterTrigger: 0

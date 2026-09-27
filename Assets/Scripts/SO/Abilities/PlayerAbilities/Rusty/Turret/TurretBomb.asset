@@ -15,9 +15,10 @@ MonoBehaviour:
   abilityName: Bomb
   abilityIcon: {fileID: 0}
   description: 
+  NeedEnemy: 0
   damage: 30
-  cooldown: 5
-  canAttackWithThisAfterMove: 1
+  cooldown: 6
+  canAttackWithThisAfterMove: 0
   usesPerTurn: 1
   useDuration: 0.25
   targetType: 0
