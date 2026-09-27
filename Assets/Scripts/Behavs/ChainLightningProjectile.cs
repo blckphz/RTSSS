@@ -3,19 +3,9 @@ using UnityEngine;
 
 public class ChainLightningProjectile : MonoBehaviour
 {
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     [Header("Visual")]
-
     [SerializeField]
     private Transform spriteTransform;
-
-
-    // ============================================================
-    // STATE
-    // ============================================================
 
     private GameObject user;
 
@@ -23,25 +13,26 @@ public class ChainLightningProjectile : MonoBehaviour
         new List<GameObject>();
 
     private float speed;
-
     private int damage;
 
     private float stunPercentage;
-
-    // Number of turns the target remains stunned.
     private int stunDuration;
+
+    /*
+     * Number of charges the turret receives
+     * when the projectile reaches it.
+     */
+    private int turretCharges;
 
     private int currentTargetIndex;
 
-    private Vector3 startPosition;
+    private GameObject currentTarget;
 
+    private Vector3 startPosition;
     private Vector3 targetPosition;
 
-    private float flightTime;
-
+    private float travelTime;
     private float elapsedTime;
-
-    private bool initialized;
 
 
     // ============================================================
@@ -54,7 +45,8 @@ public class ChainLightningProjectile : MonoBehaviour
         float speed,
         int damage,
         float stunPercentage,
-        int stunDuration)
+        int stunDuration,
+        int turretCharges)
     {
         this.user = user;
 
@@ -65,86 +57,113 @@ public class ChainLightningProjectile : MonoBehaviour
                 )
                 : new List<GameObject>();
 
-        this.speed =
-            Mathf.Max(
-                0.01f,
-                speed
-            );
+        this.speed = speed;
 
         this.damage = damage;
 
         this.stunPercentage =
-            Mathf.Clamp(
-                stunPercentage,
-                0f,
-                100f
-            );
+            stunPercentage;
 
         this.stunDuration =
+            stunDuration;
+
+        this.turretCharges =
             Mathf.Max(
-                0,
-                stunDuration
+                1,
+                turretCharges
             );
 
         currentTargetIndex = 0;
-
-        initialized = false;
-
-        if (
-            this.user == null ||
-            this.chainTargets.Count == 0
-        )
-        {
-            Destroy(gameObject);
-            return;
-        }
 
         StartNextTarget();
     }
 
 
     // ============================================================
-    // START NEXT TARGET
+    // UPDATE
+    // ============================================================
+
+    private void Update()
+    {
+        if (currentTarget == null)
+        {
+            StartNextTarget();
+            return;
+        }
+
+        elapsedTime +=
+            Time.deltaTime;
+
+        float t =
+            travelTime > 0f
+                ? elapsedTime / travelTime
+                : 1f;
+
+        t =
+            Mathf.Clamp01(t);
+
+        transform.position =
+            Vector3.Lerp(
+                startPosition,
+                targetPosition,
+                t
+            );
+
+        if (t >= 1f)
+        {
+            HitTarget();
+        }
+    }
+
+
+    // ============================================================
+    // NEXT TARGET
     // ============================================================
 
     private void StartNextTarget()
     {
-        initialized = false;
+        currentTarget = null;
 
         while (
             currentTargetIndex <
             chainTargets.Count
         )
         {
-            GameObject target =
+            GameObject candidate =
                 chainTargets[
                     currentTargetIndex
                 ];
 
-            if (
-                target != null &&
-                target.activeInHierarchy
-            )
-            {
-                AttackUnit unit =
-                    target.GetComponent<AttackUnit>();
+            currentTargetIndex++;
 
-                if (
-                    unit != null &&
-                    !unit.IsDead()
-                )
-                {
-                    break;
-                }
+            if (candidate == null)
+            {
+                continue;
             }
 
-            currentTargetIndex++;
+            if (!candidate.activeInHierarchy)
+            {
+                continue;
+            }
+
+            AttackUnit attackUnit =
+                candidate.GetComponent<AttackUnit>();
+
+            if (
+                attackUnit != null &&
+                attackUnit.IsDead()
+            )
+            {
+                continue;
+            }
+
+            currentTarget =
+                candidate;
+
+            break;
         }
 
-        if (
-            currentTargetIndex >=
-            chainTargets.Count
-        )
+        if (currentTarget == null)
         {
             Destroy(gameObject);
             return;
@@ -152,11 +171,6 @@ public class ChainLightningProjectile : MonoBehaviour
 
         startPosition =
             transform.position;
-
-        GameObject currentTarget =
-            chainTargets[
-                currentTargetIndex
-            ];
 
         targetPosition =
             currentTarget.transform.position;
@@ -167,99 +181,12 @@ public class ChainLightningProjectile : MonoBehaviour
                 targetPosition
             );
 
-        flightTime =
-            Mathf.Max(
-                0.01f,
-                distance / speed
-            );
+        travelTime =
+            speed > 0f
+                ? distance / speed
+                : 0f;
 
         elapsedTime = 0f;
-
-        RefreshRotation();
-
-        initialized = true;
-    }
-
-
-    // ============================================================
-    // UPDATE
-    // ============================================================
-
-    private void Update()
-    {
-        if (!initialized)
-        {
-            return;
-        }
-
-        elapsedTime +=
-            Time.deltaTime;
-
-        float t =
-            Mathf.Clamp01(
-                elapsedTime /
-                flightTime
-            );
-
-        transform.position =
-            Vector3.Lerp(
-                startPosition,
-                targetPosition,
-                t
-            );
-
-        RefreshRotation();
-
-        if (t >= 1f)
-        {
-            HitTarget();
-        }
-    }
-
-
-    // ============================================================
-    // ROTATION
-    // ============================================================
-
-    private void RefreshRotation()
-    {
-        Vector3 direction =
-            targetPosition -
-            transform.position;
-
-        if (
-            direction.sqrMagnitude <=
-            0.0001f
-        )
-        {
-            return;
-        }
-
-        direction.Normalize();
-
-        float angle =
-            Mathf.Atan2(
-                direction.y,
-                direction.x
-            ) * Mathf.Rad2Deg;
-
-        Quaternion rotation =
-            Quaternion.Euler(
-                0f,
-                0f,
-                angle + 90f
-            );
-
-        if (spriteTransform != null)
-        {
-            spriteTransform.rotation =
-                rotation;
-        }
-        else
-        {
-            transform.rotation =
-                rotation;
-        }
     }
 
 
@@ -269,35 +196,67 @@ public class ChainLightningProjectile : MonoBehaviour
 
     private void HitTarget()
     {
-        if (!initialized)
+        if (currentTarget == null)
         {
+            StartNextTarget();
             return;
         }
 
-        initialized = false;
 
-        GameObject target = null;
+        // ========================================================
+        // TURRET
+        // ========================================================
 
-        if (
-            currentTargetIndex >= 0 &&
-            currentTargetIndex <
-            chainTargets.Count
-        )
+        turretbehav turret =
+            currentTarget.GetComponent<
+                turretbehav>();
+
+        if (turret != null)
         {
-            target =
-                chainTargets[
-                    currentTargetIndex
-                ];
+            /*
+             * The turret does not take damage.
+             *
+             * The turret does not get stunned.
+             *
+             * Instead, ALL remaining bounces are converted
+             * into charges.
+             *
+             * Example:
+             *
+             * maxJumps = 5
+             * turret is first target
+             * turretCharges = 5
+             *
+             * Result:
+             *
+             * Turret +5 charges
+             *
+             * Chain immediately ends.
+             */
+
+            turret.AddChainLightningCharges(
+                turretCharges
+            );
+
+            Destroy(gameObject);
+
+            return;
         }
 
-        if (target != null)
-        {
-            DealDamage(target);
 
-            TryApplyStun(target);
-        }
+        // ========================================================
+        // NORMAL TARGET
+        // ========================================================
 
-        currentTargetIndex++;
+        DealDamage(
+            currentTarget
+        );
+
+        TryApplyStun(
+            currentTarget
+        );
+
+        currentTarget = null;
 
         StartNextTarget();
     }
@@ -311,6 +270,22 @@ public class ChainLightningProjectile : MonoBehaviour
         GameObject target)
     {
         if (target == null)
+        {
+            return;
+        }
+
+        AttackUnit targetUnit =
+            target.GetComponent<AttackUnit>();
+
+        /*
+         * Player targets are allowed to be aimed at,
+         * but Chain Lightning does NOT damage them.
+         */
+        if (
+            targetUnit != null &&
+            targetUnit.GetTeam() ==
+            Team.Player
+        )
         {
             return;
         }
@@ -336,11 +311,17 @@ public class ChainLightningProjectile : MonoBehaviour
     private void TryApplyStun(
         GameObject target)
     {
-        if (
-            target == null ||
-            stunPercentage <= 0f ||
-            stunDuration <= 0
-        )
+        if (target == null)
+        {
+            return;
+        }
+
+        if (stunPercentage <= 0f)
+        {
+            return;
+        }
+
+        if (stunDuration <= 0)
         {
             return;
         }
@@ -353,14 +334,21 @@ public class ChainLightningProjectile : MonoBehaviour
             return;
         }
 
-        if (targetUnit.IsDead())
+        /*
+         * Player targets cannot be stunned.
+         */
+        if (
+            targetUnit.GetTeam() ==
+            Team.Player
+        )
         {
             return;
         }
 
-        // --------------------------------------------------------
-        // ROLL STUN CHANCE
-        // --------------------------------------------------------
+        if (targetUnit.IsDead())
+        {
+            return;
+        }
 
         float roll =
             Random.Range(
@@ -368,17 +356,10 @@ public class ChainLightningProjectile : MonoBehaviour
                 100f
             );
 
-        bool stunSucceeded =
-            roll <= stunPercentage;
-
-        if (!stunSucceeded)
+        if (roll > stunPercentage)
         {
             return;
         }
-
-        // --------------------------------------------------------
-        // APPLY STUN
-        // --------------------------------------------------------
 
         ConditionManager.ApplyStun(
             target,

@@ -3,14 +3,14 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [CreateAssetMenu(
-fileName = "ChainLightning",
-menuName = "Combat/Abilities/Chain Lightning"
+    fileName = "ChainLightning",
+    menuName = "Combat/Abilities/Chain Lightning"
 )]
 public class ChainLightning : AbilitySO
 {
     [Header("Chain Lightning")]
 
-[SerializeField, Min(1)]
+    [SerializeField, Min(1)]
     private int maxJumps = 5;
 
     [SerializeField, Min(0f)]
@@ -45,53 +45,73 @@ public class ChainLightning : AbilitySO
 
 
     // ============================================================
-    // JUMPS
+    // CAN HIT
     // ============================================================
 
-    public int GetBaseMaxJumps()
+    public override bool CanHit(
+        GridManager gridManager,
+        GameObject user,
+        GameObject target)
     {
-        return maxJumps;
-    }
-
-
-    public int GetBonusJumps(UnitData unitData)
-    {
-        if (unitData == null)
+        if (
+            gridManager == null ||
+            user == null ||
+            target == null
+        )
         {
-            return 0;
+            return false;
         }
 
-        return unitData.GetBonusJumps(this);
-    }
+        if (!CanUseAfterMovement(user))
+        {
+            return false;
+        }
 
+        AttackUnit targetUnit =
+            target.GetComponent<AttackUnit>();
 
-    public int GetMaxJumps(UnitData unitData)
-    {
-        int bonus =
-            GetBonusJumps(unitData);
+        if (targetUnit == null)
+        {
+            return false;
+        }
 
+        if (targetUnit.IsDead())
+        {
+            return false;
+        }
 
-        int total =
-            maxJumps + bonus;
+        bool validTarget =
+            CanTargetObject(
+                user,
+                target
+            );
 
+        /*
+         * Chain Lightning can also initially target
+         * a Player-team object such as the turret.
+         */
+        if (!validTarget)
+        {
+            validTarget =
+                targetUnit.GetTeam() ==
+                Team.Player;
+        }
 
-        return total;
-    }
+        if (!validTarget)
+        {
+            return false;
+        }
 
+        Vector2Int targetPosition =
+            gridManager.WorldToGridPosition(
+                target.transform.position
+            );
 
-    // ============================================================
-    // STUN
-    // ============================================================
-
-    public float GetStunPercentage()
-    {
-        return stunPercentage;
-    }
-
-
-    public int GetStunDuration()
-    {
-        return stunDuration;
+        return CanHitTile(
+            gridManager,
+            user,
+            targetPosition
+        );
     }
 
 
@@ -111,65 +131,62 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-
         if (!CanUseAfterMovement(user))
         {
             return false;
         }
 
-
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
-
 
         if (targetUnit == null)
         {
             return false;
         }
 
-
-        if (!CanTargetObject(user, target))
+        if (targetUnit.IsDead())
         {
             return false;
         }
 
+        /*
+         * Normal Chain Lightning targets must pass
+         * CanTargetObject().
+         *
+         * Player targets are allowed specifically so
+         * the turret can be targeted.
+         */
+        if (
+            !CanTargetObject(
+                user,
+                target
+            ) &&
+            targetUnit.GetTeam() !=
+            Team.Player
+        )
+        {
+            return false;
+        }
 
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
-
 
         if (gridManager == null)
         {
             return false;
         }
 
-
         if (projectilePrefab == null)
         {
             return false;
         }
 
-
-        // ========================================================
-        // UNIT DATA
-        // ========================================================
-
-        UnitData unitData =
-            FindUnitData(user);
-
-
-        // ========================================================
-        // BUILD CHAIN
-        // ========================================================
-
         List<GameObject> chain =
             GetChainPreview(
                 user,
                 target,
-                gridManager,
-                unitData
+                gridManager
             );
-
 
         if (
             chain == null ||
@@ -179,24 +196,13 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-
-        // ========================================================
-        // SPAWN POINT
-        // ========================================================
-
         Transform spawnPoint =
             FindAbilitySpawnPoint(user);
-
 
         Vector3 spawnPosition =
             spawnPoint != null
                 ? spawnPoint.position
                 : user.transform.position;
-
-
-        // ========================================================
-        // PROJECTILE
-        // ========================================================
 
         GameObject projectile =
             Instantiate(
@@ -205,85 +211,119 @@ public class ChainLightning : AbilitySO
                 Quaternion.identity
             );
 
-
         if (projectile == null)
         {
             return false;
         }
 
-
-        ChainLightningProjectile
-            projectileComponent =
-                projectile.GetComponent<
-                    ChainLightningProjectile
-                >();
-
+        ChainLightningProjectile projectileComponent =
+            projectile.GetComponent<
+                ChainLightningProjectile>();
 
         if (projectileComponent == null)
         {
             Destroy(projectile);
-
             return false;
         }
 
+        /*
+         * Determine how many bounces remain when
+         * the turret is encountered.
+         */
+        int turretCharges =
+            GetTurretCharges(
+                chain
+            );
 
         projectileComponent.Initialize(
             user,
             chain,
             projectileSpeed,
-            GetDamage(),
+            GetEffectiveDamage(user),
             stunPercentage,
-            stunDuration
+            stunDuration,
+            turretCharges
         );
-
 
         return true;
     }
 
 
     // ============================================================
-    // FIND UNIT DATA
+    // TURRET CHARGES
     // ============================================================
 
-    private UnitData FindUnitData(
-        GameObject user)
+    private int GetTurretCharges(
+        List<GameObject> chain)
     {
-        if (user == null)
+        if (
+            chain == null ||
+            chain.Count == 0
+        )
         {
-            return null;
+            return 0;
         }
 
+        /*
+         * Find the turret in the chain.
+         *
+         * Example with maxJumps = 2:
+         *
+         * chain:
+         *
+         * [0] Turret
+         *
+         * turretIndex = 0
+         * remaining = 2
+         *
+         *
+         * chain:
+         *
+         * [0] Enemy
+         * [1] Turret
+         *
+         * turretIndex = 1
+         * remaining = 1
+         */
 
-        UnitData unitData =
-            user.GetComponent<UnitData>();
-
-
-        if (unitData != null)
+        for (
+            int i = 0;
+            i < chain.Count;
+            i++
+        )
         {
-            return unitData;
+            GameObject target =
+                chain[i];
+
+            if (target == null)
+            {
+                continue;
+            }
+
+            turretbehav turret =
+                target.GetComponent<
+                    turretbehav>();
+
+            if (turret == null)
+            {
+                continue;
+            }
+
+            int remainingBounces =
+                maxJumps - i;
+
+            return Mathf.Max(
+                1,
+                remainingBounces
+            );
         }
 
-
-        unitData =
-            user.GetComponentInChildren<UnitData>();
-
-
-        if (unitData != null)
-        {
-            return unitData;
-        }
-
-
-        unitData =
-            user.GetComponentInParent<UnitData>();
-
-
-        return unitData;
+        return 0;
     }
 
 
     // ============================================================
-    // FIND SPAWN POINT
+    // SPAWN POINT
     // ============================================================
 
     private Transform FindAbilitySpawnPoint(
@@ -294,12 +334,20 @@ public class ChainLightning : AbilitySO
             return null;
         }
 
+        Transform spawnPoint =
+            user.transform.Find(
+                abilitySpawnPointName
+            );
+
+        if (spawnPoint != null)
+        {
+            return spawnPoint;
+        }
 
         Transform[] children =
             user.GetComponentsInChildren<Transform>(
                 true
             );
-
 
         for (
             int i = 0;
@@ -307,25 +355,14 @@ public class ChainLightning : AbilitySO
             i++
         )
         {
-            Transform child =
-                children[i];
-
-
-            if (child == null)
-            {
-                continue;
-            }
-
-
             if (
-                child.name ==
+                children[i].name ==
                 abilitySpawnPointName
             )
             {
-                return child;
+                return children[i];
             }
         }
-
 
         return null;
     }
@@ -340,28 +377,8 @@ public class ChainLightning : AbilitySO
         GameObject firstTarget,
         GridManager gridManager)
     {
-        UnitData unitData =
-            FindUnitData(user);
-
-
-        return GetChainPreview(
-            user,
-            firstTarget,
-            gridManager,
-            unitData
-        );
-    }
-
-
-    public List<GameObject> GetChainPreview(
-        GameObject user,
-        GameObject firstTarget,
-        GridManager gridManager,
-        UnitData unitData)
-    {
         List<GameObject> chain =
             new List<GameObject>();
-
 
         if (
             user == null ||
@@ -372,92 +389,91 @@ public class ChainLightning : AbilitySO
             return chain;
         }
 
-
-        // ========================================================
-        // PLAYER -> FIRST ENEMY
-        // ========================================================
-
-        Vector2Int playerTile =
-            gridManager.GetUnitGridPosition(
-                user
-            );
-
-
-        Vector2Int firstEnemyTile =
-            gridManager.GetUnitGridPosition(
-                firstTarget
-            );
-
-
-        if (
-            HasObjectOnLine(
-                gridManager,
-                playerTile,
-                firstEnemyTile
-            )
-        )
-        {
-            return chain;
-        }
-
-
-        // ========================================================
-        // CHAIN
-        // ========================================================
-
         HashSet<GameObject> hitTargets =
             new HashSet<GameObject>();
-
 
         GameObject currentTarget =
             firstTarget;
 
-
         int jump = 0;
 
-
         int maximumJumps =
-            GetMaxJumps(unitData);
-
+            maxJumps;
 
         while (
             currentTarget != null &&
             jump < maximumJumps
         )
         {
-            // ----------------------------------------------------
-            // VALID TARGET
-            // ----------------------------------------------------
+            bool validTarget;
 
-            if (
-                !IsValidChainTarget(
-                    user,
-                    currentTarget,
-                    hitTargets
-                )
-            )
+            if (jump == 0)
+            {
+                validTarget =
+                    IsValidInitialTarget(
+                        user,
+                        currentTarget,
+                        hitTargets
+                    );
+            }
+            else
+            {
+                validTarget =
+                    IsValidChainTarget(
+                        user,
+                        currentTarget,
+                        hitTargets
+                    );
+            }
+
+            if (!validTarget)
             {
                 break;
             }
 
 
-            // ----------------------------------------------------
-            // ADD TARGET
-            // ----------------------------------------------------
+            // ====================================================
+            // TURRET
+            // ====================================================
+
+            turretbehav turret =
+                currentTarget.GetComponent<
+                    turretbehav>();
+
+            if (turret != null)
+            {
+                /*
+                 * Add the turret as the final visual
+                 * destination.
+                 *
+                 * IMPORTANT:
+                 *
+                 * We do NOT calculate another enemy after
+                 * the turret.
+                 *
+                 * The remaining bounce count will later
+                 * be converted into turret charges.
+                 */
+
+                chain.Add(
+                    currentTarget
+                );
+
+                break;
+            }
+
+
+            // ====================================================
+            // NORMAL TARGET
+            // ====================================================
 
             hitTargets.Add(
                 currentTarget
             );
 
-
             chain.Add(
                 currentTarget
             );
-
-
-            // ----------------------------------------------------
-            // FIND NEXT TARGET
-            // ----------------------------------------------------
 
             currentTarget =
                 FindClosestEnemy(
@@ -467,12 +483,136 @@ public class ChainLightning : AbilitySO
                     hitTargets
                 );
 
-
             jump++;
         }
 
-
         return chain;
+    }
+
+
+    // ============================================================
+    // INITIAL TARGET VALIDATION
+    // ============================================================
+
+    private bool IsValidInitialTarget(
+        GameObject user,
+        GameObject target,
+        HashSet<GameObject> hitTargets)
+    {
+        if (
+            user == null ||
+            target == null
+        )
+        {
+            return false;
+        }
+
+        if (hitTargets.Contains(target))
+        {
+            return false;
+        }
+
+        if (!target.activeInHierarchy)
+        {
+            return false;
+        }
+
+        AttackUnit targetUnit =
+            target.GetComponent<AttackUnit>();
+
+        if (targetUnit == null)
+        {
+            return false;
+        }
+
+        if (targetUnit.IsDead())
+        {
+            return false;
+        }
+
+        /*
+         * Normal enemy target.
+         */
+        if (
+            CanTargetObject(
+                user,
+                target
+            )
+        )
+        {
+            return true;
+        }
+
+        /*
+         * Special Player target.
+         *
+         * This allows the turret to be selected
+         * as the initial target.
+         */
+        if (
+            targetUnit.GetTeam() ==
+            Team.Player
+        )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    // ============================================================
+    // CHAIN TARGET VALIDATION
+    // ============================================================
+
+    private bool IsValidChainTarget(
+        GameObject user,
+        GameObject target,
+        HashSet<GameObject> hitTargets)
+    {
+        if (
+            user == null ||
+            target == null
+        )
+        {
+            return false;
+        }
+
+        if (hitTargets.Contains(target))
+        {
+            return false;
+        }
+
+        if (!target.activeInHierarchy)
+        {
+            return false;
+        }
+
+        AttackUnit targetUnit =
+            target.GetComponent<AttackUnit>();
+
+        if (targetUnit == null)
+        {
+            return false;
+        }
+
+        if (targetUnit.IsDead())
+        {
+            return false;
+        }
+
+        /*
+         * Subsequent normal chain targets remain
+         * enemy-only.
+         *
+         * The turret is handled separately by the
+         * initial target logic or by the targeting
+         * system.
+         */
+        return CanTargetObject(
+            user,
+            target
+        );
     }
 
 
@@ -495,34 +635,20 @@ public class ChainLightning : AbilitySO
             return null;
         }
 
-
-        // ========================================================
-        // CURRENT TARGET TILE
-        // ========================================================
-
         Vector2Int currentTile =
             gridManager.GetUnitGridPosition(
                 currentTarget
             );
 
-
-        GameObject closestEnemy =
-            null;
-
+        GameObject closestEnemy = null;
 
         float closestDistance =
             float.MaxValue;
-
-
-        // ========================================================
-        // ALL ENEMIES
-        // ========================================================
 
         AttackUnit[] allUnits =
             FindObjectsByType<AttackUnit>(
                 FindObjectsSortMode.None
             );
-
 
         for (
             int i = 0;
@@ -533,52 +659,43 @@ public class ChainLightning : AbilitySO
             AttackUnit candidateUnit =
                 allUnits[i];
 
-
             if (candidateUnit == null)
             {
                 continue;
             }
 
-
             GameObject candidate =
                 candidateUnit.gameObject;
-
 
             if (candidate == null)
             {
                 continue;
             }
 
-
-            // Don't target the player.
             if (candidate == user)
             {
                 continue;
             }
 
-
-            // Must be active.
             if (!candidate.activeInHierarchy)
             {
                 continue;
             }
 
-
-            // Must be alive.
             if (candidateUnit.IsDead())
             {
                 continue;
             }
 
-
-            // Don't hit the same enemy twice.
             if (hitTargets.Contains(candidate))
             {
                 continue;
             }
 
-
-            // Must be a valid enemy.
+            /*
+             * Only normal valid enemy targets can
+             * become subsequent chain targets.
+             */
             if (
                 !CanTargetObject(
                     user,
@@ -589,27 +706,16 @@ public class ChainLightning : AbilitySO
                 continue;
             }
 
-
-            // ====================================================
-            // CANDIDATE TILE
-            // ====================================================
-
             Vector2Int candidateTile =
                 gridManager.GetUnitGridPosition(
                     candidate
                 );
-
-
-            // ====================================================
-            // DISTANCE
-            // ====================================================
 
             float distance =
                 Vector2.Distance(
                     currentTile,
                     candidateTile
                 );
-
 
             if (
                 maxJumpDistance > 0f &&
@@ -618,11 +724,6 @@ public class ChainLightning : AbilitySO
             {
                 continue;
             }
-
-
-            // ====================================================
-            // LINE CHECK
-            // ====================================================
 
             if (
                 HasObjectOnLine(
@@ -634,11 +735,6 @@ public class ChainLightning : AbilitySO
             {
                 continue;
             }
-
-
-            // ====================================================
-            // CLOSEST VALID ENEMY
-            // ====================================================
 
             if (
                 closestEnemy == null ||
@@ -669,13 +765,12 @@ public class ChainLightning : AbilitySO
             }
         }
 
-
         return closestEnemy;
     }
 
 
     // ============================================================
-    // GRID LINE CHECK
+    // LINE OF SIGHT
     // ============================================================
 
     private bool HasObjectOnLine(
@@ -683,190 +778,104 @@ public class ChainLightning : AbilitySO
         Vector2Int start,
         Vector2Int end)
     {
-        if (gridManager == null)
-        {
-            return false;
-        }
+        int x0 = start.x;
+        int y0 = start.y;
 
+        int x1 = end.x;
+        int y1 = end.y;
 
-        int x =
-            start.x;
-
-
-        int y =
-            start.y;
-
-
-        int targetX =
-            end.x;
-
-
-        int targetY =
-            end.y;
-
-
-        int deltaX =
+        int dx =
             Mathf.Abs(
-                targetX - x
+                x1 - x0
             );
 
-
-        int deltaY =
+        int dy =
             Mathf.Abs(
-                targetY - y
+                y1 - y0
             );
 
-
-        int stepX =
-            x < targetX
+        int sx =
+            x0 < x1
                 ? 1
                 : -1;
 
-
-        int stepY =
-            y < targetY
+        int sy =
+            y0 < y1
                 ? 1
                 : -1;
 
-
-        int error =
-            deltaX - deltaY;
-
+        int err =
+            dx - dy;
 
         while (true)
         {
-            // ====================================================
-            // REACHED DESTINATION
-            // ====================================================
-
+            /*
+             * Destination is not an obstacle.
+             */
             if (
-                x == targetX &&
-                y == targetY
+                x0 == x1 &&
+                y0 == y1
             )
             {
                 break;
             }
 
-
-            int error2 =
-                error * 2;
-
-
-            // ====================================================
-            // MOVE X
-            // ====================================================
-
-            if (
-                error2 > -deltaY
-            )
+            /*
+             * Ignore starting tile.
+             */
+            if (!(
+                x0 == start.x &&
+                y0 == start.y
+            ))
             {
-                error -= deltaY;
-                x += stepX;
+                Vector2Int tile =
+                    new Vector2Int(
+                        x0,
+                        y0
+                    );
+
+                GameObject occupied =
+                    gridManager.GetUnitAt(
+                        tile
+                    );
+
+                if (occupied != null)
+                {
+                    return true;
+                }
             }
 
+            int e2 =
+                2 * err;
 
-            // ====================================================
-            // MOVE Y
-            // ====================================================
-
-            if (
-                error2 < deltaX
-            )
+            if (e2 > -dy)
             {
-                error += deltaX;
-                y += stepY;
+                err -= dy;
+                x0 += sx;
             }
 
-
-            Vector2Int tile =
-                new Vector2Int(
-                    x,
-                    y
-                );
-
-
-            // ====================================================
-            // DESTINATION IS ALLOWED
-            // ====================================================
-
-            if (tile == end)
+            if (e2 < dx)
             {
-                break;
-            }
-
-
-            // ====================================================
-            // OUTSIDE GRID
-            // ====================================================
-
-            if (
-                !gridManager.IsInsideGrid(
-                    tile
-                )
-            )
-            {
-                continue;
-            }
-
-
-            // ====================================================
-            // CHECK OBJECT
-            // ====================================================
-
-            GameObject objectOnTile =
-                gridManager.GetUnitAt(
-                    tile
-                );
-
-
-            if (objectOnTile != null)
-            {
-                return true;
+                err += dx;
+                y0 += sy;
             }
         }
-
 
         return false;
     }
 
 
     // ============================================================
-    // VALID TARGET
+    // STUN GETTERS
     // ============================================================
 
-    private bool IsValidChainTarget(
-        GameObject user,
-        GameObject target,
-        HashSet<GameObject> hitTargets)
+    public float GetStunPercentage()
     {
-        if (
-            user == null ||
-            target == null ||
-            hitTargets.Contains(target) ||
-            !target.activeInHierarchy
-        )
-        {
-            return false;
-        }
-
-
-        AttackUnit attackUnit =
-            target.GetComponent<AttackUnit>();
-
-
-        if (
-            attackUnit == null ||
-            attackUnit.IsDead()
-        )
-        {
-            return false;
-        }
-
-
-        return CanTargetObject(
-            user,
-            target
-        );
+        return stunPercentage;
     }
 
+    public int GetStunDuration()
+    {
+        return stunDuration;
+    }
 }
