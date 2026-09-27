@@ -2002,7 +2002,7 @@ public class CanvasInfoManager : MonoBehaviour
     // ============================================================
 
     private void ShowAbilityRange(
-        int abilityIndex)
+      int abilityIndex)
     {
         if (CombatUtility.IsPlayerInputLocked())
         {
@@ -2071,6 +2071,13 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
+        // IMPORTANT:
+        // ShowAbilityTiles() calls ClearAbilityRange(), which resets
+        // GridHighlightManager.currentAbility to null.
+        //
+        // Therefore SetCurrentAbility() must happen AFTER
+        // ShowAbilityTiles()/ShowHealTiles(), not before it.
+
         List<Vector2Int> rangeTiles =
             ability.GetRangeTiles(
                 gridManager,
@@ -2100,8 +2107,13 @@ public class CanvasInfoManager : MonoBehaviour
                 selectedObject
             );
         }
-    }
 
+        // ShowAbilityTiles() clears currentAbility first,
+        // so assign it after the range has been displayed.
+        highlightManager.SetCurrentAbility(
+            ability
+        );
+    }
 
     // ============================================================
     // SELECTED ABILITY ACCESS

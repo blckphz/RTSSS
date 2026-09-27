@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.VersionControl;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -28,6 +29,14 @@ public class UnitMoveBrain : MonoBehaviour
 
     private int moveActionsRemaining;
 
+    [Header("Facing")]
+    [Tooltip(
+        "The direction the unit faces when it has not moved yet. " +
+        "This uses logical grid directions."
+    )]
+    [SerializeField]
+    private Vector2Int facingDirection = Vector2Int.up;
+
     [Header("AI Targeting")]
     [SerializeField] private int attackRange = 1;
     [SerializeField] private bool preferLowHealthEnemies = true;
@@ -52,12 +61,16 @@ public class UnitMoveBrain : MonoBehaviour
     {
         EnsureComponents();
         ResetMovement();
+
+        NormalizeFacingDirection();
     }
 
     private void OnEnable()
     {
         EnsureComponents();
         ResetMovement();
+
+        NormalizeFacingDirection();
     }
 
     private void OnDisable()
@@ -94,6 +107,69 @@ public class UnitMoveBrain : MonoBehaviour
         if (animationController == null)
             animationController =
                 GetComponent<AnimationController>();
+    }
+
+
+    // ============================================================
+    // FACING
+    // ============================================================
+
+    private void NormalizeFacingDirection()
+    {
+        if (facingDirection == Vector2Int.zero)
+        {
+            facingDirection = Vector2Int.up;
+            return;
+        }
+
+        // Convert diagonal facing into one of the four
+        // cardinal grid directions.
+        if (Mathf.Abs(facingDirection.x) >=
+            Mathf.Abs(facingDirection.y))
+        {
+            facingDirection =
+                facingDirection.x >= 0
+                    ? Vector2Int.right
+                    : Vector2Int.left;
+        }
+        else
+        {
+            facingDirection =
+                facingDirection.y >= 0
+                    ? Vector2Int.up
+                    : Vector2Int.down;
+        }
+    }
+
+    public Vector2Int GetFacingDirection()
+    {
+        return facingDirection;
+    }
+
+    public void SetFacingDirection(
+        Vector2Int direction
+    )
+    {
+        if (direction == Vector2Int.zero)
+        {
+            return;
+        }
+
+        if (Mathf.Abs(direction.x) >=
+            Mathf.Abs(direction.y))
+        {
+            facingDirection =
+                direction.x > 0
+                    ? Vector2Int.right
+                    : Vector2Int.left;
+        }
+        else
+        {
+            facingDirection =
+                direction.y > 0
+                    ? Vector2Int.up
+                    : Vector2Int.down;
+        }
     }
 
 
@@ -739,11 +815,21 @@ public class UnitMoveBrain : MonoBehaviour
             Vector2Int toTile =
                 path[i];
 
+            Vector2Int direction =
+                toTile - fromTile;
+
+            // ====================================================
+            // REMEMBER LOGICAL FACING
+            // ====================================================
+
+            SetFacingDirection(direction);
+
+            // ====================================================
+            // UPDATE WALK ANIMATION
+            // ====================================================
+
             if (animationController != null)
             {
-                Vector2Int direction =
-                    toTile - fromTile;
-
                 animationController.SetMovementDirection(
                     direction
                 );
@@ -952,3 +1038,4 @@ public class UnitMoveBrain : MonoBehaviour
             attackUnit.GetTeam() != Team.Player;
     }
 }
+

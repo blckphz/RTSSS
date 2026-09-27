@@ -54,13 +54,6 @@ public class CanvasJuiceManager : MonoBehaviour
     // =========================================================
     // SAVED FREE CAMERA POSITION
     // =========================================================
-    //
-    // When the player turns LOCK ON, we save the exact camera
-    // position from free mode.
-    //
-    // When LOCK is turned OFF, the camera returns to this
-    // position instead of normalPosition.
-    //
 
     private Vector3 savedFreeCameraPosition;
     private bool hasSavedFreeCameraPosition = false;
@@ -101,7 +94,6 @@ public class CanvasJuiceManager : MonoBehaviour
             canvasGroup.blocksRaycasts = false;
         }
 
-        // Start in the correct camera mode.
         if (inspectMode)
         {
             DisableFreeCamera();
@@ -110,6 +102,11 @@ public class CanvasJuiceManager : MonoBehaviour
         {
             EnableFreeCamera();
         }
+
+        Debug.Log(
+            "[CanvasJuiceManager] Awake. Inspect mode = " +
+            inspectMode
+        );
     }
 
     private void OnEnable()
@@ -146,16 +143,34 @@ public class CanvasJuiceManager : MonoBehaviour
     private void OnCameraLockPerformed(
         InputAction.CallbackContext context)
     {
+        Debug.Log(
+            "[CanvasJuiceManager] Camera lock input."
+        );
+
         ToggleInspectMode();
     }
 
     public void ToggleInspectMode()
     {
+        Debug.Log(
+            "[CanvasJuiceManager] ToggleInspectMode. " +
+            "Current = " +
+            inspectMode +
+            " -> " +
+            !inspectMode
+        );
+
         SetInspectMode(!inspectMode);
     }
 
     public void SetInspectMode(bool enabled)
     {
+        Debug.Log(
+            "[CanvasJuiceManager] SetInspectMode(" +
+            enabled +
+            ")"
+        );
+
         // =====================================================
         // TURNING LOCK OFF
         // =====================================================
@@ -172,8 +187,6 @@ public class CanvasJuiceManager : MonoBehaviour
                 normalCameraCoroutine = null;
             }
 
-            // Return to the exact free-camera position that
-            // existed when lock was activated.
             MoveCameraBackToSavedFreePosition();
 
             return;
@@ -183,13 +196,6 @@ public class CanvasJuiceManager : MonoBehaviour
         // TURNING LOCK ON
         // =====================================================
 
-        // IMPORTANT:
-        //
-        // Save the CURRENT free camera position BEFORE moving
-        // to the selected unit or ability.
-        //
-        // This only happens when going from FREE -> LOCK.
-        //
         if (
             cameraTarget != null &&
             !inspectMode
@@ -199,6 +205,11 @@ public class CanvasJuiceManager : MonoBehaviour
                 cameraTarget.position;
 
             hasSavedFreeCameraPosition = true;
+
+            Debug.Log(
+                "[CanvasJuiceManager] Saved free camera position: " +
+                savedFreeCameraPosition
+            );
         }
 
         inspectMode = true;
@@ -215,6 +226,10 @@ public class CanvasJuiceManager : MonoBehaviour
 
         if (HasSelectedAbility())
         {
+            Debug.Log(
+                "[CanvasJuiceManager] Lock ON -> ability camera."
+            );
+
             MoveCameraToAbilityPosition();
             return;
         }
@@ -225,6 +240,10 @@ public class CanvasJuiceManager : MonoBehaviour
 
         if (currentSelectedUnit != null)
         {
+            Debug.Log(
+                "[CanvasJuiceManager] Lock ON -> selected unit."
+            );
+
             MoveCameraToUnit(
                 currentSelectedUnit
             );
@@ -250,9 +269,11 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private bool HasSelectedAbility()
     {
-        return
+        bool selected =
             canvasInfoManager != null &&
             canvasInfoManager.HasSelectedAbility();
+
+        return selected;
     }
 
     // =========================================================
@@ -268,24 +289,22 @@ public class CanvasJuiceManager : MonoBehaviour
 
         currentSelectedUnit = unit;
 
-        FadeCanvasTo(hoverTransparency);
+        Debug.Log(
+            "[CanvasJuiceManager] ShowUnitInfo: " +
+            unit.name +
+            " | Inspect = " +
+            inspectMode +
+            " | Ability = " +
+            HasSelectedAbility()
+        );
 
-        // =====================================================
-        // FREE MODE
-        // =====================================================
-        //
-        // Selecting a unit MUST NOT move the camera.
-        //
+        FadeCanvasTo(hoverTransparency);
 
         if (!inspectMode)
         {
             EnableFreeCamera();
             return;
         }
-
-        // =====================================================
-        // LOCKED MODE
-        // =====================================================
 
         if (HasSelectedAbility())
         {
@@ -310,33 +329,22 @@ public class CanvasJuiceManager : MonoBehaviour
 
         currentSelectedUnit = unit;
 
-        // =====================================================
-        // FREE MODE
-        // =====================================================
-        //
-        // Never move camera because of unit selection while
-        // lock is OFF.
-        //
-
         if (!inspectMode)
         {
             EnableFreeCamera();
             return;
         }
 
-        // =====================================================
-        // ABILITY HAS PRIORITY
-        // =====================================================
-
         if (HasSelectedAbility())
         {
+            Debug.Log(
+                "[CanvasJuiceManager] " +
+                "MoveCameraToUnit blocked by ability camera."
+            );
+
             MoveCameraToAbilityPosition();
             return;
         }
-
-        // =====================================================
-        // FOLLOW UNIT
-        // =====================================================
 
         DisableFreeCamera();
 
@@ -415,13 +423,6 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void StopFollowingUnit()
     {
-        // IMPORTANT:
-        //
-        // Do NOT clear currentSelectedUnit here.
-        //
-        // currentSelectedUnit = what is selected.
-        // currentFollowTarget = what camera is following.
-        //
         currentFollowTarget = null;
 
         if (followCoroutine != null)
@@ -444,15 +445,18 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void MoveCameraToAbilityPosition()
     {
-        // =====================================================
-        // FREE MODE PROTECTION
-        // =====================================================
-        //
-        // Selecting an ability while free MUST NOT move camera.
-        //
+        Debug.Log(
+            "[CanvasJuiceManager] " +
+            "MoveCameraToAbilityPosition()"
+        );
 
         if (!inspectMode)
         {
+            Debug.Log(
+                "[CanvasJuiceManager] " +
+                "Ability camera skipped: inspect mode OFF."
+            );
+
             EnableFreeCamera();
             return;
         }
@@ -462,10 +466,14 @@ public class CanvasJuiceManager : MonoBehaviour
             cameraTarget == null
         )
         {
+            Debug.Log(
+                "[CanvasJuiceManager] " +
+                "Ability camera skipped: missing transform."
+            );
+
             return;
         }
 
-        // Ability camera takes priority over unit following.
         StopFollowingUnit();
 
         DisableFreeCamera();
@@ -513,24 +521,14 @@ public class CanvasJuiceManager : MonoBehaviour
 
         Vector3 targetPosition;
 
-        // =====================================================
-        // USE SAVED FREE POSITION
-        // =====================================================
-
         if (hasSavedFreeCameraPosition)
         {
             targetPosition =
                 savedFreeCameraPosition;
 
-            // Preserve the current camera Z.
             targetPosition.z =
                 cameraTarget.position.z;
         }
-
-        // =====================================================
-        // FALLBACK
-        // =====================================================
-
         else if (normalPosition != null)
         {
             targetPosition =
@@ -539,16 +537,16 @@ public class CanvasJuiceManager : MonoBehaviour
             targetPosition.z =
                 cameraTarget.position.z;
         }
-
         else
         {
             targetPosition =
                 cameraTarget.position;
         }
 
-        // =====================================================
-        // MOVE TO SAVED POSITION
-        // =====================================================
+        Debug.Log(
+            "[CanvasJuiceManager] Returning camera to: " +
+            targetPosition
+        );
 
         cameraMoveCoroutine =
             StartCoroutine(
@@ -571,13 +569,6 @@ public class CanvasJuiceManager : MonoBehaviour
     // =========================================================
     // NORMAL CAMERA
     // =========================================================
-    //
-    // Kept as a public method in case another system needs to
-    // explicitly move to normalPosition.
-    //
-    // Camera LOCK OFF uses MoveCameraBackToSavedFreePosition()
-    // instead.
-    //
 
     public void MoveCameraToNormalPosition()
     {
@@ -670,32 +661,21 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void HideHoverInfo()
     {
+        Debug.Log(
+            "[CanvasJuiceManager] HideHoverInfo()"
+        );
+
         FadeCanvasTo(0f);
 
         currentSelectedUnit = null;
 
         StopFollowingUnit();
 
-        // =====================================================
-        // FREE MODE
-        // =====================================================
-        //
-        // Deselecting while free does NOT move camera.
-        //
-
         if (!inspectMode)
         {
             EnableFreeCamera();
             return;
         }
-
-        // =====================================================
-        // LOCKED MODE
-        // =====================================================
-        //
-        // Deselecting while locked exits lock and returns to
-        // the saved free position.
-        //
 
         inspectMode = false;
 
@@ -731,7 +711,6 @@ public class CanvasJuiceManager : MonoBehaviour
                 elapsed /
                 cameraMoveDuration;
 
-            // SmoothStep easing.
             t =
                 t *
                 t *

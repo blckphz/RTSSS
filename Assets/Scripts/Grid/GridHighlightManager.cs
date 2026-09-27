@@ -59,7 +59,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly Dictionary<Vector2Int, GridHighlightVisuals>
         tileVisuals =
-        new Dictionary<Vector2Int, GridHighlightVisuals>(256);
+            new Dictionary<Vector2Int, GridHighlightVisuals>(256);
 
     private readonly HashSet<Vector2Int> abilityCells =
         new HashSet<Vector2Int>();
@@ -77,7 +77,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly HashSet<HoverInfoTrigger>
         activeAbilityOutlines =
-        new HashSet<HoverInfoTrigger>();
+            new HashSet<HoverInfoTrigger>();
 
 
     // ============================================================
@@ -86,7 +86,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly Dictionary<GameObject, AttackUnit>
         unitComponentCache =
-        new Dictionary<GameObject, AttackUnit>();
+            new Dictionary<GameObject, AttackUnit>();
 
 
     // ============================================================
@@ -98,15 +98,15 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly Dictionary<Transform, Vector3>
         targetOriginalScales =
-        new Dictionary<Transform, Vector3>(16);
+            new Dictionary<Transform, Vector3>(16);
 
     private readonly HashSet<Transform>
         activeTargetPulseTransforms =
-        new HashSet<Transform>();
+            new HashSet<Transform>();
 
     private readonly List<Transform>
         tempTargetTransformList =
-        new List<Transform>(16);
+            new List<Transform>(16);
 
 
     // ============================================================
@@ -124,6 +124,16 @@ public class GridHighlightManager : MonoBehaviour
     private bool suppressMovementHighlight;
 
     private bool currentAbilityIsHeal;
+
+
+    // ============================================================
+    // SHOTGUN REFRESH STATE
+    // ============================================================
+
+    private Vector2Int lastShotgunDirection =
+        Vector2Int.zero;
+
+    private bool hasLastShotgunDirection;
 
 
     // ============================================================
@@ -159,6 +169,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private void Update()
     {
+        RefreshAbilityPreview();
         UpdateTargetPulse();
     }
 
@@ -584,7 +595,416 @@ public class GridHighlightManager : MonoBehaviour
         );
 
         RefreshAllTargetHovers();
+
+        ResetShotgunDirection();
     }
+
+
+    // ============================================================
+    // SHOTGUN LIVE REFRESH
+    // ============================================================
+
+    public void RefreshAbilityPreview()
+    {
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] RefreshAbilityPreview()"
+            );
+        }
+
+        if (currentAbility == null)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] Preview STOP: " +
+                    "currentAbility == null"
+                );
+            }
+
+            return;
+        }
+
+        if (currentRangeUser == null)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] Preview STOP: " +
+                    "currentRangeUser == null"
+                );
+            }
+
+            return;
+        }
+
+        if (gridManager == null)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] Preview STOP: " +
+                    "gridManager == null"
+                );
+            }
+
+            return;
+        }
+
+        AbilitySO.RangeShape shape =
+            currentAbility.GetRangeShape();
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] Preview state | " +
+                "Ability=" +
+                currentAbility.name +
+                " | Shape=" +
+                shape +
+                " | User=" +
+                currentRangeUser.name
+            );
+        }
+
+        if (
+            shape !=
+            AbilitySO.RangeShape.Shotgun
+        )
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] Preview STOP: " +
+                    "ability is not Shotgun"
+                );
+            }
+
+            return;
+        }
+
+        Vector2Int newDirection =
+            GetCurrentMouseDirection();
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] Mouse direction = " +
+                newDirection +
+                " | Last direction = " +
+                lastShotgunDirection +
+                " | Has last = " +
+                hasLastShotgunDirection
+            );
+        }
+
+        if (!hasLastShotgunDirection)
+        {
+            lastShotgunDirection =
+                newDirection;
+
+            hasLastShotgunDirection =
+                true;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "First shotgun direction set: " +
+                    newDirection
+                );
+            }
+
+            RefreshShotgunTiles(
+                newDirection
+            );
+
+            return;
+        }
+
+        if (
+            newDirection ==
+            lastShotgunDirection
+        )
+        {
+            return;
+        }
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "SHOTGUN DIRECTION CHANGED: " +
+                lastShotgunDirection +
+                " -> " +
+                newDirection
+            );
+        }
+
+        lastShotgunDirection =
+            newDirection;
+
+        RefreshShotgunTiles(
+            newDirection
+        );
+    }
+
+
+    private Vector2Int GetCurrentMouseDirection()
+    {
+        if (currentRangeUser == null)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "GetCurrentMouseDirection: " +
+                    "currentRangeUser == null"
+                );
+            }
+
+            return Vector2Int.up;
+        }
+
+        if (Camera.main == null)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "GetCurrentMouseDirection: " +
+                    "Camera.main == null"
+                );
+            }
+
+            return Vector2Int.up;
+        }
+
+        if (UnityEngine.InputSystem.Mouse.current == null)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "GetCurrentMouseDirection: " +
+                    "Mouse.current == null"
+                );
+            }
+
+            return Vector2Int.up;
+        }
+
+        Vector2 mouseScreenPosition =
+            UnityEngine.InputSystem.Mouse.current
+                .position
+                .ReadValue();
+
+        Vector3 mouseWorldPosition =
+            Camera.main.ScreenToWorldPoint(
+                new Vector3(
+                    mouseScreenPosition.x,
+                    mouseScreenPosition.y,
+                    Mathf.Abs(
+                        Camera.main.transform.position.z
+                    )
+                )
+            );
+
+        Vector2Int mouseTile =
+            gridManager.WorldToGridPosition(
+                mouseWorldPosition
+            );
+
+        Vector2Int userTile =
+            gridManager.WorldToGridPosition(
+                currentRangeUser.transform.position
+            );
+
+        Vector2Int difference =
+            mouseTile - userTile;
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "Mouse direction calculation | " +
+                "UserTile=" +
+                userTile +
+                " | MouseTile=" +
+                mouseTile +
+                " | Difference=" +
+                difference
+            );
+        }
+
+        if (difference == Vector2Int.zero)
+        {
+            return Vector2Int.up;
+        }
+
+        if (
+            Mathf.Abs(difference.x) >
+            Mathf.Abs(difference.y)
+        )
+        {
+            if (difference.x > 0)
+            {
+                return Vector2Int.right;
+            }
+
+            return Vector2Int.left;
+        }
+
+        if (difference.y > 0)
+        {
+            return Vector2Int.up;
+        }
+
+        return Vector2Int.down;
+    }
+
+
+    private void RefreshShotgunTiles(
+        Vector2Int direction)
+    {
+        if (
+            currentAbility == null ||
+            currentRangeUser == null ||
+            gridManager == null
+        )
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "RefreshShotgunTiles STOP | " +
+                    "Ability=" +
+                    (
+                        currentAbility != null
+                            ? currentAbility.name
+                            : "NULL"
+                    ) +
+                    " | User=" +
+                    (
+                        currentRangeUser != null
+                            ? currentRangeUser.name
+                            : "NULL"
+                    ) +
+                    " | Grid=" +
+                    (
+                        gridManager != null
+                            ? "OK"
+                            : "NULL"
+                    )
+                );
+            }
+
+            return;
+        }
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "RefreshShotgunTiles START | " +
+                "Direction=" +
+                direction +
+                " | Old cells=" +
+                abilityCells.Count
+            );
+        }
+
+        tempCellList.Clear();
+
+        tempCellList.AddRange(
+            abilityCells
+        );
+
+        abilityCells.Clear();
+
+        for (
+            int i = 0;
+            i < tempCellList.Count;
+            i++
+        )
+        {
+            RefreshTile(
+                tempCellList[i]
+            );
+        }
+
+        tempCellList.Clear();
+
+        List<Vector2Int> newTiles =
+            currentAbility.GetRangeTiles(
+                gridManager,
+                currentRangeUser
+            );
+
+        if (newTiles != null)
+        {
+            for (
+                int i = 0;
+                i < newTiles.Count;
+                i++
+            )
+            {
+                Vector2Int position =
+                    newTiles[i];
+
+                if (
+                    gridManager.IsInsideGrid(
+                        position
+                    )
+                )
+                {
+                    abilityCells.Add(
+                        position
+                    );
+                }
+            }
+        }
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "New shotgun cells = " +
+                abilityCells.Count
+            );
+        }
+
+        RefreshCells(
+            abilityCells
+        );
+
+        RefreshAllTargetHovers();
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "RefreshShotgunTiles COMPLETE"
+            );
+        }
+    }
+
+
+    private void ResetShotgunDirection()
+    {
+        hasLastShotgunDirection = false;
+        lastShotgunDirection = Vector2Int.zero;
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "ResetShotgunDirection()"
+            );
+        }
+    }
+
 
     public void ShowAbilityCell(
         Vector2Int position)
@@ -626,6 +1046,8 @@ public class GridHighlightManager : MonoBehaviour
         currentAbility = null;
 
         currentAbilityIsHeal = false;
+
+        ResetShotgunDirection();
 
         if (abilityCells.Count == 0)
         {
@@ -673,6 +1095,29 @@ public class GridHighlightManager : MonoBehaviour
     {
         currentAbility =
             ability;
+
+        if (enableDebugLogs)
+        {
+            if (ability == null)
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "SetCurrentAbility(NULL)"
+                );
+            }
+            else
+            {
+                Debug.Log(
+                    "[GridHighlightManager] " +
+                    "SetCurrentAbility: " +
+                    ability.name +
+                    " | Shape=" +
+                    ability.GetRangeShape()
+                );
+            }
+        }
+
+        ResetShotgunDirection();
 
         RefreshAllTargetHovers();
     }
@@ -762,7 +1207,7 @@ public class GridHighlightManager : MonoBehaviour
 
 
     // ============================================================
-    // CLEAR TARGET VISUALS WITHOUT CLEARING ABILITY STATE
+    // CLEAR TARGET VISUALS
     // ============================================================
 
     private void ClearAbilityTargetVisualsOnly()
@@ -770,15 +1215,6 @@ public class GridHighlightManager : MonoBehaviour
         ClearAllTargetHovers();
 
         ClearAllTargetPulse();
-
-        for (
-            int i = 0;
-            i < tempCellList.Count;
-            i++
-        )
-        {
-            // Nothing.
-        }
 
         RefreshCells(
             abilityCells
@@ -798,6 +1234,25 @@ public class GridHighlightManager : MonoBehaviour
 
         currentRangeUserUnit =
             GetCachedAttackUnit(user);
+
+        if (enableDebugLogs)
+        {
+            Debug.Log(
+                "[GridHighlightManager] " +
+                "SetCurrentRangeUser: " +
+                (
+                    user != null
+                        ? user.name
+                        : "NULL"
+                ) +
+                " | AttackUnit=" +
+                (
+                    currentRangeUserUnit != null
+                        ? currentRangeUserUnit.name
+                        : "NULL"
+                )
+            );
+        }
     }
 
     private AttackUnit GetCachedAttackUnit(
@@ -1418,6 +1873,8 @@ public class GridHighlightManager : MonoBehaviour
         currentRangeUser = null;
 
         currentRangeUserUnit = null;
+
+        ResetShotgunDirection();
 
         foreach (
             GridHighlightVisuals visual

@@ -134523,7 +134523,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1245}
+  m_AnchoredPosition: {x: -1242, y: 1182.4365}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -139146,7 +139146,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 804482595}
   brain: {fileID: 804482597}
-  enableDebugLogs: 0
+  enableDebugLogs: 1
   refreshGridOnEnable: 1
   movementRangeColor: {r: 0, g: 1, b: 1, a: 1}
   movementRangeAlpha: 0.624
@@ -140095,8 +140095,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.0000017950357
-  m_Size: 0.5947784
+  m_Value: -0.004872086
+  m_Size: 0.55668133
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

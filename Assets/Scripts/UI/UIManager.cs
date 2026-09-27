@@ -68,7 +68,11 @@ public class UIManager : MonoBehaviour
     {
         CheckRightClick();
         CheckMouseClick();
+
         UpdateChainLightningPreview();
+
+        // Live ability preview.
+        UpdateAbilityPreview();
     }
 
     // =========================================================
@@ -348,6 +352,107 @@ public class UIManager : MonoBehaviour
             attackUnit.gameObject,
             chainLightning
         );
+    }
+
+    // =========================================================
+    // ABILITY PREVIEW
+    // =========================================================
+
+    private void UpdateAbilityPreview()
+    {
+        if (canvasInfoManager == null)
+        {
+            return;
+        }
+
+        if (CurrentSelection == null)
+        {
+            return;
+        }
+
+        if (
+            !canvasInfoManager
+                .HasSelectedAbility()
+        )
+        {
+            return;
+        }
+
+        AbilitySO ability =
+            canvasInfoManager
+                .GetSelectedAbility();
+
+        if (ability == null)
+        {
+            return;
+        }
+
+        AttackUnit attackUnit =
+            CurrentSelection
+                .GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            return;
+        }
+
+        Team team =
+            attackUnit.GetTeam();
+
+        if (
+            team != Team.Player &&
+            team != Team.Ally
+        )
+        {
+            return;
+        }
+
+        if (
+            !attackUnit.IsAbilityReady(
+                ability
+            )
+        )
+        {
+            return;
+        }
+
+        UnitMoveBrain moveBrain =
+            attackUnit.GetComponent<
+                UnitMoveBrain
+            >();
+
+        if (moveBrain == null)
+        {
+            return;
+        }
+
+        GridManager gridManager =
+            moveBrain.GetGridManager();
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        GridHighlightManager
+            highlightManager =
+                gridManager
+                    .GetHighlightManager();
+
+        if (highlightManager == null)
+        {
+            return;
+        }
+
+        /*
+         * GridHighlightManager owns the live preview.
+         *
+         * It already knows the current ability and
+         * current range user and checks the mouse
+         * direction internally.
+         */
+        highlightManager
+            .RefreshAbilityPreview();
     }
 
     // =========================================================

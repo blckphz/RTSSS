@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using static AbilitySO;
 
 public abstract class AbilitySO : ScriptableObject
@@ -10,7 +11,8 @@ public abstract class AbilitySO : ScriptableObject
         Box,
         FourDirections,
         Diagonal,
-        FourdirectionsAndDiragonal
+        FourdirectionsAndDiragonal,
+        Shotgun
     }
 
     public enum TargetType
@@ -19,6 +21,7 @@ public abstract class AbilitySO : ScriptableObject
         Ally,
         Any
     }
+
 
     // ============================================================
     // ABILITY
@@ -243,7 +246,7 @@ public abstract class AbilitySO : ScriptableObject
 
 
     // ============================================================
-    // GET USER TILE
+    // GET USER GRID POSITION
     // ============================================================
 
     protected Vector2Int GetUserGridPosition(
@@ -265,6 +268,173 @@ public abstract class AbilitySO : ScriptableObject
             );
 
         return worldTile;
+    }
+
+
+    // ============================================================
+    // GET USER FACING DIRECTION
+    // ============================================================
+
+    protected Vector2Int GetFacingDirection(
+        GameObject user
+    )
+    {
+        if (user == null)
+        {
+            return Vector2Int.up;
+        }
+
+        UnitMoveBrain moveBrain =
+            user.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain != null)
+        {
+            Vector2Int direction =
+                moveBrain.GetFacingDirection();
+
+            if (direction != Vector2Int.zero)
+            {
+                return direction;
+            }
+        }
+
+        return Vector2Int.up;
+    }
+
+
+    // ============================================================
+    // GET MOUSE DIRECTION
+    // ============================================================
+    //
+    // Uses Unity's New Input System.
+    //
+    // The mouse determines whether the shotgun points:
+    //
+    // UP
+    // DOWN
+    // LEFT
+    // RIGHT
+    //
+    // based on the mouse's position relative to the unit.
+    //
+    // ============================================================
+
+    protected Vector2Int GetMouseDirection(
+        GridManager gridManager,
+        GameObject user
+    )
+    {
+        if (gridManager == null || user == null)
+        {
+            return Vector2Int.up;
+        }
+
+        if (Camera.main == null)
+        {
+            return Vector2Int.up;
+        }
+
+        if (Mouse.current == null)
+        {
+            return Vector2Int.up;
+        }
+
+        // --------------------------------------------------------
+        // Get mouse screen position
+        // --------------------------------------------------------
+
+        Vector2 mouseScreenPosition =
+            Mouse.current.position.ReadValue();
+
+
+        // --------------------------------------------------------
+        // Convert screen position to world position
+        // --------------------------------------------------------
+
+        Vector3 mouseWorldPosition =
+            Camera.main.ScreenToWorldPoint(
+                new Vector3(
+                    mouseScreenPosition.x,
+                    mouseScreenPosition.y,
+                    Mathf.Abs(
+                        Camera.main.transform.position.z
+                    )
+                )
+            );
+
+
+        // --------------------------------------------------------
+        // Convert mouse world position to grid position
+        // --------------------------------------------------------
+
+        Vector2Int mouseTile =
+            gridManager.WorldToGridPosition(
+                mouseWorldPosition
+            );
+
+
+        // --------------------------------------------------------
+        // Get user's grid position
+        // --------------------------------------------------------
+
+        Vector2Int userTile =
+            GetUserGridPosition(
+                gridManager,
+                user
+            );
+
+
+        // --------------------------------------------------------
+        // Calculate direction from unit to mouse
+        // --------------------------------------------------------
+
+        Vector2Int difference =
+            mouseTile - userTile;
+
+
+        if (difference == Vector2Int.zero)
+        {
+            return Vector2Int.up;
+        }
+
+
+        // --------------------------------------------------------
+        // Determine dominant axis
+        // --------------------------------------------------------
+        //
+        // Example:
+        //
+        // Mouse is far to the right:
+        // RIGHT
+        //
+        // Mouse is far above:
+        // UP
+        //
+        // Mouse is diagonal:
+        // whichever axis is stronger wins.
+        //
+        // --------------------------------------------------------
+
+        if (
+            Mathf.Abs(difference.x) >
+            Mathf.Abs(difference.y)
+        )
+        {
+            if (difference.x > 0)
+            {
+                return Vector2Int.right;
+            }
+
+            return Vector2Int.left;
+        }
+
+
+        if (difference.y > 0)
+        {
+            return Vector2Int.up;
+        }
+
+        return Vector2Int.down;
     }
 
 
@@ -608,6 +778,102 @@ public abstract class AbilitySO : ScriptableObject
                         origin +
                         new Vector2Int(-i, -i)
                     );
+                }
+
+                break;
+
+
+            // ====================================================
+            // SHOTGUN
+            // ====================================================
+            //
+            // Direction is determined by the mouse.
+            //
+            // Distance 1 = 1 tile
+            // Distance 2 = 3 tiles
+            // Distance 3 = 5 tiles
+            // Distance 4 = 7 tiles
+            //
+            // Example facing UP:
+            //
+            //         X
+            //       X X X
+            //     X X X X X
+            //
+            // ====================================================
+
+            case RangeShape.Shotgun:
+
+                Vector2Int direction =
+                    GetMouseDirection(
+                        gridManager,
+                        user
+                    );
+
+                for (
+                    int distance = 1;
+                    distance <= abilityRange;
+                    distance++
+                )
+                {
+                    if (distance < minimumDistance)
+                    {
+                        continue;
+                    }
+
+                    // Width grows with distance.
+                    //
+                    // Distance 1 = 1 tile
+                    // Distance 2 = 3 tiles
+                    // Distance 3 = 5 tiles
+                    // Distance 4 = 7 tiles
+
+                    int halfWidth =
+                        distance - 1;
+
+                    for (
+                        int side = -halfWidth;
+                        side <= halfWidth;
+                        side++
+                    )
+                    {
+                        Vector2Int offset;
+
+                        // ========================================
+                        // UP / DOWN
+                        // ========================================
+
+                        if (
+                            direction == Vector2Int.up ||
+                            direction == Vector2Int.down
+                        )
+                        {
+                            offset =
+                                new Vector2Int(
+                                    side,
+                                    direction.y * distance
+                                );
+                        }
+
+                        // ========================================
+                        // LEFT / RIGHT
+                        // ========================================
+
+                        else
+                        {
+                            offset =
+                                new Vector2Int(
+                                    direction.x * distance,
+                                    side
+                                );
+                        }
+
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + offset
+                        );
+                    }
                 }
 
                 break;
