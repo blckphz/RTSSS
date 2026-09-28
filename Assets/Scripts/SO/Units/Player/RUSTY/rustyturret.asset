@@ -16,7 +16,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 4608aeff7fde6c34bb778f83f9549618, type: 3}
   prefabToSpawn: {fileID: 2871373498883412824, guid: 19609389b5d1dd34ab85a61ed83be898, type: 3}
   team: 0
-  isPlayerCharacter: 1
+  isPlayerCharacter: 0
   maxHealth: 100
   moveRange: 0
   canwalkdiagonally: 0

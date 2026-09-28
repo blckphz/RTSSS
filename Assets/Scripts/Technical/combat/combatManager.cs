@@ -5,35 +5,29 @@ using UnityEngine;
 public class CombatManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField]
-    private GridManager gridManager;
+    [SerializeField] private GridManager gridManager;
 
     [Header("Optional Test Enemy")]
-    [SerializeField]
-    private GameObject enemyPrefab;
-
-    [SerializeField]
-    private CharacterSO enemyCharacter;
+    [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private CharacterSO enemyCharacter;
 
     [Header("Enemy Spawning")]
-    [SerializeField]
-    private int minEnemiesToSpawn = 1;
-
-    [SerializeField]
-    private int maxEnemiesToSpawn = 3;
+    [SerializeField] private int minEnemiesToSpawn = 1;
+    [SerializeField] private int maxEnemiesToSpawn = 3;
 
     [Header("Enemy Turn")]
-    [SerializeField]
-    private bool enemiesMoveAfterRound = true;
-
-    [SerializeField]
-    private bool enemiesAttackAfterMoving = true;
-
-    [SerializeField]
-    private bool spawnEnemiesAutomatically = false;
+    [SerializeField] private bool enemiesMoveAfterRound = true;
+    [SerializeField] private bool enemiesAttackAfterMoving = true;
+    [SerializeField] private bool spawnEnemiesAutomatically = false;
 
     private readonly HashSet<AttackUnit> lockedEnemies =
         new HashSet<AttackUnit>();
+
+    private readonly List<Vector2Int> availableCellsBuffer =
+        new List<Vector2Int>(64);
+
+    private readonly List<AttackUnit> enemyTurnBuffer =
+        new List<AttackUnit>(16);
 
     private void Awake()
     {
@@ -43,51 +37,46 @@ public class CombatManager : MonoBehaviour
     private void Start()
     {
         if (spawnEnemiesAutomatically)
-        {
             return;
-        }
     }
 
     private void FindReferences()
     {
         if (gridManager == null)
-        {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
+            gridManager = FindFirstObjectByType<GridManager>();
     }
+
+    // =========================================================
+    // ENEMY ROUND
+    // =========================================================
 
     public IEnumerator RunEnemyRound()
     {
+        enemyTurnBuffer.Clear();
+
         List<AttackUnit> enemies =
-            CombatUtility.GetUnitsByTeam(
-                Team.Enemy
-            );
+            CombatUtility.GetUnitsByTeam(Team.Enemy);
 
         if (enemies == null || enemies.Count == 0)
-        {
             yield break;
-        }
 
         for (int i = 0; i < enemies.Count; i++)
         {
-            AttackUnit enemy =
-                enemies[i];
+            AttackUnit enemy = enemies[i];
 
-            if (enemy == null)
-            {
-                continue;
-            }
+            if (enemy != null)
+                enemyTurnBuffer.Add(enemy);
+        }
+
+        for (int i = 0; i < enemyTurnBuffer.Count; i++)
+        {
+            AttackUnit enemy = enemyTurnBuffer[i];
 
             if (!CombatUtility.IsAlive(enemy))
-            {
                 continue;
-            }
 
             if (IsEnemyLocked(enemy))
-            {
                 continue;
-            }
 
             yield return StartCoroutine(
                 CombatUtility.ExecuteEnemyTurn(
@@ -103,21 +92,21 @@ public class CombatManager : MonoBehaviour
 
     public void StartEnemyRound()
     {
-        StartCoroutine(
-            RunEnemyRound()
-        );
+        StartCoroutine(RunEnemyRound());
     }
+
+    // =========================================================
+    // ENEMY LOCKS
+    // =========================================================
 
     public void LockEnemyForCurrentRound(
         AttackUnit enemy
     )
     {
-        if (enemy == null)
-        {
-            return;
-        }
-
-        if (enemy.GetTeam() != Team.Enemy)
+        if (
+            enemy == null ||
+            enemy.GetTeam() != Team.Enemy
+        )
         {
             return;
         }
@@ -130,15 +119,16 @@ public class CombatManager : MonoBehaviour
     )
     {
         if (enemies == null)
-        {
             return;
-        }
 
         for (int i = 0; i < enemies.Count; i++)
         {
-            LockEnemyForCurrentRound(
-                enemies[i]
-            );
+            AttackUnit enemy = enemies[i];
+
+            if (enemy == null)
+                continue;
+
+            LockEnemyForCurrentRound(enemy);
         }
     }
 
@@ -147,9 +137,7 @@ public class CombatManager : MonoBehaviour
     )
     {
         if (enemy == null)
-        {
             return;
-        }
 
         lockedEnemies.Remove(enemy);
     }
@@ -163,12 +151,8 @@ public class CombatManager : MonoBehaviour
         AttackUnit enemy
     )
     {
-        if (enemy == null)
-        {
-            return false;
-        }
-
-        return lockedEnemies.Contains(enemy);
+        return enemy != null &&
+               lockedEnemies.Contains(enemy);
     }
 
     public int GetLockedEnemyCount()
@@ -176,54 +160,45 @@ public class CombatManager : MonoBehaviour
         return lockedEnemies.Count;
     }
 
+    // =========================================================
+    // SETTINGS
+    // =========================================================
+
     public bool EnemiesMoveAfterRound
     {
-        get
-        {
-            return enemiesMoveAfterRound;
-        }
+        get => enemiesMoveAfterRound;
     }
 
     public bool EnemiesAttackAfterMoving
     {
-        get
-        {
-            return enemiesAttackAfterMoving;
-        }
+        get => enemiesAttackAfterMoving;
     }
+
+    // =========================================================
+    // ENEMY CHECK
+    // =========================================================
 
     public void CheckForEnemies()
     {
-        int enemyCount =
-            GetEnemyCount();
-
-        if (enemyCount > 0)
-        {
+        if (GetEnemyCount() > 0)
             return;
-        }
 
         SpawnTestEnemies();
     }
 
     public int GetEnemyCount()
     {
-        return CombatUtility.GetUnitCount(
-            Team.Enemy
-        );
+        return CombatUtility.GetUnitCount(Team.Enemy);
     }
 
     public List<GameObject> GetAllEnemies()
     {
-        return CombatUtility.GetObjectsByTeam(
-            Team.Enemy
-        );
+        return CombatUtility.GetObjectsByTeam(Team.Enemy);
     }
 
     public List<GameObject> GetAllAllies()
     {
-        return CombatUtility.GetObjectsByTeam(
-            Team.Ally
-        );
+        return CombatUtility.GetObjectsByTeam(Team.Ally);
     }
 
     public void SpawnTestEnemiesNow()
@@ -231,12 +206,14 @@ public class CombatManager : MonoBehaviour
         SpawnTestEnemies();
     }
 
+    // =========================================================
+    // TEST ENEMY SPAWNING
+    // =========================================================
+
     private void SpawnTestEnemies()
     {
         if (gridManager == null)
-        {
             FindReferences();
-        }
 
         if (
             gridManager == null ||
@@ -247,40 +224,44 @@ public class CombatManager : MonoBehaviour
             return;
         }
 
+        int min =
+            Mathf.Max(0, minEnemiesToSpawn);
+
+        int max =
+            Mathf.Max(min, maxEnemiesToSpawn);
+
         int amount =
-            Random.Range(
-                minEnemiesToSpawn,
-                maxEnemiesToSpawn + 1
-            );
+            Random.Range(min, max + 1);
+
+        if (amount <= 0)
+            return;
 
         List<Vector2Int> availableCells =
             GetAvailableCells();
 
-        if (availableCells.Count == 0)
-        {
-            return;
-        }
+        int cellCount = availableCells.Count;
 
-        amount =
-            Mathf.Min(
-                amount,
-                availableCells.Count
-            );
+        if (cellCount == 0)
+            return;
+
+        amount = Mathf.Min(amount, cellCount);
 
         for (int i = 0; i < amount; i++)
         {
             int randomIndex =
-                Random.Range(
-                    0,
-                    availableCells.Count
-                );
+                Random.Range(0, availableCells.Count);
 
             Vector2Int position =
                 availableCells[randomIndex];
 
-            availableCells.RemoveAt(
-                randomIndex
-            );
+            int lastIndex =
+                availableCells.Count - 1;
+
+            // Swap-remove instead of List.RemoveAt().
+            availableCells[randomIndex] =
+                availableCells[lastIndex];
+
+            availableCells.RemoveAt(lastIndex);
 
             SpawnEnemy(position);
         }
@@ -290,17 +271,11 @@ public class CombatManager : MonoBehaviour
         Vector2Int gridPosition
     )
     {
-        if (gridManager == null)
-        {
-            return false;
-        }
-
-        if (!gridManager.IsInsideGrid(gridPosition))
-        {
-            return false;
-        }
-
-        if (gridManager.IsCellOccupied(gridPosition))
+        if (
+            gridManager == null ||
+            !gridManager.IsInsideGrid(gridPosition) ||
+            gridManager.IsCellOccupied(gridPosition)
+        )
         {
             return false;
         }
@@ -309,22 +284,18 @@ public class CombatManager : MonoBehaviour
             Instantiate(enemyPrefab);
 
         if (enemy == null)
-        {
             return false;
-        }
 
         enemy.name =
             $"{enemyCharacter.name}_Enemy";
 
-        HealthManager health =
-            enemy.GetComponent<HealthManager>();
-
-        AttackUnit attackUnit =
-            enemy.GetComponent<AttackUnit>();
-
         if (
-            health == null ||
-            attackUnit == null
+            !enemy.TryGetComponent(
+                out HealthManager health
+            ) ||
+            !enemy.TryGetComponent(
+                out AttackUnit attackUnit
+            )
         )
         {
             Destroy(enemy);
@@ -342,114 +313,77 @@ public class CombatManager : MonoBehaviour
             return false;
         }
 
-        health.Initialize(
-            enemyCharacter
-        );
+        health.Initialize(enemyCharacter);
+        attackUnit.Initialize(enemyCharacter);
 
-        attackUnit.Initialize(
-            enemyCharacter
-        );
-
-        LockEnemyForCurrentRound(
-            attackUnit
-        );
+        LockEnemyForCurrentRound(attackUnit);
 
         return true;
     }
 
+    // =========================================================
+    // AVAILABLE CELLS
+    // =========================================================
+
     private List<Vector2Int> GetAvailableCells()
     {
-        List<Vector2Int> cells =
-            new List<Vector2Int>();
+        availableCellsBuffer.Clear();
 
         if (gridManager == null)
-        {
-            return cells;
-        }
+            return availableCellsBuffer;
 
-        int minX =
-            gridManager.GetMinX();
-
-        int maxX =
-            gridManager.GetMaxX();
-
-        int minY =
-            gridManager.GetMinY();
-
-        int maxY =
-            gridManager.GetMaxY();
+        int minX = gridManager.GetMinX();
+        int maxX = gridManager.GetMaxX();
+        int minY = gridManager.GetMinY();
+        int maxY = gridManager.GetMaxY();
 
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
             {
                 Vector2Int position =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                    new Vector2Int(x, y);
 
-                if (
-                    !gridManager.IsInsideGrid(
-                        position
-                    )
-                )
-                {
+                if (!gridManager.IsInsideGrid(position))
                     continue;
-                }
 
-                if (
-                    gridManager.IsCellOccupied(
-                        position
-                    )
-                )
-                {
+                if (gridManager.IsCellOccupied(position))
                     continue;
-                }
 
-                cells.Add(position);
+                availableCellsBuffer.Add(position);
             }
         }
 
-        return cells;
+        return availableCellsBuffer;
     }
 
     public bool TryGetRandomAvailableCell(
         out Vector2Int position
     )
     {
-        position =
-            Vector2Int.zero;
+        position = Vector2Int.zero;
 
         if (gridManager == null)
-        {
             FindReferences();
-        }
 
         if (gridManager == null)
-        {
             return false;
-        }
 
         List<Vector2Int> cells =
             GetAvailableCells();
 
         if (cells.Count == 0)
-        {
             return false;
-        }
-
-        int randomIndex =
-            Random.Range(
-                0,
-                cells.Count
-            );
 
         position =
-            cells[randomIndex];
+            cells[Random.Range(0, cells.Count)];
 
         return true;
     }
+
+    // =========================================================
+    // PUBLIC ACCESS
+    // =========================================================
 
     public GridManager GetGridManager()
     {

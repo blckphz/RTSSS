@@ -27,7 +27,7 @@ MonoBehaviour:
   targetType: 0
   range: 5
   minDistance: 0
-  rangeShape: 5
+  rangeShape: 0
   maxJumps: 3
   jumpDelay: 0
   maxJumpDistance: 4

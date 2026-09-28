@@ -35,8 +35,7 @@ public class turretbehav : MonoBehaviour
     // ADD MULTIPLE CHARGES
     // ============================================================
 
-    public void AddChainLightningCharges(
-        int amount)
+    public void AddChainLightningCharges(int amount)
     {
         if (amount <= 0)
         {
@@ -69,6 +68,30 @@ public class turretbehav : MonoBehaviour
 
 
     // ============================================================
+    // CONSUME ONE CHARGE
+    // ============================================================
+
+    public void ConsumeChainLightningCharge()
+    {
+        if (chainLightningCharges <= 0)
+        {
+            return;
+        }
+
+        chainLightningCharges--;
+
+        Debug.Log(
+            gameObject.name +
+            " lost 1 Chain Lightning charge. " +
+            "Remaining charges: " +
+            chainLightningCharges
+        );
+
+        UpdateChargeParticles();
+    }
+
+
+    // ============================================================
     // CLEAR CHARGES
     // ============================================================
 
@@ -96,11 +119,17 @@ public class turretbehav : MonoBehaviour
 
         if (charged)
         {
-            chargeParticles.Play();
+            if (!chargeParticles.isPlaying)
+            {
+                chargeParticles.Play();
+            }
         }
         else
         {
-            chargeParticles.Stop();
+            if (chargeParticles.isPlaying)
+            {
+                chargeParticles.Stop();
+            }
         }
     }
 }

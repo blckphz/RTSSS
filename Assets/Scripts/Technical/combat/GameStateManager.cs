@@ -73,20 +73,11 @@ public class GameStateManager : MonoBehaviour
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // FIND ENCOUNTER MANAGER
-        // --------------------------------------------------------
-
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
-
-
-        // --------------------------------------------------------
-        // FIND UPGRADE UI
-        // --------------------------------------------------------
 
         if (upgradeChoiceUI == null)
         {
@@ -94,15 +85,8 @@ public class GameStateManager : MonoBehaviour
                 FindFirstObjectByType<UpgradeChoiceUI>();
         }
 
-
-        // --------------------------------------------------------
-        // SET INITIAL STATE
-        // --------------------------------------------------------
-
         currentState =
             startingState;
-
-
     }
 
 
@@ -112,10 +96,6 @@ public class GameStateManager : MonoBehaviour
 
     private void Start()
     {
-        // --------------------------------------------------------
-        // CHECK FOR NEW RUN
-        // --------------------------------------------------------
-
         if (
             GameSession.Instance != null &&
             GameSession.Instance.NewRunPending
@@ -134,47 +114,13 @@ public class GameStateManager : MonoBehaviour
         GameState newState
     )
     {
-        // --------------------------------------------------------
-        // SAME STATE
-        // --------------------------------------------------------
-
         if (currentState == newState)
         {
-            Debug.Log(
-                "[GameStateManager] State already is " +
-                newState +
-                ". No change.",
-                this
-            );
-
             return;
         }
 
-
-        // --------------------------------------------------------
-        // LOG STATE CHANGE
-        // --------------------------------------------------------
-
-        Debug.Log(
-            "[GameStateManager] State changing: " +
-            currentState +
-            " -> " +
-            newState,
-            this
-        );
-
-
-        // --------------------------------------------------------
-        // SAVE NEW STATE
-        // --------------------------------------------------------
-
         currentState =
             newState;
-
-
-        // --------------------------------------------------------
-        // NOTIFY LISTENERS
-        // --------------------------------------------------------
 
         OnGameStateChanged?.Invoke(
             currentState
@@ -188,35 +134,16 @@ public class GameStateManager : MonoBehaviour
 
     private void ShowStartingUpgrades()
     {
-        // --------------------------------------------------------
-        // FIND UPGRADE UI
-        // --------------------------------------------------------
-
         if (upgradeChoiceUI == null)
         {
             upgradeChoiceUI =
                 FindFirstObjectByType<UpgradeChoiceUI>();
         }
 
-
-        // --------------------------------------------------------
-        // CHECK UPGRADE UI
-        // --------------------------------------------------------
-
         if (upgradeChoiceUI == null)
         {
-            Debug.LogWarning(
-                "[GameStateManager] UpgradeChoiceUI not found.",
-                this
-            );
-
             return;
         }
-
-
-        // --------------------------------------------------------
-        // SHOW STARTING UPGRADES
-        // --------------------------------------------------------
 
         upgradeChoiceUI.ShowStartingUpgradeChoice(
             OnStartingUpgradeSelected
@@ -230,19 +157,10 @@ public class GameStateManager : MonoBehaviour
 
     private void OnStartingUpgradeSelected()
     {
-        // --------------------------------------------------------
-        // TELL GAME SESSION
-        // --------------------------------------------------------
-
         if (GameSession.Instance != null)
         {
             GameSession.Instance.StartingUpgradesComplete();
         }
-
-
-        // --------------------------------------------------------
-        // ENTER MAP
-        // --------------------------------------------------------
 
         SetGameState(
             GameState.Map
@@ -268,31 +186,16 @@ public class GameStateManager : MonoBehaviour
 
     public void StartCombat()
     {
-        // --------------------------------------------------------
-        // CHECK ENCOUNTER MANAGER
-        // --------------------------------------------------------
-
         if (encounterManager == null)
         {
             encounterManager =
                 FindFirstObjectByType<EncounterManager>();
         }
 
-
         if (encounterManager == null)
         {
-            Debug.LogError(
-                "[GameStateManager] EncounterManager not found.",
-                this
-            );
-
             return;
         }
-
-
-        // --------------------------------------------------------
-        // CHECK CURRENT STATE
-        // --------------------------------------------------------
 
         if (
             currentState != GameState.MainMenu &&
@@ -301,29 +204,12 @@ public class GameStateManager : MonoBehaviour
             currentState != GameState.Defeat
         )
         {
-            Debug.LogWarning(
-                "[GameStateManager] Cannot start combat " +
-                "from state: " +
-                currentState,
-                this
-            );
-
             return;
         }
-
-
-        // --------------------------------------------------------
-        // PREPARING ENCOUNTER
-        // --------------------------------------------------------
 
         SetGameState(
             GameState.PreparingEncounter
         );
-
-
-        // --------------------------------------------------------
-        // START ENCOUNTER
-        // --------------------------------------------------------
 
         encounterManager.StartEncounter();
     }
@@ -335,12 +221,6 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterStarted()
     {
-        Debug.Log(
-            "[GameStateManager] Encounter started.",
-            this
-        );
-
-
         SetGameState(
             GameState.Combat
         );
@@ -353,13 +233,6 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterVictory()
     {
-        Debug.Log(
-            "[GameStateManager] EncounterVictory() called. " +
-            "Changing state to Victory.",
-            this
-        );
-
-
         SetGameState(
             GameState.Victory
         );
@@ -372,12 +245,6 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterDefeat()
     {
-        Debug.Log(
-            "[GameStateManager] EncounterDefeat() called.",
-            this
-        );
-
-
         SetGameState(
             GameState.Defeat
         );

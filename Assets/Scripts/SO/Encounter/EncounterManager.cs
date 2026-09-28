@@ -6,7 +6,6 @@ public class EncounterManager : MonoBehaviour
 {
     public static event Action<EncounterDefinition> OnEncounterVictory;
 
-
     public enum EncounterState
     {
         None,
@@ -19,126 +18,59 @@ public class EncounterManager : MonoBehaviour
         Defeat
     }
 
-
     // =========================================================
     // REFERENCES
     // =========================================================
 
     [Header("References")]
-
-    [SerializeField]
-    private GameStateManager gameStateManager;
-
-    [SerializeField]
-    private GridManager gridManager;
-
-    [SerializeField]
-    private EncounterSpawner encounterSpawner;
-
-    [SerializeField]
-    private RoundManager roundManager;
-
-    [SerializeField]
-    private CombatManager combatManager;
-
-    [SerializeField]
-    private CardManager cardManager;
-
-    [SerializeField]
-    private biomesManager biomesManager;
-
-    [SerializeField]
-    private musicManager musicManager;
-
-    [SerializeField]
-    private DayNightManager dayNightManager;
-
+    [SerializeField] private GameStateManager gameStateManager;
+    [SerializeField] private GridManager gridManager;
+    [SerializeField] private EncounterSpawner encounterSpawner;
+    [SerializeField] private RoundManager roundManager;
+    [SerializeField] private CombatManager combatManager;
+    [SerializeField] private CardManager cardManager;
+    [SerializeField] private biomesManager biomesManager;
+    [SerializeField] private musicManager musicManager;
+    [SerializeField] private DayNightManager dayNightManager;
 
     // =========================================================
     // CURRENT ENCOUNTER
     // =========================================================
 
     [Header("Current Encounter")]
-
-    [SerializeField]
-    private EncounterDefinition currentEncounter;
-
+    [SerializeField] private EncounterDefinition currentEncounter;
 
     // =========================================================
     // TIMING
     // =========================================================
 
     [Header("Timing")]
+    [SerializeField] private float gridSpawnDelay = 0.1f;
+    [SerializeField] private float unitSpawnDelay = 0.1f;
+    [SerializeField] private float combatStartDelay = 0.25f;
 
-    [SerializeField]
-    private float gridSpawnDelay = 0.1f;
-
-    [SerializeField]
-    private float unitSpawnDelay = 0.1f;
-
-    [SerializeField]
-    private float combatStartDelay = 0.25f;
-
-
-    private EncounterState currentState =
-        EncounterState.None;
+    private EncounterState currentState = EncounterState.None;
 
     private bool encounterRunning;
-
     private bool startingRound;
 
+    public EncounterState CurrentState => currentState;
+    public EncounterDefinition CurrentEncounter => currentEncounter;
 
-    public EncounterState CurrentState =>
-        currentState;
+    public VictoryCondition CurrentVictoryCondition =>
+        currentEncounter != null
+            ? currentEncounter.victoryCondition
+            : VictoryCondition.DefeatAllEnemies;
 
-    public EncounterDefinition CurrentEncounter =>
-        currentEncounter;
+    public string TargetEnemyId =>
+        currentEncounter != null
+            ? currentEncounter.targetEnemyId
+            : string.Empty;
 
-
-    public VictoryCondition CurrentVictoryCondition
-    {
-        get
-        {
-            if (currentEncounter == null)
-            {
-                return VictoryCondition.DefeatAllEnemies;
-            }
-
-            return currentEncounter.victoryCondition;
-        }
-    }
-
-
-    public string TargetEnemyId
-    {
-        get
-        {
-            if (currentEncounter == null)
-            {
-                return string.Empty;
-            }
-
-            return currentEncounter.targetEnemyId;
-        }
-    }
-
-
-    public int RoundsToSurvive
-    {
-        get
-        {
-            if (currentEncounter == null)
-            {
-                return 1;
-            }
-
-            return Mathf.Max(
-                1,
-                currentEncounter.roundsToSurvive
-            );
-        }
-    }
-
+    public int RoundsToSurvive =>
+        currentEncounter != null
+            ? Mathf.Max(1, currentEncounter.roundsToSurvive)
+            : 1;
 
     // =========================================================
     // UNITY
@@ -149,20 +81,15 @@ public class EncounterManager : MonoBehaviour
         FindDependencies();
     }
 
-
     private void OnEnable()
     {
-        HealthManager.OnHealthChanged +=
-            HandleHealthChanged;
+        HealthManager.OnHealthChanged += HandleHealthChanged;
     }
-
 
     private void OnDisable()
     {
-        HealthManager.OnHealthChanged -=
-            HandleHealthChanged;
+        HealthManager.OnHealthChanged -= HandleHealthChanged;
     }
-
 
     // =========================================================
     // FIND DEPENDENCIES
@@ -171,60 +98,32 @@ public class EncounterManager : MonoBehaviour
     private void FindDependencies()
     {
         if (gameStateManager == null)
-        {
-            gameStateManager =
-                FindFirstObjectByType<GameStateManager>();
-        }
+            gameStateManager = FindFirstObjectByType<GameStateManager>();
 
         if (gridManager == null)
-        {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
+            gridManager = FindFirstObjectByType<GridManager>();
 
         if (encounterSpawner == null)
-        {
-            encounterSpawner =
-                FindFirstObjectByType<EncounterSpawner>();
-        }
+            encounterSpawner = FindFirstObjectByType<EncounterSpawner>();
 
         if (roundManager == null)
-        {
-            roundManager =
-                FindFirstObjectByType<RoundManager>();
-        }
+            roundManager = FindFirstObjectByType<RoundManager>();
 
         if (combatManager == null)
-        {
-            combatManager =
-                FindFirstObjectByType<CombatManager>();
-        }
+            combatManager = FindFirstObjectByType<CombatManager>();
 
         if (cardManager == null)
-        {
-            cardManager =
-                FindFirstObjectByType<CardManager>();
-        }
+            cardManager = FindFirstObjectByType<CardManager>();
 
         if (biomesManager == null)
-        {
-            biomesManager =
-                FindFirstObjectByType<biomesManager>();
-        }
+            biomesManager = FindFirstObjectByType<biomesManager>();
 
         if (musicManager == null)
-        {
-            musicManager =
-                FindFirstObjectByType<musicManager>();
-        }
+            musicManager = FindFirstObjectByType<musicManager>();
 
         if (dayNightManager == null)
-        {
-            dayNightManager =
-                FindFirstObjectByType<DayNightManager>();
-        }
+            dayNightManager = FindFirstObjectByType<DayNightManager>();
     }
-
 
     // =========================================================
     // ENCOUNTER START
@@ -233,9 +132,7 @@ public class EncounterManager : MonoBehaviour
     public void StartEncounter()
     {
         if (encounterRunning)
-        {
             return;
-        }
 
         if (currentEncounter == null)
         {
@@ -243,7 +140,6 @@ public class EncounterManager : MonoBehaviour
                 "[EncounterManager] No encounter assigned.",
                 this
             );
-
             return;
         }
 
@@ -253,121 +149,54 @@ public class EncounterManager : MonoBehaviour
                 "[EncounterManager] Encounter definition is invalid.",
                 this
             );
-
             return;
         }
 
-        StartCoroutine(
-            StartEncounterRoutine()
-        );
+        StartCoroutine(StartEncounterRoutine());
     }
-
 
     private IEnumerator StartEncounterRoutine()
     {
         encounterRunning = true;
         startingRound = false;
 
-        SetEncounterState(
-            EncounterState.Preparing
-        );
-
+        SetEncounterState(EncounterState.Preparing);
 
         if (!ValidateDependencies())
         {
             encounterRunning = false;
-
-            SetEncounterState(
-                EncounterState.None
-            );
-
+            SetEncounterState(EncounterState.None);
             yield break;
         }
 
-
-        // -----------------------------------------------------
-        // RESET ROUND SYSTEM
-        // -----------------------------------------------------
-
-        if (roundManager != null)
-        {
-            roundManager.ResetRounds();
-        }
-
-
-        // -----------------------------------------------------
-        // CLEAR PREVIOUS ENCOUNTER
-        // -----------------------------------------------------
+        roundManager.ResetRounds();
 
         ClearPreviousEncounter();
-
-
-        // -----------------------------------------------------
-        // ENVIRONMENT
-        // -----------------------------------------------------
 
         SetupEncounterEnvironment();
 
         yield return null;
 
-
-        // -----------------------------------------------------
-        // CARDS
-        // -----------------------------------------------------
-
         if (cardManager != null)
-        {
             cardManager.StartNewEncounterHand();
-        }
 
         yield return null;
 
-
-        // -----------------------------------------------------
-        // CREATE GRID
-        // -----------------------------------------------------
-
-        SetEncounterState(
-            EncounterState.CreatingGrid
-        );
+        SetEncounterState(EncounterState.CreatingGrid);
 
         SetupGrid();
 
         if (gridSpawnDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                gridSpawnDelay
-            );
-        }
+            yield return new WaitForSeconds(gridSpawnDelay);
 
+        SetEncounterState(EncounterState.SpawningUnits);
 
-        // -----------------------------------------------------
-        // INITIAL ENCOUNTER SPAWN
-        // -----------------------------------------------------
-
-        SetEncounterState(
-            EncounterState.SpawningUnits
-        );
-
-        encounterSpawner.SpawnEncounter(
-            currentEncounter
-        );
+        encounterSpawner.SpawnEncounter(currentEncounter);
 
         if (unitSpawnDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                unitSpawnDelay
-            );
-        }
+            yield return new WaitForSeconds(unitSpawnDelay);
 
-
-        // -----------------------------------------------------
-        // ROUND 1 PREPARE
-        // -----------------------------------------------------
-
-        SetEncounterState(
-            EncounterState.Preparing
-        );
+        SetEncounterState(EncounterState.Preparing);
 
         Debug.Log(
             "[EncounterManager] Round 1 Prepare phase. " +
@@ -376,7 +205,6 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-
     // =========================================================
     // ENVIRONMENT
     // =========================================================
@@ -384,14 +212,7 @@ public class EncounterManager : MonoBehaviour
     private void SetupEncounterEnvironment()
     {
         if (currentEncounter == null)
-        {
             return;
-        }
-
-
-        // -----------------------------------------------------
-        // DAY / NIGHT
-        // -----------------------------------------------------
 
         if (dayNightManager != null)
         {
@@ -400,41 +221,28 @@ public class EncounterManager : MonoBehaviour
             );
         }
 
-
-        // -----------------------------------------------------
-        // BIOME
-        // -----------------------------------------------------
-
-        if (biomesManager != null)
-        {
-            if (
-                !string.IsNullOrWhiteSpace(
-                    currentEncounter.biomeGameObjectName
-                )
+        if (
+            biomesManager != null &&
+            !string.IsNullOrWhiteSpace(
+                currentEncounter.biomeGameObjectName
             )
-            {
-                biomesManager.SetBiome(
-                    currentEncounter.biomeGameObjectName
-                );
-            }
+        )
+        {
+            biomesManager.SetBiome(
+                currentEncounter.biomeGameObjectName
+            );
         }
 
-
-        // -----------------------------------------------------
-        // MUSIC
-        // -----------------------------------------------------
-
-        if (musicManager != null)
+        if (
+            musicManager != null &&
+            currentEncounter.music != null
+        )
         {
-            if (currentEncounter.music != null)
-            {
-                musicManager.PlayMusic(
-                    currentEncounter.music
-                );
-            }
+            musicManager.PlayMusic(
+                currentEncounter.music
+            );
         }
     }
-
 
     // =========================================================
     // SURVIVAL WAVE SPAWNING
@@ -442,33 +250,18 @@ public class EncounterManager : MonoBehaviour
 
     public void SpawnNextRoundEnemies()
     {
-        if (!encounterRunning)
+        if (
+            !encounterRunning ||
+            !UsesSurvival() ||
+            currentEncounter == null ||
+            encounterSpawner == null ||
+            roundManager == null
+        )
         {
             return;
         }
 
-        if (!UsesSurvival())
-        {
-            return;
-        }
-
-        if (currentEncounter == null)
-        {
-            return;
-        }
-
-        if (encounterSpawner == null)
-        {
-            return;
-        }
-
-        if (roundManager == null)
-        {
-            return;
-        }
-
-        int currentRound =
-            roundManager.GetCurrentRound();
+        int currentRound = roundManager.GetCurrentRound();
 
         Debug.Log(
             "[EncounterManager] Spawning Wave " +
@@ -485,87 +278,22 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-
     // =========================================================
     // NEXT ROUND
     // =========================================================
 
     public void NextRound()
     {
-        if (!encounterRunning)
-        {
+        if (!CanPressNextRound())
             return;
-        }
-
-        if (
-            currentState !=
-            EncounterState.Preparing
-        )
-        {
-            Debug.Log(
-                "[EncounterManager] NextRound ignored. " +
-                "Encounter state is " +
-                currentState,
-                this
-            );
-
-            return;
-        }
-
-        if (roundManager == null)
-        {
-            return;
-        }
-
-        if (startingRound)
-        {
-            return;
-        }
-
-        if (roundManager.IsRoundRunning())
-        {
-            return;
-        }
-
-        if (!roundManager.IsSetupPhase())
-        {
-            return;
-        }
 
         StartNextRound();
     }
 
-
-    // =========================================================
-    // START ROUND
-    // =========================================================
-
     private void StartNextRound()
     {
-        if (!encounterRunning)
-        {
+        if (!CanStartRound())
             return;
-        }
-
-        if (startingRound)
-        {
-            return;
-        }
-
-        if (roundManager == null)
-        {
-            return;
-        }
-
-        if (roundManager.IsRoundRunning())
-        {
-            return;
-        }
-
-        if (!roundManager.IsSetupPhase())
-        {
-            return;
-        }
 
         if (!HasLivingPlayer())
         {
@@ -573,33 +301,20 @@ public class EncounterManager : MonoBehaviour
             return;
         }
 
-        int round =
-            roundManager.GetCurrentRound();
-
-
         if (UsesSurvival())
-        {
             SpawnNextRoundEnemies();
-        }
 
         if (!encounterRunning)
-        {
             return;
-        }
 
         startingRound = true;
 
-        SetEncounterState(
-            EncounterState.StartingCombat
-        );
+        SetEncounterState(EncounterState.StartingCombat);
 
-        if (round == 1)
-        {
-            if (gameStateManager != null)
-            {
-                gameStateManager.EncounterStarted();
-            }
-        }
+        int round = roundManager.GetCurrentRound();
+
+        if (round == 1 && gameStateManager != null)
+            gameStateManager.EncounterStarted();
 
         if (combatStartDelay <= 0f)
         {
@@ -607,27 +322,26 @@ public class EncounterManager : MonoBehaviour
         }
         else
         {
-            StartCoroutine(
-                StartCombatAfterDelay()
-            );
+            StartCoroutine(StartCombatAfterDelay());
         }
     }
 
+    private bool CanStartRound()
+    {
+        return encounterRunning &&
+               !startingRound &&
+               roundManager != null &&
+               !roundManager.IsRoundRunning() &&
+               roundManager.IsSetupPhase();
+    }
 
     private IEnumerator StartCombatAfterDelay()
     {
-        yield return new WaitForSeconds(
-            combatStartDelay
-        );
-
-        if (!encounterRunning)
-        {
-            yield break;
-        }
+        yield return new WaitForSeconds(combatStartDelay);
 
         if (
-            currentState !=
-            EncounterState.StartingCombat
+            !encounterRunning ||
+            currentState != EncounterState.StartingCombat
         )
         {
             yield break;
@@ -636,37 +350,29 @@ public class EncounterManager : MonoBehaviour
         StartCombatRound();
     }
 
-
     private void StartCombatRound()
     {
-        if (!encounterRunning)
+        if (
+            !encounterRunning ||
+            roundManager == null
+        )
         {
             return;
         }
 
-        if (roundManager == null)
-        {
-            return;
-        }
+        int round = roundManager.GetCurrentRound();
 
-        int round =
-            roundManager.GetCurrentRound();
-
-        SetEncounterState(
-            EncounterState.Combat
-        );
+        SetEncounterState(EncounterState.Combat);
 
         startingRound = false;
 
         Debug.Log(
-            "[EncounterManager] Starting combat Round " +
-            round,
+            "[EncounterManager] Starting combat Round " + round,
             this
         );
 
         roundManager.StartRound();
     }
-
 
     // =========================================================
     // UNIT DEATH
@@ -677,36 +383,27 @@ public class EncounterManager : MonoBehaviour
         string encounterUnitId
     )
     {
-        if (!encounterRunning)
-        {
-            return;
-        }
-
-        if (killedUnit == null)
-        {
-            return;
-        }
-
         if (
-            killedUnit.GetTeam() !=
-            Team.Enemy
+            !encounterRunning ||
+            killedUnit == null
         )
+        {
+            return;
+        }
+
+        if (killedUnit.GetTeam() != Team.Enemy)
         {
             CheckPlayerDefeat();
             return;
         }
 
-        if (
-            CurrentVictoryCondition ==
-            VictoryCondition.DefeatSpecificEnemy
-        )
+        VictoryCondition condition = CurrentVictoryCondition;
+
+        if (condition == VictoryCondition.DefeatSpecificEnemy)
         {
             if (
-                !string.IsNullOrWhiteSpace(
-                    encounterUnitId
-                ) &&
-                encounterUnitId ==
-                TargetEnemyId
+                !string.IsNullOrWhiteSpace(encounterUnitId) &&
+                encounterUnitId == TargetEnemyId
             )
             {
                 EncounterVictory();
@@ -716,17 +413,13 @@ public class EncounterManager : MonoBehaviour
         }
 
         if (
-            CurrentVictoryCondition ==
-            VictoryCondition.DefeatAllEnemies
+            condition == VictoryCondition.DefeatAllEnemies &&
+            !HasLivingEnemies()
         )
         {
-            if (!HasLivingEnemies())
-            {
-                EncounterVictory();
-            }
+            EncounterVictory();
         }
     }
-
 
     // =========================================================
     // HEALTH
@@ -736,39 +429,27 @@ public class EncounterManager : MonoBehaviour
         HealthManager healthManager
     )
     {
-        if (!encounterRunning)
-        {
-            return;
-        }
-
-        if (healthManager == null)
-        {
-            return;
-        }
-
         if (
-            healthManager.GetTeam() ==
-            Team.Player
+            !encounterRunning ||
+            healthManager == null
         )
+        {
+            return;
+        }
+
+        Team team = healthManager.GetTeam();
+
+        if (team == Team.Player)
         {
             CheckPlayerDefeat();
             return;
         }
 
         if (
-            healthManager.GetTeam() !=
-            Team.Enemy
+            team != Team.Enemy ||
+            !healthManager.IsAlive() ||
+            UsesSurvival()
         )
-        {
-            return;
-        }
-
-        if (!healthManager.IsAlive())
-        {
-            return;
-        }
-
-        if (UsesSurvival())
         {
             return;
         }
@@ -782,24 +463,20 @@ public class EncounterManager : MonoBehaviour
         }
     }
 
-
     // =========================================================
     // PLAYER DEFEAT
     // =========================================================
 
     private void CheckPlayerDefeat()
     {
-        if (!encounterRunning)
-        {
-            return;
-        }
-
-        if (!HasLivingPlayer())
+        if (
+            encounterRunning &&
+            !HasLivingPlayer()
+        )
         {
             EncounterDefeat();
         }
     }
-
 
     // =========================================================
     // VICTORY
@@ -807,50 +484,40 @@ public class EncounterManager : MonoBehaviour
 
     public bool CheckVictoryConditions()
     {
-        if (!encounterRunning)
-        {
-            return false;
-        }
-
-        if (currentEncounter == null)
-        {
-            return false;
-        }
-
-        if (UsesSurvival())
-        {
-            return false;
-        }
-
         if (
-            CurrentVictoryCondition ==
-            VictoryCondition.DefeatAllEnemies
+            !encounterRunning ||
+            currentEncounter == null ||
+            UsesSurvival()
         )
         {
-            if (!HasLivingEnemies())
-            {
-                EncounterVictory();
-                return true;
-            }
-
             return false;
         }
 
-        if (
-            CurrentVictoryCondition ==
-            VictoryCondition.DefeatSpecificEnemy
-        )
+        switch (CurrentVictoryCondition)
         {
-            if (IsTargetEnemyDead())
-            {
-                EncounterVictory();
-                return true;
-            }
+            case VictoryCondition.DefeatAllEnemies:
+
+                if (!HasLivingEnemies())
+                {
+                    EncounterVictory();
+                    return true;
+                }
+
+                break;
+
+            case VictoryCondition.DefeatSpecificEnemy:
+
+                if (IsTargetEnemyDead())
+                {
+                    EncounterVictory();
+                    return true;
+                }
+
+                break;
         }
 
         return false;
     }
-
 
     // =========================================================
     // VICTORY AFTER ROUND
@@ -858,12 +525,10 @@ public class EncounterManager : MonoBehaviour
 
     public void CheckVictoryAfterRound()
     {
-        if (!encounterRunning)
-        {
-            return;
-        }
-
-        if (roundManager == null)
+        if (
+            !encounterRunning ||
+            roundManager == null
+        )
         {
             return;
         }
@@ -873,34 +538,23 @@ public class EncounterManager : MonoBehaviour
             int completedRound =
                 roundManager.GetCurrentRound();
 
-            if (
-                completedRound >=
-                RoundsToSurvive
-            )
+            if (completedRound >= RoundsToSurvive)
             {
                 EncounterVictory();
                 return;
             }
 
-            SetEncounterState(
-                EncounterState.Preparing
-            );
-
+            SetEncounterState(EncounterState.Preparing);
             return;
         }
 
         CheckVictoryConditions();
 
         if (!encounterRunning)
-        {
             return;
-        }
 
-        SetEncounterState(
-            EncounterState.Preparing
-        );
+        SetEncounterState(EncounterState.Preparing);
     }
-
 
     // =========================================================
     // LIVING PLAYER
@@ -913,33 +567,22 @@ public class EncounterManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-        for (
-            int i = 0;
-            i < units.Length;
-            i++
-        )
+        for (int i = 0; i < units.Length; i++)
         {
-            AttackUnit unit =
-                units[i];
-
-            if (unit == null)
-            {
-                continue;
-            }
+            AttackUnit unit = units[i];
 
             if (
-                unit.GetTeam() !=
-                Team.Player
+                unit == null ||
+                unit.GetTeam() != Team.Player
             )
             {
                 continue;
             }
 
-            HealthManager health =
-                unit.GetComponent<HealthManager>();
-
             if (
-                health != null &&
+                unit.TryGetComponent(
+                    out HealthManager health
+                ) &&
                 health.IsAlive()
             )
             {
@@ -949,7 +592,6 @@ public class EncounterManager : MonoBehaviour
 
         return false;
     }
-
 
     // =========================================================
     // LIVING ENEMIES
@@ -962,33 +604,22 @@ public class EncounterManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-        for (
-            int i = 0;
-            i < units.Length;
-            i++
-        )
+        for (int i = 0; i < units.Length; i++)
         {
-            AttackUnit unit =
-                units[i];
-
-            if (unit == null)
-            {
-                continue;
-            }
+            AttackUnit unit = units[i];
 
             if (
-                unit.GetTeam() !=
-                Team.Enemy
+                unit == null ||
+                unit.GetTeam() != Team.Enemy
             )
             {
                 continue;
             }
 
-            HealthManager health =
-                unit.GetComponent<HealthManager>();
-
             if (
-                health != null &&
+                unit.TryGetComponent(
+                    out HealthManager health
+                ) &&
                 health.IsAlive()
             )
             {
@@ -998,7 +629,6 @@ public class EncounterManager : MonoBehaviour
 
         return false;
     }
-
 
     // =========================================================
     // TARGET ENEMY
@@ -1014,14 +644,10 @@ public class EncounterManager : MonoBehaviour
             return false;
         }
 
-        if (
-            string.IsNullOrWhiteSpace(
-                TargetEnemyId
-            )
-        )
-        {
+        string targetId = TargetEnemyId;
+
+        if (string.IsNullOrWhiteSpace(targetId))
             return false;
-        }
 
         AttackUnit[] units =
             FindObjectsByType<AttackUnit>(
@@ -1030,39 +656,30 @@ public class EncounterManager : MonoBehaviour
 
         bool targetFound = false;
 
-        for (
-            int i = 0;
-            i < units.Length;
-            i++
-        )
+        for (int i = 0; i < units.Length; i++)
         {
-            AttackUnit unit =
-                units[i];
-
-            if (unit == null)
-            {
-                continue;
-            }
+            AttackUnit unit = units[i];
 
             if (
-                unit.GetTeam() !=
-                Team.Enemy
+                unit == null ||
+                unit.GetTeam() != Team.Enemy
             )
             {
                 continue;
             }
 
-            EncounterUnit encounterUnit =
-                unit.GetComponent<EncounterUnit>();
-
-            if (encounterUnit == null)
+            if (
+                !unit.TryGetComponent(
+                    out EncounterUnit encounterUnit
+                )
+            )
             {
                 continue;
             }
 
             if (
                 !encounterUnit.HasEncounterUnitId(
-                    TargetEnemyId
+                    targetId
                 )
             )
             {
@@ -1071,11 +688,10 @@ public class EncounterManager : MonoBehaviour
 
             targetFound = true;
 
-            HealthManager health =
-                unit.GetComponent<HealthManager>();
-
             if (
-                health != null &&
+                unit.TryGetComponent(
+                    out HealthManager health
+                ) &&
                 health.IsAlive()
             )
             {
@@ -1086,7 +702,6 @@ public class EncounterManager : MonoBehaviour
         return targetFound;
     }
 
-
     // =========================================================
     // ENCOUNTER VICTORY
     // =========================================================
@@ -1094,13 +709,13 @@ public class EncounterManager : MonoBehaviour
     public void EncounterVictory()
     {
         if (!encounterRunning)
-        {
             return;
-        }
+
+        VictoryCondition condition =
+            CurrentVictoryCondition;
 
         if (
-            CurrentVictoryCondition ==
-            VictoryCondition.DefeatAllEnemies &&
+            condition == VictoryCondition.DefeatAllEnemies &&
             HasLivingEnemies()
         )
         {
@@ -1108,23 +723,18 @@ public class EncounterManager : MonoBehaviour
         }
 
         if (
-            CurrentVictoryCondition ==
-            VictoryCondition.SurviveRounds
+            condition == VictoryCondition.SurviveRounds &&
+            (
+                roundManager == null ||
+                roundManager.GetCurrentRound() < RoundsToSurvive
+            )
         )
         {
-            if (
-                roundManager == null ||
-                roundManager.GetCurrentRound() <
-                RoundsToSurvive
-            )
-            {
-                return;
-            }
+            return;
         }
 
         if (
-            CurrentVictoryCondition ==
-            VictoryCondition.DefeatSpecificEnemy &&
+            condition == VictoryCondition.DefeatSpecificEnemy &&
             !IsTargetEnemyDead()
         )
         {
@@ -1137,29 +747,18 @@ public class EncounterManager : MonoBehaviour
         StopAllCoroutines();
 
         if (combatManager != null)
-        {
             combatManager.ClearEnemyTurnLocks();
-        }
 
-        SetEncounterState(
-            EncounterState.Victory
-        );
+        SetEncounterState(EncounterState.Victory);
 
         if (musicManager != null)
-        {
             musicManager.StopMusic();
-        }
 
         if (gameStateManager != null)
-        {
             gameStateManager.EncounterVictory();
-        }
 
-        OnEncounterVictory?.Invoke(
-            currentEncounter
-        );
+        OnEncounterVictory?.Invoke(currentEncounter);
     }
-
 
     // =========================================================
     // ENCOUNTER DEFEAT
@@ -1168,9 +767,7 @@ public class EncounterManager : MonoBehaviour
     public void EncounterDefeat()
     {
         if (!encounterRunning)
-        {
             return;
-        }
 
         encounterRunning = false;
         startingRound = false;
@@ -1178,25 +775,16 @@ public class EncounterManager : MonoBehaviour
         StopAllCoroutines();
 
         if (combatManager != null)
-        {
             combatManager.ClearEnemyTurnLocks();
-        }
 
-        SetEncounterState(
-            EncounterState.Defeat
-        );
+        SetEncounterState(EncounterState.Defeat);
 
         if (musicManager != null)
-        {
             musicManager.StopMusic();
-        }
 
         if (gameStateManager != null)
-        {
             gameStateManager.EncounterDefeat();
-        }
     }
-
 
     // =========================================================
     // VALIDATION
@@ -1205,31 +793,22 @@ public class EncounterManager : MonoBehaviour
     private bool ValidateEncounterDefinition()
     {
         if (currentEncounter == null)
-        {
             return false;
-        }
 
-        if (
-            currentEncounter.victoryCondition ==
-            VictoryCondition.SurviveRounds
-        )
+        switch (currentEncounter.victoryCondition)
         {
-            return currentEncounter.roundsToSurvive > 0;
-        }
+            case VictoryCondition.SurviveRounds:
+                return currentEncounter.roundsToSurvive > 0;
 
-        if (
-            currentEncounter.victoryCondition ==
-            VictoryCondition.DefeatSpecificEnemy
-        )
-        {
-            return !string.IsNullOrWhiteSpace(
-                currentEncounter.targetEnemyId
-            );
-        }
+            case VictoryCondition.DefeatSpecificEnemy:
+                return !string.IsNullOrWhiteSpace(
+                    currentEncounter.targetEnemyId
+                );
 
-        return true;
+            default:
+                return true;
+        }
     }
-
 
     private bool ValidateDependencies()
     {
@@ -1238,19 +817,16 @@ public class EncounterManager : MonoBehaviour
                roundManager != null;
     }
 
-
     // =========================================================
     // GRID
     // =========================================================
 
     private void SetupGrid()
     {
-        if (gridManager == null)
-        {
-            return;
-        }
-
-        if (currentEncounter == null)
+        if (
+            gridManager == null ||
+            currentEncounter == null
+        )
         {
             return;
         }
@@ -1265,7 +841,6 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-
     // =========================================================
     // CLEANUP
     // =========================================================
@@ -1277,43 +852,25 @@ public class EncounterManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-        for (
-            int i = 0;
-            i < units.Length;
-            i++
-        )
+        for (int i = 0; i < units.Length; i++)
         {
-            AttackUnit unit =
-                units[i];
+            AttackUnit unit = units[i];
 
             if (unit == null)
-            {
                 continue;
-            }
 
             if (gridManager != null)
-            {
-                gridManager.RemoveUnit(
-                    unit.gameObject
-                );
-            }
+                gridManager.RemoveUnit(unit.gameObject);
 
-            Destroy(
-                unit.gameObject
-            );
+            Destroy(unit.gameObject);
         }
 
         if (gridManager != null)
-        {
             gridManager.CleanupDeadUnits();
-        }
 
         if (combatManager != null)
-        {
             combatManager.ClearEnemyTurnLocks();
-        }
     }
-
 
     // =========================================================
     // HELPERS
@@ -1325,15 +882,12 @@ public class EncounterManager : MonoBehaviour
                VictoryCondition.SurviveRounds;
     }
 
-
     private void SetEncounterState(
         EncounterState state
     )
     {
         if (currentState == state)
-        {
             return;
-        }
 
         currentState = state;
 
@@ -1344,84 +898,44 @@ public class EncounterManager : MonoBehaviour
         );
     }
 
-
     public void SetCurrentEncounter(
         EncounterDefinition encounter
     )
     {
         if (encounterRunning)
-        {
             return;
-        }
 
         currentEncounter = encounter;
     }
-
 
     public bool IsEncounterRunning()
     {
         return encounterRunning;
     }
 
-
     public bool IsFinished()
     {
-        return currentState ==
-                   EncounterState.Victory ||
-               currentState ==
-                   EncounterState.Defeat;
+        return currentState == EncounterState.Victory ||
+               currentState == EncounterState.Defeat;
     }
-
 
     public bool IsPreparing()
     {
-        return currentState ==
-               EncounterState.Preparing;
+        return currentState == EncounterState.Preparing;
     }
-
 
     public bool IsInCombat()
     {
-        return currentState ==
-               EncounterState.Combat;
+        return currentState == EncounterState.Combat;
     }
-
 
     public bool CanPressNextRound()
     {
-        if (!encounterRunning)
-        {
-            return false;
-        }
-
-        if (
-            currentState !=
-            EncounterState.Preparing
-        )
-        {
-            return false;
-        }
-
-        if (startingRound)
-        {
-            return false;
-        }
-
-        if (roundManager == null)
-        {
-            return false;
-        }
-
-        if (roundManager.IsRoundRunning())
-        {
-            return false;
-        }
-
-        if (!roundManager.IsSetupPhase())
-        {
-            return false;
-        }
-
-        return true;
+        return encounterRunning &&
+               currentState == EncounterState.Preparing &&
+               !startingRound &&
+               roundManager != null &&
+               !roundManager.IsRoundRunning() &&
+               roundManager.IsSetupPhase();
     }
 }

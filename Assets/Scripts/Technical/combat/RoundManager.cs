@@ -5,6 +5,14 @@ using UnityEngine;
 
 public class RoundManager : MonoBehaviour
 {
+    [Header("Round State")]
+    [SerializeField]
+    private int currentRound = 1;
+
+    [SerializeField]
+    private RoundState currentState =
+        RoundState.Setup;
+
     public enum RoundState
     {
         Setup,
@@ -20,17 +28,10 @@ public class RoundManager : MonoBehaviour
         public string abilityName;
     }
 
-    [Header("Round State")]
-    [SerializeField]
-    private int currentRound = 1;
-
-    [SerializeField]
-    private RoundState currentState =
-        RoundState.Setup;
-
     public event Action<int> OnRoundChanged;
     public event Action<RoundState> OnRoundStateChanged;
     public event Action OnEnemyTurnStarted;
+
 
     [Header("Dependencies")]
     [SerializeField]
@@ -51,6 +52,7 @@ public class RoundManager : MonoBehaviour
     [SerializeField]
     private NextRoundTextManager nextRoundTextManager;
 
+
     [Header("UI & Settings")]
     [SerializeField]
     private float delayBetweenUnits = 0.1f;
@@ -64,6 +66,11 @@ public class RoundManager : MonoBehaviour
         new List<AttackUnit>();
 
     private bool roundRunning;
+
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
 
     private void Awake()
     {
@@ -114,10 +121,16 @@ public class RoundManager : MonoBehaviour
         CombatUtility.SetPlayerInputLocked(false);
     }
 
+
+    // =========================================================
+    // DESTROY
+    // =========================================================
+
     private void OnDestroy()
     {
         CombatUtility.SetPlayerInputLocked(false);
     }
+
 
     // =========================================================
     // RESET
@@ -134,10 +147,6 @@ public class RoundManager : MonoBehaviour
         roundAbilityLogs.Clear();
         cachedUnits.Clear();
 
-        /*
-         * This is safe here because a completely new encounter
-         * is being prepared.
-         */
         if (combatManager != null)
         {
             combatManager.ClearEnemyTurnLocks();
@@ -162,6 +171,7 @@ public class RoundManager : MonoBehaviour
             "[RoundManager] Reset -> Round 1 Prepare."
         );
     }
+
 
     // =========================================================
     // START ROUND
@@ -202,31 +212,12 @@ public class RoundManager : MonoBehaviour
 
         CombatUtility.SetPlayerInputLocked(false);
 
-        /*
-         * =====================================================
-         * IMPORTANT
-         * =====================================================
-         *
-         * DO NOT CALL:
-         *
-         * combatManager.ClearEnemyTurnLocks();
-         *
-         * HERE.
-         *
-         * EncounterManager has already spawned the wave before
-         * calling StartRound().
-         *
-         * Wave 2:
-         *     Spawn -> lock -> StartRound()
-         *
-         * If we cleared the locks here, Wave 2 would immediately
-         * act during Round 2.
-         */
-
         RefreshCachedUnits();
 
         ResetAllUnitMovement();
 
+        // This now also removes 1 Chain Lightning
+        // charge from every turret that has one.
         UpdateAllUnitCooldowns();
 
         Debug.Log(
@@ -239,6 +230,7 @@ public class RoundManager : MonoBehaviour
         );
     }
 
+
     // =========================================================
     // ROUND PIPELINE
     // =========================================================
@@ -250,9 +242,6 @@ public class RoundManager : MonoBehaviour
             gridManager.CleanupDeadUnits();
         }
 
-        /*
-         * EncounterManager owns encounter spawning.
-         */
         EnsureEnemiesExist();
 
         SetRoundState(
@@ -301,6 +290,7 @@ public class RoundManager : MonoBehaviour
 
         EndRound();
     }
+
 
     // =========================================================
     // PLAYER + ALLY TURN
@@ -357,6 +347,7 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+
     // =========================================================
     // ENEMY TURN
     // =========================================================
@@ -389,9 +380,6 @@ public class RoundManager : MonoBehaviour
                 }
             }
 
-            /*
-             * No enemies remain.
-             */
             if (combatManager != null)
             {
                 combatManager.ClearEnemyTurnLocks();
@@ -427,12 +415,7 @@ public class RoundManager : MonoBehaviour
             // =================================================
             // NEW WAVE LOCK
             // =================================================
-            //
-            // Newly spawned survival-wave enemies are locked
-            // for the round in which they spawned.
-            //
-            // They simply skip this turn.
-            //
+
             if (
                 combatManager.IsEnemyLocked(
                     enemy
@@ -485,13 +468,6 @@ public class RoundManager : MonoBehaviour
 
             yield return null;
 
-            /*
-             * If combat ended because the enemy killed the
-             * player, stop processing enemies.
-             *
-             * Clear the locks before leaving so no stale locks
-             * survive this encounter.
-             */
             if (
                 encounterManager != null &&
                 encounterManager.IsFinished()
@@ -531,20 +507,9 @@ public class RoundManager : MonoBehaviour
             }
         }
 
-        /*
-         * =====================================================
-         * IMPORTANT
-         * =====================================================
-         *
-         * The entire enemy phase is now finished.
-         *
-         * Therefore the newly spawned enemies have now used
-         * their one-round grace period.
-         *
-         * Clear the locks so they can act normally next round.
-         */
         combatManager.ClearEnemyTurnLocks();
     }
+
 
     // =========================================================
     // END ROUND
@@ -575,9 +540,6 @@ public class RoundManager : MonoBehaviour
             }
         }
 
-        /*
-         * Advance to the next round's Prepare phase.
-         */
         currentRound++;
 
         roundRunning = false;
@@ -600,16 +562,13 @@ public class RoundManager : MonoBehaviour
         );
     }
 
+
     // =========================================================
     // ENEMY SAFETY CHECK
     // =========================================================
 
     private bool EnsureEnemiesExist()
     {
-        /*
-         * EncounterManager owns enemy spawning during
-         * an active encounter.
-         */
         if (
             encounterManager != null &&
             encounterManager.IsEncounterRunning()
@@ -636,6 +595,7 @@ public class RoundManager : MonoBehaviour
 
         return false;
     }
+
 
     // =========================================================
     // CACHE
@@ -668,6 +628,7 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+
     // =========================================================
     // ROUND RESET
     // =========================================================
@@ -698,6 +659,11 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+
+    // =========================================================
+    // UPDATE ALL UNIT COOLDOWNS
+    // =========================================================
+
     private void UpdateAllUnitCooldowns()
     {
         for (
@@ -714,9 +680,24 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
+            // Existing round logic
             unit.StartNewRound();
+
+
+            // =================================================
+            // CHAIN LIGHTNING CHARGE
+            // =================================================
+
+            turretbehav turret =
+                unit.GetComponent<turretbehav>();
+
+            if (turret != null)
+            {
+                turret.ConsumeChainLightningCharge();
+            }
         }
     }
+
 
     // =========================================================
     // PLAYER
@@ -762,6 +743,7 @@ public class RoundManager : MonoBehaviour
         return false;
     }
 
+
     // =========================================================
     // VALIDATION
     // =========================================================
@@ -774,6 +756,7 @@ public class RoundManager : MonoBehaviour
             unit
         );
     }
+
 
     // =========================================================
     // STATE
@@ -795,6 +778,7 @@ public class RoundManager : MonoBehaviour
         );
     }
 
+
     // =========================================================
     // PUBLIC STATE
     // =========================================================
@@ -805,31 +789,37 @@ public class RoundManager : MonoBehaviour
                RoundState.Setup;
     }
 
+
     public bool IsRoundRunning()
     {
         return roundRunning;
     }
+
 
     public int GetCurrentRound()
     {
         return currentRound;
     }
 
+
     public RoundState GetCurrentState()
     {
         return currentState;
     }
+
 
     public bool HasPlayerOnField()
     {
         return IsPlayerOnField();
     }
 
+
     public bool IsEnemyTurn()
     {
         return currentState ==
                RoundState.EnemyTurn;
     }
+
 
     // =========================================================
     // ABILITY LOGS
@@ -850,6 +840,7 @@ public class RoundManager : MonoBehaviour
         );
     }
 
+
     public List<AbilityLogEntry> GetAbilityLogsForRound(
         int round
     )
@@ -858,6 +849,7 @@ public class RoundManager : MonoBehaviour
             log => log.round == round
         );
     }
+
 
     public List<AbilityLogEntry> GetAllAbilityLogs()
     {
