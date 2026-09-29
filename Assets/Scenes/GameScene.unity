@@ -140418,15 +140418,26 @@ MonoBehaviour:
   canvasGroup: {fileID: 467808214}
   fadeSpeed: 20
   buttonTransform: {fileID: 917579147}
+  hoverStartScale: 0.73
+  hoverGrowDuration: 0.25
   idlePulseScale: 1.015
   idlePulseSpeed: 1.8
   hoverPulseScale: 1.04
   hoverPulseSpeed: 2.5
+  entryPunchScale: 1.08
+  punchDuration: 0.15
   leftSprite: {fileID: 2067287563}
   rightSprite: {fileID: 1193298081}
   moveX: 20
   moveY: 15
-  moveSpeed: 15
+  moveSpeed: 8
+  overshootMultiplier: 1.171
+  secondSpriteDelay: 0.413
+  idleLiftAmount: 4
+  idleSideAmount: 3
+  idleLiftDuration: 0.35
+  idleLiftInterval: 1.8
+  idleSecondSpriteDelay: 0.1
 --- !u!1 &936309632
 GameObject:
   m_ObjectHideFlags: 0
