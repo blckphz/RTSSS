@@ -5,6 +5,7 @@ public class UpdateManager : MonoBehaviour
 {
     public static UpdateManager Instance { get; private set; }
 
+
     // =========================================================
     // CURRENT PLAYER
     // =========================================================
@@ -196,6 +197,11 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
+
+        // =====================================================
+        // FORTRESS UPGRADE
+        // =====================================================
+
         FortressUpgrade fortressUpgrade =
             upgrade as FortressUpgrade;
 
@@ -215,9 +221,49 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
+
+        // =====================================================
+        // TURRET CHARGE UPGRADE
+        // =====================================================
+
+        TurretChargeUpgrade turretChargeUpgrade =
+            upgrade as TurretChargeUpgrade;
+
+        if (turretChargeUpgrade != null)
+        {
+            purchasedUpgrades.Add(
+                upgrade
+            );
+
+            if (fortressTarget != null)
+            {
+                turretbehav turret =
+                    fortressTarget.GetComponent<turretbehav>();
+
+                if (turret != null)
+                {
+                    turretChargeUpgrade.ApplyToTurret(
+                        turret
+                    );
+                }
+            }
+
+            return;
+        }
+
+
+        // =====================================================
+        // STORE ALL OTHER UPGRADES
+        // =====================================================
+
         purchasedUpgrades.Add(
             upgrade
         );
+
+
+        // =====================================================
+        // CHAIN BOUNCE
+        // =====================================================
 
         ChainBounceUpgrade chainBounceUpgrade =
             upgrade as ChainBounceUpgrade;
@@ -234,6 +280,11 @@ public class UpdateManager : MonoBehaviour
 
             return;
         }
+
+
+        // =====================================================
+        // ENGINEER MELEE TURRET HEAL
+        // =====================================================
 
         EngineerMeleeTurretHealUpgrade
             turretHealUpgrade =
@@ -252,6 +303,11 @@ public class UpdateManager : MonoBehaviour
 
             return;
         }
+
+
+        // =====================================================
+        // RUSTY UPGRADES
+        // =====================================================
 
         RustyUpgrades rustyUpgrade =
             upgrade as RustyUpgrades;
@@ -333,6 +389,7 @@ public class UpdateManager : MonoBehaviour
                 target;
         }
 
+
         for (
             int i =
                 lastAppliedFortressUpgradeCount;
@@ -351,18 +408,47 @@ public class UpdateManager : MonoBehaviour
                 continue;
             }
 
+
+            // =================================================
+            // NORMAL FORTRESS UPGRADE
+            // =================================================
+
             FortressUpgrade fortressUpgrade =
                 upgrade as FortressUpgrade;
 
-            if (fortressUpgrade == null)
+            if (fortressUpgrade != null)
             {
+                target.ApplyUpgrade(
+                    fortressUpgrade
+                );
+
                 continue;
             }
 
-            target.ApplyUpgrade(
-                fortressUpgrade
-            );
+
+            // =================================================
+            // TURRET CHARGE UPGRADE
+            // =================================================
+
+            TurretChargeUpgrade turretChargeUpgrade =
+                upgrade as TurretChargeUpgrade;
+
+            if (turretChargeUpgrade != null)
+            {
+                turretbehav turret =
+                    target.GetComponent<turretbehav>();
+
+                if (turret != null)
+                {
+                    turretChargeUpgrade.ApplyToTurret(
+                        turret
+                    );
+                }
+
+                continue;
+            }
         }
+
 
         lastAppliedFortressUpgradeCount =
             purchasedUpgrades.Count;
@@ -404,6 +490,11 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
+
+        // =====================================================
+        // CHAIN BOUNCE
+        // =====================================================
+
         ChainBounceUpgrade chainBounceUpgrade =
             upgrade as ChainBounceUpgrade;
 
@@ -415,6 +506,11 @@ public class UpdateManager : MonoBehaviour
 
             return;
         }
+
+
+        // =====================================================
+        // ENGINEER MELEE TURRET HEAL
+        // =====================================================
 
         EngineerMeleeTurretHealUpgrade
             turretHealUpgrade =
@@ -463,6 +559,7 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
+
         for (
             int i = 0;
             i < purchasedUpgrades.Count;
@@ -477,10 +574,24 @@ public class UpdateManager : MonoBehaviour
                 continue;
             }
 
+
+            // Fortress upgrades do not belong
+            // on the player unit.
+
             if (upgrade is FortressUpgrade)
             {
                 continue;
             }
+
+
+            // Turret charge upgrade does not belong
+            // on the player unit.
+
+            if (upgrade is TurretChargeUpgrade)
+            {
+                continue;
+            }
+
 
             if (
                 upgrade is
@@ -494,6 +605,7 @@ public class UpdateManager : MonoBehaviour
 
                 continue;
             }
+
 
             if (
                 upgrade is

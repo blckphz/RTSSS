@@ -84,11 +84,7 @@ public class biomesManager : MonoBehaviour
         selectedBiome.gameObject.SetActive(true);
 
 
-        Debug.Log(
-            "[BiomesManager] Activated biome: " +
-            biomeName,
-            this
-        );
+  
     }
 
 

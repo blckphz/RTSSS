@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-public class turretbehav : MonoBehaviour
+public class turretbehav : MonoBehaviour, IconditionsPuller
 {
     [Header("Chain Lightning")]
     [SerializeField, Min(0)]
@@ -9,6 +10,10 @@ public class turretbehav : MonoBehaviour
     [Header("Charge Visual")]
     [SerializeField]
     private ParticleSystem chargeParticles;
+
+    [Header("Charge System")]
+    [SerializeField]
+    private bool chainLightningUnlocked = false;
 
 
     // ============================================================
@@ -22,11 +27,43 @@ public class turretbehav : MonoBehaviour
 
 
     // ============================================================
+    // ENABLE CHAIN LIGHTNING
+    // ============================================================
+
+    public void UnlockChainLightning()
+    {
+        chainLightningUnlocked = true;
+
+        Debug.Log(
+            gameObject.name +
+            " unlocked Chain Lightning."
+        );
+
+        UpdateChargeParticles();
+    }
+
+
+    // ============================================================
+    // CHECK IF UNLOCKED
+    // ============================================================
+
+    public bool IsChainLightningUnlocked()
+    {
+        return chainLightningUnlocked;
+    }
+
+
+    // ============================================================
     // ADD ONE CHARGE
     // ============================================================
 
     public void AddChainLightningCharge()
     {
+        if (!chainLightningUnlocked)
+        {
+            return;
+        }
+
         AddChainLightningCharges(1);
     }
 
@@ -37,6 +74,11 @@ public class turretbehav : MonoBehaviour
 
     public void AddChainLightningCharges(int amount)
     {
+        if (!chainLightningUnlocked)
+        {
+            return;
+        }
+
         if (amount <= 0)
         {
             return;
@@ -73,6 +115,11 @@ public class turretbehav : MonoBehaviour
 
     public void ConsumeChainLightningCharge()
     {
+        if (!chainLightningUnlocked)
+        {
+            return;
+        }
+
         if (chainLightningCharges <= 0)
         {
             return;
@@ -104,6 +151,29 @@ public class turretbehav : MonoBehaviour
 
 
     // ============================================================
+    // CONDITIONS
+    // ============================================================
+
+    public List<string> GetConditions()
+    {
+        List<string> conditions =
+            new List<string>();
+
+        if (
+            chainLightningUnlocked &&
+            chainLightningCharges > 0
+        )
+        {
+            conditions.Add(
+                $"Chain Lightning Charged ({chainLightningCharges})"
+            );
+        }
+
+        return conditions;
+    }
+
+
+    // ============================================================
     // UPDATE PARTICLES
     // ============================================================
 
@@ -115,6 +185,7 @@ public class turretbehav : MonoBehaviour
         }
 
         bool charged =
+            chainLightningUnlocked &&
             chainLightningCharges > 0;
 
         if (charged)

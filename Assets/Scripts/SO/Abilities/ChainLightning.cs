@@ -48,28 +48,6 @@ public class ChainLightning : AbilitySO
     // EFFECTIVE JUMPS
     // ============================================================
 
-    /*
-     * The ChainLightning ScriptableObject remains unchanged.
-     *
-     * Base value:
-     *
-     *     maxJumps
-     *
-     * Runtime upgrade:
-     *
-     *     UnitData.GetBonusJumps(this)
-     *
-     * Example:
-     *
-     *     maxJumps = 5
-     *     bonus    = 2
-     *
-     *     effective jumps = 7
-     *
-     * This means different units can have different runtime
-     * Chain Lightning values while sharing the same ScriptableObject.
-     */
-
     private int GetEffectiveMaxJumps(
         GameObject user
     )
@@ -130,6 +108,32 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // TURRET
+        // ========================================================
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+        if (turret != null)
+        {
+            /*
+             * The turret is ONLY a valid Chain Lightning
+             * target after the Turret Charge upgrade has
+             * been purchased.
+             */
+            if (!turret.IsChainLightningUnlocked())
+            {
+                return false;
+            }
+        }
+
+
+        // ========================================================
+        // ATTACK UNIT
+        // ========================================================
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
@@ -143,21 +147,41 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // NORMAL TARGET VALIDATION
+        // ========================================================
+
         bool validTarget =
             CanTargetObject(
                 user,
                 target
             );
 
+
+        // ========================================================
+        // PLAYER TARGET
+        // ========================================================
+
         /*
-         * Chain Lightning can also initially target
-         * a Player-team object such as the turret.
+         * Chain Lightning can target a Player-team object
+         * specifically when it is an unlocked turret.
          */
         if (!validTarget)
         {
-            validTarget =
-                targetUnit.GetTeam() ==
-                Team.Player;
+            if (targetUnit.GetTeam() == Team.Player)
+            {
+                turretbehav playerTurret =
+                    target.GetComponent<turretbehav>();
+
+                if (
+                    playerTurret != null &&
+                    playerTurret.IsChainLightningUnlocked()
+                )
+                {
+                    validTarget = true;
+                }
+            }
         }
 
         if (!validTarget)
@@ -165,10 +189,32 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // INITIAL LINE OF SIGHT
+        // ========================================================
+
+        Vector2Int userPosition =
+            gridManager.GetUnitGridPosition(user);
+
         Vector2Int targetPosition =
-            gridManager.WorldToGridPosition(
-                target.transform.position
-            );
+            gridManager.GetUnitGridPosition(target);
+
+        if (
+            HasObjectOnLine(
+                gridManager,
+                userPosition,
+                targetPosition
+            )
+        )
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // RANGE
+        // ========================================================
 
         return CanHitTile(
             gridManager,
@@ -199,6 +245,30 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // TURRET
+        // ========================================================
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+        if (turret != null)
+        {
+            /*
+             * Locked turrets cannot be targeted.
+             */
+            if (!turret.IsChainLightningUnlocked())
+            {
+                return false;
+            }
+        }
+
+
+        // ========================================================
+        // ATTACK UNIT
+        // ========================================================
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
@@ -212,24 +282,36 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-        /*
-         * Normal Chain Lightning targets must pass
-         * CanTargetObject().
-         *
-         * Player targets are allowed specifically so
-         * the turret can be targeted.
-         */
+
+        // ========================================================
+        // TARGET VALIDATION
+        // ========================================================
+
         if (
             !CanTargetObject(
                 user,
                 target
-            ) &&
-            targetUnit.GetTeam() !=
-            Team.Player
+            )
         )
         {
-            return false;
+            /*
+             * Player targets are allowed ONLY if they
+             * are an unlocked turret.
+             */
+            if (
+                targetUnit.GetTeam() != Team.Player ||
+                turret == null ||
+                !turret.IsChainLightningUnlocked()
+            )
+            {
+                return false;
+            }
         }
+
+
+        // ========================================================
+        // GRID
+        // ========================================================
 
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
@@ -240,6 +322,28 @@ public class ChainLightning : AbilitySO
         }
 
         if (projectilePrefab == null)
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // INITIAL LINE OF SIGHT
+        // ========================================================
+
+        Vector2Int userPosition =
+            gridManager.GetUnitGridPosition(user);
+
+        Vector2Int targetPosition =
+            gridManager.GetUnitGridPosition(target);
+
+        if (
+            HasObjectOnLine(
+                gridManager,
+                userPosition,
+                targetPosition
+            )
+        )
         {
             return false;
         }
@@ -359,22 +463,6 @@ public class ChainLightning : AbilitySO
             return 0;
         }
 
-        /*
-         * Find the turret in the chain.
-         *
-         * Example:
-         *
-         * Base maxJumps = 5
-         * Bonus        = 2
-         * Effective    = 7
-         *
-         * If turret is at index 3:
-         *
-         *     remaining = 7 - 3
-         *
-         *                 = 4
-         */
-
         for (
             int i = 0;
             i < chain.Count;
@@ -397,6 +485,17 @@ public class ChainLightning : AbilitySO
             {
                 continue;
             }
+
+
+            // ====================================================
+            // ONLY UNLOCKED TURRETS CAN RECEIVE CHARGES
+            // ====================================================
+
+            if (!turret.IsChainLightningUnlocked())
+            {
+                continue;
+            }
+
 
             int remainingBounces =
                 effectiveMaxJumps - i;
@@ -466,11 +565,6 @@ public class ChainLightning : AbilitySO
         GameObject firstTarget,
         GridManager gridManager)
     {
-        /*
-         * This overload is kept so any other code already calling
-         * GetChainPreview() does not break.
-         */
-
         int effectiveMaxJumps =
             GetEffectiveMaxJumps(user);
 
@@ -536,6 +630,7 @@ public class ChainLightning : AbilitySO
                     IsValidInitialTarget(
                         user,
                         currentTarget,
+                        gridManager,
                         hitTargets
                     );
             }
@@ -566,15 +661,14 @@ public class ChainLightning : AbilitySO
             if (turret != null)
             {
                 /*
-                 * Add the turret as the final visual
-                 * destination.
-                 *
-                 * We do NOT calculate another enemy after
-                 * the turret.
-                 *
-                 * The remaining bounce count is converted
-                 * into turret charges later.
+                 * Only an unlocked turret can ever reach
+                 * this point.
                  */
+
+                if (!turret.IsChainLightningUnlocked())
+                {
+                    break;
+                }
 
                 chain.Add(
                     currentTarget
@@ -618,11 +712,13 @@ public class ChainLightning : AbilitySO
     private bool IsValidInitialTarget(
         GameObject user,
         GameObject target,
+        GridManager gridManager,
         HashSet<GameObject> hitTargets)
     {
         if (
             user == null ||
-            target == null
+            target == null ||
+            gridManager == null
         )
         {
             return false;
@@ -638,6 +734,30 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // TURRET
+        // ========================================================
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+        if (turret != null)
+        {
+            /*
+             * LOCKED TURRET = NOT A TARGET
+             */
+            if (!turret.IsChainLightningUnlocked())
+            {
+                return false;
+            }
+        }
+
+
+        // ========================================================
+        // ATTACK UNIT
+        // ========================================================
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
@@ -651,34 +771,74 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-        /*
-         * Normal enemy target.
-         */
-        if (
+
+        // ========================================================
+        // NORMAL ENEMY
+        // ========================================================
+
+        bool validTarget =
             CanTargetObject(
                 user,
                 target
+            );
+
+
+        // ========================================================
+        // UNLOCKED PLAYER TURRET
+        // ========================================================
+
+        if (!validTarget)
+        {
+            if (
+                targetUnit.GetTeam() ==
+                Team.Player
+            )
+            {
+                if (
+                    turret != null &&
+                    turret.IsChainLightningUnlocked()
+                )
+                {
+                    validTarget = true;
+                }
+            }
+        }
+
+        if (!validTarget)
+        {
+            return false;
+        }
+
+
+        // ========================================================
+        // INITIAL LINE OF SIGHT
+        // ========================================================
+
+        Vector2Int userTile =
+            gridManager.GetUnitGridPosition(user);
+
+        Vector2Int targetTile =
+            gridManager.GetUnitGridPosition(target);
+
+        /*
+         * Unlike the later bounce checks, the initial target
+         * must also have clear line of sight from the player.
+         *
+         * Any occupied tile between the player and the target
+         * blocks the Chain Lightning.
+         */
+        if (
+            HasObjectOnLine(
+                gridManager,
+                userTile,
+                targetTile
             )
         )
         {
-            return true;
+            return false;
         }
 
-        /*
-         * Special Player target.
-         *
-         * This allows the turret to be selected
-         * as the initial target.
-         */
-        if (
-            targetUnit.GetTeam() ==
-            Team.Player
-        )
-        {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
 
@@ -709,6 +869,49 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
+
+        // ========================================================
+        // TURRET
+        // ========================================================
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+        if (turret != null)
+        {
+            /*
+             * Locked turret cannot be selected by the chain.
+             */
+            if (!turret.IsChainLightningUnlocked())
+            {
+                return false;
+            }
+
+            /*
+             * An unlocked turret is allowed as the final
+             * destination of the chain.
+             */
+            AttackUnit turretUnit =
+                target.GetComponent<AttackUnit>();
+
+            if (turretUnit == null)
+            {
+                return false;
+            }
+
+            if (turretUnit.IsDead())
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
+        // ========================================================
+        // NORMAL TARGET
+        // ========================================================
+
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
@@ -722,12 +925,7 @@ public class ChainLightning : AbilitySO
             return false;
         }
 
-        /*
-         * Subsequent normal chain targets remain
-         * enemy-only.
-         *
-         * The turret is handled separately.
-         */
+
         return CanTargetObject(
             user,
             target
@@ -811,10 +1009,87 @@ public class ChainLightning : AbilitySO
                 continue;
             }
 
-            /*
-             * Only normal valid enemy targets can
-             * become subsequent chain targets.
-             */
+
+            // ====================================================
+            // TURRET
+            // ====================================================
+
+            turretbehav candidateTurret =
+                candidate.GetComponent<
+                    turretbehav>();
+
+            if (candidateTurret != null)
+            {
+                /*
+                 * IMPORTANT:
+                 *
+                 * Locked turret is completely invisible
+                 * to Chain Lightning targeting.
+                 */
+                if (
+                    !candidateTurret
+                        .IsChainLightningUnlocked()
+                )
+                {
+                    continue;
+                }
+
+                /*
+                 * An unlocked turret is a special final
+                 * destination, not a normal enemy.
+                 *
+                 * We can return it as a possible target.
+                 */
+                Vector2Int turretTile =
+                    gridManager.GetUnitGridPosition(
+                        candidate
+                    );
+
+                float turretDistance =
+                    Vector2.Distance(
+                        currentTile,
+                        turretTile
+                    );
+
+                if (
+                    maxJumpDistance > 0f &&
+                    turretDistance > maxJumpDistance
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    HasObjectOnLine(
+                        gridManager,
+                        currentTile,
+                        turretTile
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    closestEnemy == null ||
+                    turretDistance < closestDistance
+                )
+                {
+                    closestEnemy =
+                        candidate;
+
+                    closestDistance =
+                        turretDistance;
+                }
+
+                continue;
+            }
+
+
+            // ====================================================
+            // NORMAL ENEMY
+            // ====================================================
+
             if (
                 !CanTargetObject(
                     user,
@@ -928,9 +1203,6 @@ public class ChainLightning : AbilitySO
 
         while (true)
         {
-            /*
-             * Destination is not an obstacle.
-             */
             if (
                 x0 == x1 &&
                 y0 == y1
@@ -940,7 +1212,8 @@ public class ChainLightning : AbilitySO
             }
 
             /*
-             * Ignore starting tile.
+             * Don't check the starting tile because it contains
+             * the unit casting Chain Lightning.
              */
             if (!(
                 x0 == start.x &&
@@ -999,3 +1272,4 @@ public class ChainLightning : AbilitySO
         return stunDuration;
     }
 }
+

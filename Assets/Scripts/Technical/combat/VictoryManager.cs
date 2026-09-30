@@ -103,11 +103,7 @@ public class VictoryManager : MonoBehaviour
         GameStateManager.GameState newState
     )
     {
-        Debug.Log(
-            "[VictoryManager] Received game state: " +
-            newState,
-            this
-        );
+       
 
         if (
             newState ==
@@ -148,10 +144,6 @@ public class VictoryManager : MonoBehaviour
 
         victoryCanvas.SetActive(true);
 
-        Debug.Log(
-            "[VictoryManager] Victory Canvas shown.",
-            this
-        );
     }
 
     private void HideVictoryCanvas()
@@ -168,20 +160,11 @@ public class VictoryManager : MonoBehaviour
 
         victoryCanvas.SetActive(false);
 
-        Debug.Log(
-            "[VictoryManager] Victory Canvas hidden.",
-            this
-        );
+    
     }
 
     public void ContinueButton()
     {
-        Debug.Log(
-            "[VictoryManager] Continue pressed. " +
-            "Returning to map.",
-            this
-        );
-
         HideVictoryCanvas();
 
         if (gameStateManager != null)

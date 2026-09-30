@@ -35,10 +35,6 @@ public class DayNightManager : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log(
-            "[DayNightManager] AWAKE",
-            this
-        );
 
         if (globalLight == null)
         {
@@ -46,19 +42,6 @@ public class DayNightManager : MonoBehaviour
                 FindFirstObjectByType<Light2D>();
         }
 
-        Debug.Log(
-            "[DayNightManager] Global Light = " +
-            (globalLight != null
-                ? globalLight.name
-                : "NULL"),
-            this
-        );
-
-        Debug.Log(
-            "[DayNightManager] Initial state = " +
-            currentDayNight,
-            this
-        );
     }
 
 
@@ -70,11 +53,7 @@ public class DayNightManager : MonoBehaviour
         DayNight dayNight
     )
     {
-        Debug.Log(
-            "[DayNightManager] SetDayNight called: " +
-            dayNight,
-            this
-        );
+      
 
         if (dayNight == DayNight.Day)
         {
@@ -96,28 +75,10 @@ public class DayNightManager : MonoBehaviour
         currentDayNight =
             DayNight.Day;
 
-        Debug.Log(
-            "[DayNightManager] =====================",
-            this
-        );
-
-        Debug.Log(
-            "[DayNightManager] SETTING DAY",
-            this
-        );
-
-        Debug.Log(
-            "[DayNightManager] Current state = " +
-            currentDayNight,
-            this
-        );
+  
 
         if (globalLight == null)
         {
-            Debug.LogWarning(
-                "[DayNightManager] Cannot set light because globalLight is NULL.",
-                this
-            );
 
             return;
         }
@@ -128,10 +89,6 @@ public class DayNightManager : MonoBehaviour
         globalLight.intensity =
             dayIntensity;
 
-        Debug.Log(
-            "[DayNightManager] Day light applied.",
-            this
-        );
     }
 
 
@@ -144,28 +101,10 @@ public class DayNightManager : MonoBehaviour
         currentDayNight =
             DayNight.Night;
 
-        Debug.Log(
-            "[DayNightManager] =====================",
-            this
-        );
-
-        Debug.Log(
-            "[DayNightManager] SETTING NIGHT",
-            this
-        );
-
-        Debug.Log(
-            "[DayNightManager] Current state = " +
-            currentDayNight,
-            this
-        );
 
         if (globalLight == null)
         {
-            Debug.LogWarning(
-                "[DayNightManager] Cannot set light because globalLight is NULL.",
-                this
-            );
+           
 
             return;
         }
@@ -176,10 +115,7 @@ public class DayNightManager : MonoBehaviour
         globalLight.intensity =
             nightIntensity;
 
-        Debug.Log(
-            "[DayNightManager] Night light applied.",
-            this
-        );
+    
     }
 
 
@@ -189,11 +125,7 @@ public class DayNightManager : MonoBehaviour
 
     public DayNight GetCurrentDayNight()
     {
-        Debug.Log(
-            "[DayNightManager] GetCurrentDayNight = " +
-            currentDayNight,
-            this
-        );
+      
 
         return currentDayNight;
     }
@@ -204,14 +136,7 @@ public class DayNightManager : MonoBehaviour
         bool result =
             currentDayNight == DayNight.Day;
 
-        Debug.Log(
-            "[DayNightManager] IsDay = " +
-            result +
-            " | CurrentState = " +
-            currentDayNight,
-            this
-        );
-
+     
         return result;
     }
 
@@ -221,13 +146,7 @@ public class DayNightManager : MonoBehaviour
         bool result =
             currentDayNight == DayNight.Night;
 
-        Debug.Log(
-            "[DayNightManager] IsNight = " +
-            result +
-            " | CurrentState = " +
-            currentDayNight,
-            this
-        );
+    
 
         return result;
     }

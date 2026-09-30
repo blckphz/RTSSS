@@ -2,11 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using NUnit.Framework.Interfaces;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using static UnityEngine.Rendering.DebugUI.Table;
 
 public class CanvasInfoManager : MonoBehaviour
 {
@@ -56,13 +56,28 @@ public class CanvasInfoManager : MonoBehaviour
             new Keyframe(1f, 0f)
         );
 
+    [Header("Conditions")]
+    [SerializeField] private bool showConditions = true;
+
+    [SerializeField]
+    private string conditionsHeader = "Conditions";
+
+    [SerializeField]
+    private Color conditionColor = new Color(1f, 0.65f, 0.1f);
+
+    [Header("Stun Display")]
+    [SerializeField] private bool showStunText = true;
+
+    [SerializeField]
+    private string stunText = "Stunned";
+
+    [SerializeField]
+    private Color stunColor = new Color(1f, 0.35f, 0.35f);
+
     [Header("Tooltips & Highlights")]
     [SerializeField] private tooltipManager tooltipManager;
     [SerializeField] private GridManager gridManager;
     [SerializeField] private GridHighlightManager highlightManager;
-
-    [Header("Debug")]
-    [SerializeField] private bool debugAbilitySelection = true;
 
     private int lastHoveredAbilityIndex = -1;
     private int lastLinkIndex = -1;
@@ -94,48 +109,12 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
-    // DEBUG
-    // ============================================================
-
-    private void DebugAbility(string message)
-    {
-        if (!debugAbilitySelection)
-            return;
-
-        Debug.Log(
-            "[CanvasInfoManager Ability] " +
-            message,
-            this
-        );
-    }
-
-
-    private void DebugAbilityWarning(string message)
-    {
-        if (!debugAbilitySelection)
-            return;
-
-        Debug.LogWarning(
-            "[CanvasInfoManager Ability] " +
-            message,
-            this
-        );
-    }
-
-
-    // ============================================================
-    // UNITY
+    // AWAKE
     // ============================================================
 
     private void Awake()
     {
         SetupReferences();
-
-        DebugAbility(
-            "CanvasInfoManager initialized. " +
-            "Instance ID = " +
-            GetInstanceID()
-        );
 
         if (backgroundImage != null)
         {
@@ -163,125 +142,49 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // ENABLE
+    // ============================================================
+
     private void OnEnable()
     {
         AttackUnit.OnAbilityUsed += HandleAbilityUsed;
 
-        RegisterInputAction(
-            ability1Action,
-            OnAbility1,
-            "Ability 1"
-        );
-
-        RegisterInputAction(
-            ability2Action,
-            OnAbility2,
-            "Ability 2"
-        );
-
-        RegisterInputAction(
-            ability3Action,
-            OnAbility3,
-            "Ability 3"
-        );
-
-        RegisterInputAction(
-            ability4Action,
-            OnAbility4,
-            "Ability 4"
-        );
-
-        RegisterInputAction(
-            ability5Action,
-            OnAbility5,
-            "Ability 5"
-        );
-
-        RegisterInputAction(
-            ability6Action,
-            OnAbility6,
-            "Ability 6"
-        );
-
-        RegisterInputAction(
-            ability7Action,
-            OnAbility7,
-            "Ability 7"
-        );
-
-        RegisterInputAction(
-            ability8Action,
-            OnAbility8,
-            "Ability 8"
-        );
-
-        RegisterInputAction(
-            ability9Action,
-            OnAbility9,
-            "Ability 9"
-        );
+        RegisterInputAction(ability1Action, OnAbility1, "Ability 1");
+        RegisterInputAction(ability2Action, OnAbility2, "Ability 2");
+        RegisterInputAction(ability3Action, OnAbility3, "Ability 3");
+        RegisterInputAction(ability4Action, OnAbility4, "Ability 4");
+        RegisterInputAction(ability5Action, OnAbility5, "Ability 5");
+        RegisterInputAction(ability6Action, OnAbility6, "Ability 6");
+        RegisterInputAction(ability7Action, OnAbility7, "Ability 7");
+        RegisterInputAction(ability8Action, OnAbility8, "Ability 8");
+        RegisterInputAction(ability9Action, OnAbility9, "Ability 9");
     }
 
+
+    // ============================================================
+    // DISABLE
+    // ============================================================
 
     private void OnDisable()
     {
         AttackUnit.OnAbilityUsed -= HandleAbilityUsed;
 
-        UnregisterInputAction(
-            ability1Action,
-            OnAbility1,
-            "Ability 1"
-        );
-
-        UnregisterInputAction(
-            ability2Action,
-            OnAbility2,
-            "Ability 2"
-        );
-
-        UnregisterInputAction(
-            ability3Action,
-            OnAbility3,
-            "Ability 3"
-        );
-
-        UnregisterInputAction(
-            ability4Action,
-            OnAbility4,
-            "Ability 4"
-        );
-
-        UnregisterInputAction(
-            ability5Action,
-            OnAbility5,
-            "Ability 5"
-        );
-
-        UnregisterInputAction(
-            ability6Action,
-            OnAbility6,
-            "Ability 6"
-        );
-
-        UnregisterInputAction(
-            ability7Action,
-            OnAbility7,
-            "Ability 7"
-        );
-
-        UnregisterInputAction(
-            ability8Action,
-            OnAbility8,
-            "Ability 8"
-        );
-
-        UnregisterInputAction(
-            ability9Action,
-            OnAbility9,
-            "Ability 9"
-        );
+        UnregisterInputAction(ability1Action, OnAbility1, "Ability 1");
+        UnregisterInputAction(ability2Action, OnAbility2, "Ability 2");
+        UnregisterInputAction(ability3Action, OnAbility3, "Ability 3");
+        UnregisterInputAction(ability4Action, OnAbility4, "Ability 4");
+        UnregisterInputAction(ability5Action, OnAbility5, "Ability 5");
+        UnregisterInputAction(ability6Action, OnAbility6, "Ability 6");
+        UnregisterInputAction(ability7Action, OnAbility7, "Ability 7");
+        UnregisterInputAction(ability8Action, OnAbility8, "Ability 8");
+        UnregisterInputAction(ability9Action, OnAbility9, "Ability 9");
     }
 
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
 
     private void Update()
     {
@@ -294,18 +197,13 @@ public class CanvasInfoManager : MonoBehaviour
             selectedAbility != null
         )
         {
-            DebugAbility(
-                "Input became locked. " +
-                "Clearing selected ability."
-            );
-
             ClearSelectedAbilityForEnemyTurn();
         }
     }
 
 
     // ============================================================
-    // INPUT
+    // INPUT REGISTRATION
     // ============================================================
 
     private void RegisterInputAction(
@@ -342,8 +240,11 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
-    private void OnAbility1(
-        InputAction.CallbackContext context)
+    // ============================================================
+    // ABILITY INPUT
+    // ============================================================
+
+    private void OnAbility1(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -351,9 +252,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(0);
     }
 
-
-    private void OnAbility2(
-        InputAction.CallbackContext context)
+    private void OnAbility2(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -361,9 +260,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(1);
     }
 
-
-    private void OnAbility3(
-        InputAction.CallbackContext context)
+    private void OnAbility3(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -371,9 +268,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(2);
     }
 
-
-    private void OnAbility4(
-        InputAction.CallbackContext context)
+    private void OnAbility4(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -381,9 +276,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(3);
     }
 
-
-    private void OnAbility5(
-        InputAction.CallbackContext context)
+    private void OnAbility5(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -391,9 +284,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(4);
     }
 
-
-    private void OnAbility6(
-        InputAction.CallbackContext context)
+    private void OnAbility6(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -401,9 +292,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(5);
     }
 
-
-    private void OnAbility7(
-        InputAction.CallbackContext context)
+    private void OnAbility7(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -411,9 +300,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(6);
     }
 
-
-    private void OnAbility8(
-        InputAction.CallbackContext context)
+    private void OnAbility8(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -421,9 +308,7 @@ public class CanvasInfoManager : MonoBehaviour
         SelectAbility(7);
     }
 
-
-    private void OnAbility9(
-        InputAction.CallbackContext context)
+    private void OnAbility9(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
@@ -433,7 +318,7 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
-    // VISUAL JUICE
+    // BACKGROUND PULSE
     // ============================================================
 
     private void AnimateBackgroundPulse()
@@ -485,6 +370,10 @@ public class CanvasInfoManager : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // ICON POP
+    // ============================================================
 
     private void TriggerIconPop()
     {
@@ -553,6 +442,10 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // OPACITY FLASH
+    // ============================================================
+
     private void TriggerOpacityFlash()
     {
         if (
@@ -615,8 +508,7 @@ public class CanvasInfoManager : MonoBehaviour
                         easedProgress
                     );
 
-                backgroundImage.color =
-                    bgCol;
+                backgroundImage.color = bgCol;
             }
 
             if (secondPulsingGraphic != null)
@@ -628,8 +520,7 @@ public class CanvasInfoManager : MonoBehaviour
                         easedProgress
                     );
 
-                secondPulsingGraphic.color =
-                    secCol;
+                secondPulsingGraphic.color = secCol;
             }
 
             yield return null;
@@ -662,8 +553,7 @@ public class CanvasInfoManager : MonoBehaviour
                         easedProgress
                     );
 
-                backgroundImage.color =
-                    bgCol;
+                backgroundImage.color = bgCol;
             }
 
             if (secondPulsingGraphic != null)
@@ -675,8 +565,7 @@ public class CanvasInfoManager : MonoBehaviour
                         easedProgress
                     );
 
-                secondPulsingGraphic.color =
-                    secCol;
+                secondPulsingGraphic.color = secCol;
             }
 
             yield return null;
@@ -697,6 +586,10 @@ public class CanvasInfoManager : MonoBehaviour
         flashCoroutine = null;
     }
 
+
+    // ============================================================
+    // PULSE BURST
+    // ============================================================
 
     private void TriggerPulseBurst()
     {
@@ -849,7 +742,7 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
-    // CHARACTER DISPLAY
+    // REFRESH CURRENT SELECTION
     // ============================================================
 
     public void RefreshCurrentSelection()
@@ -873,6 +766,10 @@ public class CanvasInfoManager : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // SHOW CHARACTER
+    // ============================================================
 
     public void ShowCharacter(
         ICharacterHolder characterHolder)
@@ -901,27 +798,53 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // REFRESH CHARACTER
+    // ============================================================
+
     private void RefreshCharacter(
         CharacterSO character)
     {
         if (character == null)
             return;
 
-        displayedCharacter =
-            character;
-
-        currentCharacterIcon =
-            character.icon;
+        displayedCharacter = character;
+        currentCharacterIcon = character.icon;
 
         textBuilder.Clear();
 
         textBuilder.AppendLine(
-            $"<b>{character.characterName}</b>\n"
+            $"<b>{character.characterName}</b>"
         );
 
-        textBuilder.AppendLine(
-            $"Team: {character.team}\n"
-        );
+        AttackUnit activeUnit =
+            UIManager.CurrentSelection
+                ?.GetAttackUnit();
+
+        // --------------------------------------------------------
+        // TEAM + STUN ON THE SAME LINE
+        // --------------------------------------------------------
+
+        string teamText =
+            $"Team: {character.team}";
+
+        if (IsStunned(activeUnit))
+        {
+            string colorHex =
+                ColorUtility.ToHtmlStringRGB(
+                    stunColor
+                );
+
+            teamText +=
+                $" <color=#{colorHex}><b>({stunText})</b></color>";
+        }
+
+        textBuilder.AppendLine(teamText);
+        textBuilder.AppendLine();
+
+        // ========================================================
+        // ABILITIES
+        // ========================================================
 
         List<AbilitySO> abilities =
             character.GetAbilities();
@@ -934,10 +857,6 @@ public class CanvasInfoManager : MonoBehaviour
             textBuilder.AppendLine(
                 "<b>Abilities</b>\n"
             );
-
-            AttackUnit activeUnit =
-                UIManager.CurrentSelection
-                    ?.GetAttackUnit();
 
             bool canSelectAbilities =
                 !CombatUtility.IsPlayerInputLocked() &&
@@ -1107,9 +1026,17 @@ public class CanvasInfoManager : MonoBehaviour
         else
         {
             textBuilder.Append(
-                "<b>No Abilities</b>"
+                "<b>No Abilities</b>\n"
             );
         }
+
+        // Other conditions remain at the bottom.
+        // Stun is excluded because it is already shown next to Team.
+        AppendConditions(activeUnit);
+
+        // ========================================================
+        // UPDATE UI
+        // ========================================================
 
         if (infoText != null)
         {
@@ -1126,6 +1053,139 @@ public class CanvasInfoManager : MonoBehaviour
         UpdateCharacterIcon();
     }
 
+
+    // ============================================================
+    // CHECK STUN
+    // ============================================================
+
+    private bool IsStunned(
+        AttackUnit activeUnit)
+    {
+        if (!showStunText)
+            return false;
+
+        if (activeUnit == null)
+            return false;
+
+        IconditionsPuller conditionsPuller =
+            activeUnit.GetComponent<IconditionsPuller>();
+
+        if (conditionsPuller == null)
+            return false;
+
+        List<string> conditions =
+            conditionsPuller.GetConditions();
+
+        if (
+            conditions == null ||
+            conditions.Count == 0
+        )
+        {
+            return false;
+        }
+
+        foreach (string condition in conditions)
+        {
+            if (string.IsNullOrEmpty(condition))
+                continue;
+
+            if (
+                condition.IndexOf(
+                    "stun",
+                    StringComparison.OrdinalIgnoreCase
+                ) >= 0
+            )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    // ============================================================
+    // APPEND CONDITIONS
+    // ============================================================
+
+    private void AppendConditions(
+        AttackUnit activeUnit)
+    {
+        if (!showConditions)
+            return;
+
+        if (activeUnit == null)
+            return;
+
+        IconditionsPuller conditionsPuller =
+            activeUnit.GetComponent<IconditionsPuller>();
+
+        if (conditionsPuller == null)
+            return;
+
+        List<string> conditions =
+            conditionsPuller.GetConditions();
+
+        if (
+            conditions == null ||
+            conditions.Count == 0
+        )
+        {
+            return;
+        }
+
+        List<string> otherConditions =
+            new List<string>();
+
+        foreach (string condition in conditions)
+        {
+            if (string.IsNullOrEmpty(condition))
+                continue;
+
+            // Stun is displayed next to Team instead.
+            if (
+                condition.IndexOf(
+                    "stun",
+                    StringComparison.OrdinalIgnoreCase
+                ) >= 0
+            )
+            {
+                continue;
+            }
+
+            otherConditions.Add(condition);
+        }
+
+        // Don't show an empty "Conditions" section
+        // when Stun was the only condition.
+        if (otherConditions.Count == 0)
+            return;
+
+        string colorHex =
+            ColorUtility.ToHtmlStringRGB(
+                conditionColor
+            );
+
+        textBuilder.AppendLine();
+
+        textBuilder.AppendLine(
+            $"<b>{conditionsHeader}</b>"
+        );
+
+        foreach (string condition in otherConditions)
+        {
+            textBuilder.AppendLine(
+                $"<color=#{colorHex}>• {condition}</color>"
+            );
+        }
+
+        textBuilder.AppendLine();
+    }
+
+
+    // ============================================================
+    // STATUS LINK INDEX
+    // ============================================================
 
     private string AddAbilityIndexToStatusLinks(
         string description,
@@ -1146,6 +1206,10 @@ public class CanvasInfoManager : MonoBehaviour
         );
     }
 
+
+    // ============================================================
+    // CHARACTER ICON
+    // ============================================================
 
     private void UpdateCharacterIcon()
     {
@@ -1170,8 +1234,7 @@ public class CanvasInfoManager : MonoBehaviour
         bool spriteChanged =
             characterIcon.sprite != newSprite;
 
-        characterIcon.sprite =
-            newSprite;
+        characterIcon.sprite = newSprite;
 
         characterIcon.enabled =
             newSprite != null;
@@ -1187,7 +1250,7 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
-    // ABILITY HOVER
+    // HOVER
     // ============================================================
 
     private void CheckAbilityHover()
@@ -1326,6 +1389,10 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // POINTER OVER LINK
+    // ============================================================
+
     public bool IsPointerOverAbilityLink() =>
         CheckLinkPrefix("ability_");
 
@@ -1379,31 +1446,16 @@ public class CanvasInfoManager : MonoBehaviour
     {
         if (CombatUtility.IsPlayerInputLocked())
         {
-            DebugAbilityWarning(
-                "TrySelectAbilityUnderMouse BLOCKED: " +
-                "player input is locked."
-            );
-
             return false;
         }
 
         if (infoText == null)
         {
-            DebugAbilityWarning(
-                "TrySelectAbilityUnderMouse BLOCKED: " +
-                "infoText is NULL."
-            );
-
             return false;
         }
 
         if (!infoText.gameObject.activeInHierarchy)
         {
-            DebugAbilityWarning(
-                "TrySelectAbilityUnderMouse BLOCKED: " +
-                "infoText is inactive."
-            );
-
             return false;
         }
 
@@ -1435,11 +1487,6 @@ public class CanvasInfoManager : MonoBehaviour
                 .linkInfo[linkIndex]
                 .GetLinkID();
 
-        DebugAbility(
-            "Clicked TMP link = " +
-            linkId
-        );
-
         if (
             !linkId.StartsWith(
                 "ability_"
@@ -1461,36 +1508,11 @@ public class CanvasInfoManager : MonoBehaviour
             )
         )
         {
-            DebugAbilityWarning(
-                "Could not parse ability index from " +
-                linkId
-            );
-
             return true;
         }
 
-        DebugAbility(
-            "Ability link clicked. " +
-            "Index = " +
+        SelectAbility(
             abilityIndex
-        );
-
-        bool selected =
-            SelectAbility(
-                abilityIndex
-            );
-
-        DebugAbility(
-            "SelectAbility(" +
-            abilityIndex +
-            ") returned " +
-            selected +
-            " | selectedAbility = " +
-            (
-                selectedAbility != null
-                    ? selectedAbility.GetAbilityName()
-                    : "NULL"
-            )
         );
 
         return true;
@@ -1505,21 +1527,11 @@ public class CanvasInfoManager : MonoBehaviour
     {
         if (CombatUtility.IsPlayerInputLocked())
         {
-            DebugAbility(
-                "CanSelectAbilitiesForCurrentUnit = FALSE " +
-                "(input locked)"
-            );
-
             return false;
         }
 
         if (UIManager.CurrentSelection == null)
         {
-            DebugAbility(
-                "CanSelectAbilitiesForCurrentUnit = FALSE " +
-                "(no current selection)"
-            );
-
             return false;
         }
 
@@ -1529,36 +1541,20 @@ public class CanvasInfoManager : MonoBehaviour
 
         if (attackUnit == null)
         {
-            DebugAbility(
-                "CanSelectAbilitiesForCurrentUnit = FALSE " +
-                "(AttackUnit NULL)"
-            );
-
             return false;
         }
 
         Team team =
             attackUnit.GetTeam();
 
-        bool result =
+        return
             team == Team.Player ||
             team == Team.Ally;
-
-        DebugAbility(
-            "CanSelectAbilitiesForCurrentUnit = " +
-            result +
-            " | Unit=" +
-            attackUnit.name +
-            " | Team=" +
-            team
-        );
-
-        return result;
     }
 
 
     // ============================================================
-    // CAN USE ABILITY
+    // CAN USE SELECTED ABILITY
     // ============================================================
 
     private bool CanUseSelectedAbility(
@@ -1566,30 +1562,16 @@ public class CanvasInfoManager : MonoBehaviour
     {
         if (ability == null)
         {
-            DebugAbilityWarning(
-                "CanUseSelectedAbility FALSE: ability NULL."
-            );
-
             return false;
         }
 
         if (UIManager.CurrentSelection == null)
         {
-            DebugAbilityWarning(
-                "CanUseSelectedAbility FALSE: " +
-                "CurrentSelection NULL."
-            );
-
             return false;
         }
 
         if (CombatUtility.IsPlayerInputLocked())
         {
-            DebugAbilityWarning(
-                "CanUseSelectedAbility FALSE: " +
-                "input locked."
-            );
-
             return false;
         }
 
@@ -1599,11 +1581,6 @@ public class CanvasInfoManager : MonoBehaviour
 
         if (attackUnit == null)
         {
-            DebugAbilityWarning(
-                "CanUseSelectedAbility FALSE: " +
-                "AttackUnit NULL."
-            );
-
             return false;
         }
 
@@ -1623,57 +1600,20 @@ public class CanvasInfoManager : MonoBehaviour
                 ability
             );
 
-        int cooldown =
-            attackUnit.GetAbilityCooldown(
-                ability
-            );
-
-        DebugAbility(
-            "CanUseSelectedAbility | " +
-            "Ability=" +
-            ability.GetAbilityName() +
-            " | UsesPerTurn=" +
-            usesPerTurn +
-            " | UsesRemaining=" +
-            remainingUses +
-            " | Cooldown=" +
-            cooldown +
-            " | CanUseAfterMovement=" +
-            canUseAfterMovement
-        );
-
         if (!canUseAfterMovement)
         {
-            DebugAbilityWarning(
-                "CanUseSelectedAbility FALSE: " +
-                "ability cannot be used after movement."
-            );
-
             return false;
         }
 
         if (usesPerTurn <= 0)
         {
-            DebugAbility(
-                "CanUseSelectedAbility TRUE: unlimited uses."
-            );
-
             return true;
         }
 
         if (remainingUses <= 0)
         {
-            DebugAbilityWarning(
-                "CanUseSelectedAbility FALSE: " +
-                "no ready charges remain."
-            );
-
             return false;
         }
-
-        DebugAbility(
-            "CanUseSelectedAbility TRUE."
-        );
 
         return true;
     }
@@ -1686,57 +1626,15 @@ public class CanvasInfoManager : MonoBehaviour
     private bool SelectAbility(
         int abilityIndex)
     {
-        DebugAbility(
-            "================================================"
-        );
-
-        DebugAbility(
-            "SelectAbility(" +
-            abilityIndex +
-            ") START"
-        );
-
-        DebugAbility(
-            "Current CanvasInfoManager instance ID = " +
-            GetInstanceID()
-        );
-
-        // --------------------------------------------------------
-        // INPUT
-        // --------------------------------------------------------
-
         if (CombatUtility.IsPlayerInputLocked())
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "player input is locked."
-            );
-
             return false;
         }
-
-        // --------------------------------------------------------
-        // SELECTION
-        // --------------------------------------------------------
 
         if (UIManager.CurrentSelection == null)
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "CurrentSelection is NULL."
-            );
-
             return false;
         }
-
-        DebugAbility(
-            "Current selection = " +
-            UIManager.CurrentSelection.name
-        );
-
-        // --------------------------------------------------------
-        // UNIT
-        // --------------------------------------------------------
 
         AttackUnit attackUnit =
             UIManager.CurrentSelection
@@ -1744,88 +1642,41 @@ public class CanvasInfoManager : MonoBehaviour
 
         if (attackUnit == null)
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "AttackUnit is NULL."
-            );
-
             return false;
         }
 
         Team team =
             attackUnit.GetTeam();
 
-        DebugAbility(
-            "Selected AttackUnit = " +
-            attackUnit.name +
-            " | Team = " +
-            team
-        );
-
         if (
             team != Team.Player &&
             team != Team.Ally
         )
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "unit is not Player or Ally."
-            );
-
             return false;
         }
-
-        // --------------------------------------------------------
-        // CHARACTER
-        // --------------------------------------------------------
 
         CharacterSO character =
             attackUnit.GetCharacterData();
 
         if (character == null)
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "CharacterSO is NULL."
-            );
-
             return false;
         }
-
-        // --------------------------------------------------------
-        // ABILITIES
-        // --------------------------------------------------------
 
         List<AbilitySO> abilities =
             character.GetAbilities();
 
         if (abilities == null)
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "Character abilities list is NULL."
-            );
-
             return false;
         }
-
-        DebugAbility(
-            "Character ability count = " +
-            abilities.Count
-        );
 
         if (
             abilityIndex < 0 ||
             abilityIndex >= abilities.Count
         )
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "ability index " +
-                abilityIndex +
-                " is outside list."
-            );
-
             return false;
         }
 
@@ -1834,58 +1685,8 @@ public class CanvasInfoManager : MonoBehaviour
 
         if (ability == null)
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "AbilitySO at index " +
-                abilityIndex +
-                " is NULL."
-            );
-
             return false;
         }
-
-        DebugAbility(
-            "Ability = " +
-            ability.GetAbilityName()
-        );
-
-        // --------------------------------------------------------
-        // ABILITY STATE
-        // --------------------------------------------------------
-
-        int usesPerTurn =
-            ability.GetUsesPerTurn();
-
-        int usesRemaining =
-            attackUnit.GetAbilityUsesRemaining(
-                ability
-            );
-
-        int cooldown =
-            attackUnit.GetAbilityCooldown(
-                ability
-            );
-
-        bool canUseAfterMovement =
-            ability.CanUseAfterMovement(
-                attackUnit.gameObject
-            );
-
-        DebugAbility(
-            "Ability state | " +
-            "UsesPerTurn=" +
-            usesPerTurn +
-            " | UsesRemaining=" +
-            usesRemaining +
-            " | Cooldown=" +
-            cooldown +
-            " | CanUseAfterMovement=" +
-            canUseAfterMovement
-        );
-
-        // --------------------------------------------------------
-        // USE CHECK
-        // --------------------------------------------------------
 
         if (
             !CanUseSelectedAbility(
@@ -1893,37 +1694,14 @@ public class CanvasInfoManager : MonoBehaviour
             )
         )
         {
-            DebugAbilityWarning(
-                "SelectAbility FAILED: " +
-                "CanUseSelectedAbility returned FALSE."
-            );
-
             return false;
         }
-
-        // --------------------------------------------------------
-        // ACTUALLY SELECT
-        // --------------------------------------------------------
 
         selectedAbilityIndex =
             abilityIndex;
 
         selectedAbility =
             ability;
-
-        DebugAbility(
-            "SELECTED ABILITY = " +
-            selectedAbility.GetAbilityName()
-        );
-
-        DebugAbility(
-            "selectedAbilityIndex = " +
-            selectedAbilityIndex
-        );
-
-        // --------------------------------------------------------
-        // VISUALS
-        // --------------------------------------------------------
 
         UpdateCharacterIcon();
 
@@ -1936,28 +1714,7 @@ public class CanvasInfoManager : MonoBehaviour
         TriggerOpacityFlash();
         TriggerPulseBurst();
 
-        // --------------------------------------------------------
-        // REFRESH UI
-        // --------------------------------------------------------
-
         RefreshCurrentSelection();
-
-        // --------------------------------------------------------
-        // CAMERA
-        // --------------------------------------------------------
-        // IMPORTANT:
-        //
-        // This is now inside SelectAbility().
-        //
-        // Therefore it runs for:
-        //
-        // 1. Keyboard / Input System selection
-        // 2. Mouse ability-link selection
-        // 3. Any future code that calls SelectAbility()
-        //
-        // This prevents the mouse and keyboard selection paths
-        // from behaving differently.
-        // --------------------------------------------------------
 
         if (CanvasJuiceManager.Instance != null)
         {
@@ -1965,32 +1722,8 @@ public class CanvasInfoManager : MonoBehaviour
                 .MoveCameraToAbilityPosition();
         }
 
-        // --------------------------------------------------------
-        // RANGE
-        // --------------------------------------------------------
-
         ShowAbilityRange(
             abilityIndex
-        );
-
-        // --------------------------------------------------------
-        // FINAL VERIFICATION
-        // --------------------------------------------------------
-
-        DebugAbility(
-            "SelectAbility COMPLETE | " +
-            "selectedAbility = " +
-            (
-                selectedAbility != null
-                    ? selectedAbility.GetAbilityName()
-                    : "NULL"
-            ) +
-            " | index = " +
-            selectedAbilityIndex
-        );
-
-        DebugAbility(
-            "================================================"
         );
 
         return selectedAbility != null;
@@ -2002,7 +1735,7 @@ public class CanvasInfoManager : MonoBehaviour
     // ============================================================
 
     private void ShowAbilityRange(
-      int abilityIndex)
+        int abilityIndex)
     {
         if (CombatUtility.IsPlayerInputLocked())
         {
@@ -2062,21 +1795,9 @@ public class CanvasInfoManager : MonoBehaviour
             )
         )
         {
-            DebugAbility(
-                "ShowAbilityRange: " +
-                "ability cannot currently be used."
-            );
-
             ClearAbilityHighlights();
             return;
         }
-
-        // IMPORTANT:
-        // ShowAbilityTiles() calls ClearAbilityRange(), which resets
-        // GridHighlightManager.currentAbility to null.
-        //
-        // Therefore SetCurrentAbility() must happen AFTER
-        // ShowAbilityTiles()/ShowHealTiles(), not before it.
 
         List<Vector2Int> rangeTiles =
             ability.GetRangeTiles(
@@ -2108,15 +1829,14 @@ public class CanvasInfoManager : MonoBehaviour
             );
         }
 
-        // ShowAbilityTiles() clears currentAbility first,
-        // so assign it after the range has been displayed.
         highlightManager.SetCurrentAbility(
             ability
         );
     }
 
+
     // ============================================================
-    // SELECTED ABILITY ACCESS
+    // SELECTED ABILITY GETTERS
     // ============================================================
 
     public AbilitySO GetSelectedAbility()
@@ -2256,7 +1976,7 @@ public class CanvasInfoManager : MonoBehaviour
         if (
             statusId.Equals(
                 "stun",
-                System.StringComparison.OrdinalIgnoreCase
+                StringComparison.OrdinalIgnoreCase
             ) &&
             ability is ChainLightning chainLightning
         )
@@ -2283,7 +2003,7 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
-    // ABILITY HOVER CLEAR
+    // CLEAR ABILITY HOVER
     // ============================================================
 
     private void ClearAbilityHover()
@@ -2313,15 +2033,11 @@ public class CanvasInfoManager : MonoBehaviour
 
 
     // ============================================================
-    // CLEAR SELECTED ABILITY
+    // CLEAR SELECTED ABILITY - ENEMY TURN
     // ============================================================
 
     public void ClearSelectedAbilityForEnemyTurn()
     {
-        DebugAbility(
-            "ClearSelectedAbilityForEnemyTurn()"
-        );
-
         selectedAbilityIndex = -1;
         selectedAbility = null;
 
@@ -2337,12 +2053,12 @@ public class CanvasInfoManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // CLEAR SELECTED ABILITY
+    // ============================================================
+
     public void ClearSelectedAbility()
     {
-        DebugAbility(
-            "ClearSelectedAbility()"
-        );
-
         selectedAbilityIndex = -1;
         selectedAbility = null;
 
@@ -2364,10 +2080,6 @@ public class CanvasInfoManager : MonoBehaviour
 
     public void ClearInfo()
     {
-        DebugAbility(
-            "ClearInfo()"
-        );
-
         lastHoveredAbilityIndex = -1;
         lastLinkIndex = -1;
 

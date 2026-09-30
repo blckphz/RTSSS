@@ -890,12 +890,6 @@ public class EncounterManager : MonoBehaviour
             return;
 
         currentState = state;
-
-        Debug.Log(
-            "[EncounterManager] State changed to " +
-            currentState,
-            this
-        );
     }
 
     public void SetCurrentEncounter(

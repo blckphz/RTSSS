@@ -506,13 +506,6 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
 
 
-        Debug.Log(
-            "[UpgradeChoiceUI] " +
-            "Selected upgrade: " +
-            selectedUpgrade.name
-        );
-
-
         // ========================================================
         // UPDATE MANAGER STORES THE UPGRADE
         // ========================================================

@@ -21,19 +21,6 @@ public class FortressUpgrade : UpgradeSO
     private int bonusRange = 1;
 
 
-    // ============================================================
-    // ENABLE DEBUG
-    // ============================================================
-
-    private void OnEnable()
-    {
-        Debug.Log(
-            $"[FortressUpgrade] Loaded '{name}' | " +
-            $"Health +{bonusHealth} | " +
-            $"Damage +{bonusDamage} | " +
-            $"Range +{bonusRange}"
-        );
-    }
 
 
     // ============================================================

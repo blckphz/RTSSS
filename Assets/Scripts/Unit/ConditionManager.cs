@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI.Table;
 
-public class ConditionManager : MonoBehaviour
+public class ConditionManager : MonoBehaviour, IconditionsPuller
 {
     // ============================================================
     // SHADER
@@ -197,7 +198,7 @@ public class ConditionManager : MonoBehaviour
 
 
         // Make sure the target has a ConditionManager
-        // for the shader visual.
+        // for the shader visual and condition display.
         ConditionManager conditionManager =
             target.GetComponent<ConditionManager>();
 
@@ -487,6 +488,29 @@ public class ConditionManager : MonoBehaviour
         GameObject target)
     {
         ClearStun(target);
+    }
+
+
+    // ============================================================
+    // CONDITIONS
+    // ============================================================
+
+    public List<string> GetConditions()
+    {
+        List<string> conditions =
+            new List<string>();
+
+        int remainingTurns =
+            GetStunRemaining(gameObject);
+
+        if (remainingTurns > 0)
+        {
+            conditions.Add(
+                $"Stunned ({remainingTurns})"
+            );
+        }
+
+        return conditions;
     }
 
 
