@@ -15,6 +15,7 @@ MonoBehaviour:
   abilityName: Bomb Throw
   abilityIcon: {fileID: 0}
   description: Explodes in a Radius
+  launchSFX: {fileID: 0}
   NeedEnemy: 0
   damage: 30
   cooldown: 4
@@ -22,7 +23,7 @@ MonoBehaviour:
   usesPerTurn: 1
   useDuration: 3
   targetType: 0
-  range: 4
+  range: 5
   minDistance: 2
   rangeShape: 2
   bombPrefab: {fileID: 6696783540544688903, guid: 80f73fe7f148d51469ff390a05d7ef9d, type: 3}

@@ -60,7 +60,12 @@ public class GridHighlightBrain : MonoBehaviour
     // MOVEMENT RANGE VISIBILITY
     // ============================================================
 
+    // True only when movement has been completely exhausted.
     private bool movementRangeHidden;
+
+    // True temporarily while the unit is physically moving.
+    // This does NOT mean movement is exhausted.
+    private bool movementRangeHiddenWhileMoving;
 
 
     // ============================================================
@@ -158,6 +163,12 @@ public class GridHighlightBrain : MonoBehaviour
     {
         UnitMoveBrain.OnMovementActionsChanged +=
             HandleMovementActionsChanged;
+
+        UnitMoveBrain.OnMovementStarted +=
+            HandleMovementStarted;
+
+        UnitMoveBrain.OnMovementFinished +=
+            HandleMovementFinished;
     }
 
 
@@ -165,6 +176,12 @@ public class GridHighlightBrain : MonoBehaviour
     {
         UnitMoveBrain.OnMovementActionsChanged -=
             HandleMovementActionsChanged;
+
+        UnitMoveBrain.OnMovementStarted -=
+            HandleMovementStarted;
+
+        UnitMoveBrain.OnMovementFinished -=
+            HandleMovementFinished;
     }
 
 
@@ -187,6 +204,126 @@ public class GridHighlightBrain : MonoBehaviour
 
 
     // ============================================================
+    // MOVEMENT STARTED
+    // ============================================================
+
+    private void HandleMovementStarted(
+        UnitMoveBrain movingUnit
+    )
+    {
+        if (movingUnit == null)
+        {
+            return;
+        }
+
+
+        // Only hide the highlight belonging to the
+        // unit whose movement range is currently shown.
+        if (
+            cachedUser !=
+            movingUnit.gameObject
+        )
+        {
+            return;
+        }
+
+
+        if (
+            currentState !=
+            HighlightState.MovementRange
+        )
+        {
+            return;
+        }
+
+
+        movementRangeHiddenWhileMoving = true;
+
+
+        // IMPORTANT:
+        //
+        // This clears ONLY the movement highlight.
+        //
+        // It does NOT disable:
+        // - GridManager
+        // - Unity Grid
+        // - floor tiles
+        // - the actual board
+        //
+        // Only the highlighted movement cells disappear.
+        if (highlightManager != null)
+        {
+            highlightManager.ClearMovementRange();
+        }
+
+
+        DebugLog(
+            "Unit started moving. " +
+            "Movement highlight hidden."
+        );
+    }
+
+
+    // ============================================================
+    // MOVEMENT FINISHED
+    // ============================================================
+
+    private void HandleMovementFinished(
+        UnitMoveBrain movingUnit
+    )
+    {
+        if (movingUnit == null)
+        {
+            return;
+        }
+
+
+        if (
+            cachedUser !=
+            movingUnit.gameObject
+        )
+        {
+            return;
+        }
+
+
+        if (
+            currentState !=
+            HighlightState.MovementRange
+        )
+        {
+            return;
+        }
+
+
+        movementRangeHiddenWhileMoving = false;
+
+
+        // If movement was exhausted during the movement,
+        // leave the highlight hidden.
+        if (movingUnit.HasUsedAllMovement())
+        {
+            HideMovementRange();
+
+            return;
+        }
+
+
+        // Movement remains.
+        //
+        // Rebuild the highlight using the NEW remaining
+        // movement amount.
+        RefreshMovementRangeFromCache();
+
+
+        DebugLog(
+            "Unit finished moving. " +
+            "Movement highlight restored."
+        );
+    }
+
+
+    // ============================================================
     // MOVEMENT ACTION EVENT
     // ============================================================
 
@@ -199,22 +336,19 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // Only react to the unit whose movement range is currently
-        // being displayed.
-        // --------------------------------------------------------
-
-        if (cachedUser != changedUnit.gameObject)
+        // Only react to the unit whose movement range
+        // is currently being displayed.
+        if (
+            cachedUser !=
+            changedUnit.gameObject
+        )
         {
             return;
         }
 
 
-        // --------------------------------------------------------
-        // Only movement-range highlighting cares about movement
-        // action exhaustion.
-        // --------------------------------------------------------
-
+        // Only movement-range highlighting cares about
+        // movement action changes.
         if (
             currentState !=
             HighlightState.MovementRange
@@ -224,11 +358,20 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // --------------------------------------------------------
-        // If this unit has used all movement actions, immediately
-        // hide the movement range.
-        // --------------------------------------------------------
+        // IMPORTANT:
+        //
+        // While physically moving, do NOT redraw the
+        // movement highlight after ConsumeSteps().
+        //
+        // The highlight stays hidden until the complete
+        // movement routine finishes.
+        if (changedUnit.IsMoving())
+        {
+            return;
+        }
 
+
+        // No movement remaining = hide the movement range.
         if (changedUnit.HasUsedAllMovement())
         {
             DebugLog(
@@ -237,7 +380,13 @@ public class GridHighlightBrain : MonoBehaviour
             );
 
             HideMovementRange();
+
+            return;
         }
+
+
+        // Refresh using the CURRENT remaining steps.
+        RefreshMovementRangeFromCache();
     }
 
 
@@ -288,10 +437,6 @@ public class GridHighlightBrain : MonoBehaviour
         );
 
 
-        // ========================================================
-        // STOP BOARD ROTATION REFRESH
-        // ========================================================
-
         if (boardRotationCoroutine != null)
         {
             StopCoroutine(
@@ -304,19 +449,11 @@ public class GridHighlightBrain : MonoBehaviour
         isBoardRotating = false;
 
 
-        // ========================================================
-        // CLEAR CURRENT VISUAL HIGHLIGHTS
-        // ========================================================
-
         if (highlightManager != null)
         {
             highlightManager.ClearAllHighlights();
         }
 
-
-        // ========================================================
-        // RESET HIGHLIGHT STATE
-        // ========================================================
 
         currentState =
             HighlightState.None;
@@ -324,10 +461,6 @@ public class GridHighlightBrain : MonoBehaviour
         cachedState =
             HighlightState.None;
 
-
-        // ========================================================
-        // RESET MOVEMENT CACHE
-        // ========================================================
 
         cachedCenterPos =
             Vector2Int.zero;
@@ -340,41 +473,23 @@ public class GridHighlightBrain : MonoBehaviour
         cachedUser = null;
 
 
-        // ========================================================
-        // RESET ABILITY CACHE
-        // ========================================================
-
         cachedAbility = null;
 
-
-        // ========================================================
-        // RESET CUSTOM DATA
-        // ========================================================
 
         cachedCustomPositions.Clear();
 
         cachedOffsetCells.Clear();
 
 
-        // ========================================================
-        // RESET USER COMPONENT CACHE
-        // ========================================================
-
         cachedUserTilePin = null;
 
         cachedMoveBrain = null;
 
 
-        // ========================================================
-        // RESET MOVEMENT VISIBILITY
-        // ========================================================
-
         movementRangeHidden = false;
 
+        movementRangeHiddenWhileMoving = false;
 
-        // ========================================================
-        // RE-FIND CURRENT REFERENCES
-        // ========================================================
 
         gridManager = null;
 
@@ -383,16 +498,8 @@ public class GridHighlightBrain : MonoBehaviour
         FindReferences();
 
 
-        // ========================================================
-        // REFRESH CURRENT GRID BOUNDS
-        // ========================================================
-
         RefreshGridBounds();
 
-
-        // ========================================================
-        // RESET BOARD ROTATION CACHE
-        // ========================================================
 
         lastBoardRotation =
             transform.rotation;
@@ -539,6 +646,25 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
+        // IMPORTANT:
+        //
+        // While the unit is moving, its logical tile changes
+        // every step. Do not recreate the movement highlight
+        // during that movement.
+        //
+        // HandleMovementFinished() will refresh it once movement
+        // is completely finished.
+        if (
+            currentState ==
+            HighlightState.MovementRange &&
+            cachedMoveBrain != null &&
+            cachedMoveBrain.IsMoving()
+        )
+        {
+            return;
+        }
+
+
         if (
             !TryGetUserLogicalTile(
                 cachedUser,
@@ -617,6 +743,8 @@ public class GridHighlightBrain : MonoBehaviour
         cachedMoveBrain = null;
 
         movementRangeHidden = false;
+
+        movementRangeHiddenWhileMoving = false;
 
 
         if (highlightManager != null)
@@ -711,15 +839,11 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // ========================================================
-        // NEW MOVEMENT REQUEST
-        // ========================================================
-        //
-        // An explicit request to show the movement range always
-        // makes it visible again.
-        // ========================================================
-
+        // An explicit ShowMovementRange call makes the range
+        // visible again.
         movementRangeHidden = false;
+
+        movementRangeHiddenWhileMoving = false;
 
 
         currentState =
@@ -746,12 +870,7 @@ public class GridHighlightBrain : MonoBehaviour
         );
 
 
-        // ========================================================
-        // IMPORTANT
-        // ========================================================
-
         RefreshGridBounds();
-
 
         RefreshMovementRangeFromCache();
 
@@ -777,42 +896,29 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // ========================================================
-        // MOVEMENT RANGE WAS INTENTIONALLY HIDDEN
-        // ========================================================
-        //
-        // This is critical.
-        //
-        // Once all movement actions are used, the movement range
-        // is hidden and normal refresh calls must NOT recreate it.
-        //
-        // It can only become visible again through a new explicit
-        // ShowMovementRange() call.
-        // ========================================================
-
+        // Movement range was completely exhausted.
         if (movementRangeHidden)
         {
             return;
         }
 
 
-        // ========================================================
-        // REFRESH CURRENT GRID BOUNDS
-        // ========================================================
+        // The unit is physically moving.
+        //
+        // Do not recreate the movement highlight.
+        //
+        // HandleMovementFinished() will refresh it.
+        if (movementRangeHiddenWhileMoving)
+        {
+            return;
+        }
+
 
         RefreshGridBounds();
 
 
-        // ========================================================
-        // CLEAN DEAD / INVALID UNITS
-        // ========================================================
-
         gridManager.CleanupDeadUnits();
 
-
-        // ========================================================
-        // RESOLVE USER POSITION
-        // ========================================================
 
         Vector2Int center =
             ResolveCachedUserCenter();
@@ -830,10 +936,6 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
-        // ========================================================
-        // FIND ACTUAL REACHABLE CELLS
-        // ========================================================
 
         reusableTileList.Clear();
 
@@ -858,6 +960,14 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
+        // Extra protection in case this method is called
+        // from another refresh path while the unit is moving.
+        if (cachedMoveBrain.IsMoving())
+        {
+            return;
+        }
+
+
         UnitMoveBrainManager moveBrainManager =
             UnitMoveBrainManager.Instance;
 
@@ -872,25 +982,34 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
+        // ========================================================
+        // USE CURRENT REMAINING MOVEMENT
+        // ========================================================
+
+        int remainingSteps =
+            cachedMoveBrain.GetStepsRemaining();
+
+
+        if (remainingSteps <= 0)
+        {
+            HideMovementRange();
+
+            return;
+        }
+
+
         moveBrainManager.GetReachableCells(
             center,
-            cachedRange,
+            remainingSteps,
             cachedMoveBrain.CanWalkDiagonally(),
             reusableTileList,
             cachedUser
         );
 
 
-        // ========================================================
-        // NEVER SHOW USER'S OWN TILE
-        // ========================================================
-
+        // Never highlight the tile the unit currently occupies.
         reusableTileList.Remove(center);
 
-
-        // ========================================================
-        // SHOW MOVEMENT TILES
-        // ========================================================
 
         highlightManager.ShowMovementTiles(
             reusableTileList,
@@ -900,7 +1019,9 @@ public class GridHighlightBrain : MonoBehaviour
 
         DebugLog(
             "Movement range refreshed. " +
-            "Reachable cells: " +
+            "Remaining steps: " +
+            remainingSteps +
+            ". Reachable cells: " +
             reusableTileList.Count
         );
     }
@@ -914,9 +1035,12 @@ public class GridHighlightBrain : MonoBehaviour
     {
         movementRangeHidden = true;
 
+        movementRangeHiddenWhileMoving = false;
+
 
         if (highlightManager != null)
         {
+            // ONLY clears movement highlights.
             highlightManager.ClearMovementRange();
         }
 
@@ -972,6 +1096,8 @@ public class GridHighlightBrain : MonoBehaviour
         cachedMoveBrain = null;
 
         movementRangeHidden = false;
+
+        movementRangeHiddenWhileMoving = false;
 
 
         if (highlightManager != null)

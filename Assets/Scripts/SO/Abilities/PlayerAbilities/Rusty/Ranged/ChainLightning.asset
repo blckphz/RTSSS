@@ -22,7 +22,7 @@ MonoBehaviour:
   damage: 15
   cooldown: 4
   canAttackWithThisAfterMove: 1
-  usesPerTurn: 2
+  usesPerTurn: 1
   useDuration: 0.25
   targetType: 0
   range: 5
@@ -32,7 +32,7 @@ MonoBehaviour:
   jumpDelay: 0
   maxJumpDistance: 4
   stunPercentage: 15
-  stunDuration: 2
+  stunDuration: 1
   projectilePrefab: {fileID: 1253008432403029687, guid: 450c971267a451f40bb389db9cf5bd0e, type: 3}
   projectileSpeed: 12
   abilitySpawnPointName: AbilitySpawnPoint
