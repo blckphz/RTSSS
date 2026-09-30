@@ -15,6 +15,7 @@ public class ArrowAttack : AbilitySO
     [SerializeField]
     private string abilitySpawnPointName = "AbilitySpawnPoint";
 
+
     public override bool Use(
         GameObject user,
         GameObject target)
@@ -40,7 +41,11 @@ public class ArrowAttack : AbilitySO
         if (!CanTargetObject(user, target))
             return false;
 
-        // Find spawn point
+
+        // ========================================================
+        // SPAWN POINT
+        // ========================================================
+
         Transform spawnPoint =
             FindAbilitySpawnPoint(user);
 
@@ -49,7 +54,11 @@ public class ArrowAttack : AbilitySO
                 ? spawnPoint.position
                 : user.transform.position;
 
-        // Calculate direction
+
+        // ========================================================
+        // DIRECTION
+        // ========================================================
+
         Vector3 direction =
             target.transform.position - spawnPosition;
 
@@ -60,8 +69,47 @@ public class ArrowAttack : AbilitySO
 
         direction.Normalize();
 
-        // Spawn with no rotation.
-        // ArrowProjectile will handle the visual rotation.
+
+        // ========================================================
+        // GET TURRET
+        // ========================================================
+
+        turretbehav turret =
+            FindTurretBehaviour(user);
+
+
+        // ========================================================
+        // DAMAGE
+        // ========================================================
+
+        int effectiveDamage =
+            GetEffectiveDamage(user);
+
+        if (turret != null)
+        {
+            effectiveDamage +=
+                turret.GetChainLightningDamageBonus();
+        }
+
+
+        // ========================================================
+        // MAX TARGETS
+        // ========================================================
+
+        int effectiveMaxTargets =
+            maxTargets;
+
+        if (turret != null)
+        {
+            effectiveMaxTargets +=
+                turret.GetChainLightningMaxTargetsBonus();
+        }
+
+
+        // ========================================================
+        // SPAWN PROJECTILE
+        // ========================================================
+
         GameObject projectile =
             Instantiate(
                 arrowPrefab,
@@ -72,6 +120,11 @@ public class ArrowAttack : AbilitySO
         if (projectile == null)
             return false;
 
+
+        // ========================================================
+        // GET ARROW PROJECTILE
+        // ========================================================
+
         ArrowProjectile arrow =
             projectile.GetComponent<ArrowProjectile>();
 
@@ -81,27 +134,75 @@ public class ArrowAttack : AbilitySO
             return false;
         }
 
-        int effectiveDamage =
-            GetEffectiveDamage(user);
+
+        // ========================================================
+        // DEBUG
+        // ========================================================
 
         Debug.Log(
             $"[ArrowAttack] FIRING | " +
             $"User={user.name} | " +
             $"BaseDamage={GetDamage()} | " +
-            $"EffectiveDamage={effectiveDamage}",
+            $"EffectiveDamage={effectiveDamage} | " +
+            $"BaseMaxTargets={maxTargets} | " +
+            $"EffectiveMaxTargets={effectiveMaxTargets} | " +
+            $"ChainLightningCharged=" +
+            $"{(turret != null && turret.IsChainLightningCharged())}",
             user
         );
+
+
+        // ========================================================
+        // INITIALIZE
+        // ========================================================
 
         arrow.Initialize(
             user,
             direction,
             arrowSpeed,
             effectiveDamage,
-            maxTargets,
+            effectiveMaxTargets,
             this
         );
+
         return true;
     }
+
+
+    // ============================================================
+    // FIND TURRET
+    // ============================================================
+
+    private turretbehav FindTurretBehaviour(
+        GameObject user)
+    {
+        if (user == null)
+            return null;
+
+        turretbehav turret =
+            user.GetComponent<turretbehav>();
+
+        if (turret != null)
+            return turret;
+
+
+        turret =
+            user.GetComponentInParent<turretbehav>();
+
+        if (turret != null)
+            return turret;
+
+
+        turret =
+            user.GetComponentInChildren<turretbehav>();
+
+        return turret;
+    }
+
+
+    // ============================================================
+    // FIND SPAWN POINT
+    // ============================================================
 
     private Transform FindAbilitySpawnPoint(
         GameObject user)
@@ -123,4 +224,10 @@ public class ArrowAttack : AbilitySO
 
         return null;
     }
+
+    public int GetMaxTargets()
+    {
+        return maxTargets;
+    }
+
 }

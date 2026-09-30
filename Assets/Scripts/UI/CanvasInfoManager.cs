@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using NUnit.Framework.Interfaces;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -928,6 +927,10 @@ public class CanvasInfoManager : MonoBehaviour
                     );
                 }
 
+                // ====================================================
+                // DAMAGE / HEAL / RANGE
+                // ====================================================
+
                 if (
                     ability is HealAbilitySO healAbility
                 )
@@ -962,6 +965,47 @@ public class CanvasInfoManager : MonoBehaviour
                     );
                 }
 
+
+                // ====================================================
+                // SPECIAL ABILITY STATS
+                // ====================================================
+
+                if (ability is BombAttack bombAttack)
+                {
+                    textBuilder.AppendLine(
+                        $"Blast Radius: {bombAttack.GetExplosionRadius()}"
+                    );
+                }
+                else if (ability is ArrowAttack arrowAttack)
+                {
+                    int penetration =
+                        arrowAttack.GetMaxTargets();
+
+                    // Match the actual combat value.
+                    if (activeUnit != null)
+                    {
+                        turretbehav turret =
+                            FindTurretBehaviour(
+                                activeUnit.gameObject
+                            );
+
+                        if (turret != null)
+                        {
+                            penetration +=
+                                turret.GetChainLightningMaxTargetsBonus();
+                        }
+                    }
+
+                    textBuilder.AppendLine(
+                        $"Penetration: {penetration}"
+                    );
+                }
+
+
+                // ====================================================
+                // USES
+                // ====================================================
+
                 int usesPerTurn =
                     ability.GetUsesPerTurn();
 
@@ -983,6 +1027,11 @@ public class CanvasInfoManager : MonoBehaviour
                     usesText =
                         $"{remainingUses}/{usesPerTurn}";
                 }
+
+
+                // ====================================================
+                // COOLDOWN
+                // ====================================================
 
                 string cooldownText;
 
@@ -1051,6 +1100,35 @@ public class CanvasInfoManager : MonoBehaviour
         }
 
         UpdateCharacterIcon();
+    }
+
+
+    // ============================================================
+    // FIND TURRET
+    // ============================================================
+
+    private turretbehav FindTurretBehaviour(
+        GameObject user)
+    {
+        if (user == null)
+            return null;
+
+        turretbehav turret =
+            user.GetComponent<turretbehav>();
+
+        if (turret != null)
+            return turret;
+
+        turret =
+            user.GetComponentInParent<turretbehav>();
+
+        if (turret != null)
+            return turret;
+
+        turret =
+            user.GetComponentInChildren<turretbehav>();
+
+        return turret;
     }
 
 

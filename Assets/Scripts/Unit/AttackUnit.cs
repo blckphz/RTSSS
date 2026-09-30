@@ -1339,4 +1339,25 @@ public class AttackUnit : MonoBehaviour
         animationEventFired = false;
         attackInProgress = false;
     }
+
+public bool AddAbilityUse(AbilitySO abilitySO)
+    {
+        if (abilitySO == null)
+        {
+            return false;
+        }
+
+        AbilityData abilityData =
+            GetAbilityData(abilitySO);
+
+        if (abilityData == null)
+        {
+            return false;
+        }
+
+        abilityData.AddUse();
+
+        return true;
+    }
+
 }

@@ -193,6 +193,32 @@ public class AbilityData
     }
 
 
+    // =========================================================
+    // ADD ONE USE
+    // =========================================================
+
+    public void AddUse()
+    {
+        if (abilitySO == null)
+        {
+            return;
+        }
+
+        // Unlimited abilities don't need additional charges.
+        if (abilitySO.GetUsesPerTurn() <= 0)
+        {
+            return;
+        }
+
+        // Add one immediately available use.
+        chargeCooldowns.Add(0);
+    }
+
+
+    // =========================================================
+    // RESET USES
+    // =========================================================
+
     public void ResetUses()
     {
         if (abilitySO == null)

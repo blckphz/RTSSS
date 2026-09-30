@@ -134524,7 +134524,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1243}
+  m_AnchoredPosition: {x: -1242, y: 1183.1293}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -134838,7 +134838,6 @@ GameObject:
   - component: {fileID: 345656229}
   - component: {fileID: 345656228}
   - component: {fileID: 345656227}
-  - component: {fileID: 345656231}
   - component: {fileID: 345656232}
   - component: {fileID: 345656233}
   - component: {fileID: 345656234}
@@ -134978,7 +134977,7 @@ MonoBehaviour:
   conditionColor: {r: 1, g: 0.65, b: 0.1, a: 1}
   showStunText: 1
   stunText: Stunned
-  stunColor: {r: 1, g: 0.35, b: 0.35, a: 1}
+  stunColor: {r: 1, g: 0.6509804, b: 0.10196079, a: 1}
   tooltipManager: {fileID: 733581652}
   gridManager: {fileID: 804482595}
   highlightManager: {fileID: 804482593}
@@ -134999,9 +134998,11 @@ MonoBehaviour:
   tooltip: {fileID: 761463028}
   uiCamera: {fileID: 0}
   hoverTransparency: 1
-  fadeDuration: 0.15
-  infoBoxMoveDuration: 2
+  fadeDuration: 0.1
+  infoBoxMoveDuration: 0.21
   hiddenOffset: {x: -10, y: 0, z: 0}
+  hiddenScale: 0.85
+  scaleAnimationDuration: 0.3
   cameraTarget: {fileID: 2040856376}
   normalPosition: {fileID: 1124500261}
   abilityCameraPosition: {fileID: 1194508299}
@@ -135012,18 +135013,6 @@ MonoBehaviour:
   freeCamera: {fileID: 345656235}
   unitFollowSpeed: 10
   canvasInfoManager: {fileID: 345656228}
---- !u!114 &345656231
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 345656225}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4501b760cf98bc74a9afe4a381bf9046, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
 --- !u!114 &345656232
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -140202,8 +140191,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.0000014360285
-  m_Size: 0.59476006
+  m_Value: -0.005890589
+  m_Size: 0.5563254
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
