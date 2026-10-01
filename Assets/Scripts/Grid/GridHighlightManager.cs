@@ -52,14 +52,6 @@ public class GridHighlightManager : MonoBehaviour
     // PLAYER INTERACTION LOCK
     // ============================================================
 
-    /*
-     * This is different from CombatUtility.SetPlayerInputLocked().
-     *
-     * CombatUtility prevents the player from performing actions.
-     *
-     * This flag prevents player movement/ability highlights
-     * from being created again while the enemy is taking its turn.
-     */
     private bool playerHighlightsDisabled;
 
 
@@ -111,9 +103,6 @@ public class GridHighlightManager : MonoBehaviour
 
     private readonly List<Transform> tempTargetTransformList =
         new List<Transform>(16);
-
-    private readonly List<HoverInfoTrigger> tempHoverList =
-        new List<HoverInfoTrigger>(16);
 
 
     // ============================================================
@@ -219,16 +208,14 @@ public class GridHighlightManager : MonoBehaviour
             return false;
         }
 
-        AttackUnit attackUnit =
-            GetCachedAttackUnit(unit);
+        AttackUnit attackUnit = GetCachedAttackUnit(unit);
 
         if (attackUnit == null)
         {
             return false;
         }
 
-        Team team =
-            attackUnit.GetTeam();
+        Team team = attackUnit.GetTeam();
 
         return team == Team.Player ||
                team == Team.Ally;
@@ -241,23 +228,14 @@ public class GridHighlightManager : MonoBehaviour
 
     private void ClearPlayerHighlights()
     {
-        // Clear movement.
         ClearMovementRange();
-
-        // Clear ability/attack range.
         ClearAbilityRange();
-
-        // Clear placement.
         ClearPlacementTile();
 
-        // Clear target visuals.
         ClearAllTargetHovers();
         ClearAllTargetPulse();
 
-        // Make sure the visual tiles are actually reset.
-        foreach (
-            GridHighlightVisuals visual
-            in tileVisuals.Values)
+        foreach (GridHighlightVisuals visual in tileVisuals.Values)
         {
             if (visual != null)
             {
@@ -265,7 +243,6 @@ public class GridHighlightManager : MonoBehaviour
             }
         }
 
-        // Reset current player highlight owner.
         currentRangeUser = null;
         currentRangeUserUnit = null;
 
@@ -309,27 +286,21 @@ public class GridHighlightManager : MonoBehaviour
         {
             for (int y = minY; y <= maxY; y++)
             {
-                CacheTile(
-                    new Vector2Int(x, y)
-                );
+                CacheTile(new Vector2Int(x, y));
             }
         }
     }
 
-    private GridHighlightVisuals CacheTile(
-        Vector2Int position)
+    private GridHighlightVisuals CacheTile(Vector2Int position)
     {
         if (gridManager == null)
         {
             return null;
         }
 
-        if (
-            tileVisuals.TryGetValue(
+        if (tileVisuals.TryGetValue(
                 position,
-                out GridHighlightVisuals existing
-            )
-        )
+                out GridHighlightVisuals existing))
         {
             if (existing != null)
             {
@@ -347,11 +318,8 @@ public class GridHighlightManager : MonoBehaviour
             return null;
         }
 
-        if (
-            !tile.TryGetComponent(
-                out GridHighlightVisuals visuals
-            )
-        )
+        if (!tile.TryGetComponent(
+                out GridHighlightVisuals visuals))
         {
             visuals =
                 tile.AddComponent<GridHighlightVisuals>();
@@ -371,9 +339,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private void RefreshAllVisibleCells()
     {
-        foreach (
-            GridHighlightVisuals visual
-            in tileVisuals.Values)
+        foreach (GridHighlightVisuals visual in tileVisuals.Values)
         {
             if (visual != null)
             {
@@ -395,13 +361,9 @@ public class GridHighlightManager : MonoBehaviour
         }
     }
 
-    private void RefreshCells(
-        HashSet<Vector2Int> cells)
+    private void RefreshCells(HashSet<Vector2Int> cells)
     {
-        if (
-            cells == null ||
-            cells.Count == 0
-        )
+        if (cells == null || cells.Count == 0)
         {
             return;
         }
@@ -412,8 +374,7 @@ public class GridHighlightManager : MonoBehaviour
         }
     }
 
-    private void RefreshTile(
-        Vector2Int position)
+    private void RefreshTile(Vector2Int position)
     {
         GridHighlightVisuals visual =
             CacheTile(position);
@@ -439,7 +400,8 @@ public class GridHighlightManager : MonoBehaviour
 
         if (
             hasPlacementPosition &&
-            placementPosition == position)
+            placementPosition == position
+        )
         {
             visual.ShowPlacement();
             return;
@@ -471,7 +433,8 @@ public class GridHighlightManager : MonoBehaviour
 
         if (
             !suppressMovementHighlight &&
-            movementCells.Contains(position))
+            movementCells.Contains(position)
+        )
         {
             visual.ShowMovement(
                 movementRangeColor,
@@ -501,10 +464,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        /*
-         * If the enemy turn is active, completely reject
-         * movement highlighting for player/ally units.
-         */
         if (
             playerHighlightsDisabled &&
             IsPlayerUnit(user)
@@ -524,10 +483,6 @@ public class GridHighlightManager : MonoBehaviour
         List<Vector2Int> cells,
         GameObject user = null)
     {
-        /*
-         * This is especially important because GridHighlightBrain
-         * can call this again when movement events fire.
-         */
         if (
             playerHighlightsDisabled &&
             IsPlayerUnit(user)
@@ -541,18 +496,12 @@ public class GridHighlightManager : MonoBehaviour
 
         SetCurrentRangeUser(user);
 
-        if (
-            cells == null ||
-            cells.Count == 0
-        )
+        if (cells == null || cells.Count == 0)
         {
             return;
         }
 
-        for (
-            int i = 0;
-            i < cells.Count;
-            i++)
+        for (int i = 0; i < cells.Count; i++)
         {
             Vector2Int position = cells[i];
 
@@ -580,25 +529,17 @@ public class GridHighlightManager : MonoBehaviour
 
         movementCells.Clear();
 
-        for (
-            int i = 0;
-            i < tempCellList.Count;
-            i++)
+        for (int i = 0; i < tempCellList.Count; i++)
         {
-            RefreshTile(
-                tempCellList[i]
-            );
+            RefreshTile(tempCellList[i]);
         }
 
         tempCellList.Clear();
     }
 
-    public bool IsMovementCell(
-        Vector2Int position)
+    public bool IsMovementCell(Vector2Int position)
     {
-        return movementCells.Contains(
-            position
-        );
+        return movementCells.Contains(position);
     }
 
     public bool HasMovementRange()
@@ -611,19 +552,14 @@ public class GridHighlightManager : MonoBehaviour
     // MOVEMENT SUPPRESSION
     // ============================================================
 
-    public void SetMovementHighlightSuppressed(
-        bool suppressed)
+    public void SetMovementHighlightSuppressed(bool suppressed)
     {
-        if (
-            suppressMovementHighlight ==
-            suppressed
-        )
+        if (suppressMovementHighlight == suppressed)
         {
             return;
         }
 
-        suppressMovementHighlight =
-            suppressed;
+        suppressMovementHighlight = suppressed;
 
         RefreshCells(movementCells);
     }
@@ -665,10 +601,6 @@ public class GridHighlightManager : MonoBehaviour
         GameObject user,
         bool isHealAbility)
     {
-        /*
-         * Prevent player/ally ability highlighting during
-         * the enemy turn.
-         */
         if (
             playerHighlightsDisabled &&
             IsPlayerUnit(user)
@@ -689,10 +621,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (positions != null)
         {
-            for (
-                int i = 0;
-                i < positions.Count;
-                i++)
+            for (int i = 0; i < positions.Count; i++)
             {
                 Vector2Int position =
                     positions[i];
@@ -753,8 +682,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (
             hasLastShotgunDirection &&
-            newDirection ==
-            lastShotgunDirection
+            newDirection == lastShotgunDirection
         )
         {
             return;
@@ -765,9 +693,7 @@ public class GridHighlightManager : MonoBehaviour
 
         hasLastShotgunDirection = true;
 
-        RefreshShotgunTiles(
-            newDirection
-        );
+        RefreshShotgunTiles(newDirection);
     }
 
     private Vector2Int GetCurrentMouseDirection()
@@ -816,10 +742,7 @@ public class GridHighlightManager : MonoBehaviour
         Vector2Int difference =
             mouseTile - userTile;
 
-        if (
-            difference ==
-            Vector2Int.zero
-        )
+        if (difference == Vector2Int.zero)
         {
             return Vector2Int.up;
         }
@@ -858,10 +781,7 @@ public class GridHighlightManager : MonoBehaviour
 
         abilityCells.Clear();
 
-        for (
-            int i = 0;
-            i < tempCellList.Count;
-            i++)
+        for (int i = 0; i < tempCellList.Count; i++)
         {
             RefreshTile(
                 tempCellList[i]
@@ -878,10 +798,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (newTiles != null)
         {
-            for (
-                int i = 0;
-                i < newTiles.Count;
-                i++)
+            for (int i = 0; i < newTiles.Count; i++)
             {
                 Vector2Int position =
                     newTiles[i];
@@ -960,10 +877,7 @@ public class GridHighlightManager : MonoBehaviour
 
         abilityCells.Clear();
 
-        for (
-            int i = 0;
-            i < tempCellList.Count;
-            i++)
+        for (int i = 0; i < tempCellList.Count; i++)
         {
             RefreshTile(
                 tempCellList[i]
@@ -978,9 +892,7 @@ public class GridHighlightManager : MonoBehaviour
     public bool IsAbilityCell(
         Vector2Int position)
     {
-        return abilityCells.Contains(
-            position
-        );
+        return abilityCells.Contains(position);
     }
 
 
@@ -1053,9 +965,7 @@ public class GridHighlightManager : MonoBehaviour
             );
 
         if (
-            !abilityCells.Contains(
-                targetPosition
-            ) ||
+            !abilityCells.Contains(targetPosition) ||
             !IsValidAbilityTarget(target)
         )
         {
@@ -1137,9 +1047,7 @@ public class GridHighlightManager : MonoBehaviour
                 return cached;
             }
 
-            unitComponentCache.Remove(
-                target
-            );
+            unitComponentCache.Remove(target);
         }
 
         if (
@@ -1249,8 +1157,7 @@ public class GridHighlightManager : MonoBehaviour
             userTeam == Team.Ally
         )
         {
-            return targetTeam ==
-                   Team.Enemy;
+            return targetTeam == Team.Enemy;
         }
 
         if (userTeam == Team.Enemy)
@@ -1277,8 +1184,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (userTeam == Team.Enemy)
         {
-            return targetTeam ==
-                   Team.Enemy;
+            return targetTeam == Team.Enemy;
         }
 
         return false;
@@ -1311,10 +1217,8 @@ public class GridHighlightManager : MonoBehaviour
                 target
             );
 
-        return abilityCells.Contains(
-            position
-        ) &&
-        IsValidAbilityTarget(target);
+        return abilityCells.Contains(position) &&
+               IsValidAbilityTarget(target);
     }
 
 
@@ -1343,13 +1247,9 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        foreach (
-            Vector2Int position
-            in abilityCells)
+        foreach (Vector2Int position in abilityCells)
         {
-            RefreshTargetHoverForTile(
-                position
-            );
+            RefreshTargetHoverForTile(position);
         }
     }
 
@@ -1400,9 +1300,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (enableTargetPulse)
         {
-            AddTargetPulse(
-                unit.transform
-            );
+            AddTargetPulse(unit.transform);
         }
     }
 
@@ -1430,9 +1328,7 @@ public class GridHighlightManager : MonoBehaviour
             outlineColor
         );
 
-        activeAbilityOutlines.Add(
-            hoverInfo
-        );
+        activeAbilityOutlines.Add(hoverInfo);
     }
 
     private void ClearAllTargetHovers()
@@ -1442,9 +1338,7 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        foreach (
-            HoverInfoTrigger hoverInfo
-            in activeAbilityOutlines)
+        foreach (HoverInfoTrigger hoverInfo in activeAbilityOutlines)
         {
             if (hoverInfo != null)
             {
@@ -1463,27 +1357,20 @@ public class GridHighlightManager : MonoBehaviour
     // TARGET PULSE
     // ============================================================
 
-    private void AddTargetPulse(
-        Transform target)
+    private void AddTargetPulse(Transform target)
     {
         if (target == null)
         {
             return;
         }
 
-        if (
-            !targetOriginalScales.ContainsKey(
-                target
-            )
-        )
+        if (!targetOriginalScales.ContainsKey(target))
         {
             targetOriginalScales[target] =
                 target.localScale;
         }
 
-        activeTargetPulseTransforms.Add(
-            target
-        );
+        activeTargetPulseTransforms.Add(target);
     }
 
     private void UpdateTargetPulse()
@@ -1496,16 +1383,13 @@ public class GridHighlightManager : MonoBehaviour
             )
             {
                 ResetTargetPulseScales();
-
                 activeTargetPulseTransforms.Clear();
             }
 
             return;
         }
 
-        if (
-            activeTargetPulseTransforms.Count == 0
-        )
+        if (activeTargetPulseTransforms.Count == 0)
         {
             return;
         }
@@ -1534,9 +1418,7 @@ public class GridHighlightManager : MonoBehaviour
         {
             if (target != null)
             {
-                tempTargetTransformList.Add(
-                    target
-                );
+                tempTargetTransformList.Add(target);
             }
         }
 
@@ -1733,9 +1615,7 @@ public class GridHighlightManager : MonoBehaviour
             explosionPulseDuration * 2f
         );
 
-        explosionCells.Remove(
-            position
-        );
+        explosionCells.Remove(position);
 
         RefreshTile(position);
     }
@@ -1802,16 +1682,41 @@ public class GridHighlightManager : MonoBehaviour
         return movementRangeAlpha;
     }
 
+    public void ClearVisualsForBoardRotation()
+    {
+        ClearAllTargetHovers();
+        ClearAllTargetPulse();
+
+        foreach (GridHighlightVisuals visual in tileVisuals.Values)
+        {
+            if (visual != null)
+            {
+                visual.Reset();
+            }
+        }
+
+        ResetShotgunDirection();
+    }
 
     // ============================================================
     // ROTATION
     // ============================================================
 
+    /*
+     * Called by GridHighlightBrain AFTER the board has
+     * completely stopped rotating.
+     *
+     * This refreshes the physical tile references first.
+     */
     public IEnumerator RefreshAfterBoardRotation()
     {
+        // Wait until the rotation has been applied.
         yield return null;
+
+        // Make absolutely sure Unity has finished the current frame.
         yield return new WaitForEndOfFrame();
 
+        // Rebuild tile references.
         RefreshGrid();
     }
 }

@@ -21,8 +21,11 @@ public class GridHighlightBrain : MonoBehaviour
     // ============================================================
 
     [Header("References")]
-    [SerializeField] private GridManager gridManager;
-    [SerializeField] private GridHighlightManager highlightManager;
+    [SerializeField]
+    private GridManager gridManager;
+
+    [SerializeField]
+    private GridHighlightManager highlightManager;
 
 
     // ============================================================
@@ -30,7 +33,8 @@ public class GridHighlightBrain : MonoBehaviour
     // ============================================================
 
     [Header("Debug")]
-    [SerializeField] private bool enableDebugLogs = false;
+    [SerializeField]
+    private bool enableDebugLogs = false;
 
 
     // ============================================================
@@ -38,7 +42,8 @@ public class GridHighlightBrain : MonoBehaviour
     // ============================================================
 
     [Header("Board Rotation")]
-    [SerializeField] private bool refreshAfterBoardRotation = true;
+    [SerializeField]
+    private bool refreshAfterBoardRotation = true;
 
     [SerializeField, Min(0f)]
     private float boardRotationThreshold = 0.1f;
@@ -60,11 +65,8 @@ public class GridHighlightBrain : MonoBehaviour
     // MOVEMENT RANGE VISIBILITY
     // ============================================================
 
-    // True only when movement has been completely exhausted.
     private bool movementRangeHidden;
 
-    // True temporarily while the unit is physically moving.
-    // This does NOT mean movement is exhausted.
     private bool movementRangeHiddenWhileMoving;
 
 
@@ -217,8 +219,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Only hide the highlight belonging to the
-        // unit whose movement range is currently shown.
         if (
             cachedUser !=
             movingUnit.gameObject
@@ -240,17 +240,6 @@ public class GridHighlightBrain : MonoBehaviour
         movementRangeHiddenWhileMoving = true;
 
 
-        // IMPORTANT:
-        //
-        // This clears ONLY the movement highlight.
-        //
-        // It does NOT disable:
-        // - GridManager
-        // - Unity Grid
-        // - floor tiles
-        // - the actual board
-        //
-        // Only the highlighted movement cells disappear.
         if (highlightManager != null)
         {
             highlightManager.ClearMovementRange();
@@ -258,8 +247,7 @@ public class GridHighlightBrain : MonoBehaviour
 
 
         DebugLog(
-            "Unit started moving. " +
-            "Movement highlight hidden."
+            "Unit started moving. Movement highlight hidden."
         );
     }
 
@@ -299,8 +287,6 @@ public class GridHighlightBrain : MonoBehaviour
         movementRangeHiddenWhileMoving = false;
 
 
-        // If movement was exhausted during the movement,
-        // leave the highlight hidden.
         if (movingUnit.HasUsedAllMovement())
         {
             HideMovementRange();
@@ -309,16 +295,11 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Movement remains.
-        //
-        // Rebuild the highlight using the NEW remaining
-        // movement amount.
         RefreshMovementRangeFromCache();
 
 
         DebugLog(
-            "Unit finished moving. " +
-            "Movement highlight restored."
+            "Unit finished moving. Movement highlight restored."
         );
     }
 
@@ -328,7 +309,8 @@ public class GridHighlightBrain : MonoBehaviour
     // ============================================================
 
     private void HandleMovementActionsChanged(
-        UnitMoveBrain changedUnit)
+        UnitMoveBrain changedUnit
+    )
     {
         if (changedUnit == null)
         {
@@ -336,8 +318,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Only react to the unit whose movement range
-        // is currently being displayed.
         if (
             cachedUser !=
             changedUnit.gameObject
@@ -347,8 +327,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Only movement-range highlighting cares about
-        // movement action changes.
         if (
             currentState !=
             HighlightState.MovementRange
@@ -358,20 +336,12 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // IMPORTANT:
-        //
-        // While physically moving, do NOT redraw the
-        // movement highlight after ConsumeSteps().
-        //
-        // The highlight stays hidden until the complete
-        // movement routine finishes.
         if (changedUnit.IsMoving())
         {
             return;
         }
 
 
-        // No movement remaining = hide the movement range.
         if (changedUnit.HasUsedAllMovement())
         {
             DebugLog(
@@ -385,7 +355,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Refresh using the CURRENT remaining steps.
         RefreshMovementRangeFromCache();
     }
 
@@ -427,7 +396,7 @@ public class GridHighlightBrain : MonoBehaviour
 
 
     // ============================================================
-    // RESET FOR NEW ENCOUNTER / LEVEL
+    // RESET
     // ============================================================
 
     public void ResetForNewEncounter()
@@ -445,6 +414,7 @@ public class GridHighlightBrain : MonoBehaviour
 
             boardRotationCoroutine = null;
         }
+
 
         isBoardRotating = false;
 
@@ -495,8 +465,8 @@ public class GridHighlightBrain : MonoBehaviour
 
         highlightManager = null;
 
-        FindReferences();
 
+        FindReferences();
 
         RefreshGridBounds();
 
@@ -539,19 +509,12 @@ public class GridHighlightBrain : MonoBehaviour
 
         maxGridY =
             gridManager.GetMaxY();
-
-
-        DebugLog(
-            "Grid bounds refreshed: " +
-            minGridX + " to " + maxGridX +
-            ", " +
-            minGridY + " to " + maxGridY
-        );
     }
 
 
     private bool IsInsideGrid(
-        Vector2Int position)
+        Vector2Int position
+    )
     {
         return
             position.x >= minGridX &&
@@ -612,13 +575,30 @@ public class GridHighlightBrain : MonoBehaviour
     {
         if (refreshAfterBoardRotation)
         {
+            // Wait until the transform rotation has finished
+            // updating for this frame.
             yield return null;
 
             yield return new WaitForEndOfFrame();
 
+
             RefreshGridBounds();
 
-            RefreshActiveHighlights();
+
+            // IMPORTANT:
+            //
+            // Only rebuild the active highlight if the board is
+            // no longer physically rotating.
+            //
+            // BoardViewController also performs the final
+            // restoration after its rotation coroutine completes.
+            if (
+                BoardViewController.Instance == null ||
+                !BoardViewController.Instance.IsRotating()
+            )
+            {
+                RefreshActiveHighlights();
+            }
         }
 
 
@@ -646,14 +626,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // IMPORTANT:
-        //
-        // While the unit is moving, its logical tile changes
-        // every step. Do not recreate the movement highlight
-        // during that movement.
-        //
-        // HandleMovementFinished() will refresh it once movement
-        // is completely finished.
         if (
             currentState ==
             HighlightState.MovementRange &&
@@ -689,7 +661,10 @@ public class GridHighlightBrain : MonoBehaviour
             currentTile;
 
 
-        RefreshActiveHighlights();
+        if (!isBoardRotating)
+        {
+            RefreshActiveHighlights();
+        }
     }
 
 
@@ -771,6 +746,16 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
+        if (isBoardRotating)
+        {
+            DebugLog(
+                "RefreshActiveHighlights skipped because board is rotating."
+            );
+
+            return;
+        }
+
+
         switch (currentState)
         {
             case HighlightState.MovementRange:
@@ -831,7 +816,8 @@ public class GridHighlightBrain : MonoBehaviour
     public void ShowMovementRange(
         Vector2Int centerPosition,
         int range,
-        GameObject user = null)
+        GameObject user = null
+    )
     {
         if (!HasReferences())
         {
@@ -839,8 +825,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // An explicit ShowMovementRange call makes the range
-        // visible again.
         movementRangeHidden = false;
 
         movementRangeHiddenWhileMoving = false;
@@ -896,18 +880,12 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Movement range was completely exhausted.
         if (movementRangeHidden)
         {
             return;
         }
 
 
-        // The unit is physically moving.
-        //
-        // Do not recreate the movement highlight.
-        //
-        // HandleMovementFinished() will refresh it.
         if (movementRangeHiddenWhileMoving)
         {
             return;
@@ -960,8 +938,6 @@ public class GridHighlightBrain : MonoBehaviour
         }
 
 
-        // Extra protection in case this method is called
-        // from another refresh path while the unit is moving.
         if (cachedMoveBrain.IsMoving())
         {
             return;
@@ -981,10 +957,6 @@ public class GridHighlightBrain : MonoBehaviour
             return;
         }
 
-
-        // ========================================================
-        // USE CURRENT REMAINING MOVEMENT
-        // ========================================================
 
         int remainingSteps =
             cachedMoveBrain.GetStepsRemaining();
@@ -1007,7 +979,6 @@ public class GridHighlightBrain : MonoBehaviour
         );
 
 
-        // Never highlight the tile the unit currently occupies.
         reusableTileList.Remove(center);
 
 
@@ -1040,7 +1011,6 @@ public class GridHighlightBrain : MonoBehaviour
 
         if (highlightManager != null)
         {
-            // ONLY clears movement highlights.
             highlightManager.ClearMovementRange();
         }
 
@@ -1050,10 +1020,6 @@ public class GridHighlightBrain : MonoBehaviour
         );
     }
 
-
-    // ============================================================
-    // IS MOVEMENT RANGE HIDDEN
-    // ============================================================
 
     public bool IsMovementRangeHidden()
     {
@@ -1130,17 +1096,8 @@ public class GridHighlightBrain : MonoBehaviour
 
         if (!HasReferences())
         {
-            DebugLog(
-                "Unit-state refresh failed because references are missing."
-            );
-
             return;
         }
-
-
-        DebugLog(
-            "Refreshing highlights after unit state changed."
-        );
 
 
         RefreshActiveHighlights();
@@ -1153,7 +1110,8 @@ public class GridHighlightBrain : MonoBehaviour
 
     private bool TryGetUserLogicalTile(
         GameObject user,
-        out Vector2Int tile)
+        out Vector2Int tile
+    )
     {
         tile =
             Vector2Int.zero;
@@ -1220,7 +1178,8 @@ public class GridHighlightBrain : MonoBehaviour
     // ============================================================
 
     private void CacheUserComponents(
-        GameObject user)
+        GameObject user
+    )
     {
         cachedUserTilePin = null;
 
@@ -1248,7 +1207,8 @@ public class GridHighlightBrain : MonoBehaviour
     public void ShowBasicAbilityRange(
         Vector2Int centerPosition,
         int range,
-        GameObject user = null)
+        GameObject user = null
+    )
     {
         if (!HasReferences())
         {
@@ -1357,7 +1317,8 @@ public class GridHighlightBrain : MonoBehaviour
 
     public void ShowScriptableObjectAbility(
         AbilitySO ability,
-        GameObject user = null)
+        GameObject user = null
+    )
     {
         if (!HasReferences())
         {
@@ -1401,7 +1362,8 @@ public class GridHighlightBrain : MonoBehaviour
 
     public void ShowCustomTiles(
         List<Vector2Int> positions,
-        GameObject user = null)
+        GameObject user = null
+    )
     {
         if (!HasReferences())
         {
@@ -1459,7 +1421,8 @@ public class GridHighlightBrain : MonoBehaviour
     public void ShowOffsetCells(
         Vector2Int centerPosition,
         List<Vector2Int> offsets,
-        GameObject user = null)
+        GameObject user = null
+    )
     {
         if (!HasReferences())
         {
@@ -1544,7 +1507,8 @@ public class GridHighlightBrain : MonoBehaviour
 
     public void ShowSingleCell(
         Vector2Int position,
-        GameObject user = null)
+        GameObject user = null
+    )
     {
         if (!HasReferences())
         {

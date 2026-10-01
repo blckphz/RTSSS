@@ -67,15 +67,9 @@ public class BoardViewController : MonoBehaviour
     // ============================================================
 
     [Header("Movement / Round Rotation Lock")]
-    [Tooltip(
-        "Prevents board rotation while any UnitMoveBrain is moving."
-    )]
     [SerializeField]
     private bool preventRotationWhileUnitsMove = true;
 
-    [Tooltip(
-        "Prevents board rotation during the entire enemy turn."
-    )]
     [SerializeField]
     private bool preventRotationDuringEnemyTurn = true;
 
@@ -98,8 +92,8 @@ public class BoardViewController : MonoBehaviour
 
     [Header("Rotation Selection")]
     [Tooltip(
-        "If enabled, the currently selected unit and its range " +
-        "preview are cleared as soon as board rotation starts."
+        "If enabled, highlight visuals are hidden while the board rotates. " +
+        "The selected unit/highlight state itself is NOT destroyed."
     )]
     [SerializeField]
     private bool deselectUnitWhenRotating = true;
@@ -130,6 +124,15 @@ public class BoardViewController : MonoBehaviour
 
     private readonly List<Transform> externalUnits =
         new List<Transform>();
+
+
+    // ============================================================
+    // SELECTED UNIT RESTORATION STATE
+    // ============================================================
+
+    private GameObject selectedUnitBeforeRotation;
+
+    private bool restoreUnitRangeAfterRotation;
 
 
     // ============================================================
@@ -243,10 +246,6 @@ public class BoardViewController : MonoBehaviour
 
     private bool IsRotationBlocked()
     {
-        // --------------------------------------------------------
-        // UNIT MOVEMENT LOCK
-        // --------------------------------------------------------
-
         if (
             preventRotationWhileUnitsMove &&
             UnitMoveBrain.IsAnyUnitMoving
@@ -255,10 +254,6 @@ public class BoardViewController : MonoBehaviour
             return true;
         }
 
-
-        // --------------------------------------------------------
-        // ENEMY TURN LOCK
-        // --------------------------------------------------------
 
         if (
             preventRotationDuringEnemyTurn &&
@@ -404,17 +399,12 @@ public class BoardViewController : MonoBehaviour
         }
 
 
-        // ========================================================
-        // FINAL ROTATION SAFETY LOCK
-        // ========================================================
-
         if (IsRotationBlocked())
         {
             if (debugLogs)
             {
                 Debug.Log(
-                    "[BoardViewController] " +
-                    "Rotation request rejected.\n" +
+                    "[BoardViewController] Rotation request rejected.\n" +
                     "Units Moving: " +
                     UnitMoveBrain.IsAnyUnitMoving +
                     "\nMoving Unit Count: " +
@@ -469,12 +459,25 @@ public class BoardViewController : MonoBehaviour
         }
 
 
-        CaptureAbilityStateBeforeRotation();
+        // --------------------------------------------------------
+        // SAVE CURRENT SELECTION / ABILITY STATE.
+        // --------------------------------------------------------
 
+        CaptureSelectionStateBeforeRotation();
+
+
+        // --------------------------------------------------------
+        // HIDE VISUALS ONLY.
+        //
+        // DO NOT call ClearAllHighlights().
+        //
+        // The GridHighlightBrain must retain its cached movement
+        // state so it can rebuild the range after rotation.
+        // --------------------------------------------------------
 
         if (deselectUnitWhenRotating)
         {
-            DeselectUnitBeforeRotation();
+            HideHighlightVisualsBeforeRotation();
         }
 
 
@@ -496,13 +499,46 @@ public class BoardViewController : MonoBehaviour
 
 
     // ============================================================
-    // ABILITY STATE BEFORE ROTATION
+    // CAPTURE SELECTION STATE
     // ============================================================
 
-    private void CaptureAbilityStateBeforeRotation()
+    private void CaptureSelectionStateBeforeRotation()
     {
         restoreAbilityHighlightAfterRotation = false;
 
+        restoreUnitRangeAfterRotation = false;
+
+        selectedUnitBeforeRotation = null;
+
+
+        // --------------------------------------------------------
+        // SELECTED UNIT
+        // --------------------------------------------------------
+
+        if (UIManager.CurrentSelection != null)
+        {
+            selectedUnitBeforeRotation =
+                UIManager.CurrentSelection.gameObject;
+
+            restoreUnitRangeAfterRotation = true;
+
+
+            if (debugLogs)
+            {
+                Debug.Log(
+                    "[BoardViewController] " +
+                    "Selected unit saved before rotation.\n" +
+                    "Unit: " +
+                    selectedUnitBeforeRotation.name,
+                    this
+                );
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // ABILITY
+        // --------------------------------------------------------
 
         CanvasInfoManager canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
@@ -510,16 +546,6 @@ public class BoardViewController : MonoBehaviour
 
         if (canvasInfoManager == null)
         {
-            if (debugLogs)
-            {
-                Debug.Log(
-                    "[BoardViewController] " +
-                    "CanvasInfoManager not found while capturing " +
-                    "ability state before rotation.",
-                    this
-                );
-            }
-
             return;
         }
 
@@ -539,18 +565,8 @@ public class BoardViewController : MonoBehaviour
         }
 
 
-        if (UIManager.CurrentSelection == null)
+        if (selectedUnitBeforeRotation == null)
         {
-            if (debugLogs)
-            {
-                Debug.LogWarning(
-                    "[BoardViewController] " +
-                    "Ability is selected, but no unit is currently selected. " +
-                    "Ability grid will not be restored.",
-                    this
-                );
-            }
-
             return;
         }
 
@@ -561,16 +577,6 @@ public class BoardViewController : MonoBehaviour
 
         if (ability == null)
         {
-            if (debugLogs)
-            {
-                Debug.LogWarning(
-                    "[BoardViewController] " +
-                    "CanvasInfoManager reports a selected ability, " +
-                    "but GetSelectedAbility() returned NULL.",
-                    this
-                );
-            }
-
             return;
         }
 
@@ -582,11 +588,11 @@ public class BoardViewController : MonoBehaviour
         {
             Debug.Log(
                 "[BoardViewController] " +
-                "Ability highlight marked for restoration after rotation.\n" +
+                "Ability highlight marked for restoration.\n" +
                 "Ability: " +
                 ability.name +
                 "\nUnit: " +
-                UIManager.CurrentSelection.name,
+                selectedUnitBeforeRotation.name,
                 this
             );
         }
@@ -594,10 +600,10 @@ public class BoardViewController : MonoBehaviour
 
 
     // ============================================================
-    // DESELECT BEFORE ROTATION
+    // HIDE HIGHLIGHT VISUALS
     // ============================================================
 
-    private void DeselectUnitBeforeRotation()
+    private void HideHighlightVisualsBeforeRotation()
     {
         GridHighlightManager highlightManager =
             FindFirstObjectByType<GridHighlightManager>();
@@ -609,8 +615,8 @@ public class BoardViewController : MonoBehaviour
             {
                 Debug.LogWarning(
                     "[BoardViewController] " +
-                    "GridHighlightManager not found while " +
-                    "deselecting before rotation.",
+                    "GridHighlightManager not found while hiding " +
+                    "highlight visuals.",
                     this
                 );
             }
@@ -619,14 +625,26 @@ public class BoardViewController : MonoBehaviour
         }
 
 
-        highlightManager.ClearAllHighlights();
+        // IMPORTANT:
+        //
+        // This method must NOT destroy:
+        //
+        // movementCells
+        // abilityCells
+        // currentRangeUser
+        // currentAbility
+        //
+        // Those are needed after rotation.
+
+        highlightManager.ClearVisualsForBoardRotation();
 
 
         if (debugLogs)
         {
             Debug.Log(
                 "[BoardViewController] " +
-                "Unit highlights cleared before board rotation.",
+                "Highlight VISUALS hidden before board rotation. " +
+                "Cached highlight state preserved.",
                 this
             );
         }
@@ -735,6 +753,10 @@ public class BoardViewController : MonoBehaviour
         }
 
 
+        // ========================================================
+        // FINAL ROTATION CORRECTION
+        // ========================================================
+
         float finalCorrection =
             Mathf.DeltaAngle(
                 boardTransform.eulerAngles.z,
@@ -764,6 +786,10 @@ public class BoardViewController : MonoBehaviour
             targetRotation;
 
 
+        // --------------------------------------------------------
+        // Rotation is now physically complete.
+        // --------------------------------------------------------
+
         isRotating = false;
 
         rotationCoroutine = null;
@@ -790,8 +816,30 @@ public class BoardViewController : MonoBehaviour
         }
 
 
-        RefreshHighlightsAfterRotation();
+        // ========================================================
+        // REFRESH GRID VISUAL CACHE
+        // ========================================================
 
+        yield return StartCoroutine(
+            RefreshHighlightsAfterRotation()
+        );
+
+
+        // ========================================================
+        // RESTORE CACHED MOVEMENT RANGE
+        // ========================================================
+
+        if (restoreUnitRangeAfterRotation)
+        {
+            yield return StartCoroutine(
+                RestoreSelectedUnitRangeAfterRotation()
+            );
+        }
+
+
+        // ========================================================
+        // RESTORE ABILITY
+        // ========================================================
 
         if (restoreAbilityHighlightAfterRotation)
         {
@@ -803,15 +851,23 @@ public class BoardViewController : MonoBehaviour
         }
 
 
+        // ========================================================
+        // CLEANUP
+        // ========================================================
+
         restoreAbilityHighlightAfterRotation = false;
+
+        restoreUnitRangeAfterRotation = false;
+
+        selectedUnitBeforeRotation = null;
     }
 
 
     // ============================================================
-    // HIGHLIGHT REFRESH
+    // REFRESH HIGHLIGHTS AFTER ROTATION
     // ============================================================
 
-    private void RefreshHighlightsAfterRotation()
+    private IEnumerator RefreshHighlightsAfterRotation()
     {
         GridHighlightManager highlightManager =
             FindFirstObjectByType<GridHighlightManager>();
@@ -828,14 +884,15 @@ public class BoardViewController : MonoBehaviour
                 );
             }
 
-            return;
+            yield break;
         }
 
 
         if (debugLogs)
         {
             Debug.Log(
-                "[BoardViewController] Refreshing highlights after rotation.\n" +
+                "[BoardViewController] " +
+                "Refreshing highlights after rotation.\n" +
                 "Current Rotation: " +
                 currentRotation,
                 this
@@ -843,9 +900,132 @@ public class BoardViewController : MonoBehaviour
         }
 
 
-        StartCoroutine(
+        // IMPORTANT:
+        //
+        // Wait for the manager to actually rebuild its tile cache.
+        //
+
+        yield return StartCoroutine(
             highlightManager.RefreshAfterBoardRotation()
         );
+
+
+        yield return null;
+
+        yield return new WaitForEndOfFrame();
+    }
+
+
+    // ============================================================
+    // RESTORE SELECTED UNIT RANGE
+    // ============================================================
+
+    private IEnumerator RestoreSelectedUnitRangeAfterRotation()
+    {
+        if (selectedUnitBeforeRotation == null)
+        {
+            yield break;
+        }
+
+
+        if (UIManager.CurrentSelection == null)
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Selected unit no longer exists after rotation.",
+                    this
+                );
+            }
+
+            yield break;
+        }
+
+
+        GameObject selectedUnit =
+            UIManager.CurrentSelection.gameObject;
+
+
+        if (
+            selectedUnit !=
+            selectedUnitBeforeRotation
+        )
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "Selected unit changed during rotation. " +
+                    "Range restoration cancelled.",
+                    this
+                );
+            }
+
+            yield break;
+        }
+
+
+        // ========================================================
+        // MOST IMPORTANT PART
+        //
+        // Tell GridHighlightBrain to rebuild its cached active
+        // highlight.
+        // ========================================================
+
+        GridHighlightBrain highlightBrain =
+            FindFirstObjectByType<GridHighlightBrain>();
+
+
+        if (highlightBrain != null)
+        {
+            highlightBrain.RefreshActiveHighlights();
+
+
+            if (debugLogs)
+            {
+                Debug.Log(
+                    "[BoardViewController] " +
+                    "GridHighlightBrain.RefreshActiveHighlights() " +
+                    "called after rotation.\n" +
+                    "Unit: " +
+                    selectedUnit.name +
+                    "\nRotation: " +
+                    currentRotation,
+                    this
+                );
+            }
+        }
+        else
+        {
+            if (debugLogs)
+            {
+                Debug.LogWarning(
+                    "[BoardViewController] " +
+                    "GridHighlightBrain not found after rotation.",
+                    this
+                );
+            }
+        }
+
+
+        yield return null;
+
+        yield return new WaitForEndOfFrame();
+
+
+        if (debugLogs)
+        {
+            Debug.Log(
+                "[BoardViewController] " +
+                "Selected player's grid range refreshed after rotation.\n" +
+                "Unit: " +
+                selectedUnit.name +
+                "\nRotation: " +
+                currentRotation,
+                this
+            );
+        }
     }
 
 
@@ -946,11 +1126,6 @@ public class BoardViewController : MonoBehaviour
             abilityTiles,
             selectedUnit,
             false
-        );
-
-
-        highlightManager.SetCurrentAbility(
-            ability
         );
 
 
@@ -1328,6 +1503,14 @@ public class BoardViewController : MonoBehaviour
             rotationCenter +
             "\nExternal Units: " +
             externalUnits.Count +
+            "\nSelected Unit Before Rotation: " +
+            (
+                selectedUnitBeforeRotation != null
+                    ? selectedUnitBeforeRotation.name
+                    : "NULL"
+            ) +
+            "\nRestore Unit Range: " +
+            restoreUnitRangeAfterRotation +
             "\nRestore Ability Highlight: " +
             restoreAbilityHighlightAfterRotation,
             this
