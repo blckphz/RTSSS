@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class EncounterSpawner : MonoBehaviour
 {
@@ -16,14 +17,33 @@ public class EncounterSpawner : MonoBehaviour
     [SerializeField]
     private int currentWave = 0;
 
+    [Header("Bushes")]
+    [SerializeField]
+    [Min(1)]
+    private int minimumBushSpacing = 3;
+
+    [SerializeField]
+    [Min(1)]
+    private int bushSpawnAttempts = 50;
+
+
+    // =========================================================
+    // INTERNAL BUSH POSITIONS
+    // =========================================================
+
+    private readonly List<Vector2Int> spawnedBushPositions =
+        new List<Vector2Int>();
+
+
+    // =========================================================
+    // REFERENCES
+    // =========================================================
+
     private void Awake()
     {
         FindReferences();
     }
 
-    // =========================================================
-    // REFERENCES
-    // =========================================================
 
     private void FindReferences()
     {
@@ -46,6 +66,7 @@ public class EncounterSpawner : MonoBehaviour
         }
     }
 
+
     // =========================================================
     // WAVES
     // =========================================================
@@ -55,10 +76,12 @@ public class EncounterSpawner : MonoBehaviour
         currentWave = 0;
     }
 
+
     public int GetCurrentWave()
     {
         return currentWave;
     }
+
 
     // =========================================================
     // INITIAL ENCOUNTER
@@ -82,7 +105,28 @@ public class EncounterSpawner : MonoBehaviour
 
         ResetWaves();
 
+        spawnedBushPositions.Clear();
+
+        // -----------------------------------------------------
+        // NORMAL OBSTACLES
+        // -----------------------------------------------------
+
         SpawnObstacles(
+            encounter
+        );
+
+        // -----------------------------------------------------
+        // BUSHES
+        // -----------------------------------------------------
+        //
+        // Bushes are spawned separately so they can use their
+        // own spacing rules.
+        //
+        // They are still non-blocking just like BushBehav
+        // objects previously were.
+        // -----------------------------------------------------
+
+        SpawnBushes(
             encounter
         );
 
@@ -96,12 +140,12 @@ public class EncounterSpawner : MonoBehaviour
          * These enemies are present from the beginning of the
          * encounter and therefore CAN act during Round 1.
          */
-        int spawned =
-            SpawnWave(
-                encounter,
-                false
-            );
+        SpawnWave(
+            encounter,
+            false
+        );
     }
+
 
     // =========================================================
     // SPAWN WAVE
@@ -173,6 +217,7 @@ public class EncounterSpawner : MonoBehaviour
         return spawnedCount;
     }
 
+
     // =========================================================
     // OBSTACLES
     // =========================================================
@@ -233,6 +278,74 @@ public class EncounterSpawner : MonoBehaviour
         }
     }
 
+
+    // =========================================================
+    // BUSHES
+    // =========================================================
+
+    public void SpawnBushes(
+        EncounterDefinition encounter
+    )
+    {
+        if (encounter == null)
+        {
+            return;
+        }
+
+        if (encounter.bushes == null)
+        {
+            return;
+        }
+
+        spawnedBushPositions.Clear();
+
+        for (
+            int bushIndex = 0;
+            bushIndex < encounter.bushes.Count;
+            bushIndex++
+        )
+        {
+            ObstacleSpawnData bushData =
+                encounter.bushes[
+                    bushIndex
+                ];
+
+            if (bushData == null)
+            {
+                continue;
+            }
+
+            if (bushData.prefab == null)
+            {
+                continue;
+            }
+
+            int amount =
+                Mathf.Max(
+                    1,
+                    bushData.amount
+                );
+
+            for (
+                int instanceIndex = 0;
+                instanceIndex < amount;
+                instanceIndex++
+            )
+            {
+                SpawnRandomBush(
+                    bushData.prefab,
+                    bushIndex,
+                    instanceIndex
+                );
+            }
+        }
+    }
+
+
+    // =========================================================
+    // SPAWN RANDOM OBSTACLE
+    // =========================================================
+
     private void SpawnRandomObstacle(
         GameObject prefab,
         int obstacleIndex,
@@ -271,6 +384,11 @@ public class EncounterSpawner : MonoBehaviour
         obstacle.name =
             $"Obstacle_{obstacleIndex}_{instanceIndex}";
 
+
+        // -----------------------------------------------------
+        // TILE PIN
+        // -----------------------------------------------------
+
         UnitTilePin tilePin =
             obstacle.GetComponent<UnitTilePin>();
 
@@ -283,6 +401,46 @@ public class EncounterSpawner : MonoBehaviour
         tilePin.SetTile(
             position
         );
+
+
+        // -----------------------------------------------------
+        // POSITION
+        // -----------------------------------------------------
+
+        obstacle.transform.position =
+            gridManager.GridToWorldPosition(
+                position
+            );
+
+
+        // -----------------------------------------------------
+        // BUSH COMPATIBILITY
+        // -----------------------------------------------------
+        //
+        // This is intentionally retained so old encounter
+        // definitions that still have a BushBehav prefab inside
+        // "obstacles" continue to work.
+        // -----------------------------------------------------
+
+        BushBehav bush =
+            obstacle.GetComponent<BushBehav>();
+
+        if (bush != null)
+        {
+            gridManager.RegisterWalkableObstacle(
+                position
+            );
+
+            return;
+        }
+
+
+        // -----------------------------------------------------
+        // NORMAL OBSTACLE
+        // -----------------------------------------------------
+        //
+        // Normal obstacles ARE blocking.
+        // -----------------------------------------------------
 
         bool placed =
             gridManager.PlaceUnit(
@@ -299,6 +457,220 @@ public class EncounterSpawner : MonoBehaviour
             return;
         }
     }
+
+
+    // =========================================================
+    // SPAWN RANDOM BUSH
+    // =========================================================
+
+    private void SpawnRandomBush(
+        GameObject prefab,
+        int bushIndex,
+        int instanceIndex
+    )
+    {
+        if (prefab == null)
+        {
+            return;
+        }
+
+        if (gridManager == null)
+        {
+            return;
+        }
+
+        if (
+            !TryGetRandomBushPosition(
+                out Vector2Int position
+            )
+        )
+        {
+            return;
+        }
+
+        GameObject bush =
+            Instantiate(
+                prefab
+            );
+
+        if (bush == null)
+        {
+            return;
+        }
+
+        bush.name =
+            $"Bush_{bushIndex}_{instanceIndex}";
+
+
+        // -----------------------------------------------------
+        // TILE PIN
+        // -----------------------------------------------------
+
+        UnitTilePin tilePin =
+            bush.GetComponent<UnitTilePin>();
+
+        if (tilePin == null)
+        {
+            tilePin =
+                bush.AddComponent<UnitTilePin>();
+        }
+
+        tilePin.SetTile(
+            position
+        );
+
+
+        // -----------------------------------------------------
+        // POSITION
+        // -----------------------------------------------------
+
+        bush.transform.position =
+            gridManager.GridToWorldPosition(
+                position
+            );
+
+
+        // -----------------------------------------------------
+        // BUSH
+        // -----------------------------------------------------
+        //
+        // Bushes are NON-BLOCKING.
+        //
+        // The player can move onto their tile.
+        //
+        // The tile is still registered so another spawned
+        // object does not occupy the exact same cell.
+        // -----------------------------------------------------
+
+        gridManager.RegisterWalkableObstacle(
+            position
+        );
+
+
+        // -----------------------------------------------------
+        // REMEMBER POSITION
+        // -----------------------------------------------------
+
+        spawnedBushPositions.Add(
+            position
+        );
+    }
+
+
+    // =========================================================
+    // RANDOM BUSH POSITION
+    // =========================================================
+    //
+    // Bushes must be farther apart from OTHER BUSHES.
+    //
+    // They can still spawn normally relative to obstacles and
+    // other grid occupants because TryGetRandomFreeCell()
+    // handles normal grid occupancy.
+    // =========================================================
+
+    private bool TryGetRandomBushPosition(
+        out Vector2Int position
+    )
+    {
+        position = default;
+
+        if (gridManager == null)
+        {
+            return false;
+        }
+
+        int attempts =
+            Mathf.Max(
+                1,
+                bushSpawnAttempts
+            );
+
+        for (
+            int attempt = 0;
+            attempt < attempts;
+            attempt++
+        )
+        {
+            if (
+                !gridManager.TryGetRandomFreeCell(
+                    out Vector2Int candidate
+                )
+            )
+            {
+                return false;
+            }
+
+            if (
+                IsFarEnoughFromOtherBushes(
+                    candidate
+                )
+            )
+            {
+                position = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    // =========================================================
+    // BUSH SPACING
+    // =========================================================
+
+    private bool IsFarEnoughFromOtherBushes(
+        Vector2Int candidate
+    )
+    {
+        if (spawnedBushPositions.Count == 0)
+        {
+            return true;
+        }
+
+        float minimumDistance =
+            Mathf.Max(
+                1,
+                minimumBushSpacing
+            );
+
+        float minimumDistanceSquared =
+            minimumDistance *
+            minimumDistance;
+
+        for (
+            int i = 0;
+            i < spawnedBushPositions.Count;
+            i++
+        )
+        {
+            Vector2Int bushPosition =
+                spawnedBushPositions[i];
+
+            int deltaX =
+                candidate.x -
+                bushPosition.x;
+
+            int deltaY =
+                candidate.y -
+                bushPosition.y;
+
+            float distanceSquared =
+                (deltaX * deltaX) +
+                (deltaY * deltaY);
+
+            if (
+                distanceSquared <
+                minimumDistanceSquared
+            )
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
     // =========================================================
     // ENEMY SPAWNING
@@ -353,6 +725,7 @@ public class EncounterSpawner : MonoBehaviour
                 ? "EncounterEnemy"
                 : enemyId + "_Enemy";
 
+
         // -----------------------------------------------------
         // UNIT DATA
         // -----------------------------------------------------
@@ -370,6 +743,7 @@ public class EncounterSpawner : MonoBehaviour
             character
         );
 
+
         // -----------------------------------------------------
         // ENCOUNTER UNIT
         // -----------------------------------------------------
@@ -386,6 +760,7 @@ public class EncounterSpawner : MonoBehaviour
         encounterUnit.SetEncounterUnitId(
             enemyId
         );
+
 
         // -----------------------------------------------------
         // GRID
@@ -405,6 +780,7 @@ public class EncounterSpawner : MonoBehaviour
 
             return false;
         }
+
 
         // -----------------------------------------------------
         // WAVE TURN LOCK

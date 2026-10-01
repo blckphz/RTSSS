@@ -131,6 +131,34 @@ public class UnitAttackBrain : MonoBehaviour
             return false;
         }
 
+
+        // ========================================================
+        // BUSH STEALTH
+        // ========================================================
+
+        AttackUnit targetUnit =
+            target.GetComponentInParent<AttackUnit>();
+
+        if (targetUnit == null)
+        {
+            return false;
+        }
+
+
+        // Enemies cannot attack player units
+        // while the player is inside a bush.
+        if (
+            attackUnit.GetTeam() != Team.Player &&
+            targetUnit.GetTeam() == Team.Player &&
+            BushBehav.IsHidden(
+                targetUnit.gameObject
+            )
+        )
+        {
+            return false;
+        }
+
+
         AbilitySO best =
             GetBestAbilityForTarget(
                 target
@@ -283,6 +311,24 @@ public class UnitAttackBrain : MonoBehaviour
                 return false;
             }
 
+
+            // Enemy cannot attack hidden player.
+            AttackUnit targetUnit =
+                target.GetComponentInParent<AttackUnit>();
+
+            if (
+                attackUnit.GetTeam() != Team.Player &&
+                targetUnit != null &&
+                targetUnit.GetTeam() == Team.Player &&
+                BushBehav.IsHidden(
+                    targetUnit.gameObject
+                )
+            )
+            {
+                return false;
+            }
+
+
             return attackUnit.Attack(
                 target,
                 ability
@@ -343,6 +389,33 @@ public class UnitAttackBrain : MonoBehaviour
         {
             return null;
         }
+
+
+        // ========================================================
+        // BUSH STEALTH
+        // ========================================================
+
+        AttackUnit targetUnit =
+            target.GetComponentInParent<AttackUnit>();
+
+        if (targetUnit == null)
+        {
+            return null;
+        }
+
+
+        // Enemies cannot select hidden player units.
+        if (
+            attackUnit.GetTeam() != Team.Player &&
+            targetUnit.GetTeam() == Team.Player &&
+            BushBehav.IsHidden(
+                targetUnit.gameObject
+            )
+        )
+        {
+            return null;
+        }
+
 
         GridManager gridManager =
             attackUnit.GetGridManager();
@@ -497,6 +570,23 @@ public class UnitAttackBrain : MonoBehaviour
                 continue;
             }
 
+
+            // ====================================================
+            // BUSH STEALTH
+            // ====================================================
+
+            if (
+                attackUnit.GetTeam() != Team.Player &&
+                otherUnit.GetTeam() == Team.Player &&
+                BushBehav.IsHidden(
+                    otherUnit.gameObject
+                )
+            )
+            {
+                continue;
+            }
+
+
             if (
                 !ability.CanHit(
                     gridManager,
@@ -601,7 +691,6 @@ public class UnitAttackBrain : MonoBehaviour
         }
 
 
-        // Start the full attack sequence.
         SetAttackSequenceActive(true);
 
 
@@ -615,7 +704,6 @@ public class UnitAttackBrain : MonoBehaviour
                 );
 
 
-            // Nothing left to do.
             if (
                 ability == null ||
                 target == null
@@ -638,8 +726,6 @@ public class UnitAttackBrain : MonoBehaviour
             }
 
 
-            // Wait until the current attack animation
-            // has completely finished.
             yield return StartCoroutine(
                 attackUnit.WaitForAttackAnimation()
             );
@@ -661,7 +747,6 @@ public class UnitAttackBrain : MonoBehaviour
         }
 
 
-        // No more usable abilities/targets.
         SetAttackSequenceActive(false);
     }
 

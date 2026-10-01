@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
+
 
 public enum GridShapeType
 {
@@ -25,23 +27,24 @@ public static class GridShapeEvaluator
         int maxRadius = 5)
     {
         // ========================================================
-        // IMPORTANT:
-        // ALWAYS enforce the rectangular grid bounds first.
-        //
-        // The backing arrays are:
-        //
-        // occupiedCells[width, height]
-        // floorTiles[width, height]
-        //
-        // Therefore no shape is allowed to return a position
-        // outside this rectangular range.
+        // ALWAYS enforce rectangular grid bounds first.
         // ========================================================
 
-        int minX = -(width / 2);
-        int maxX = minX + width - 1;
+        int minX =
+            -(width / 2);
 
-        int minY = -(height / 2);
-        int maxY = minY + height - 1;
+        int maxX =
+            minX +
+            width -
+            1;
+
+        int minY =
+            -(height / 2);
+
+        int maxY =
+            minY +
+            height -
+            1;
 
         if (
             position.x < minX ||
@@ -69,7 +72,10 @@ public static class GridShapeEvaluator
             case GridShapeType.Manhattan:
                 {
                     int radius =
-                        Mathf.Min(width, height) / 2;
+                        Mathf.Min(
+                            width,
+                            height
+                        ) / 2;
 
                     return
                         Mathf.Abs(position.x) +
@@ -80,10 +86,12 @@ public static class GridShapeEvaluator
             case GridShapeType.Pyramid:
                 {
                     int rowOffset =
-                        position.y - minY;
+                        position.y -
+                        minY;
 
                     int currentHalfWidth =
-                        (width / 2) - rowOffset;
+                        (width / 2) -
+                        rowOffset;
 
                     if (currentHalfWidth < 0)
                     {
@@ -91,8 +99,10 @@ public static class GridShapeEvaluator
                     }
 
                     return
-                        position.x >= -currentHalfWidth &&
-                        position.x <= currentHalfWidth;
+                        position.x >=
+                            -currentHalfWidth &&
+                        position.x <=
+                            currentHalfWidth;
                 }
 
 
@@ -103,10 +113,12 @@ public static class GridShapeEvaluator
                         (position.y * position.y);
 
                     int minSq =
-                        minRadius * minRadius;
+                        minRadius *
+                        minRadius;
 
                     int maxSq =
-                        maxRadius * maxRadius;
+                        maxRadius *
+                        maxRadius;
 
                     return
                         distSq >= minSq &&
@@ -207,6 +219,24 @@ public class GridManager : MonoBehaviour
     private Transform gridTransform;
 
     private bool initialized;
+
+
+    // ============================================================
+    // WALKABLE OBSTACLES
+    // ============================================================
+    //
+    // These objects occupy a visual/grid tile but DO NOT block
+    // units from moving onto that tile.
+    //
+    // Bushes use this system.
+    //
+    // They are still reserved so another object does not spawn
+    // directly on top of them.
+    // ============================================================
+
+    private readonly HashSet<Vector2Int>
+        walkableObstacleCells =
+            new HashSet<Vector2Int>();
 
 
     // ============================================================
@@ -439,9 +469,86 @@ public class GridManager : MonoBehaviour
             );
         }
 
+        // Remove walkable obstacle reservations that are now
+        // outside the new grid.
+        RemoveInvalidWalkableObstacleCells();
+
         initialized = true;
 
         NotifyGridChanged();
+    }
+
+
+    // ============================================================
+    // WALKABLE OBSTACLES
+    // ============================================================
+
+    public void RegisterWalkableObstacle(
+        Vector2Int position)
+    {
+        if (!IsInsideGrid(position))
+        {
+            return;
+        }
+
+        walkableObstacleCells.Add(
+            position
+        );
+    }
+
+
+    public void UnregisterWalkableObstacle(
+        Vector2Int position)
+    {
+        walkableObstacleCells.Remove(
+            position
+        );
+    }
+
+
+    public bool IsWalkableObstacle(
+        Vector2Int position)
+    {
+        return
+            walkableObstacleCells.Contains(
+                position
+            );
+    }
+
+
+    private void RemoveInvalidWalkableObstacleCells()
+    {
+        if (walkableObstacleCells.Count == 0)
+        {
+            return;
+        }
+
+        List<Vector2Int> invalidCells =
+            new List<Vector2Int>();
+
+        foreach (
+            Vector2Int position
+            in walkableObstacleCells
+        )
+        {
+            if (!IsInsideGrid(position))
+            {
+                invalidCells.Add(
+                    position
+                );
+            }
+        }
+
+        for (
+            int i = 0;
+            i < invalidCells.Count;
+            i++
+        )
+        {
+            walkableObstacleCells.Remove(
+                invalidCells[i]
+            );
+        }
     }
 
 
@@ -497,9 +604,11 @@ public class GridManager : MonoBehaviour
 
                     if (
                         newArrayPos.x >= 0 &&
-                        newArrayPos.x < occupiedCells.GetLength(0) &&
+                        newArrayPos.x <
+                            occupiedCells.GetLength(0) &&
                         newArrayPos.y >= 0 &&
-                        newArrayPos.y < occupiedCells.GetLength(1) &&
+                        newArrayPos.y <
+                            occupiedCells.GetLength(1) &&
                         occupiedCells[
                             newArrayPos.x,
                             newArrayPos.y
@@ -517,7 +626,9 @@ public class GridManager : MonoBehaviour
 
                     if (pin != null)
                     {
-                        pin.SetTile(logicalPos);
+                        pin.SetTile(
+                            logicalPos
+                        );
                     }
                     else
                     {
@@ -531,7 +642,9 @@ public class GridManager : MonoBehaviour
                 {
                     if (destroyInvalidUnits)
                     {
-                        Destroy(unit);
+                        Destroy(
+                            unit
+                        );
                     }
                     else
                     {
@@ -893,10 +1006,6 @@ public class GridManager : MonoBehaviour
     public bool IsInsideGrid(
         Vector2Int position)
     {
-        // IMPORTANT:
-        // The shape must NEVER be allowed to return true
-        // for a coordinate outside the backing arrays.
-
         int minX =
             GetMinX();
 
@@ -992,9 +1101,11 @@ public class GridManager : MonoBehaviour
 
                 if (
                     arrayPos.x >= 0 &&
-                    arrayPos.x < floorTiles.GetLength(0) &&
+                    arrayPos.x <
+                        floorTiles.GetLength(0) &&
                     arrayPos.y >= 0 &&
-                    arrayPos.y < floorTiles.GetLength(1)
+                    arrayPos.y <
+                        floorTiles.GetLength(1)
                 )
                 {
                     floorTiles[
@@ -1070,12 +1181,13 @@ public class GridManager : MonoBehaviour
                 position
             );
 
-        // Extra protection.
         if (
             array.x < 0 ||
-            array.x >= occupiedCells.GetLength(0) ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
             array.y < 0 ||
-            array.y >= occupiedCells.GetLength(1)
+            array.y >=
+                occupiedCells.GetLength(1)
         )
         {
             return false;
@@ -1094,14 +1206,6 @@ public class GridManager : MonoBehaviour
     public GameObject GetUnitAt(
         Vector2Int position)
     {
-        // ========================================================
-        // FIX FOR:
-        //
-        // IndexOutOfRangeException
-        // GridManager.GetUnitAt()
-        //
-        // ========================================================
-
         if (
             occupiedCells == null ||
             !IsInsideGrid(position)
@@ -1115,15 +1219,13 @@ public class GridManager : MonoBehaviour
                 position
             );
 
-        // ========================================================
-        // FINAL ARRAY SAFETY CHECK
-        // ========================================================
-
         if (
             array.x < 0 ||
-            array.x >= occupiedCells.GetLength(0) ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
             array.y < 0 ||
-            array.y >= occupiedCells.GetLength(1)
+            array.y >=
+                occupiedCells.GetLength(1)
         )
         {
             Debug.LogError(
@@ -1183,6 +1285,10 @@ public class GridManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // CAN MOVE TO CELL
+    // ============================================================
+
     public bool CanMoveToCell(
         GameObject unit,
         Vector2Int position)
@@ -1197,6 +1303,19 @@ public class GridManager : MonoBehaviour
 
         GameObject occupant =
             GetUnitAt(position);
+
+        /*
+         * ======================================================
+         * IMPORTANT
+         *
+         * Bushes are NOT stored in occupiedCells.
+         *
+         * Therefore a bush tile naturally returns true here.
+         *
+         * Normal obstacles and units are still blocking because
+         * they ARE stored in occupiedCells.
+         * ======================================================
+         */
 
         return
             occupant == null ||
@@ -1229,9 +1348,11 @@ public class GridManager : MonoBehaviour
 
         if (
             array.x < 0 ||
-            array.x >= occupiedCells.GetLength(0) ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
             array.y < 0 ||
-            array.y >= occupiedCells.GetLength(1)
+            array.y >=
+                occupiedCells.GetLength(1)
         )
         {
             Debug.LogError(
@@ -1299,7 +1420,9 @@ public class GridManager : MonoBehaviour
 
         if (pin != null)
         {
-            pin.SetTile(position);
+            pin.SetTile(
+                position
+            );
         }
         else
         {
@@ -1335,9 +1458,11 @@ public class GridManager : MonoBehaviour
 
         if (
             array.x < 0 ||
-            array.x >= occupiedCells.GetLength(0) ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
             array.y < 0 ||
-            array.y >= occupiedCells.GetLength(1)
+            array.y >=
+                occupiedCells.GetLength(1)
         )
         {
             return false;
@@ -1396,9 +1521,11 @@ public class GridManager : MonoBehaviour
 
         if (
             array.x < 0 ||
-            array.x >= occupiedCells.GetLength(0) ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
             array.y < 0 ||
-            array.y >= occupiedCells.GetLength(1)
+            array.y >=
+                occupiedCells.GetLength(1)
         )
         {
             return;
@@ -1505,19 +1632,19 @@ public class GridManager : MonoBehaviour
                 newPosition
             );
 
-        // ========================================================
-        // SAFETY
-        // ========================================================
-
         if (
             oldArray.x < 0 ||
-            oldArray.x >= occupiedCells.GetLength(0) ||
+            oldArray.x >=
+                occupiedCells.GetLength(0) ||
             oldArray.y < 0 ||
-            oldArray.y >= occupiedCells.GetLength(1) ||
+            oldArray.y >=
+                occupiedCells.GetLength(1) ||
             newArray.x < 0 ||
-            newArray.x >= occupiedCells.GetLength(0) ||
+            newArray.x >=
+                occupiedCells.GetLength(0) ||
             newArray.y < 0 ||
-            newArray.y >= occupiedCells.GetLength(1)
+            newArray.y >=
+                occupiedCells.GetLength(1)
         )
         {
             Debug.LogError(
@@ -1537,7 +1664,7 @@ public class GridManager : MonoBehaviour
 
 
         // ========================================================
-        // ENSURE THE MOVING UNIT IS REGISTERED
+        // ENSURE MOVING UNIT IS REGISTERED
         // ========================================================
 
         GameObject oldOccupant =
@@ -1644,9 +1771,11 @@ public class GridManager : MonoBehaviour
 
         if (
             array.x < 0 ||
-            array.x >= occupiedCells.GetLength(0) ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
             array.y < 0 ||
-            array.y >= occupiedCells.GetLength(1)
+            array.y >=
+                occupiedCells.GetLength(1)
         )
         {
             return;
@@ -1755,6 +1884,12 @@ public class GridManager : MonoBehaviour
                     continue;
                 }
 
+                // Bushes are walkable but reserved.
+                if (IsWalkableObstacle(cell))
+                {
+                    continue;
+                }
+
                 if (IsCellOccupied(cell))
                 {
                     continue;
@@ -1791,6 +1926,11 @@ public class GridManager : MonoBehaviour
                     );
 
                 if (!IsInsideGrid(cell))
+                {
+                    continue;
+                }
+
+                if (IsWalkableObstacle(cell))
                 {
                     continue;
                 }
@@ -1838,9 +1978,11 @@ public class GridManager : MonoBehaviour
 
         if (
             array.x < 0 ||
-            array.x >= floorTiles.GetLength(0) ||
+            array.x >=
+                floorTiles.GetLength(0) ||
             array.y < 0 ||
-            array.y >= floorTiles.GetLength(1)
+            array.y >=
+                floorTiles.GetLength(1)
         )
         {
             return null;
@@ -2026,13 +2168,17 @@ public class GridManager : MonoBehaviour
             );
 
             Gizmos.DrawLine(
-                center + Vector3.left * 0.5f,
-                center + Vector3.right * 0.5f
+                center +
+                Vector3.left * 0.5f,
+                center +
+                Vector3.right * 0.5f
             );
 
             Gizmos.DrawLine(
-                center + Vector3.down * 0.5f,
-                center + Vector3.up * 0.5f
+                center +
+                Vector3.down * 0.5f,
+                center +
+                Vector3.up * 0.5f
             );
         }
     }

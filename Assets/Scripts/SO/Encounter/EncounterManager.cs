@@ -198,11 +198,6 @@ public class EncounterManager : MonoBehaviour
 
         SetEncounterState(EncounterState.Preparing);
 
-        Debug.Log(
-            "[EncounterManager] Round 1 Prepare phase. " +
-            "Waiting for Next Round button.",
-            this
-        );
     }
 
     // =========================================================

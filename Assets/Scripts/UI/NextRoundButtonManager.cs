@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -54,6 +55,12 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
     [Range(0f, 0.5f)]
     [SerializeField] private float idleSecondSpriteDelay = 0.1f;
+
+    [Header("Hover Sound")]
+    [SerializeField] private AudioSource hoverAudioSource;
+
+    [Header("Press Sound")]
+    [SerializeField] private AudioSource pressAudioSource;
 
     private Vector3 originalScale;
 
@@ -406,8 +413,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
 
         float t =
-            (idleTimer - spriteDelay) /
-            idleLiftDuration;
+            (idleTimer - spriteDelay) / idleLiftDuration;
 
 
         // Not currently animating
@@ -491,6 +497,13 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
         PointerEventData eventData)
     {
         isHovering = true;
+
+        // -------------------------------------------------
+        // HOVER SOUND
+        // -------------------------------------------------
+
+        if (hoverAudioSource != null)
+            hoverAudioSource.Play();
 
 
         // -------------------------------------------------
@@ -586,6 +599,17 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
                 DisableHoverObjectAfterAnimation()
             );
         }
+    }
+
+
+    // =========================================================
+    // BUTTON PRESSED SOUND
+    // =========================================================
+
+    public void OnButtonPressed()
+    {
+        if (pressAudioSource != null)
+            pressAudioSource.Play();
     }
 
 

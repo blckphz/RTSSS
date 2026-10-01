@@ -7,20 +7,22 @@ public class UnitMoveBrainManager : MonoBehaviour
 {
     public static UnitMoveBrainManager Instance { get; private set; }
 
+
     // ============================================================
     // GLOBAL MOVEMENT STATE
     // ============================================================
 
-    // True whenever one or more units are currently moving.
     public static bool IsUnitMoving =>
         movingUnitCount > 0;
 
     private static int movingUnitCount;
 
+
     public static void BeginUnitMovement()
     {
         movingUnitCount++;
     }
+
 
     public static void EndUnitMovement()
     {
@@ -31,17 +33,21 @@ public class UnitMoveBrainManager : MonoBehaviour
             );
     }
 
+
     public static void ClearUnitMovementState()
     {
         movingUnitCount = 0;
     }
+
 
     // ============================================================
     // REFERENCES
     // ============================================================
 
     [Header("References")]
-    [SerializeField] private GridManager gridManager;
+    [SerializeField]
+    private GridManager gridManager;
+
 
     private static readonly Vector2Int[] Directions =
     {
@@ -56,7 +62,9 @@ public class UnitMoveBrainManager : MonoBehaviour
         new Vector2Int(-1, -1)
     };
 
+
     private const int CardinalDirectionCount = 4;
+
 
     // ============================================================
     // CACHES
@@ -68,13 +76,16 @@ public class UnitMoveBrainManager : MonoBehaviour
     private readonly List<Vector2Int> candidatesCache =
         new List<Vector2Int>(64);
 
-    private readonly Dictionary<Vector2Int, Vector2Int> cameFromCache =
+    private readonly Dictionary<Vector2Int, Vector2Int>
+        cameFromCache =
         new Dictionary<Vector2Int, Vector2Int>(256);
 
-    private readonly Dictionary<Vector2Int, int> gScoreCache =
+    private readonly Dictionary<Vector2Int, int>
+        gScoreCache =
         new Dictionary<Vector2Int, int>(256);
 
-    private readonly Dictionary<Vector2Int, int> distanceCache =
+    private readonly Dictionary<Vector2Int, int>
+        distanceCache =
         new Dictionary<Vector2Int, int>(256);
 
     private readonly HashSet<Vector2Int> visitedCache =
@@ -89,14 +100,17 @@ public class UnitMoveBrainManager : MonoBehaviour
     private readonly List<AttackUnit> targetUnitBuffer =
         new List<AttackUnit>(64);
 
+
     // ============================================================
     // UNITY
     // ============================================================
 
     private void Awake()
     {
-        if (Instance != null &&
-            Instance != this)
+        if (
+            Instance != null &&
+            Instance != this
+        )
         {
             Destroy(gameObject);
             return;
@@ -104,12 +118,11 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         Instance = this;
 
-        // Make sure stale movement state cannot survive
-        // a scene/object reinitialization.
         movingUnitCount = 0;
 
         EnsureGridManager();
     }
+
 
     private void OnDestroy()
     {
@@ -119,6 +132,7 @@ public class UnitMoveBrainManager : MonoBehaviour
             movingUnitCount = 0;
         }
     }
+
 
     // ============================================================
     // GRID
@@ -131,6 +145,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         return gridManager;
     }
 
+
     private void EnsureGridManager()
     {
         if (gridManager == null)
@@ -140,25 +155,30 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
     }
 
+
     // ============================================================
     // DIRECTIONS
     // ============================================================
 
     public int GetDirectionCount(
-        bool canWalkDiagonally)
+        bool canWalkDiagonally
+    )
     {
         return canWalkDiagonally
             ? Directions.Length
             : CardinalDirectionCount;
     }
 
+
     public bool IsDiagonalDirection(
-        Vector2Int direction)
+        Vector2Int direction
+    )
     {
         return
             direction.x != 0 &&
             direction.y != 0;
     }
+
 
     // ============================================================
     // DISTANCE
@@ -167,7 +187,8 @@ public class UnitMoveBrainManager : MonoBehaviour
     public int GetMovementDistance(
         Vector2Int a,
         Vector2Int b,
-        bool canWalkDiagonally)
+        bool canWalkDiagonally
+    )
     {
         int dx =
             Mathf.Abs(
@@ -190,6 +211,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         return dx + dy;
     }
 
+
     // ============================================================
     // REACHABLE CELLS
     // ============================================================
@@ -199,12 +221,15 @@ public class UnitMoveBrainManager : MonoBehaviour
         int moveRange,
         bool canWalkDiagonally,
         List<Vector2Int> results,
-        GameObject movingUnit = null)
+        GameObject movingUnit = null
+    )
     {
         EnsureGridManager();
 
-        if (gridManager == null ||
-            results == null)
+        if (
+            gridManager == null ||
+            results == null
+        )
         {
             return;
         }
@@ -212,10 +237,14 @@ public class UnitMoveBrainManager : MonoBehaviour
         results.Clear();
 
         if (moveRange <= 0)
+        {
             return;
+        }
 
         if (!gridManager.IsInsideGrid(start))
+        {
             return;
+        }
 
         bfsQueueCache.Clear();
         visitedCache.Clear();
@@ -241,14 +270,18 @@ public class UnitMoveBrainManager : MonoBehaviour
                 distanceCache[current];
 
             if (currentDistance >= moveRange)
+            {
                 continue;
+            }
 
             int nextDistance =
                 currentDistance + 1;
 
-            for (int i = 0;
-                 i < directionCount;
-                 i++)
+            for (
+                int i = 0;
+                i < directionCount;
+                i++
+            )
             {
                 Vector2Int direction =
                     Directions[i];
@@ -257,16 +290,23 @@ public class UnitMoveBrainManager : MonoBehaviour
                     current + direction;
 
                 if (visitedCache.Contains(next))
+                {
                     continue;
+                }
 
                 if (!gridManager.IsInsideGrid(next))
+                {
                     continue;
+                }
 
-                if (!CanEnterCell(
+                if (
+                    !CanEnterCell(
                         current,
                         next,
                         direction,
-                        movingUnit))
+                        movingUnit
+                    )
+                )
                 {
                     continue;
                 }
@@ -283,6 +323,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
     }
 
+
     // ============================================================
     // CELL ENTRY
     // ============================================================
@@ -291,10 +332,13 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int current,
         Vector2Int next,
         Vector2Int direction,
-        GameObject movingUnit)
+        GameObject movingUnit
+    )
     {
         if (!gridManager.IsInsideGrid(next))
+        {
             return false;
+        }
 
         if (IsDiagonalDirection(direction))
         {
@@ -310,16 +354,22 @@ public class UnitMoveBrainManager : MonoBehaviour
                     current.y + direction.y
                 );
 
-            if (IsBlocked(
+            if (
+                IsBlocked(
                     horizontal,
-                    movingUnit))
+                    movingUnit
+                )
+            )
             {
                 return false;
             }
 
-            if (IsBlocked(
+            if (
+                IsBlocked(
                     vertical,
-                    movingUnit))
+                    movingUnit
+                )
+            )
             {
                 return false;
             }
@@ -331,12 +381,16 @@ public class UnitMoveBrainManager : MonoBehaviour
         );
     }
 
+
     private bool IsBlocked(
         Vector2Int position,
-        GameObject movingUnit)
+        GameObject movingUnit
+    )
     {
         if (gridManager == null)
+        {
             return true;
+        }
 
         GameObject occupant =
             gridManager.GetUnitAt(position);
@@ -346,18 +400,22 @@ public class UnitMoveBrainManager : MonoBehaviour
             occupant != movingUnit;
     }
 
+
     // ============================================================
     // OPEN NEIGHBOURS
     // ============================================================
 
     public int CountOpenNeighbours(
         Vector2Int position,
-        bool canWalkDiagonally)
+        bool canWalkDiagonally
+    )
     {
         EnsureGridManager();
 
         if (gridManager == null)
+        {
             return 0;
+        }
 
         int count = 0;
 
@@ -366,9 +424,11 @@ public class UnitMoveBrainManager : MonoBehaviour
                 ? Directions.Length
                 : CardinalDirectionCount;
 
-        for (int i = 0;
-             i < directionCount;
-             i++)
+        for (
+            int i = 0;
+            i < directionCount;
+            i++
+        )
         {
             Vector2Int direction =
                 Directions[i];
@@ -376,15 +436,21 @@ public class UnitMoveBrainManager : MonoBehaviour
             Vector2Int neighbour =
                 position + direction;
 
-            if (!gridManager.IsInsideGrid(
-                    neighbour))
+            if (
+                !gridManager.IsInsideGrid(
+                    neighbour
+                )
+            )
             {
                 continue;
             }
 
-            if (IsBlocked(
+            if (
+                IsBlocked(
                     neighbour,
-                    null))
+                    null
+                )
+            )
             {
                 continue;
             }
@@ -403,16 +469,22 @@ public class UnitMoveBrainManager : MonoBehaviour
                         position.y + direction.y
                     );
 
-                if (IsBlocked(
+                if (
+                    IsBlocked(
                         horizontal,
-                        null))
+                        null
+                    )
+                )
                 {
                     continue;
                 }
 
-                if (IsBlocked(
+                if (
+                    IsBlocked(
                         vertical,
-                        null))
+                        null
+                    )
+                )
                 {
                     continue;
                 }
@@ -424,6 +496,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         return count;
     }
 
+
     // ============================================================
     // TARGET SELECTION
     // ============================================================
@@ -433,12 +506,15 @@ public class UnitMoveBrainManager : MonoBehaviour
         bool preferCloserEnemies,
         bool preferLowHealthEnemies,
         int attackRange,
-        bool canWalkDiagonally)
+        bool canWalkDiagonally
+    )
     {
         EnsureGridManager();
 
-        if (gridManager == null ||
-            currentUnit == null)
+        if (
+            gridManager == null ||
+            currentUnit == null
+        )
         {
             return null;
         }
@@ -465,27 +541,65 @@ public class UnitMoveBrainManager : MonoBehaviour
         int targetCount =
             targetUnitBuffer.Count;
 
-        for (int i = 0;
-             i < targetCount;
-             i++)
+        for (
+            int i = 0;
+            i < targetCount;
+            i++
+        )
         {
             AttackUnit other =
                 targetUnitBuffer[i];
 
             if (other == null)
-                continue;
-
-            if (other == currentUnit)
-                continue;
-
-            if (other.IsDead())
-                continue;
-
-            if (other.GetTeam() ==
-                currentUnit.GetTeam())
             {
                 continue;
             }
+
+            if (other == currentUnit)
+            {
+                continue;
+            }
+
+            if (other.IsDead())
+            {
+                continue;
+            }
+
+            if (
+                other.GetTeam() ==
+                currentUnit.GetTeam()
+            )
+            {
+                continue;
+            }
+
+
+            // ====================================================
+            // BUSH STEALTH
+            // ====================================================
+            //
+            // Enemy units completely ignore player units
+            // while those player units are inside a bush.
+            //
+            // This means:
+            //
+            // Enemy -> Player outside bush = targetable
+            // Enemy -> Player inside bush  = ignored
+            //
+            // Player -> Enemy = unaffected
+            // ====================================================
+
+            if (
+                currentUnit.GetTeam() != Team.Player &&
+                other.GetTeam() == Team.Player &&
+                BushBehav.IsHidden(
+                    other.gameObject
+                )
+            )
+            {
+                continue;
+            }
+
 
             Vector2Int enemyPosition =
                 gridManager.WorldToGridPosition(
@@ -536,6 +650,7 @@ public class UnitMoveBrainManager : MonoBehaviour
             if (score < bestScore)
             {
                 bestScore = score;
+
                 bestTarget = other;
             }
         }
@@ -544,6 +659,7 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         return bestTarget;
     }
+
 
     // ============================================================
     // BEST ATTACK POSITION
@@ -557,12 +673,15 @@ public class UnitMoveBrainManager : MonoBehaviour
         bool preferCloserAttackPosition,
         bool preferMoreOpenPositions,
         bool preferSidePositions,
-        GameObject movingUnit = null)
+        GameObject movingUnit = null
+    )
     {
         EnsureGridManager();
 
         if (gridManager == null)
+        {
             return start;
+        }
 
         GetAttackPositions(
             target,
@@ -582,34 +701,44 @@ public class UnitMoveBrainManager : MonoBehaviour
         int candidateCount =
             candidatesCache.Count;
 
-        for (int i = 0;
-             i < candidateCount;
-             i++)
+        for (
+            int i = 0;
+            i < candidateCount;
+            i++
+        )
         {
             Vector2Int candidate =
                 candidatesCache[i];
 
-            if (candidate != start &&
+            if (
+                candidate != start &&
                 gridManager.IsCellOccupied(
-                    candidate))
+                    candidate
+                )
+            )
             {
                 continue;
             }
 
             pathCache.Clear();
 
-            if (!FindPath(
+            if (
+                !FindPath(
                     start,
                     candidate,
                     canWalkDiagonally,
                     pathCache,
-                    movingUnit))
+                    movingUnit
+                )
+            )
             {
                 continue;
             }
 
             if (pathCache.Count < 2)
+            {
                 continue;
+            }
 
             int movementCost =
                 pathCache.Count - 1;
@@ -639,15 +768,19 @@ public class UnitMoveBrainManager : MonoBehaviour
                     ) * 2f;
             }
 
-            if (preferSidePositions &&
+            if (
+                preferSidePositions &&
                 candidate.x != target.x &&
-                candidate.y != target.y)
+                candidate.y != target.y
+            )
             {
                 score += 3f;
             }
 
-            if (!found ||
-                score < bestScore)
+            if (
+                !found ||
+                score < bestScore
+            )
             {
                 found = true;
 
@@ -659,7 +792,9 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
 
         if (found)
+        {
             return bestPosition;
+        }
 
         return FindBestReachableCell(
             start,
@@ -670,6 +805,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         );
     }
 
+
     // ============================================================
     // ATTACK POSITIONS
     // ============================================================
@@ -678,15 +814,20 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int target,
         int attackRange,
         bool canWalkDiagonally,
-        List<Vector2Int> results)
+        List<Vector2Int> results
+    )
     {
         results.Clear();
 
         if (gridManager == null)
+        {
             return;
+        }
 
         if (attackRange <= 0)
+        {
             return;
+        }
 
         int minX =
             Mathf.Max(
@@ -712,16 +853,22 @@ public class UnitMoveBrainManager : MonoBehaviour
                 target.y + attackRange
             );
 
-        for (int x = minX;
-             x <= maxX;
-             x++)
+        for (
+            int x = minX;
+            x <= maxX;
+            x++
+        )
         {
-            for (int y = minY;
-                 y <= maxY;
-                 y++)
+            for (
+                int y = minY;
+                y <= maxY;
+                y++
+            )
             {
-                if (x == target.x &&
-                    y == target.y)
+                if (
+                    x == target.x &&
+                    y == target.y
+                )
                 {
                     continue;
                 }
@@ -732,17 +879,20 @@ public class UnitMoveBrainManager : MonoBehaviour
                         y
                     );
 
-                if (GetMovementDistance(
+                if (
+                    GetMovementDistance(
                         position,
                         target,
                         canWalkDiagonally
-                    ) <= attackRange)
+                    ) <= attackRange
+                )
                 {
                     results.Add(position);
                 }
             }
         }
     }
+
 
     // ============================================================
     // A*
@@ -753,12 +903,15 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int destination,
         bool canWalkDiagonally,
         List<Vector2Int> resultPath,
-        GameObject movingUnit = null)
+        GameObject movingUnit = null
+    )
     {
         EnsureGridManager();
 
-        if (gridManager == null ||
-            resultPath == null)
+        if (
+            gridManager == null ||
+            resultPath == null
+        )
         {
             return false;
         }
@@ -766,10 +919,18 @@ public class UnitMoveBrainManager : MonoBehaviour
         resultPath.Clear();
 
         if (!gridManager.IsInsideGrid(start))
+        {
             return false;
+        }
 
-        if (!gridManager.IsInsideGrid(destination))
+        if (
+            !gridManager.IsInsideGrid(
+                destination
+            )
+        )
+        {
             return false;
+        }
 
         if (start == destination)
         {
@@ -804,8 +965,11 @@ public class UnitMoveBrainManager : MonoBehaviour
             Vector2Int current =
                 openSetCache.Dequeue();
 
-            if (visitedCache.Contains(
-                    current))
+            if (
+                visitedCache.Contains(
+                    current
+                )
+            )
             {
                 continue;
             }
@@ -827,9 +991,11 @@ public class UnitMoveBrainManager : MonoBehaviour
             int currentG =
                 gScoreCache[current];
 
-            for (int i = 0;
-                 i < directionCount;
-                 i++)
+            for (
+                int i = 0;
+                i < directionCount;
+                i++
+            )
             {
                 Vector2Int direction =
                     Directions[i];
@@ -837,21 +1003,33 @@ public class UnitMoveBrainManager : MonoBehaviour
                 Vector2Int next =
                     current + direction;
 
-                if (visitedCache.Contains(next))
-                    continue;
-
-                if (!gridManager.IsInsideGrid(
-                        next))
+                if (
+                    visitedCache.Contains(
+                        next
+                    )
+                )
                 {
                     continue;
                 }
 
-                if (!CanEnterPathCell(
+                if (
+                    !gridManager.IsInsideGrid(
+                        next
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    !CanEnterPathCell(
                         current,
                         next,
                         direction,
                         destination,
-                        movingUnit))
+                        movingUnit
+                    )
+                )
                 {
                     continue;
                 }
@@ -859,10 +1037,13 @@ public class UnitMoveBrainManager : MonoBehaviour
                 int tentativeG =
                     currentG + 1;
 
-                if (gScoreCache.TryGetValue(
+                if (
+                    gScoreCache.TryGetValue(
                         next,
-                        out int oldG) &&
-                    tentativeG >= oldG)
+                        out int oldG
+                    ) &&
+                    tentativeG >= oldG
+                )
                 {
                     continue;
                 }
@@ -890,6 +1071,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         return false;
     }
 
+
     // ============================================================
     // PATH CELL VALIDATION
     // ============================================================
@@ -899,10 +1081,14 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int next,
         Vector2Int direction,
         Vector2Int destination,
-        GameObject movingUnit)
+        GameObject movingUnit
+    )
     {
-        if (IsDiagonalDirection(
-                direction))
+        if (
+            IsDiagonalDirection(
+                direction
+            )
+        )
         {
             Vector2Int horizontal =
                 new Vector2Int(
@@ -916,16 +1102,22 @@ public class UnitMoveBrainManager : MonoBehaviour
                     current.y + direction.y
                 );
 
-            if (IsBlocked(
+            if (
+                IsBlocked(
                     horizontal,
-                    movingUnit))
+                    movingUnit
+                )
+            )
             {
                 return false;
             }
 
-            if (IsBlocked(
+            if (
+                IsBlocked(
                     vertical,
-                    movingUnit))
+                    movingUnit
+                )
+            )
             {
                 return false;
             }
@@ -934,15 +1126,18 @@ public class UnitMoveBrainManager : MonoBehaviour
         GameObject occupant =
             gridManager.GetUnitAt(next);
 
-        if (occupant != null &&
+        if (
+            occupant != null &&
             occupant != movingUnit &&
-            next != destination)
+            next != destination
+        )
         {
             return false;
         }
 
         return true;
     }
+
 
     // ============================================================
     // FALLBACK
@@ -953,7 +1148,8 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int target,
         bool canWalkDiagonally,
         bool preferMoreOpenPositions,
-        GameObject movingUnit)
+        GameObject movingUnit
+    )
     {
         bfsQueueCache.Clear();
         visitedCache.Clear();
@@ -1006,9 +1202,11 @@ public class UnitMoveBrainManager : MonoBehaviour
                 bestCell = current;
             }
 
-            for (int i = 0;
-                 i < directionCount;
-                 i++)
+            for (
+                int i = 0;
+                i < directionCount;
+                i++
+            )
             {
                 Vector2Int direction =
                     Directions[i];
@@ -1016,20 +1214,32 @@ public class UnitMoveBrainManager : MonoBehaviour
                 Vector2Int next =
                     current + direction;
 
-                if (visitedCache.Contains(next))
-                    continue;
-
-                if (!gridManager.IsInsideGrid(
-                        next))
+                if (
+                    visitedCache.Contains(
+                        next
+                    )
+                )
                 {
                     continue;
                 }
 
-                if (!CanEnterCell(
+                if (
+                    !gridManager.IsInsideGrid(
+                        next
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    !CanEnterCell(
                         current,
                         next,
                         direction,
-                        movingUnit))
+                        movingUnit
+                    )
+                )
                 {
                     continue;
                 }
@@ -1047,7 +1257,9 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
 
         if (bestCell == start)
+        {
             return start;
+        }
 
         ReconstructPath(
             start,
@@ -1057,17 +1269,21 @@ public class UnitMoveBrainManager : MonoBehaviour
         );
 
         if (pathCache.Count >= 2)
+        {
             return pathCache[1];
+        }
 
         return start;
     }
+
 
     private float CalculateReachableCellScore(
         Vector2Int position,
         Vector2Int target,
         int movementCost,
         bool canWalkDiagonally,
-        bool preferMoreOpenPositions)
+        bool preferMoreOpenPositions
+    )
     {
         int distance =
             GetMovementDistance(
@@ -1092,6 +1308,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         return score;
     }
 
+
     // ============================================================
     // PATH RECONSTRUCTION
     // ============================================================
@@ -1100,7 +1317,8 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int start,
         Vector2Int destination,
         Dictionary<Vector2Int, Vector2Int> cameFrom,
-        List<Vector2Int> path)
+        List<Vector2Int> path
+    )
     {
         path.Clear();
 
@@ -1111,9 +1329,12 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         while (current != start)
         {
-            if (!cameFrom.TryGetValue(
+            if (
+                !cameFrom.TryGetValue(
                     current,
-                    out Vector2Int previous))
+                    out Vector2Int previous
+                )
+            )
             {
                 path.Clear();
 
@@ -1128,6 +1349,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         path.Reverse();
     }
 
+
     // ============================================================
     // BINARY MIN HEAP
     // ============================================================
@@ -1141,17 +1363,20 @@ public class UnitMoveBrainManager : MonoBehaviour
 
             public HeapNode(
                 T item,
-                int priority)
+                int priority
+            )
             {
                 Item = item;
                 Priority = priority;
             }
         }
 
+
         private HeapNode[] nodes;
 
         private readonly Dictionary<T, int>
             itemIndices;
+
 
         public int Count
         {
@@ -1159,8 +1384,10 @@ public class UnitMoveBrainManager : MonoBehaviour
             private set;
         }
 
+
         public BinaryMinHeap(
-            int capacity = 64)
+            int capacity = 64
+        )
         {
             nodes =
                 new HeapNode[
@@ -1173,6 +1400,7 @@ public class UnitMoveBrainManager : MonoBehaviour
                 );
         }
 
+
         public void Clear()
         {
             Count = 0;
@@ -1180,12 +1408,17 @@ public class UnitMoveBrainManager : MonoBehaviour
             itemIndices.Clear();
         }
 
+
         public void Enqueue(
             T item,
-            int priority)
+            int priority
+        )
         {
-            if (itemIndices.ContainsKey(
-                    item))
+            if (
+                itemIndices.ContainsKey(
+                    item
+                )
+            )
             {
                 EnqueueOrUpdate(
                     item,
@@ -1212,16 +1445,23 @@ public class UnitMoveBrainManager : MonoBehaviour
             BubbleUp(index);
         }
 
+
         public void EnqueueOrUpdate(
             T item,
-            int priority)
+            int priority
+        )
         {
-            if (itemIndices.TryGetValue(
+            if (
+                itemIndices.TryGetValue(
                     item,
-                    out int index))
+                    out int index
+                )
+            )
             {
-                if (priority >=
-                    nodes[index].Priority)
+                if (
+                    priority >=
+                    nodes[index].Priority
+                )
                 {
                     return;
                 }
@@ -1240,10 +1480,13 @@ public class UnitMoveBrainManager : MonoBehaviour
             );
         }
 
+
         public T Dequeue()
         {
             if (Count == 0)
+            {
                 return default;
+            }
 
             T result =
                 nodes[0].Item;
@@ -1253,7 +1496,9 @@ public class UnitMoveBrainManager : MonoBehaviour
             Count--;
 
             if (Count == 0)
+            {
                 return result;
+            }
 
             nodes[0] =
                 nodes[Count];
@@ -1267,10 +1512,13 @@ public class UnitMoveBrainManager : MonoBehaviour
             return result;
         }
 
+
         private void EnsureCapacity()
         {
             if (Count < nodes.Length)
+            {
                 return;
+            }
 
             int newCapacity =
                 Mathf.Max(
@@ -1284,16 +1532,20 @@ public class UnitMoveBrainManager : MonoBehaviour
             );
         }
 
+
         private void BubbleUp(
-            int index)
+            int index
+        )
         {
             while (index > 0)
             {
                 int parent =
                     (index - 1) >> 1;
 
-                if (nodes[parent].Priority <=
-                    nodes[index].Priority)
+                if (
+                    nodes[parent].Priority <=
+                    nodes[index].Priority
+                )
                 {
                     break;
                 }
@@ -1307,8 +1559,10 @@ public class UnitMoveBrainManager : MonoBehaviour
             }
         }
 
+
         private void BubbleDown(
-            int index)
+            int index
+        )
         {
             while (true)
             {
@@ -1316,7 +1570,9 @@ public class UnitMoveBrainManager : MonoBehaviour
                     (index << 1) + 1;
 
                 if (left >= Count)
+                {
                     break;
+                }
 
                 int right =
                     left + 1;
@@ -1328,8 +1584,10 @@ public class UnitMoveBrainManager : MonoBehaviour
                         ? right
                         : left;
 
-                if (nodes[index].Priority <=
-                    nodes[smallest].Priority)
+                if (
+                    nodes[index].Priority <=
+                    nodes[smallest].Priority
+                )
                 {
                     break;
                 }
@@ -1343,9 +1601,11 @@ public class UnitMoveBrainManager : MonoBehaviour
             }
         }
 
+
         private void Swap(
             int a,
-            int b)
+            int b
+        )
         {
             HeapNode temp =
                 nodes[a];

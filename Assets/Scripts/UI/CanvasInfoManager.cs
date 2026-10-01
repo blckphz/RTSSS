@@ -12,8 +12,7 @@ public class CanvasInfoManager : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private TMP_Text infoText;
     [SerializeField] private Image characterIcon;
-    [SerializeField] private Image backgroundImage;
-    [SerializeField] private Graphic secondPulsingGraphic;
+    [SerializeField] private GameObject backgroundPulseObject;
 
     [Header("Input")]
     [SerializeField] private InputActionReference ability1Action;
@@ -73,6 +72,15 @@ public class CanvasInfoManager : MonoBehaviour
     [SerializeField]
     private Color stunColor = new Color(1f, 0.35f, 0.35f);
 
+    [Header("Stealth Display")]
+    [SerializeField] private bool showStealthText = true;
+
+    [SerializeField]
+    private string stealthText = "Stealth";
+
+    [SerializeField]
+    private Color stealthColor = new Color(0.3f, 1f, 0.5f);
+
     [Header("Tooltips & Highlights")]
     [SerializeField] private tooltipManager tooltipManager;
     [SerializeField] private GridManager gridManager;
@@ -94,17 +102,20 @@ public class CanvasInfoManager : MonoBehaviour
         new StringBuilder();
 
     private Vector3 initialBackgroundScale = Vector3.one;
-    private Vector3 initialSecondScale = Vector3.one;
     private Vector3 initialCharacterIconScale = Vector3.one;
 
     private float defaultOpacity = 1f;
-    private float defaultSecondOpacity = 1f;
 
     private float currentPulseMultiplier = 1f;
 
     private Coroutine flashCoroutine;
     private Coroutine pulseLerpCoroutine;
     private Coroutine iconPopCoroutine;
+
+    private bool lastStealthState;
+
+    private RectTransform backgroundPulseRect;
+    private Graphic backgroundPulseGraphic;
 
 
     // ============================================================
@@ -115,22 +126,25 @@ public class CanvasInfoManager : MonoBehaviour
     {
         SetupReferences();
 
-        if (backgroundImage != null)
+        if (backgroundPulseObject != null)
         {
-            initialBackgroundScale =
-                backgroundImage.rectTransform.localScale;
+            backgroundPulseRect =
+                backgroundPulseObject.GetComponent<RectTransform>();
 
-            defaultOpacity =
-                backgroundImage.color.a;
-        }
+            backgroundPulseGraphic =
+                backgroundPulseObject.GetComponent<Graphic>();
 
-        if (secondPulsingGraphic != null)
-        {
-            initialSecondScale =
-                secondPulsingGraphic.rectTransform.localScale;
+            if (backgroundPulseRect != null)
+            {
+                initialBackgroundScale =
+                    backgroundPulseRect.localScale;
+            }
 
-            defaultSecondOpacity =
-                secondPulsingGraphic.color.a;
+            if (backgroundPulseGraphic != null)
+            {
+                defaultOpacity =
+                    backgroundPulseGraphic.color.a;
+            }
         }
 
         if (characterIcon != null)
@@ -191,12 +205,61 @@ public class CanvasInfoManager : MonoBehaviour
 
         AnimateBackgroundPulse();
 
+        CheckStealthDisplay();
+
         if (
             CombatUtility.IsPlayerInputLocked() &&
             selectedAbility != null
         )
         {
             ClearSelectedAbilityForEnemyTurn();
+        }
+    }
+
+
+    // ============================================================
+    // STEALTH DISPLAY
+    // ============================================================
+
+    private void CheckStealthDisplay()
+    {
+        if (!showStealthText)
+            return;
+
+        if (UIManager.CurrentSelection == null)
+        {
+            lastStealthState = false;
+            return;
+        }
+
+        AttackUnit activeUnit =
+            UIManager.CurrentSelection
+                .GetAttackUnit();
+
+        if (activeUnit == null)
+        {
+            lastStealthState = false;
+            return;
+        }
+
+        bool currentStealthState =
+            IsStealthed(activeUnit);
+
+        if (
+            currentStealthState !=
+            lastStealthState
+        )
+        {
+            lastStealthState =
+                currentStealthState;
+
+            CharacterSO character =
+                activeUnit.GetCharacterData();
+
+            if (character != null)
+            {
+                RefreshCharacter(character);
+            }
         }
     }
 
@@ -325,6 +388,9 @@ public class CanvasInfoManager : MonoBehaviour
         if (!enablePulse)
             return;
 
+        if (backgroundPulseRect == null)
+            return;
+
         float sineProgress =
             (Mathf.Sin(Time.time * pulseSpeed) + 1f) * 0.5f;
 
@@ -350,23 +416,11 @@ public class CanvasInfoManager : MonoBehaviour
             Vector3.one *
             (1f + activeScaleOffset);
 
-        if (backgroundImage != null)
-        {
-            backgroundImage.rectTransform.localScale =
-                Vector3.Scale(
-                    initialBackgroundScale,
-                    scaleVector
-                );
-        }
-
-        if (secondPulsingGraphic != null)
-        {
-            secondPulsingGraphic.rectTransform.localScale =
-                Vector3.Scale(
-                    initialSecondScale,
-                    scaleVector
-                );
-        }
+        backgroundPulseRect.localScale =
+            Vector3.Scale(
+                initialBackgroundScale,
+                scaleVector
+            );
     }
 
 
@@ -447,13 +501,8 @@ public class CanvasInfoManager : MonoBehaviour
 
     private void TriggerOpacityFlash()
     {
-        if (
-            backgroundImage == null &&
-            secondPulsingGraphic == null
-        )
-        {
+        if (backgroundPulseGraphic == null)
             return;
-        }
 
         if (flashCoroutine != null)
             StopCoroutine(flashCoroutine);
@@ -467,15 +516,11 @@ public class CanvasInfoManager : MonoBehaviour
 
     private IEnumerator OpacityFlashRoutine()
     {
-        Color bgCol =
-            backgroundImage != null
-                ? backgroundImage.color
-                : Color.white;
+        if (backgroundPulseGraphic == null)
+            yield break;
 
-        Color secCol =
-            secondPulsingGraphic != null
-                ? secondPulsingGraphic.color
-                : Color.white;
+        Color graphicColor =
+            backgroundPulseGraphic.color;
 
         float halfDuration =
             flashDuration * 0.5f;
@@ -498,29 +543,15 @@ public class CanvasInfoManager : MonoBehaviour
                     progress
                 );
 
-            if (backgroundImage != null)
-            {
-                bgCol.a =
-                    Mathf.Lerp(
-                        defaultOpacity,
-                        flashTargetOpacity,
-                        easedProgress
-                    );
+            graphicColor.a =
+                Mathf.Lerp(
+                    defaultOpacity,
+                    flashTargetOpacity,
+                    easedProgress
+                );
 
-                backgroundImage.color = bgCol;
-            }
-
-            if (secondPulsingGraphic != null)
-            {
-                secCol.a =
-                    Mathf.Lerp(
-                        defaultSecondOpacity,
-                        flashTargetOpacity,
-                        easedProgress
-                    );
-
-                secondPulsingGraphic.color = secCol;
-            }
+            backgroundPulseGraphic.color =
+                graphicColor;
 
             yield return null;
         }
@@ -543,44 +574,24 @@ public class CanvasInfoManager : MonoBehaviour
                     progress
                 );
 
-            if (backgroundImage != null)
-            {
-                bgCol.a =
-                    Mathf.Lerp(
-                        flashTargetOpacity,
-                        defaultOpacity,
-                        easedProgress
-                    );
+            graphicColor.a =
+                Mathf.Lerp(
+                    flashTargetOpacity,
+                    defaultOpacity,
+                    easedProgress
+                );
 
-                backgroundImage.color = bgCol;
-            }
-
-            if (secondPulsingGraphic != null)
-            {
-                secCol.a =
-                    Mathf.Lerp(
-                        flashTargetOpacity,
-                        defaultSecondOpacity,
-                        easedProgress
-                    );
-
-                secondPulsingGraphic.color = secCol;
-            }
+            backgroundPulseGraphic.color =
+                graphicColor;
 
             yield return null;
         }
 
-        if (backgroundImage != null)
-        {
-            bgCol.a = defaultOpacity;
-            backgroundImage.color = bgCol;
-        }
+        graphicColor.a =
+            defaultOpacity;
 
-        if (secondPulsingGraphic != null)
-        {
-            secCol.a = defaultSecondOpacity;
-            secondPulsingGraphic.color = secCol;
-        }
+        backgroundPulseGraphic.color =
+            graphicColor;
 
         flashCoroutine = null;
     }
@@ -737,6 +748,15 @@ public class CanvasInfoManager : MonoBehaviour
             cachedCanvas =
                 infoText.canvas;
         }
+
+        if (backgroundPulseObject != null)
+        {
+            backgroundPulseRect =
+                backgroundPulseObject.GetComponent<RectTransform>();
+
+            backgroundPulseGraphic =
+                backgroundPulseObject.GetComponent<Graphic>();
+        }
     }
 
 
@@ -793,6 +813,20 @@ public class CanvasInfoManager : MonoBehaviour
 
         HideStatusTooltip();
 
+        AttackUnit activeUnit =
+            UIManager.CurrentSelection
+                ?.GetAttackUnit();
+
+        if (activeUnit != null)
+        {
+            lastStealthState =
+                IsStealthed(activeUnit);
+        }
+        else
+        {
+            lastStealthState = false;
+        }
+
         RefreshCharacter(character);
     }
 
@@ -821,7 +855,7 @@ public class CanvasInfoManager : MonoBehaviour
                 ?.GetAttackUnit();
 
         // --------------------------------------------------------
-        // TEAM + STUN ON THE SAME LINE
+        // TEAM + STUN + STEALTH ON THE SAME LINE
         // --------------------------------------------------------
 
         string teamText =
@@ -836,6 +870,17 @@ public class CanvasInfoManager : MonoBehaviour
 
             teamText +=
                 $" <color=#{colorHex}><b>({stunText})</b></color>";
+        }
+
+        if (IsStealthed(activeUnit))
+        {
+            string colorHex =
+                ColorUtility.ToHtmlStringRGB(
+                    stealthColor
+                );
+
+            teamText +=
+                $" <color=#{colorHex}><b>({stealthText})</b></color>";
         }
 
         textBuilder.AppendLine(teamText);
@@ -965,7 +1010,6 @@ public class CanvasInfoManager : MonoBehaviour
                     );
                 }
 
-
                 // ====================================================
                 // SPECIAL ABILITY STATS
                 // ====================================================
@@ -981,7 +1025,6 @@ public class CanvasInfoManager : MonoBehaviour
                     int penetration =
                         arrowAttack.GetMaxTargets();
 
-                    // Match the actual combat value.
                     if (activeUnit != null)
                     {
                         turretbehav turret =
@@ -1000,7 +1043,6 @@ public class CanvasInfoManager : MonoBehaviour
                         $"Penetration: {penetration}"
                     );
                 }
-
 
                 // ====================================================
                 // USES
@@ -1027,7 +1069,6 @@ public class CanvasInfoManager : MonoBehaviour
                     usesText =
                         $"{remainingUses}/{usesPerTurn}";
                 }
-
 
                 // ====================================================
                 // COOLDOWN
@@ -1179,6 +1220,25 @@ public class CanvasInfoManager : MonoBehaviour
         }
 
         return false;
+    }
+
+
+    // ============================================================
+    // CHECK STEALTH
+    // ============================================================
+
+    private bool IsStealthed(
+        AttackUnit activeUnit)
+    {
+        if (!showStealthText)
+            return false;
+
+        if (activeUnit == null)
+            return false;
+
+        return BushBehav.IsHidden(
+            activeUnit.gameObject
+        );
     }
 
 
@@ -2167,6 +2227,8 @@ public class CanvasInfoManager : MonoBehaviour
         currentCharacterIcon = null;
         displayedCharacter = null;
 
+        lastStealthState = false;
+
         if (iconPopCoroutine != null)
         {
             StopCoroutine(iconPopCoroutine);
@@ -2191,4 +2253,5 @@ public class CanvasInfoManager : MonoBehaviour
             infoText.text = string.Empty;
         }
     }
+
 }

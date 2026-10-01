@@ -166,6 +166,20 @@ public class EncounterDefinition : ScriptableObject
 
 
     // ============================================================
+    // BUSHES
+    // ============================================================
+
+    [Header("Bush Spawn")]
+    [Tooltip(
+        "Bushes are spawned once when the encounter begins. " +
+        "They use the same spawn data as obstacles, but are " +
+        "placed farther apart."
+    )]
+    public List<ObstacleSpawnData> bushes =
+        new List<ObstacleSpawnData>();
+
+
+    // ============================================================
     // ENEMIES
     // ============================================================
 
@@ -188,7 +202,7 @@ public class ObstacleSpawnData
 
     [Header("Prefab")]
     [Tooltip(
-        "Prefab that will be spawned as an obstacle."
+        "Prefab that will be spawned as an obstacle or bush."
     )]
     public GameObject prefab;
 
@@ -200,7 +214,7 @@ public class ObstacleSpawnData
     [Header("Amount")]
     [Min(1)]
     [Tooltip(
-        "Number of this obstacle type to spawn."
+        "Number of this obstacle or bush type to spawn."
     )]
     public int amount = 1;
 }

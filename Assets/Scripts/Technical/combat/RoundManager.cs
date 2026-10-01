@@ -167,9 +167,6 @@ public class RoundManager : MonoBehaviour
             canvasJuiceManager.MoveCameraToNormalPosition();
         }
 
-        Debug.Log(
-            "[RoundManager] Reset -> Round 1 Prepare."
-        );
     }
 
 
