@@ -139,6 +139,22 @@ public class LineWalkPreview : MonoBehaviour
 
 
     // ============================================================
+    // ROUND STATE
+    // ============================================================
+
+    /*
+     * This is controlled by RoundManager.
+     *
+     * When true, the walk preview is completely disabled.
+     *
+     * This is necessary because simply disabling the LineRenderer
+     * from another script would not be enough. Update() could
+     * immediately call DrawPath() again on the next frame.
+     */
+    private bool playerWalkPreviewDisabled;
+
+
+    // ============================================================
     // UNITY
     // ============================================================
 
@@ -176,6 +192,17 @@ public class LineWalkPreview : MonoBehaviour
 
     private void Update()
     {
+        // --------------------------------------------------------
+        // ENEMY TURN LOCK
+        // --------------------------------------------------------
+
+        if (playerWalkPreviewDisabled)
+        {
+            HideLine();
+            return;
+        }
+
+
         // --------------------------------------------------------
         // UPDATE CURRENT SELECTION
         // --------------------------------------------------------
@@ -455,6 +482,17 @@ public class LineWalkPreview : MonoBehaviour
         Vector2Int destination
     )
     {
+        // --------------------------------------------------------
+        // ENEMY TURN LOCK
+        // --------------------------------------------------------
+
+        if (playerWalkPreviewDisabled)
+        {
+            HideLine();
+            return;
+        }
+
+
         // --------------------------------------------------------
         // ABILITY SELECTED
         // --------------------------------------------------------
@@ -1183,6 +1221,19 @@ public class LineWalkPreview : MonoBehaviour
         List<Vector2Int> pathToDraw
     )
     {
+        /*
+         * Safety check.
+         *
+         * Even if something calls DrawPath() directly while the
+         * enemy turn is active, do not allow the line to appear.
+         */
+        if (playerWalkPreviewDisabled)
+        {
+            HideLine();
+            return;
+        }
+
+
         if (
             lineRenderer == null ||
             pathToDraw == null ||
@@ -1305,6 +1356,7 @@ public class LineWalkPreview : MonoBehaviour
     public bool IsShowingPreview()
     {
         return
+            !playerWalkPreviewDisabled &&
             lineRenderer != null &&
             lineRenderer.enabled &&
             lineRenderer.positionCount > 1;
@@ -1314,5 +1366,28 @@ public class LineWalkPreview : MonoBehaviour
     public HoverInfoTrigger GetCurrentSelectedUnit()
     {
         return currentSelectedUnit;
+    }
+
+
+    // ============================================================
+    // ROUND STATE API
+    // ============================================================
+
+    public void SetPlayerWalkPreviewDisabled(
+        bool disabled)
+    {
+        playerWalkPreviewDisabled =
+            disabled;
+
+        if (disabled)
+        {
+            ClearPreview();
+        }
+    }
+
+
+    public bool IsPlayerWalkPreviewDisabled()
+    {
+        return playerWalkPreviewDisabled;
     }
 }

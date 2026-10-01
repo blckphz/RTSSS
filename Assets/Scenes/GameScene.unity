@@ -134792,6 +134792,7 @@ MonoBehaviour:
   canvasInfoManager: {fileID: 0}
   canvasJuiceManager: {fileID: 0}
   nextRoundTextManager: {fileID: 0}
+  gridHighlightManager: {fileID: 0}
   delayBetweenUnits: 0.5
 --- !u!114 &341319204
 MonoBehaviour:
@@ -140294,7 +140295,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
   m_Value: 0
-  m_Size: 0.5947784
+  m_Size: 0.5947608
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -142076,7 +142077,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -4}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 5, y: -736}
+  m_AnchoredPosition: {x: 5, y: -740}
   m_SizeDelta: {x: 2035.157, y: 234.5095}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1066572818

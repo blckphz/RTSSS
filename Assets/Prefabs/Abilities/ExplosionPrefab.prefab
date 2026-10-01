@@ -105,7 +105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExplosionAttack
   radius: 3
   damage: 30
-  damageFalloff: 5
+  totalDamageFalloff: 73
   explodeOnStart: 1
   destroyAfterExplosion: 1
   destroyDelay: 0.1

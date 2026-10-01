@@ -9,7 +9,7 @@ public class ExplosionAttack : MonoBehaviour
     [Header("Explosion")]
 
     [SerializeField, Min(0)]
-    private int radius = 1;
+    private int radius;
 
     [SerializeField, Min(0)]
     private int damage = 10;
@@ -22,10 +22,11 @@ public class ExplosionAttack : MonoBehaviour
     [Header("Damage Falloff")]
 
     [Tooltip(
-        "Damage reduction per tile of Manhattan distance."
+        "Total damage reduction from the center to the outer edge " +
+        "of the explosion, as a percentage."
     )]
-    [SerializeField, Min(0)]
-    private int damageFalloff = 0;
+    [SerializeField, Range(0f, 100f)]
+    private float totalDamageFalloff = 80f;
 
 
     // ============================================================
@@ -166,14 +167,15 @@ public class ExplosionAttack : MonoBehaviour
     }
 
 
-    public void SetDamageFalloff(
-        int newFalloff
+    public void SetTotalDamageFalloff(
+        float newFalloff
     )
     {
-        damageFalloff =
-            Mathf.Max(
-                0,
-                newFalloff
+        totalDamageFalloff =
+            Mathf.Clamp(
+                newFalloff,
+                0f,
+                100f
             );
     }
 
@@ -388,19 +390,70 @@ public class ExplosionAttack : MonoBehaviour
         int distance
     )
     {
-        int calculatedDamage =
-            damage -
+        // Radius 0 means the explosion only has
+        // a center tile, so it receives full damage.
+
+        if (radius <= 0)
+        {
+            return damage;
+        }
+
+
+        // --------------------------------------------------------
+        // DISTANCE NORMALIZATION
+        // --------------------------------------------------------
+        //
+        // Center:
+        // distance = 0
+        // normalizedDistance = 0
+        //
+        // Outer edge:
+        // distance = radius
+        // normalizedDistance = 1
+        //
+        // This means the total falloff is spread evenly
+        // across the entire radius.
+
+        float normalizedDistance =
+            (float)distance /
+            radius;
+
+
+        // --------------------------------------------------------
+        // DAMAGE MULTIPLIER
+        // --------------------------------------------------------
+        //
+        // Example:
+        //
+        // Total falloff = 80%
+        //
+        // Center:
+        // 1.0 = 100% damage
+        //
+        // Halfway:
+        // 0.6 = 60% damage
+        //
+        // Edge:
+        // 0.2 = 20% damage
+
+        float damageMultiplier =
+            1f -
             (
-                distance *
-                damageFalloff
+                normalizedDistance *
+                (totalDamageFalloff / 100f)
             );
 
 
-        return
-            Mathf.Max(
-                0,
-                calculatedDamage
+        damageMultiplier =
+            Mathf.Clamp01(
+                damageMultiplier
             );
+
+
+        return Mathf.RoundToInt(
+            damage *
+            damageMultiplier
+        );
     }
 
 
@@ -541,9 +594,9 @@ public class ExplosionAttack : MonoBehaviour
     }
 
 
-    public int GetDamageFalloff()
+    public float GetTotalDamageFalloff()
     {
-        return damageFalloff;
+        return totalDamageFalloff;
     }
 
 

@@ -20,7 +20,7 @@ MonoBehaviour:
   damage: 30
   cooldown: 4
   canAttackWithThisAfterMove: 1
-  usesPerTurn: 1
+  usesPerTurn: 4
   useDuration: 3
   targetType: 0
   range: 5
