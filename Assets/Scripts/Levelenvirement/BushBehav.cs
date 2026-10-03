@@ -168,16 +168,6 @@ public class BushBehav : MonoBehaviour
 
             RestoreBushOpacity();
 
-            if (debugStealth)
-            {
-                Debug.Log(
-                    "[BushBehav] " +
-                    gameObject.name +
-                    " reset for new encounter.",
-                    this
-                );
-            }
-
             return;
         }
 

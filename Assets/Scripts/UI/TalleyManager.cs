@@ -144,18 +144,6 @@ public class TalleyManager : MonoBehaviour
         UpdateKillText();
 
 
-        // --------------------------------------------------------
-        // DEBUG
-        // --------------------------------------------------------
-
-        Debug.Log(
-            "[TalleyManager] Enemy killed. " +
-            "This Match: " +
-            enemiesKilledThisMatch +
-            " | Total: " +
-            totalEnemiesKilled,
-            this
-        );
     }
 
 

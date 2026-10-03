@@ -34,22 +34,10 @@ public class UpgradeableCombatUnit :
 
     private void Awake()
     {
-        Debug.Log(
-            $"[UpgradeableCombatUnit] Awake on {gameObject.name}",
-            this
-        );
+     
 
         FindReferences();
 
-        Debug.Log(
-            $"[UpgradeableCombatUnit] References on " +
-            $"{gameObject.name} | " +
-            $"HealthManager = " +
-            $"{(healthManager != null ? healthManager.gameObject.name : "NULL")} | " +
-            $"AttackUnit = " +
-            $"{(attackUnit != null ? attackUnit.gameObject.name : "NULL")}",
-            this
-        );
     }
 
 
@@ -428,15 +416,6 @@ public class UpgradeableCombatUnit :
                 1,
                 baseRange + bonusRange
             );
-
-        Debug.Log(
-            $"[UpgradeableCombatUnit] Effective Range on " +
-            $"{gameObject.name} | " +
-            $"Base={baseRange} | " +
-            $"Bonus={bonusRange} | " +
-            $"Total={totalRange}",
-            this
-        );
 
         return totalRange;
     }

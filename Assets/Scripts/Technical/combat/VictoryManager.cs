@@ -71,10 +71,6 @@ public class VictoryManager : MonoBehaviour
             gameStateManager.OnGameStateChanged +=
                 HandleGameStateChanged;
 
-            Debug.Log(
-                "[VictoryManager] Subscribed to GameStateManager.",
-                this
-            );
         }
         else
         {

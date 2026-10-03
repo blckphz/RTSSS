@@ -26,10 +26,6 @@ public static class GridShapeEvaluator
         int minRadius = 2,
         int maxRadius = 5)
     {
-        // ========================================================
-        // ALWAYS enforce rectangular grid bounds first.
-        // ========================================================
-
         int minX =
             -(width / 2);
 
@@ -56,10 +52,6 @@ public static class GridShapeEvaluator
             return false;
         }
 
-
-        // ========================================================
-        // SHAPE
-        // ========================================================
 
         switch (shapeType)
         {
@@ -223,15 +215,6 @@ public class GridManager : MonoBehaviour
 
     // ============================================================
     // WALKABLE OBSTACLES
-    // ============================================================
-    //
-    // These objects occupy a visual/grid tile but DO NOT block
-    // units from moving onto that tile.
-    //
-    // Bushes use this system.
-    //
-    // They are still reserved so another object does not spawn
-    // directly on top of them.
     // ============================================================
 
     private readonly HashSet<Vector2Int>
@@ -469,8 +452,6 @@ public class GridManager : MonoBehaviour
             );
         }
 
-        // Remove walkable obstacle reservations that are now
-        // outside the new grid.
         RemoveInvalidWalkableObstacleCells();
 
         initialized = true;
@@ -608,43 +589,56 @@ public class GridManager : MonoBehaviour
                             occupiedCells.GetLength(0) &&
                         newArrayPos.y >= 0 &&
                         newArrayPos.y <
-                            occupiedCells.GetLength(1) &&
-                        occupiedCells[
-                            newArrayPos.x,
-                            newArrayPos.y
-                        ] == null
+                            occupiedCells.GetLength(1)
                     )
                     {
-                        occupiedCells[
-                            newArrayPos.x,
-                            newArrayPos.y
-                        ] = unit;
-                    }
+                        GameObject existing =
+                            occupiedCells[
+                                newArrayPos.x,
+                                newArrayPos.y
+                            ];
 
-                    UnitTilePin pin =
-                        unit.GetComponent<UnitTilePin>();
+                        if (
+                            existing == null ||
+                            existing == unit
+                        )
+                        {
+                            occupiedCells[
+                                newArrayPos.x,
+                                newArrayPos.y
+                            ] = unit;
 
-                    if (pin != null)
-                    {
-                        pin.SetTile(
-                            logicalPos
-                        );
-                    }
-                    else
-                    {
-                        unit.transform.position =
-                            GridToWorldPosition(
+                            SynchronizeUnitPosition(
+                                unit,
                                 logicalPos
                             );
+                        }
+                        else
+                        {
+                            Debug.LogWarning(
+                                $"[GridManager] Grid resize collision | " +
+                                $"Cell={logicalPos} | " +
+                                $"Existing={existing.name} | " +
+                                $"Incoming={unit.name}",
+                                this
+                            );
+
+                            if (destroyInvalidUnits)
+                            {
+                                Destroy(unit);
+                            }
+                            else
+                            {
+                                unit.SetActive(false);
+                            }
+                        }
                     }
                 }
                 else
                 {
                     if (destroyInvalidUnits)
                     {
-                        Destroy(
-                            unit
-                        );
+                        Destroy(unit);
                     }
                     else
                     {
@@ -1129,7 +1123,7 @@ public class GridManager : MonoBehaviour
 
 
     // ============================================================
-    // OCCUPANTS
+    // OCCUPANT VALIDATION
     // ============================================================
 
     private bool IsOccupantValid(
@@ -1165,6 +1159,207 @@ public class GridManager : MonoBehaviour
     }
 
 
+    // ============================================================
+    // NEW:
+    // REMOVE STALE REFERENCES TO A UNIT
+    // ============================================================
+
+    private void RemoveUnitReferences(
+        GameObject unit)
+    {
+        if (
+            unit == null ||
+            occupiedCells == null
+        )
+        {
+            return;
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (
+                    occupiedCells[x, y] ==
+                    unit
+                )
+                {
+                    occupiedCells[x, y] =
+                        null;
+                }
+            }
+        }
+    }
+
+
+    // ============================================================
+    // NEW:
+    // FIND ACTUAL UNIT AT POSITION
+    //
+    // This is the recovery mechanism for stale occupiedCells.
+    // ============================================================
+
+    private GameObject FindUnitAtActualPosition(
+        Vector2Int position)
+    {
+        HealthManager[] healthManagers =
+            FindObjectsByType<HealthManager>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None
+            );
+
+        for (
+            int i = 0;
+            i < healthManagers.Length;
+            i++
+        )
+        {
+            HealthManager health =
+                healthManagers[i];
+
+            if (health == null)
+            {
+                continue;
+            }
+
+            GameObject candidate =
+                health.gameObject;
+
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            if (!candidate.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (health.IsDead())
+            {
+                continue;
+            }
+
+            Vector2Int actualPosition =
+                WorldToGridPosition(
+                    candidate.transform.position
+                );
+
+            if (actualPosition != position)
+            {
+                continue;
+            }
+
+            return candidate;
+        }
+
+        return null;
+    }
+
+
+    // ============================================================
+    // NEW:
+    // RECOVER AND REGISTER UNIT
+    // ============================================================
+
+    private GameObject RecoverUnitAtPosition(
+        Vector2Int position)
+    {
+        GameObject recovered =
+            FindUnitAtActualPosition(
+                position
+            );
+
+        if (recovered == null)
+        {
+            return null;
+        }
+
+
+        // --------------------------------------------------------
+        // Make sure this unit isn't registered somewhere else.
+        // --------------------------------------------------------
+
+        RemoveUnitReferences(
+            recovered
+        );
+
+
+        // --------------------------------------------------------
+        // Register it at the actual requested tile.
+        // --------------------------------------------------------
+
+        Vector2Int array =
+            LogicalToArrayPosition(
+                position
+            );
+
+        if (
+            array.x < 0 ||
+            array.x >=
+                occupiedCells.GetLength(0) ||
+            array.y < 0 ||
+            array.y >=
+                occupiedCells.GetLength(1)
+        )
+        {
+            return null;
+        }
+
+
+        // --------------------------------------------------------
+        // Do not overwrite another valid unit.
+        // --------------------------------------------------------
+
+        GameObject existing =
+            occupiedCells[
+                array.x,
+                array.y
+            ];
+
+        if (
+            existing != null &&
+            existing != recovered &&
+            IsOccupantValid(
+                existing,
+                position
+            )
+        )
+        {
+            Debug.LogWarning(
+                $"[GridManager] RECOVERY BLOCKED | " +
+                $"Tile={position} | " +
+                $"Existing={existing.name} | " +
+                $"Recovered={recovered.name}",
+                this
+            );
+
+            return existing;
+        }
+
+
+        occupiedCells[
+            array.x,
+            array.y
+        ] = recovered;
+
+
+        Debug.Log(
+            $"[GridManager] OCCUPANCY RECOVERED | " +
+            $"Unit={recovered.name} | " +
+            $"Tile={position}",
+            recovered
+        );
+
+
+        return recovered;
+    }
+
+
+    // ============================================================
+    // IS CELL OCCUPIED
+    // ============================================================
+
     public bool IsCellOccupied(
         Vector2Int position)
     {
@@ -1193,15 +1388,40 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        return IsOccupantValid(
+        GameObject occupant =
             occupiedCells[
                 array.x,
                 array.y
-            ],
-            position
-        );
+            ];
+
+        if (
+            IsOccupantValid(
+                occupant,
+                position
+            )
+        )
+        {
+            return true;
+        }
+
+
+        // --------------------------------------------------------
+        // Recovery
+        // --------------------------------------------------------
+
+        GameObject recovered =
+            RecoverUnitAtPosition(
+                position
+            );
+
+        return
+            recovered != null;
     }
 
+
+    // ============================================================
+    // GET UNIT AT
+    // ============================================================
 
     public GameObject GetUnitAt(
         Vector2Int position)
@@ -1245,20 +1465,85 @@ public class GridManager : MonoBehaviour
             return null;
         }
 
+
+        // ========================================================
+        // NORMAL LOOKUP
+        // ========================================================
+
         GameObject unit =
             occupiedCells[
                 array.x,
                 array.y
             ];
 
-        return IsOccupantValid(
-            unit,
-            position
+
+        if (
+            IsOccupantValid(
+                unit,
+                position
+            )
         )
-            ? unit
-            : null;
+        {
+            // ----------------------------------------------------
+            // IMPORTANT:
+            //
+            // Check that the registered unit actually still
+            // occupies this tile.
+            // ----------------------------------------------------
+
+            Vector2Int actualPosition =
+                WorldToGridPosition(
+                    unit.transform.position
+                );
+
+            if (actualPosition == position)
+            {
+                return unit;
+            }
+
+
+            // ----------------------------------------------------
+            // The array entry is stale.
+            // ----------------------------------------------------
+
+            Debug.LogWarning(
+                $"[GridManager] STALE OCCUPANCY | " +
+                $"Tile={position} | " +
+                $"RegisteredUnit={unit.name} | " +
+                $"ActualTile={actualPosition} | " +
+                $"Removing stale registration.",
+                unit
+            );
+
+            occupiedCells[
+                array.x,
+                array.y
+            ] = null;
+        }
+
+
+        // ========================================================
+        // RECOVERY LOOKUP
+        // ========================================================
+
+        GameObject recovered =
+            RecoverUnitAtPosition(
+                position
+            );
+
+        if (recovered != null)
+        {
+            return recovered;
+        }
+
+
+        return null;
     }
 
+
+    // ============================================================
+    // GET UNIT GRID POSITION
+    // ============================================================
 
     public Vector2Int GetUnitGridPosition(
         GameObject unit)
@@ -1268,16 +1553,14 @@ public class GridManager : MonoBehaviour
             return Vector2Int.zero;
         }
 
-        UnitTilePin pin =
-            unit.GetComponent<UnitTilePin>();
-
-        if (
-            pin != null &&
-            pin.HasTile()
-        )
-        {
-            return pin.GetTile();
-        }
+        /*
+         * IMPORTANT:
+         *
+         * World position is used as the source of truth here.
+         *
+         * UnitTilePin can become stale if another system moves
+         * the GameObject without notifying GridManager.
+         */
 
         return WorldToGridPosition(
             unit.transform.position
@@ -1305,16 +1588,9 @@ public class GridManager : MonoBehaviour
             GetUnitAt(position);
 
         /*
-         * ======================================================
-         * IMPORTANT
-         *
          * Bushes are NOT stored in occupiedCells.
          *
-         * Therefore a bush tile naturally returns true here.
-         *
-         * Normal obstacles and units are still blocking because
-         * they ARE stored in occupiedCells.
-         * ======================================================
+         * Therefore bush tiles remain walkable.
          */
 
         return
@@ -1364,11 +1640,22 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
+        // --------------------------------------------------------
+        // Remove any old registration of this unit.
+        // --------------------------------------------------------
+
+        RemoveUnitReferences(
+            unit
+        );
+
+
         GameObject existing =
             occupiedCells[
                 array.x,
                 array.y
             ];
+
 
         if (existing != null)
         {
@@ -1388,10 +1675,12 @@ public class GridManager : MonoBehaviour
             }
         }
 
+
         occupiedCells[
             array.x,
             array.y
         ] = unit;
+
 
         SynchronizeUnitPosition(
             unit,
@@ -1468,16 +1757,19 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+
         GameObject occupant =
             occupiedCells[
                 array.x,
                 array.y
             ];
 
+
         if (occupant == unit)
         {
             return true;
         }
+
 
         if (
             occupant != null &&
@@ -1489,6 +1781,12 @@ public class GridManager : MonoBehaviour
         {
             return false;
         }
+
+
+        RemoveUnitReferences(
+            unit
+        );
+
 
         occupiedCells[
             array.x,
@@ -1541,30 +1839,15 @@ public class GridManager : MonoBehaviour
     public void RemoveUnit(
         GameObject unit)
     {
-        if (
-            unit == null ||
-            occupiedCells == null
-        )
-        {
-            return;
-        }
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                if (
-                    occupiedCells[x, y] ==
-                    unit
-                )
-                {
-                    occupiedCells[x, y] =
-                        null;
-                }
-            }
-        }
+        RemoveUnitReferences(
+            unit
+        );
     }
 
+
+    // ============================================================
+    // CLEANUP DEAD UNITS
+    // ============================================================
 
     public void CleanupDeadUnits()
     {
@@ -1654,8 +1937,7 @@ public class GridManager : MonoBehaviour
                 $"New Logical: {newPosition}\n" +
                 $"New Array: {newArray}\n" +
                 $"Array Size: " +
-                $"{occupiedCells.GetLength(0)}x" +
-                $"{occupiedCells.GetLength(1)}",
+                $"{occupiedCells.GetLength(0)}x{occupiedCells.GetLength(1)}",
                 this
             );
 
@@ -1684,7 +1966,8 @@ public class GridManager : MonoBehaviour
             if (!registered)
             {
                 Debug.LogWarning(
-                    $"[GridManager] StartMoveUnit failed to register {unit.name} at {oldPosition}.",
+                    $"[GridManager] StartMoveUnit failed to register " +
+                    $"{unit.name} at {oldPosition}.",
                     unit
                 );
 
@@ -1884,7 +2167,6 @@ public class GridManager : MonoBehaviour
                     continue;
                 }
 
-                // Bushes are walkable but reserved.
                 if (IsWalkableObstacle(cell))
                 {
                     continue;
