@@ -71,7 +71,6 @@ public class UIManager : MonoBehaviour
 
         UpdateChainLightningPreview();
 
-        // Live ability preview.
         UpdateAbilityPreview();
     }
 
@@ -155,8 +154,50 @@ public class UIManager : MonoBehaviour
         HoverInfoTrigger clickedTrigger =
             GetClickedTrigger(hit);
 
+        // =====================================================
+        // ABILITY SELECTED
+        // =====================================================
+
         if (HasSelectedAbility())
         {
+            AbilitySO selectedAbility =
+                canvasInfoManager != null
+                    ? canvasInfoManager.GetSelectedAbility()
+                    : null;
+
+            // -------------------------------------------------
+            // FRIENDLY PLAYER / ALLY UNIT
+            // -------------------------------------------------
+
+            if (
+                clickedTrigger != null &&
+                IsPlayerControlledUnit(
+                    clickedTrigger.gameObject
+                )
+            )
+            {
+                // Heal is the exception:
+                // clicking a friendly unit attempts to heal it.
+                if (selectedAbility is HealAbilitySO)
+                {
+                    TryUseSelectedAbility(
+                        mousePosition,
+                        clickedTrigger
+                    );
+
+                    return;
+                }
+
+                // Every other ability:
+                // clicking a friendly unit selects that unit.
+                SelectObject(clickedTrigger);
+                return;
+            }
+
+            // -------------------------------------------------
+            // ENEMY / EMPTY SPACE
+            // -------------------------------------------------
+
             TryUseSelectedAbility(
                 mousePosition,
                 clickedTrigger
@@ -164,6 +205,10 @@ public class UIManager : MonoBehaviour
 
             return;
         }
+
+        // =====================================================
+        // NO ABILITY SELECTED
+        // =====================================================
 
         if (clickedTrigger != null)
         {
@@ -444,13 +489,6 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        /*
-         * GridHighlightManager owns the live preview.
-         *
-         * It already knows the current ability and
-         * current range user and checks the mouse
-         * direction internally.
-         */
         highlightManager
             .RefreshAbilityPreview();
     }

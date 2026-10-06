@@ -134524,7 +134524,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1233}
+  m_AnchoredPosition: {x: -1242, y: 1179.1235}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -135166,11 +135166,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   hologramPrefab: {fileID: 2258544670875039633, guid: 33eb88bbf6d647144ba2404b7a02bee3, type: 3}
   hologramOffset: {x: 0, y: 0.05, z: 0}
-  poolSize: 1
+  poolSize: 3
   lineRendererManagerObject: {fileID: 1539745032}
   lineOffset: {x: 0, y: 0, z: 0}
   showHologram: 1
-  requireMovementAction: 1
   pulseHologram: 1
   pulseSpeed: 1
   pulseAmount: 0.08
@@ -138261,9 +138260,9 @@ MonoBehaviour:
   musicManager: {fileID: 0}
   dayNightManager: {fileID: 0}
   currentEncounter: {fileID: 11400000, guid: ca6ccdd4a43fcc24580381e073601757, type: 2}
-  gridSpawnDelay: 0.1
-  unitSpawnDelay: 0.1
-  combatStartDelay: 0.25
+  gridSpawnDelay: 0
+  unitSpawnDelay: 0
+  combatStartDelay: 0
 --- !u!114 &631513531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -140295,8 +140294,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: 0
-  m_Size: 0.5947784
+  m_Value: -0.00000035900712
+  m_Size: 0.5947756
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -140693,7 +140692,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 2c079f3ff3d61784ba7c05fa27927f0f, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -142764,7 +142763,6 @@ RectTransform:
   m_Children:
   - {fileID: 522551228}
   - {fileID: 917579147}
-  - {fileID: 1902741705}
   - {fileID: 1354021643}
   m_Father: {fileID: 1659253926}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -208102,6 +208100,7 @@ RectTransform:
   m_Children:
   - {fileID: 1066572817}
   - {fileID: 936309633}
+  - {fileID: 1902741705}
   m_Father: {fileID: 1659253926}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -208167,7 +208166,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -210176,9 +210175,9 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1433280123}
-  - {fileID: 1509373674}
   - {fileID: 1946499903}
   - {fileID: 1195923790}
+  - {fileID: 1509373674}
   - {fileID: 1806741253}
   - {fileID: 733581648}
   - {fileID: 160164629}
@@ -211825,14 +211824,14 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1902741704}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1217808352}
   - {fileID: 334638448}
-  m_Father: {fileID: 1195923790}
+  m_Father: {fileID: 1509373674}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}

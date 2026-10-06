@@ -7,6 +7,14 @@ public class ChainLightningProjectile : MonoBehaviour
     [SerializeField]
     private Transform spriteTransform;
 
+    [Header("Target Point")]
+    [Tooltip(
+        "Name of the child transform used as the visual point " +
+        "for the lightning projectile to travel toward."
+    )]
+    [SerializeField]
+    private string targetPointName = "VisualTargetPoint";
+
     private GameObject user;
 
     private List<GameObject> chainTargets =
@@ -169,11 +177,42 @@ public class ChainLightningProjectile : MonoBehaviour
             return;
         }
 
+        // ========================================================
+        // START POSITION
+        // ========================================================
+
         startPosition =
             transform.position;
 
-        targetPosition =
-            currentTarget.transform.position;
+
+        // ========================================================
+        // VISUAL TARGET POSITION
+        // ========================================================
+
+        Transform visualTarget =
+            FindTargetPoint(
+                currentTarget
+            );
+
+        if (visualTarget != null)
+        {
+            targetPosition =
+                visualTarget.position;
+        }
+        else
+        {
+            /*
+             * Fallback to the target root if the
+             * VisualTargetPoint does not exist.
+             */
+            targetPosition =
+                currentTarget.transform.position;
+        }
+
+
+        // ========================================================
+        // TRAVEL TIME
+        // ========================================================
 
         float distance =
             Vector3.Distance(
@@ -187,6 +226,50 @@ public class ChainLightningProjectile : MonoBehaviour
                 : 0f;
 
         elapsedTime = 0f;
+    }
+
+
+    // ============================================================
+    // FIND TARGET POINT
+    // ============================================================
+
+    private Transform FindTargetPoint(
+        GameObject target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        Transform[] children =
+            target.GetComponentsInChildren<Transform>(
+                true
+            );
+
+        for (
+            int i = 0;
+            i < children.Length;
+            i++
+        )
+        {
+            Transform child =
+                children[i];
+
+            if (child == null)
+            {
+                continue;
+            }
+
+            if (
+                child.name ==
+                targetPointName
+            )
+            {
+                return child;
+            }
+        }
+
+        return null;
     }
 
 
@@ -230,7 +313,6 @@ public class ChainLightningProjectile : MonoBehaviour
              * Result:
              *
              * Turret +5 charges
-             *
              * Chain immediately ends.
              */
 

@@ -249,8 +249,6 @@ public class UnitMoveBrain : MonoBehaviour
             IsAnyUnitMoving =
                 movingUnitCount > 0;
 
-            // Tell the highlight system that this unit
-            // has started physically moving.
             OnMovementStarted?.Invoke(
                 this
             );
@@ -273,8 +271,6 @@ public class UnitMoveBrain : MonoBehaviour
             IsAnyUnitMoving =
                 movingUnitCount > 0;
 
-            // Tell the highlight system that this unit
-            // has finished physically moving.
             OnMovementFinished?.Invoke(
                 this
             );
@@ -346,8 +342,8 @@ public class UnitMoveBrain : MonoBehaviour
 
 
     /// <summary>
-    /// Consumes movement steps and notifies the movement
-    /// highlight system.
+    /// Consumes movement steps and notifies the
+    /// movement highlight system.
     /// </summary>
     private void ConsumeSteps(
         int steps
@@ -372,6 +368,10 @@ public class UnitMoveBrain : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Resets the unit's movement at the beginning
+    /// of a new round.
+    /// </summary>
     public void ResetMovement()
     {
         stepsRemaining =
@@ -584,22 +584,84 @@ public class UnitMoveBrain : MonoBehaviour
     // PREDICTED AI MOVE
     // ============================================================
 
+    /// <summary>
+    /// Normal AI prediction.
+    ///
+    /// Uses the unit's CURRENT remaining movement.
+    /// </summary>
     public bool TryGetPredictedMoveTile(
         out Vector2Int predictedTile
+    )
+    {
+        return TryGetPredictedMoveTile(
+            out predictedTile,
+            false
+        );
+    }
+
+
+    /// <summary>
+    /// Predicts the AI's intended movement.
+    ///
+    /// When ignoreMovementSteps is true:
+    ///     The prediction ALWAYS uses the unit's
+    ///     FULL movement range.
+    ///
+    /// This is used by the enemy hologram.
+    ///
+    /// IMPORTANT:
+    /// This method does NOT consume movement.
+    /// It also does NOT modify stepsRemaining.
+    /// </summary>
+    public bool TryGetPredictedMoveTile(
+        out Vector2Int predictedTile,
+        bool ignoreMovementSteps
     )
     {
         predictedTile =
             GetCurrentTile();
 
 
+        // ========================================================
+        // AI UNIT CHECK
+        // ========================================================
+
         if (!CanUseAIMovement())
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "CanUseAIMovement returned false.",
+                this
+            );
+
             return false;
         }
 
 
-        if (!CanMoveThisTurn())
+        // ========================================================
+        // MOVING CHECK
+        // ========================================================
+        //
+        // We ALWAYS block prediction while the unit is physically
+        // moving.
+        //
+        // This is different from movement steps.
+        //
+        // stepsRemaining can be ZERO and the hologram can still
+        // be generated.
+        //
+        // ========================================================
+
+        if (isMoving)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "Unit is currently moving.",
+                this
+            );
+
             return false;
         }
 
@@ -610,6 +672,13 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (manager == null)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "UnitMoveBrainManager.Instance is null.",
+                this
+            );
+
             return false;
         }
 
@@ -620,9 +689,20 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (gridManager == null)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "GridManager is null.",
+                this
+            );
+
             return false;
         }
 
+
+        // ========================================================
+        // FIND TARGET
+        // ========================================================
 
         AttackUnit target =
             manager.FindBestTarget(
@@ -636,6 +716,13 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (target == null)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "FindBestTarget returned null.",
+                this
+            );
+
             return false;
         }
 
@@ -650,6 +737,10 @@ public class UnitMoveBrain : MonoBehaviour
             );
 
 
+        // ========================================================
+        // CHECK CURRENT DISTANCE
+        // ========================================================
+
         int distance =
             manager.GetMovementDistance(
                 currentPosition,
@@ -660,9 +751,22 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (distance <= attackRange)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                $"Already in range of target " +
+                $"(Distance: {distance} <= " +
+                $"AttackRange: {attackRange}).",
+                this
+            );
+
             return false;
         }
 
+
+        // ========================================================
+        // FIND BEST ATTACK POSITION
+        // ========================================================
 
         Vector2Int attackPosition =
             manager.FindBestAttackPosition(
@@ -679,9 +783,21 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (attackPosition == currentPosition)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "FindBestAttackPosition returned " +
+                "current position.",
+                this
+            );
+
             return false;
         }
 
+
+        // ========================================================
+        // FIND PATH
+        // ========================================================
 
         List<Vector2Int> path =
             new List<Vector2Int>(32);
@@ -699,36 +815,118 @@ public class UnitMoveBrain : MonoBehaviour
 
         if (!foundPath)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "FindPath returned false.",
+                this
+            );
+
             return false;
         }
 
 
         if (path.Count < 2)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                $"Path count is less than 2 " +
+                $"(Count: {path.Count}).",
+                this
+            );
+
             return false;
+        }
+
+
+        // ========================================================
+        // MOVEMENT BUDGET
+        // ========================================================
+        //
+        // THIS is the important part.
+        //
+        // Hologram:
+        //
+        //     ignoreMovementSteps == true
+        //              ↓
+        //     GetMoveRange()
+        //
+        // Normal prediction:
+        //
+        //     ignoreMovementSteps == false
+        //              ↓
+        //     stepsRemaining
+        //
+        // Therefore:
+        //
+        // stepsRemaining = 0
+        //
+        // does NOT prevent the hologram from being generated.
+        //
+        // ========================================================
+
+        int movementBudget;
+
+
+        if (ignoreMovementSteps)
+        {
+            movementBudget =
+                GetMoveRange();
+        }
+        else
+        {
+            movementBudget =
+                stepsRemaining;
         }
 
 
         int availableSteps =
             Mathf.Min(
-                stepsRemaining,
+                movementBudget,
                 path.Count - 1
             );
 
 
         if (availableSteps <= 0)
         {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                $"Available steps is <= 0 " +
+                $"(Movement budget: {movementBudget}, " +
+                $"Steps remaining: {stepsRemaining}, " +
+                $"Full move range: {GetMoveRange()}, " +
+                $"Ignore movement steps: {ignoreMovementSteps}).",
+                this
+            );
+
             return false;
         }
 
+
+        // ========================================================
+        // GET PREDICTED TILE
+        // ========================================================
 
         predictedTile =
             path[availableSteps];
 
 
-        return
-            predictedTile !=
-            currentPosition;
+        if (predictedTile == currentPosition)
+        {
+            Debug.Log(
+                $"[UnitMoveBrain] {name}: " +
+                "TryGetPredictedMoveTile failed -> " +
+                "Predicted tile equals current position.",
+                this
+            );
+
+            return false;
+        }
+
+
+        return true;
     }
 
 
@@ -740,6 +938,7 @@ public class UnitMoveBrain : MonoBehaviour
         Vector2Int destination
     )
     {
+        // ACTUAL MOVEMENT STILL USES REMAINING STEPS.
         if (!CanMoveThisTurn())
         {
             return false;
@@ -869,6 +1068,7 @@ public class UnitMoveBrain : MonoBehaviour
 
     public void TryMoveTowardsEnemy()
     {
+        // ACTUAL AI MOVEMENT STILL REQUIRES MOVEMENT STEPS.
         if (!CanMoveThisTurn())
         {
             return;
@@ -883,6 +1083,7 @@ public class UnitMoveBrain : MonoBehaviour
 
     public IEnumerator MoveTowardsEnemy()
     {
+        // ACTUAL AI MOVEMENT STILL REQUIRES MOVEMENT STEPS.
         if (!CanMoveThisTurn())
         {
             yield break;
@@ -993,6 +1194,10 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
         }
 
+
+        // ACTUAL MOVEMENT:
+        // Never use the full movement range here.
+        // Always use remaining steps.
 
         int availableSteps =
             Mathf.Min(
@@ -1199,8 +1404,7 @@ public class UnitMoveBrain : MonoBehaviour
             }
 
 
-            // Consume exactly one step after the
-            // unit has successfully reached the tile.
+            // ACTUAL MOVEMENT consumes one step.
             ConsumeSteps(1);
 
 
@@ -1340,6 +1544,8 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
 
+        // PLAYER / ACTUAL MOVEMENT HIGHLIGHT:
+        // Still uses remaining steps.
         manager.GetReachableCells(
             GetCurrentTile(),
             stepsRemaining,

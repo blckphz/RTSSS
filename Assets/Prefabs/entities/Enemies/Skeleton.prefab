@@ -89,7 +89,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
-  m_SpriteSortPoint: 0
+  m_SpriteSortPoint: 1
 --- !u!1 &1406073567740770021
 GameObject:
   m_ObjectHideFlags: 0
@@ -593,6 +593,7 @@ Transform:
   - {fileID: 8016208654188546763}
   - {fileID: 541391944623990924}
   - {fileID: 8392202868510414149}
+  - {fileID: 773380252246184899}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3314272893070622000
@@ -845,7 +846,7 @@ MonoBehaviour:
   tilePin: {fileID: 0}
   animationController: {fileID: 1265849680894574295}
   moveDuration: 0.25
-  moveActionsPerTurn: 1
+  facingDirection: {x: 0, y: 1}
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
@@ -957,6 +958,37 @@ MonoBehaviour:
   useStunVisual: 1
   smoothStunVisual: 1
   visualFadeSpeed: 8
+--- !u!1 &6813290244355957228
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 773380252246184899}
+  m_Layer: 0
+  m_Name: VisualTargetPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &773380252246184899
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6813290244355957228}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.013, y: 0.801, z: 0}
+  m_LocalScale: {x: 0.46947718, y: 0.46947718, z: 0.46947718}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3026058569002330114}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7150742657436658557
 GameObject:
   m_ObjectHideFlags: 0

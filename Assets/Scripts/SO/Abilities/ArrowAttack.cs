@@ -15,6 +15,14 @@ public class ArrowAttack : AbilitySO
     [SerializeField]
     private string abilitySpawnPointName = "AbilitySpawnPoint";
 
+    [Header("Target Point")]
+    [Tooltip(
+        "Name of the child transform used as the visual point to aim at. " +
+        "If not found, the enemy root position is used."
+    )]
+    [SerializeField]
+    private string targetPointName = "VisualTargetPoint";
+
 
     public override bool Use(
         GameObject user,
@@ -56,11 +64,24 @@ public class ArrowAttack : AbilitySO
 
 
         // ========================================================
+        // TARGET POINT
+        // ========================================================
+
+        Transform targetPoint =
+            FindTargetPoint(target);
+
+        Vector3 targetPosition =
+            targetPoint != null
+                ? targetPoint.position
+                : target.transform.position;
+
+
+        // ========================================================
         // DIRECTION
         // ========================================================
 
         Vector3 direction =
-            target.transform.position - spawnPosition;
+            targetPosition - spawnPosition;
 
         direction.z = 0f;
 
@@ -142,6 +163,8 @@ public class ArrowAttack : AbilitySO
         Debug.Log(
             $"[ArrowAttack] FIRING | " +
             $"User={user.name} | " +
+            $"Target={target.name} | " +
+            $"TargetPoint={targetPosition} | " +
             $"BaseDamage={GetDamage()} | " +
             $"EffectiveDamage={effectiveDamage} | " +
             $"BaseMaxTargets={maxTargets} | " +
@@ -225,9 +248,35 @@ public class ArrowAttack : AbilitySO
         return null;
     }
 
+
+    // ============================================================
+    // FIND TARGET POINT
+    // ============================================================
+
+    private Transform FindTargetPoint(
+        GameObject target)
+    {
+        if (target == null)
+            return null;
+
+        Transform[] children =
+            target.GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform child in children)
+        {
+            if (child == null)
+                continue;
+
+            if (child.name == targetPointName)
+                return child;
+        }
+
+        return null;
+    }
+
+
     public int GetMaxTargets()
     {
         return maxTargets;
     }
-
 }

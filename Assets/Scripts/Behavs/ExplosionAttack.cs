@@ -512,8 +512,18 @@ public class ExplosionAttack : MonoBehaviour
         // ========================================================
         // DESTROY
         // ========================================================
-
-        DestroyExplosion();
+        //
+        // IMPORTANT:
+        //
+        // The explosion is NOT destroyed here anymore.
+        //
+        // The Animator Animation Event calls:
+        //
+        // AnimationEvent_DisableExplosion()
+        //
+        // when the explosion animation has finished.
+        //
+        // ========================================================
     }
 
 
@@ -832,6 +842,24 @@ public class ExplosionAttack : MonoBehaviour
                 true
             );
         }
+    }
+
+
+    // ============================================================
+    // ANIMATION EVENT
+    // ============================================================
+
+    public void AnimationEvent_DisableExplosion()
+    {
+        if (!destroyAfterExplosion)
+        {
+            return;
+        }
+
+        Destroy(
+            gameObject,
+            destroyDelay
+        );
     }
 
 

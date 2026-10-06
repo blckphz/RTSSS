@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+// ============================================================
+// GRID SHAPE TYPE
+// ============================================================
+
 public enum GridShapeType
 {
     Box,
@@ -52,14 +56,12 @@ public static class GridShapeEvaluator
             return false;
         }
 
-
         switch (shapeType)
         {
             case GridShapeType.Box:
                 {
                     return true;
                 }
-
 
             case GridShapeType.Manhattan:
                 {
@@ -73,7 +75,6 @@ public static class GridShapeEvaluator
                         Mathf.Abs(position.x) +
                         Mathf.Abs(position.y) <= radius;
                 }
-
 
             case GridShapeType.Pyramid:
                 {
@@ -97,7 +98,6 @@ public static class GridShapeEvaluator
                             currentHalfWidth;
                 }
 
-
             case GridShapeType.Donut:
                 {
                     int distSq =
@@ -116,7 +116,6 @@ public static class GridShapeEvaluator
                         distSq >= minSq &&
                         distSq <= maxSq;
                 }
-
 
             default:
                 return false;
@@ -211,6 +210,23 @@ public class GridManager : MonoBehaviour
     private Transform gridTransform;
 
     private bool initialized;
+
+
+    // ============================================================
+    // ACTIVE MOVEMENT TRACKING
+    //
+    // IMPORTANT:
+    //
+    // StartMoveUnit() changes logical occupancy immediately,
+    // while the GameObject Transform may still be visually
+    // travelling from the old tile to the new tile.
+    //
+    // Therefore Transform position must NOT be used to recover
+    // occupancy for units currently being animated.
+    // ============================================================
+
+    private readonly HashSet<GameObject> movingUnits =
+        new HashSet<GameObject>();
 
 
     // ============================================================
@@ -1160,7 +1176,6 @@ public class GridManager : MonoBehaviour
 
 
     // ============================================================
-    // NEW:
     // REMOVE STALE REFERENCES TO A UNIT
     // ============================================================
 
@@ -1193,10 +1208,15 @@ public class GridManager : MonoBehaviour
 
 
     // ============================================================
-    // NEW:
     // FIND ACTUAL UNIT AT POSITION
     //
-    // This is the recovery mechanism for stale occupiedCells.
+    // IMPORTANT:
+    //
+    // Moving units are intentionally ignored here.
+    //
+    // Their Transform can still be between tiles while their
+    // logical GridManager occupancy has already been advanced
+    // to the destination.
     // ============================================================
 
     private GameObject FindUnitAtActualPosition(
@@ -1240,6 +1260,15 @@ public class GridManager : MonoBehaviour
                 continue;
             }
 
+            // ====================================================
+            // DO NOT RECOVER MOVING UNITS FROM THEIR TRANSFORM.
+            // ====================================================
+
+            if (movingUnits.Contains(candidate))
+            {
+                continue;
+            }
+
             Vector2Int actualPosition =
                 WorldToGridPosition(
                     candidate.transform.position
@@ -1258,7 +1287,6 @@ public class GridManager : MonoBehaviour
 
 
     // ============================================================
-    // NEW:
     // RECOVER AND REGISTER UNIT
     // ============================================================
 
@@ -1274,7 +1302,6 @@ public class GridManager : MonoBehaviour
         {
             return null;
         }
-
 
         // --------------------------------------------------------
         // Make sure this unit isn't registered somewhere else.
@@ -1487,8 +1514,20 @@ public class GridManager : MonoBehaviour
             // ----------------------------------------------------
             // IMPORTANT:
             //
-            // Check that the registered unit actually still
-            // occupies this tile.
+            // During movement, logical occupancy is authoritative.
+            //
+            // The Transform may still be between tiles, so do not
+            // classify the registration as stale while moving.
+            // ----------------------------------------------------
+
+            if (movingUnits.Contains(unit))
+            {
+                return unit;
+            }
+
+
+            // ----------------------------------------------------
+            // Normal stationary-unit validation.
             // ----------------------------------------------------
 
             Vector2Int actualPosition =
@@ -1556,11 +1595,34 @@ public class GridManager : MonoBehaviour
         /*
          * IMPORTANT:
          *
-         * World position is used as the source of truth here.
+         * World position is used as the source of truth here
+         * for stationary units.
          *
          * UnitTilePin can become stale if another system moves
          * the GameObject without notifying GridManager.
+         *
+         * During an active movement animation, however, the
+         * logical occupancy remains authoritative.
          */
+
+        if (movingUnits.Contains(unit))
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    if (occupiedCells[x, y] == unit)
+                    {
+                        return ArrayToLogicalPosition(
+                            new Vector2Int(
+                                x,
+                                y
+                            )
+                        );
+                    }
+                }
+            }
+        }
 
         return WorldToGridPosition(
             unit.transform.position
@@ -1839,6 +1901,8 @@ public class GridManager : MonoBehaviour
     public void RemoveUnit(
         GameObject unit)
     {
+        movingUnits.Remove(unit);
+
         RemoveUnitReferences(
             unit
         );
@@ -2014,6 +2078,8 @@ public class GridManager : MonoBehaviour
 
         // ========================================================
         // MOVE OCCUPANCY
+        //
+        // Logical occupancy changes BEFORE the visual Transform.
         // ========================================================
 
         occupiedCells[
@@ -2025,6 +2091,16 @@ public class GridManager : MonoBehaviour
             newArray.x,
             newArray.y
         ] = unit;
+
+
+        // ========================================================
+        // MARK UNIT AS CURRENTLY MOVING
+        // ========================================================
+
+        movingUnits.Add(
+            unit
+        );
+
 
         return true;
     }
@@ -2044,6 +2120,11 @@ public class GridManager : MonoBehaviour
             !IsInsideGrid(position)
         )
         {
+            if (unit != null)
+            {
+                movingUnits.Remove(unit);
+            }
+
             return;
         }
 
@@ -2061,8 +2142,14 @@ public class GridManager : MonoBehaviour
                 occupiedCells.GetLength(1)
         )
         {
+            movingUnits.Remove(unit);
             return;
         }
+
+
+        // ========================================================
+        // VERIFY FINAL OCCUPANCY
+        // ========================================================
 
         if (
             occupiedCells[
@@ -2071,8 +2158,20 @@ public class GridManager : MonoBehaviour
             ] != unit
         )
         {
+            Debug.LogWarning(
+                $"[GridManager] FinishMoveUnit found unexpected " +
+                $"occupancy at {position} for {unit.name}.",
+                unit
+            );
+
+            movingUnits.Remove(unit);
             return;
         }
+
+
+        // ========================================================
+        // UPDATE VISUAL POSITION
+        // ========================================================
 
         UnitTilePin pin =
             unit.GetComponent<UnitTilePin>();
@@ -2090,8 +2189,39 @@ public class GridManager : MonoBehaviour
                     position
                 );
         }
+
+
+        // ========================================================
+        // MOVEMENT COMPLETE
+        // ========================================================
+
+        movingUnits.Remove(
+            unit
+        );
     }
 
+
+    // ============================================================
+    // IS UNIT MOVING
+    // ============================================================
+
+    public bool IsUnitMoving(
+        GameObject unit)
+    {
+        if (unit == null)
+        {
+            return false;
+        }
+
+        return movingUnits.Contains(
+            unit
+        );
+    }
+
+
+    // ============================================================
+    // MOVE UNIT
+    // ============================================================
 
     public bool MoveUnit(
         GameObject unit,

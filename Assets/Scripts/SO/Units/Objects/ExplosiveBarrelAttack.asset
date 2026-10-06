@@ -17,7 +17,7 @@ MonoBehaviour:
   description: 
   launchSFX: {fileID: 0}
   NeedEnemy: 0
-  damage: 100
+  damage: 30
   cooldown: 0
   canAttackWithThisAfterMove: 1
   usesPerTurn: 1

@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 1071615674022327501}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.041, y: 0.391, z: 0}
+  m_LocalPosition: {x: -0.002, y: 1.207, z: 0}
   m_LocalScale: {x: 0.41967973, y: 0.41967973, z: 0.41967973}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -446,7 +446,7 @@ MonoBehaviour:
   tilePin: {fileID: 0}
   animationController: {fileID: 0}
   moveDuration: 0.25
-  moveActionsPerTurn: 0
+  facingDirection: {x: 0, y: 1}
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
@@ -561,7 +561,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::turretbehav
   chainLightningCharges: 0
+  chargedDamageBonus: 10
+  chargedMaxTargetsBonus: 1
   chargeParticles: {fileID: 2333792866361693120}
+  chainLightningUnlocked: 0
 --- !u!114 &4280312390177596600
 MonoBehaviour:
   m_ObjectHideFlags: 0
