@@ -342,6 +342,27 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
+
+            // ====================================================
+            // NO ABILITIES = SKIP TURN
+            // ====================================================
+
+            if (!HasAnyAbility(unit))
+            {
+                Debug.Log(
+                    "[RoundManager] Skipping unit with no abilities: " +
+                    unit.name,
+                    unit
+                );
+
+                continue;
+            }
+
+
+            // ====================================================
+            // EXECUTE UNIT TURN
+            // ====================================================
+
             yield return StartCoroutine(
                 CombatUtility.ExecuteUnitTurnCoroutine(
                     unit,
@@ -446,6 +467,22 @@ public class RoundManager : MonoBehaviour
 
             if (!CombatUtility.IsAlive(enemy))
             {
+                continue;
+            }
+
+
+            // ====================================================
+            // NO ABILITIES = SKIP TURN
+            // ====================================================
+
+            if (!HasAnyAbility(enemy))
+            {
+                Debug.Log(
+                    "[RoundManager] Skipping enemy with no abilities: " +
+                    enemy.name,
+                    enemy
+                );
+
                 continue;
             }
 
@@ -965,6 +1002,22 @@ public class RoundManager : MonoBehaviour
         return CombatUtility.IsAlive(
             unit
         );
+    }
+
+
+    // ============================================================
+    // ABILITY CHECK
+    // ============================================================
+
+    private bool HasAnyAbility(
+        AttackUnit unit)
+    {
+        if (unit == null)
+        {
+            return false;
+        }
+
+        return unit.GetAbilityCount() > 0;
     }
 
 
