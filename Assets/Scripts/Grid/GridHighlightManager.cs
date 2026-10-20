@@ -47,13 +47,11 @@ public class GridHighlightManager : MonoBehaviour
     [SerializeField, Min(0.01f)]
     private float explosionPulseDuration = 0.12f;
 
-
     // ============================================================
     // PLAYER INTERACTION LOCK
     // ============================================================
 
     private bool playerHighlightsDisabled;
-
 
     // ============================================================
     // TILE DATA
@@ -71,7 +69,6 @@ public class GridHighlightManager : MonoBehaviour
     private readonly HashSet<Vector2Int> explosionCells =
         new HashSet<Vector2Int>();
 
-
     // ============================================================
     // ABILITY OUTLINES
     // ============================================================
@@ -79,14 +76,12 @@ public class GridHighlightManager : MonoBehaviour
     private readonly HashSet<HoverInfoTrigger> activeAbilityOutlines =
         new HashSet<HoverInfoTrigger>();
 
-
     // ============================================================
     // UNIT CACHE
     // ============================================================
 
     private readonly Dictionary<GameObject, AttackUnit> unitComponentCache =
         new Dictionary<GameObject, AttackUnit>(32);
-
 
     // ============================================================
     // TEMP
@@ -104,7 +99,6 @@ public class GridHighlightManager : MonoBehaviour
     private readonly List<Transform> tempTargetTransformList =
         new List<Transform>(16);
 
-
     // ============================================================
     // CURRENT STATE
     // ============================================================
@@ -120,14 +114,12 @@ public class GridHighlightManager : MonoBehaviour
     private bool suppressMovementHighlight;
     private bool currentAbilityIsHeal;
 
-
     // ============================================================
-    // SHOTGUN REFRESH STATE
+    // DIRECTIONAL ABILITY PREVIEW STATE
     // ============================================================
 
     private Vector2Int lastShotgunDirection;
     private bool hasLastShotgunDirection;
-
 
     // ============================================================
     // UNITY
@@ -163,7 +155,6 @@ public class GridHighlightManager : MonoBehaviour
         UpdateTargetPulse();
     }
 
-
     // ============================================================
     // REFERENCES
     // ============================================================
@@ -180,7 +171,6 @@ public class GridHighlightManager : MonoBehaviour
             brain = FindFirstObjectByType<GridHighlightBrain>();
         }
     }
-
 
     // ============================================================
     // PLAYER HIGHLIGHT LOCK
@@ -254,7 +244,6 @@ public class GridHighlightManager : MonoBehaviour
         ResetShotgunDirection();
     }
 
-
     // ============================================================
     // GRID REFRESH
     // ============================================================
@@ -310,19 +299,16 @@ public class GridHighlightManager : MonoBehaviour
             tileVisuals.Remove(position);
         }
 
-        GameObject tile =
-            gridManager.GetFloorTile(position);
+        GameObject tile = gridManager.GetFloorTile(position);
 
         if (tile == null)
         {
             return null;
         }
 
-        if (!tile.TryGetComponent(
-                out GridHighlightVisuals visuals))
+        if (!tile.TryGetComponent(out GridHighlightVisuals visuals))
         {
-            visuals =
-                tile.AddComponent<GridHighlightVisuals>();
+            visuals = tile.AddComponent<GridHighlightVisuals>();
         }
 
         visuals.Initialize(tile);
@@ -331,7 +317,6 @@ public class GridHighlightManager : MonoBehaviour
 
         return visuals;
     }
-
 
     // ============================================================
     // REFRESH
@@ -376,8 +361,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private void RefreshTile(Vector2Int position)
     {
-        GridHighlightVisuals visual =
-            CacheTile(position);
+        GridHighlightVisuals visual = CacheTile(position);
 
         if (visual == null)
         {
@@ -389,19 +373,13 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             visual.Reset();
             return;
         }
 
-        if (
-            hasPlacementPosition &&
-            placementPosition == position
-        )
+        if (hasPlacementPosition && placementPosition == position)
         {
             visual.ShowPlacement();
             return;
@@ -409,8 +387,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (abilityCells.Contains(position))
         {
-            GameObject unit =
-                gridManager.GetUnitAt(position);
+            GameObject unit = gridManager.GetUnitAt(position);
 
             if (IsValidAbilityTarget(unit))
             {
@@ -431,10 +408,7 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        if (
-            !suppressMovementHighlight &&
-            movementCells.Contains(position)
-        )
+        if (!suppressMovementHighlight && movementCells.Contains(position))
         {
             visual.ShowMovement(
                 movementRangeColor,
@@ -446,7 +420,6 @@ public class GridHighlightManager : MonoBehaviour
 
         visual.Reset();
     }
-
 
     // ============================================================
     // MOVEMENT
@@ -464,29 +437,19 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        if (
-            playerHighlightsDisabled &&
-            IsPlayerUnit(user)
-        )
+        if (playerHighlightsDisabled && IsPlayerUnit(user))
         {
             return;
         }
 
-        brain.ShowMovementRange(
-            centerPosition,
-            range,
-            user
-        );
+        brain.ShowMovementRange(centerPosition, range, user);
     }
 
     public void ShowMovementTiles(
         List<Vector2Int> cells,
         GameObject user = null)
     {
-        if (
-            playerHighlightsDisabled &&
-            IsPlayerUnit(user)
-        )
+        if (playerHighlightsDisabled && IsPlayerUnit(user))
         {
             ClearMovementRange();
             return;
@@ -505,10 +468,7 @@ public class GridHighlightManager : MonoBehaviour
         {
             Vector2Int position = cells[i];
 
-            if (
-                gridManager != null &&
-                gridManager.IsInsideGrid(position)
-            )
+            if (gridManager != null && gridManager.IsInsideGrid(position))
             {
                 movementCells.Add(position);
             }
@@ -547,7 +507,6 @@ public class GridHighlightManager : MonoBehaviour
         return movementCells.Count > 0;
     }
 
-
     // ============================================================
     // MOVEMENT SUPPRESSION
     // ============================================================
@@ -569,7 +528,6 @@ public class GridHighlightManager : MonoBehaviour
         return suppressMovementHighlight;
     }
 
-
     // ============================================================
     // ABILITY TILES
     // ============================================================
@@ -578,22 +536,14 @@ public class GridHighlightManager : MonoBehaviour
         List<Vector2Int> positions,
         GameObject user = null)
     {
-        ShowAbilityTiles(
-            positions,
-            user,
-            false
-        );
+        ShowAbilityTiles(positions, user, false);
     }
 
     public void ShowHealTiles(
         List<Vector2Int> positions,
         GameObject user = null)
     {
-        ShowAbilityTiles(
-            positions,
-            user,
-            true
-        );
+        ShowAbilityTiles(positions, user, true);
     }
 
     public void ShowAbilityTiles(
@@ -601,10 +551,7 @@ public class GridHighlightManager : MonoBehaviour
         GameObject user,
         bool isHealAbility)
     {
-        if (
-            playerHighlightsDisabled &&
-            IsPlayerUnit(user)
-        )
+        if (playerHighlightsDisabled && IsPlayerUnit(user))
         {
             ClearAbilityRange();
             return;
@@ -612,8 +559,7 @@ public class GridHighlightManager : MonoBehaviour
 
         ClearAbilityRange();
 
-        currentAbilityIsHeal =
-            isHealAbility;
+        currentAbilityIsHeal = isHealAbility;
 
         SetCurrentRangeUser(user);
 
@@ -623,13 +569,9 @@ public class GridHighlightManager : MonoBehaviour
         {
             for (int i = 0; i < positions.Count; i++)
             {
-                Vector2Int position =
-                    positions[i];
+                Vector2Int position = positions[i];
 
-                if (
-                    gridManager != null &&
-                    gridManager.IsInsideGrid(position)
-                )
+                if (gridManager != null && gridManager.IsInsideGrid(position))
                 {
                     abilityCells.Add(position);
                 }
@@ -642,115 +584,174 @@ public class GridHighlightManager : MonoBehaviour
         ResetShotgunDirection();
     }
 
-
     // ============================================================
-    // SHOTGUN LIVE REFRESH
+    // DIRECTIONAL ABILITY LIVE PREVIEW
+    // ShotgunBehav and FrontAttack
     // ============================================================
 
     public void RefreshAbilityPreview()
     {
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             return;
         }
 
-        AbilitySO ability =
-            currentAbility;
+        AbilitySO ability = currentAbility;
 
-        if (
-            ability == null ||
+        if (ability == null ||
             currentRangeUser == null ||
-            gridManager == null
-        )
+            gridManager == null)
         {
             return;
         }
 
-        if (
-            ability.GetRangeShape() !=
-            AbilitySO.RangeShape.Shotgun
-        )
+        // Enemy FrontAttack does not aim at the mouse.
+        // Restore and retain its original full range instead.
+        if (ability is FrontAttack && !IsPlayerUnit(currentRangeUser))
+        {
+            RefreshFullRangePreview();
+            return;
+        }
+
+        bool isDirectionalAbility =
+            ability is ShotgunBehav ||
+            ability is FrontAttack;
+
+        // Preserve support for other abilities that use the
+        // Shotgun range shape.
+        if (!isDirectionalAbility &&
+            ability.GetRangeShape() != AbilitySO.RangeShape.Shotgun)
         {
             return;
         }
 
-        Vector2Int newDirection =
-            GetCurrentMouseDirection();
+        Vector2Int newDirection = GetCurrentMouseDirection();
 
-        if (
-            hasLastShotgunDirection &&
-            newDirection == lastShotgunDirection
-        )
+        if (hasLastShotgunDirection &&
+            newDirection == lastShotgunDirection)
         {
             return;
         }
 
-        lastShotgunDirection =
-            newDirection;
-
+        lastShotgunDirection = newDirection;
         hasLastShotgunDirection = true;
 
         RefreshShotgunTiles(newDirection);
     }
 
+    // ============================================================
+    // ENEMY FULL-RANGE PREVIEW
+    // ============================================================
+
+    private void RefreshFullRangePreview()
+    {
+        if (currentAbility == null ||
+            currentRangeUser == null ||
+            gridManager == null)
+        {
+            return;
+        }
+
+        // Only rebuild when the currently highlighted cells
+        // differ from the ability's original range.
+        List<Vector2Int> rangeTiles =
+            currentAbility.GetRangeTiles(
+                gridManager,
+                currentRangeUser
+            );
+
+        if (rangeTiles == null)
+        {
+            return;
+        }
+
+        bool sameCells = rangeTiles.Count == abilityCells.Count;
+
+        if (sameCells)
+        {
+            for (int i = 0; i < rangeTiles.Count; i++)
+            {
+                if (!abilityCells.Contains(rangeTiles[i]))
+                {
+                    sameCells = false;
+                    break;
+                }
+            }
+        }
+
+        if (sameCells)
+        {
+            return;
+        }
+
+        tempCellList.Clear();
+        tempCellList.AddRange(abilityCells);
+
+        abilityCells.Clear();
+
+        for (int i = 0; i < rangeTiles.Count; i++)
+        {
+            Vector2Int position = rangeTiles[i];
+
+            if (gridManager.IsInsideGrid(position))
+            {
+                abilityCells.Add(position);
+            }
+        }
+
+        // Refresh both old and new positions so tiles from the
+        // previous directional preview are correctly restored.
+        for (int i = 0; i < tempCellList.Count; i++)
+        {
+            RefreshTile(tempCellList[i]);
+        }
+
+        RefreshCells(abilityCells);
+        RefreshAllTargetHovers();
+
+        tempCellList.Clear();
+
+        ResetShotgunDirection();
+    }
+
     private Vector2Int GetCurrentMouseDirection()
     {
-        GameObject user =
-            currentRangeUser;
+        GameObject user = currentRangeUser;
 
-        if (
-            user == null ||
+        if (user == null ||
             Camera.main == null ||
-            UnityEngine.InputSystem.Mouse.current == null
-        )
+            UnityEngine.InputSystem.Mouse.current == null)
         {
             return Vector2Int.up;
         }
 
         Vector2 mouseScreenPosition =
-            UnityEngine.InputSystem.Mouse.current
-                .position
-                .ReadValue();
+            UnityEngine.InputSystem.Mouse.current.position.ReadValue();
 
-        Camera cam =
-            Camera.main;
+        Camera cam = Camera.main;
 
-        Vector3 mouseWorldPosition =
-            cam.ScreenToWorldPoint(
-                new Vector3(
-                    mouseScreenPosition.x,
-                    mouseScreenPosition.y,
-                    Mathf.Abs(
-                        cam.transform.position.z
-                    )
-                )
-            );
+        Vector3 mouseWorldPosition = cam.ScreenToWorldPoint(
+            new Vector3(
+                mouseScreenPosition.x,
+                mouseScreenPosition.y,
+                Mathf.Abs(cam.transform.position.z)
+            )
+        );
 
         Vector2Int mouseTile =
-            gridManager.WorldToGridPosition(
-                mouseWorldPosition
-            );
+            gridManager.WorldToGridPosition(mouseWorldPosition);
 
         Vector2Int userTile =
-            gridManager.WorldToGridPosition(
-                user.transform.position
-            );
+            gridManager.WorldToGridPosition(user.transform.position);
 
-        Vector2Int difference =
-            mouseTile - userTile;
+        Vector2Int difference = mouseTile - userTile;
 
         if (difference == Vector2Int.zero)
         {
             return Vector2Int.up;
         }
 
-        if (
-            Mathf.Abs(difference.x) >
-            Mathf.Abs(difference.y)
-        )
+        if (Mathf.Abs(difference.x) > Mathf.Abs(difference.y))
         {
             return difference.x > 0
                 ? Vector2Int.right
@@ -762,36 +763,32 @@ public class GridHighlightManager : MonoBehaviour
             : Vector2Int.down;
     }
 
-    private void RefreshShotgunTiles(
-        Vector2Int direction)
+    private void RefreshShotgunTiles(Vector2Int direction)
     {
-        if (
-            currentAbility == null ||
+        if (currentAbility == null ||
             currentRangeUser == null ||
-            gridManager == null
-        )
+            gridManager == null)
         {
             return;
         }
 
+        // Remember previous preview tiles so they can be redrawn
+        // after the old directional preview is cleared.
         tempCellList.Clear();
-        tempCellList.AddRange(
-            abilityCells
-        );
+        tempCellList.AddRange(abilityCells);
 
         abilityCells.Clear();
 
         for (int i = 0; i < tempCellList.Count; i++)
         {
-            RefreshTile(
-                tempCellList[i]
-            );
+            RefreshTile(tempCellList[i]);
         }
 
         tempCellList.Clear();
 
+        // Use the actual hitbox, not the full range.
         List<Vector2Int> newTiles =
-            currentAbility.GetRangeTiles(
+            currentAbility.GetHitboxTiles(
                 gridManager,
                 currentRangeUser
             );
@@ -800,18 +797,11 @@ public class GridHighlightManager : MonoBehaviour
         {
             for (int i = 0; i < newTiles.Count; i++)
             {
-                Vector2Int position =
-                    newTiles[i];
+                Vector2Int position = newTiles[i];
 
-                if (
-                    gridManager.IsInsideGrid(
-                        position
-                    )
-                )
+                if (gridManager.IsInsideGrid(position))
                 {
-                    abilityCells.Add(
-                        position
-                    );
+                    abilityCells.Add(position);
                 }
             }
         }
@@ -823,25 +813,17 @@ public class GridHighlightManager : MonoBehaviour
     private void ResetShotgunDirection()
     {
         hasLastShotgunDirection = false;
-        lastShotgunDirection =
-            Vector2Int.zero;
+        lastShotgunDirection = Vector2Int.zero;
     }
 
-    public void ShowAbilityCell(
-        Vector2Int position)
+    public void ShowAbilityCell(Vector2Int position)
     {
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             return;
         }
 
-        if (
-            gridManager == null ||
-            !gridManager.IsInsideGrid(position)
-        )
+        if (gridManager == null || !gridManager.IsInsideGrid(position))
         {
             return;
         }
@@ -871,17 +853,13 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         tempCellList.Clear();
-        tempCellList.AddRange(
-            abilityCells
-        );
+        tempCellList.AddRange(abilityCells);
 
         abilityCells.Clear();
 
         for (int i = 0; i < tempCellList.Count; i++)
         {
-            RefreshTile(
-                tempCellList[i]
-            );
+            RefreshTile(tempCellList[i]);
         }
 
         tempCellList.Clear();
@@ -889,19 +867,16 @@ public class GridHighlightManager : MonoBehaviour
         SetMovementHighlightSuppressed(false);
     }
 
-    public bool IsAbilityCell(
-        Vector2Int position)
+    public bool IsAbilityCell(Vector2Int position)
     {
         return abilityCells.Contains(position);
     }
-
 
     // ============================================================
     // CURRENT ABILITY
     // ============================================================
 
-    public void SetCurrentAbility(
-        AbilitySO ability)
+    public void SetCurrentAbility(AbilitySO ability)
     {
         if (currentAbility == ability)
         {
@@ -924,27 +899,20 @@ public class GridHighlightManager : MonoBehaviour
         return currentAbilityIsHeal;
     }
 
-
     // ============================================================
     // ACTIVATE ABILITY
     // ============================================================
 
-    public bool TryActivateAbilityOnUnit(
-        GameObject target)
+    public bool TryActivateAbilityOnUnit(GameObject target)
     {
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             return false;
         }
 
-        if (
-            target == null ||
+        if (target == null ||
             currentAbility == null ||
-            currentRangeUserUnit == null
-        )
+            currentRangeUserUnit == null)
         {
             return false;
         }
@@ -960,35 +928,22 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         Vector2Int targetPosition =
-            gridManager.GetUnitGridPosition(
-                target
-            );
+            gridManager.GetUnitGridPosition(target);
 
-        if (
-            !abilityCells.Contains(targetPosition) ||
-            !IsValidAbilityTarget(target)
-        )
+        if (!abilityCells.Contains(targetPosition) ||
+            !IsValidAbilityTarget(target))
         {
             return false;
         }
 
-        AttackUnit userUnit =
-            currentRangeUserUnit;
+        AttackUnit userUnit = currentRangeUserUnit;
 
-        if (
-            !userUnit.IsAbilityReady(
-                currentAbility
-            )
-        )
+        if (!userUnit.IsAbilityReady(currentAbility))
         {
             return false;
         }
 
-        bool started =
-            userUnit.PlayerAttack(
-                target,
-                currentAbility
-            );
+        bool started = userUnit.PlayerAttack(target, currentAbility);
 
         if (!started)
         {
@@ -999,7 +954,6 @@ public class GridHighlightManager : MonoBehaviour
 
         return true;
     }
-
 
     // ============================================================
     // CLEAR TARGET VISUALS
@@ -1013,34 +967,24 @@ public class GridHighlightManager : MonoBehaviour
         RefreshCells(abilityCells);
     }
 
-
     // ============================================================
     // CURRENT RANGE USER
     // ============================================================
 
-    private void SetCurrentRangeUser(
-        GameObject user)
+    private void SetCurrentRangeUser(GameObject user)
     {
         currentRangeUser = user;
-
-        currentRangeUserUnit =
-            GetCachedAttackUnit(user);
+        currentRangeUserUnit = GetCachedAttackUnit(user);
     }
 
-    private AttackUnit GetCachedAttackUnit(
-        GameObject target)
+    private AttackUnit GetCachedAttackUnit(GameObject target)
     {
         if (target == null)
         {
             return null;
         }
 
-        if (
-            unitComponentCache.TryGetValue(
-                target,
-                out AttackUnit cached
-            )
-        )
+        if (unitComponentCache.TryGetValue(target, out AttackUnit cached))
         {
             if (cached != null)
             {
@@ -1050,17 +994,12 @@ public class GridHighlightManager : MonoBehaviour
             unitComponentCache.Remove(target);
         }
 
-        if (
-            !target.TryGetComponent(
-                out AttackUnit unit
-            )
-        )
+        if (!target.TryGetComponent(out AttackUnit unit))
         {
             return null;
         }
 
-        unitComponentCache[target] =
-            unit;
+        unitComponentCache[target] = unit;
 
         return unit;
     }
@@ -1075,87 +1014,52 @@ public class GridHighlightManager : MonoBehaviour
         return currentRangeUser;
     }
 
-
     // ============================================================
     // TARGET VALIDATION
     // ============================================================
 
-    private bool IsValidAbilityTarget(
-        GameObject target)
+    private bool IsValidAbilityTarget(GameObject target)
     {
-        AttackUnit userUnit =
-            currentRangeUserUnit;
+        AttackUnit userUnit = currentRangeUserUnit;
 
-        if (
-            userUnit == null ||
-            target == null
-        )
+        if (userUnit == null || target == null)
         {
             return false;
         }
 
-        AttackUnit targetUnit =
-            GetCachedAttackUnit(target);
+        AttackUnit targetUnit = GetCachedAttackUnit(target);
 
-        if (
-            targetUnit == null ||
-            targetUnit.IsDead()
-        )
+        if (targetUnit == null || targetUnit.IsDead())
         {
             return false;
         }
 
-        Team userTeam =
-            userUnit.GetTeam();
-
-        Team targetTeam =
-            targetUnit.GetTeam();
+        Team userTeam = userUnit.GetTeam();
+        Team targetTeam = targetUnit.GetTeam();
 
         if (currentAbility != null)
         {
-            switch (
-                currentAbility.GetTargetType()
-            )
+            switch (currentAbility.GetTargetType())
             {
                 case AbilitySO.TargetType.Enemy:
-
-                    return IsEnemyTeam(
-                        userTeam,
-                        targetTeam
-                    );
+                    return IsEnemyTeam(userTeam, targetTeam);
 
                 case AbilitySO.TargetType.Ally:
-
-                    return IsAllyTeam(
-                        userTeam,
-                        targetTeam
-                    );
+                    return IsAllyTeam(userTeam, targetTeam);
 
                 case AbilitySO.TargetType.Any:
-
                     return true;
             }
         }
 
         return currentAbilityIsHeal
-            ? IsAllyTeam(
-                userTeam,
-                targetTeam
-            )
-            : IsEnemyTeam(
-                userTeam,
-                targetTeam
-            );
+            ? IsAllyTeam(userTeam, targetTeam)
+            : IsEnemyTeam(userTeam, targetTeam);
     }
 
-    private bool IsEnemyTeam(
-        Team userTeam,
-        Team targetTeam)
+    private bool IsEnemyTeam(Team userTeam, Team targetTeam)
     {
-        if (
-            userTeam == Team.Player ||
-            userTeam == Team.Ally
-        )
+        if (userTeam == Team.Player || userTeam == Team.Ally)
         {
             return targetTeam == Team.Enemy;
         }
@@ -1169,14 +1073,9 @@ public class GridHighlightManager : MonoBehaviour
         return false;
     }
 
-    private bool IsAllyTeam(
-        Team userTeam,
-        Team targetTeam)
+    private bool IsAllyTeam(Team userTeam, Team targetTeam)
     {
-        if (
-            userTeam == Team.Player ||
-            userTeam == Team.Ally
-        )
+        if (userTeam == Team.Player || userTeam == Team.Ally)
         {
             return targetTeam == Team.Player ||
                    targetTeam == Team.Ally;
@@ -1190,37 +1089,27 @@ public class GridHighlightManager : MonoBehaviour
         return false;
     }
 
-    public bool IsValidCurrentAbilityTarget(
-        GameObject target)
+    public bool IsValidCurrentAbilityTarget(GameObject target)
     {
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             return false;
         }
 
-        if (
-            target == null ||
+        if (target == null ||
             currentRangeUserUnit == null ||
             currentAbility == null ||
             abilityCells.Count == 0 ||
-            gridManager == null
-        )
+            gridManager == null)
         {
             return false;
         }
 
-        Vector2Int position =
-            gridManager.GetUnitGridPosition(
-                target
-            );
+        Vector2Int position = gridManager.GetUnitGridPosition(target);
 
         return abilityCells.Contains(position) &&
                IsValidAbilityTarget(target);
     }
-
 
     // ============================================================
     // TARGET HOVERS
@@ -1231,18 +1120,12 @@ public class GridHighlightManager : MonoBehaviour
         ClearAllTargetHovers();
         ClearAllTargetPulse();
 
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             return;
         }
 
-        if (
-            gridManager == null ||
-            abilityCells.Count == 0
-        )
+        if (gridManager == null || abilityCells.Count == 0)
         {
             return;
         }
@@ -1253,24 +1136,16 @@ public class GridHighlightManager : MonoBehaviour
         }
     }
 
-    private void RefreshTargetHoverForTile(
-        Vector2Int position)
+    private void RefreshTargetHoverForTile(Vector2Int position)
     {
-        if (
-            gridManager == null ||
-            !abilityCells.Contains(position)
-        )
+        if (gridManager == null || !abilityCells.Contains(position))
         {
             return;
         }
 
-        GameObject unit =
-            gridManager.GetUnitAt(position);
+        GameObject unit = gridManager.GetUnitAt(position);
 
-        if (
-            unit == null ||
-            !IsValidAbilityTarget(unit)
-        )
+        if (unit == null || !IsValidAbilityTarget(unit))
         {
             return;
         }
@@ -1314,19 +1189,12 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        if (
-            !targetUnit.TryGetComponent(
-                out HoverInfoTrigger hoverInfo
-            )
-        )
+        if (!targetUnit.TryGetComponent(out HoverInfoTrigger hoverInfo))
         {
             return;
         }
 
-        hoverInfo.SetAbilityRangeOutline(
-            true,
-            outlineColor
-        );
+        hoverInfo.SetAbilityRangeOutline(true, outlineColor);
 
         activeAbilityOutlines.Add(hoverInfo);
     }
@@ -1342,16 +1210,12 @@ public class GridHighlightManager : MonoBehaviour
         {
             if (hoverInfo != null)
             {
-                hoverInfo.SetAbilityRangeOutline(
-                    false,
-                    Color.white
-                );
+                hoverInfo.SetAbilityRangeOutline(false, Color.white);
             }
         }
 
         activeAbilityOutlines.Clear();
     }
-
 
     // ============================================================
     // TARGET PULSE
@@ -1366,8 +1230,7 @@ public class GridHighlightManager : MonoBehaviour
 
         if (!targetOriginalScales.ContainsKey(target))
         {
-            targetOriginalScales[target] =
-                target.localScale;
+            targetOriginalScales[target] = target.localScale;
         }
 
         activeTargetPulseTransforms.Add(target);
@@ -1377,10 +1240,8 @@ public class GridHighlightManager : MonoBehaviour
     {
         if (!enableTargetPulse)
         {
-            if (
-                activeTargetPulseTransforms.Count > 0 ||
-                targetOriginalScales.Count > 0
-            )
+            if (activeTargetPulseTransforms.Count > 0 ||
+                targetOriginalScales.Count > 0)
             {
                 ResetTargetPulseScales();
                 activeTargetPulseTransforms.Clear();
@@ -1395,26 +1256,16 @@ public class GridHighlightManager : MonoBehaviour
         }
 
         float pulse =
-            (Mathf.Sin(
-                Time.time * targetPulseSpeed
-            ) + 1f) * 0.5f;
+            (Mathf.Sin(Time.time * targetPulseSpeed) + 1f) * 0.5f;
 
-        float multiplier =
-            1f +
-            pulse *
-            targetPulseAmount;
+        float multiplier = 1f + pulse * targetPulseAmount;
 
-        float lerpFactor =
-            Mathf.Clamp01(
-                Time.deltaTime *
-                targetPulseSmoothSpeed
-            );
+        float lerpFactor = Mathf.Clamp01(
+            Time.deltaTime * targetPulseSmoothSpeed);
 
         tempTargetTransformList.Clear();
 
-        foreach (
-            Transform target
-            in activeTargetPulseTransforms)
+        foreach (Transform target in activeTargetPulseTransforms)
         {
             if (target != null)
             {
@@ -1422,37 +1273,24 @@ public class GridHighlightManager : MonoBehaviour
             }
         }
 
-        for (
-            int i = 0;
-            i < tempTargetTransformList.Count;
-            i++)
+        for (int i = 0; i < tempTargetTransformList.Count; i++)
         {
-            Transform target =
-                tempTargetTransformList[i];
+            Transform target = tempTargetTransformList[i];
 
-            if (
-                !targetOriginalScales.TryGetValue(
-                    target,
-                    out Vector3 originalScale
-                )
-            )
+            if (!targetOriginalScales.TryGetValue(
+                    target, out Vector3 originalScale))
             {
-                originalScale =
-                    target.localScale;
-
-                targetOriginalScales[target] =
-                    originalScale;
+                originalScale = target.localScale;
+                targetOriginalScales[target] = originalScale;
             }
 
-            Vector3 desiredScale =
-                originalScale * multiplier;
+            Vector3 desiredScale = originalScale * multiplier;
 
-            target.localScale =
-                Vector3.Lerp(
-                    target.localScale,
-                    desiredScale,
-                    lerpFactor
-                );
+            target.localScale = Vector3.Lerp(
+                target.localScale,
+                desiredScale,
+                lerpFactor
+            );
         }
 
         tempTargetTransformList.Clear();
@@ -1461,7 +1299,6 @@ public class GridHighlightManager : MonoBehaviour
     private void ClearAllTargetPulse()
     {
         ResetTargetPulseScales();
-
         activeTargetPulseTransforms.Clear();
     }
 
@@ -1472,65 +1309,43 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        foreach (
-            KeyValuePair<
-                Transform,
-                Vector3
-            > pair
-            in targetOriginalScales)
+        foreach (KeyValuePair<Transform, Vector3> pair in targetOriginalScales)
         {
             if (pair.Key != null)
             {
-                pair.Key.localScale =
-                    pair.Value;
+                pair.Key.localScale = pair.Value;
             }
         }
 
         targetOriginalScales.Clear();
     }
 
-
     // ============================================================
     // PLACEMENT
     // ============================================================
 
-    public void SetPlacementTile(
-        Vector2Int position)
+    public void SetPlacementTile(Vector2Int position)
     {
-        if (
-            playerHighlightsDisabled &&
-            IsCurrentUserPlayerUnit()
-        )
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
             return;
         }
 
-        if (
-            gridManager == null ||
-            !gridManager.IsInsideGrid(position)
-        )
+        if (gridManager == null || !gridManager.IsInsideGrid(position))
         {
             ClearPlacementTile();
             return;
         }
 
-        if (
-            hasPlacementPosition &&
-            placementPosition == position
-        )
+        if (hasPlacementPosition && placementPosition == position)
         {
             return;
         }
 
-        Vector2Int oldPosition =
-            placementPosition;
+        Vector2Int oldPosition = placementPosition;
+        bool hadOldPosition = hasPlacementPosition;
 
-        bool hadOldPosition =
-            hasPlacementPosition;
-
-        placementPosition =
-            position;
-
+        placementPosition = position;
         hasPlacementPosition = true;
 
         if (hadOldPosition)
@@ -1548,9 +1363,7 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        Vector2Int oldPosition =
-            placementPosition;
-
+        Vector2Int oldPosition = placementPosition;
         hasPlacementPosition = false;
 
         RefreshTile(oldPosition);
@@ -1566,31 +1379,23 @@ public class GridHighlightManager : MonoBehaviour
         return placementPosition;
     }
 
-    public bool IsPlacementCell(
-        Vector2Int position)
+    public bool IsPlacementCell(Vector2Int position)
     {
-        return hasPlacementPosition &&
-               placementPosition == position;
+        return hasPlacementPosition && placementPosition == position;
     }
-
 
     // ============================================================
     // EXPLOSION
     // ============================================================
 
-    public void FlashExplosionTile(
-        Vector2Int position)
+    public void FlashExplosionTile(Vector2Int position)
     {
-        if (
-            gridManager == null ||
-            !gridManager.IsInsideGrid(position)
-        )
+        if (gridManager == null || !gridManager.IsInsideGrid(position))
         {
             return;
         }
 
-        GridHighlightVisuals visual =
-            CacheTile(position);
+        GridHighlightVisuals visual = CacheTile(position);
 
         if (visual == null)
         {
@@ -1601,25 +1406,17 @@ public class GridHighlightManager : MonoBehaviour
 
         visual.PlayExplosion();
 
-        StartCoroutine(
-            RemoveExplosionCellAfterDelay(
-                position
-            )
-        );
+        StartCoroutine(RemoveExplosionCellAfterDelay(position));
     }
 
-    private IEnumerator RemoveExplosionCellAfterDelay(
-        Vector2Int position)
+    private IEnumerator RemoveExplosionCellAfterDelay(Vector2Int position)
     {
-        yield return new WaitForSeconds(
-            explosionPulseDuration * 2f
-        );
+        yield return new WaitForSeconds(explosionPulseDuration * 2f);
 
         explosionCells.Remove(position);
 
         RefreshTile(position);
     }
-
 
     // ============================================================
     // CLEAR
@@ -1646,9 +1443,7 @@ public class GridHighlightManager : MonoBehaviour
 
         ResetShotgunDirection();
 
-        foreach (
-            GridHighlightVisuals visual
-            in tileVisuals.Values)
+        foreach (GridHighlightVisuals visual in tileVisuals.Values)
         {
             if (visual != null)
             {
@@ -1656,7 +1451,6 @@ public class GridHighlightManager : MonoBehaviour
             }
         }
     }
-
 
     // ============================================================
     // GETTERS
@@ -1702,21 +1496,11 @@ public class GridHighlightManager : MonoBehaviour
     // ROTATION
     // ============================================================
 
-    /*
-     * Called by GridHighlightBrain AFTER the board has
-     * completely stopped rotating.
-     *
-     * This refreshes the physical tile references first.
-     */
     public IEnumerator RefreshAfterBoardRotation()
     {
-        // Wait until the rotation has been applied.
         yield return null;
-
-        // Make absolutely sure Unity has finished the current frame.
         yield return new WaitForEndOfFrame();
 
-        // Rebuild tile references.
         RefreshGrid();
     }
 }

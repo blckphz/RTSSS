@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,12 +9,8 @@ using UnityEngine;
 public class FrontAttack : AbilitySO
 {
     [Header("Front Attack Effect")]
-    [SerializeField]
-    private GameObject hitEffectPrefab;
-
-    [SerializeField]
-    private Vector3 hitEffectOffset;
-
+    [SerializeField] private GameObject hitEffectPrefab;
+    [SerializeField] private Vector3 hitEffectOffset;
 
     // ==================================================
     // RANGE
@@ -21,105 +18,44 @@ public class FrontAttack : AbilitySO
 
     public override List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
-        GameObject user
-    )
+        GameObject user)
     {
-        List<Vector2Int> tiles =
-            new List<Vector2Int>();
+        List<Vector2Int> tiles = new List<Vector2Int>();
 
-        if (
-            gridManager == null ||
-            user == null
-        )
-        {
+        if (gridManager == null || user == null)
             return tiles;
-        }
-
 
         Vector2Int userPosition =
-            GetLogicalUserPosition(
-                gridManager,
-                user
-            );
+            GetLogicalUserPosition(gridManager, user);
 
+        int abilityRange = Mathf.Max(1, GetRange());
 
-        int abilityRange =
-            Mathf.Max(
-                1,
-                GetRange()
-            );
+        int minimumDistance = Mathf.Clamp(
+            GetMinDistance(), 0, abilityRange);
 
-
-        int minimumDistance =
-            Mathf.Clamp(
-                GetMinDistance(),
-                0,
-                abilityRange
-            );
-
-
-        for (
-            int x = -abilityRange;
-            x <= abilityRange;
-            x++
-        )
+        for (int x = -abilityRange; x <= abilityRange; x++)
         {
-            for (
-                int y = -abilityRange;
-                y <= abilityRange;
-                y++
-            )
+            for (int y = -abilityRange; y <= abilityRange; y++)
             {
-                if (
-                    x == 0 &&
-                    y == 0
-                )
-                {
+                if (x == 0 && y == 0)
                     continue;
-                }
 
+                int distance = Mathf.Max(
+                    Mathf.Abs(x), Mathf.Abs(y));
 
-                int distance =
-                    Mathf.Max(
-                        Mathf.Abs(x),
-                        Mathf.Abs(y)
-                    );
-
-
-                if (
-                    distance >
-                    abilityRange
-                )
-                {
+                if (distance > abilityRange ||
+                    distance < minimumDistance)
                     continue;
-                }
-
-
-                if (
-                    distance <
-                    minimumDistance
-                )
-                {
-                    continue;
-                }
-
 
                 AddValidTile(
                     gridManager,
                     tiles,
-                    userPosition +
-                    new Vector2Int(
-                        x,
-                        y
-                    )
-                );
+                    userPosition + new Vector2Int(x, y));
             }
         }
 
-
         return tiles;
     }
-
 
     // ==================================================
     // LOGICAL USER POSITION
@@ -127,27 +63,16 @@ public class FrontAttack : AbilitySO
 
     private Vector2Int GetLogicalUserPosition(
         GridManager gridManager,
-        GameObject user
-    )
+        GameObject user)
     {
-        UnitTilePin pin =
-            user.GetComponent<UnitTilePin>();
+        UnitTilePin pin = user.GetComponent<UnitTilePin>();
 
-
-        if (
-            pin != null &&
-            pin.HasTile()
-        )
-        {
+        if (pin != null && pin.HasTile())
             return pin.GetTile();
-        }
-
 
         return gridManager.WorldToGridPosition(
-            user.transform.position
-        );
+            user.transform.position);
     }
-
 
     // ==================================================
     // CAN HIT
@@ -156,126 +81,48 @@ public class FrontAttack : AbilitySO
     public override bool CanHit(
         GridManager gridManager,
         GameObject user,
-        GameObject target
-    )
+        GameObject target)
     {
-        if (
-            gridManager == null ||
-            user == null ||
-            target == null
-        )
-        {
+        if (gridManager == null || user == null || target == null)
             return false;
-        }
-
 
         if (!CanUseAfterMovement(user))
-        {
             return false;
-        }
-
-
-        // ==================================================
-        // FRIENDLY TURRET EXCEPTION
-        // ==================================================
 
         bool friendlyTurret =
-            IsFriendlyTurretHealTarget(
-                user,
-                target
-            );
+            IsFriendlyTurretHealTarget(user, target);
 
-
-        if (!friendlyTurret)
-        {
-            if (
-                !CanTargetObject(
-                    user,
-                    target
-                )
-            )
-            {
-                return false;
-            }
-        }
-
+        if (!friendlyTurret && !CanTargetObject(user, target))
+            return false;
 
         Vector2Int userPosition =
-            GetLogicalUserPosition(
-                gridManager,
-                user
-            );
-
+            GetLogicalUserPosition(gridManager, user);
 
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(
-                target.transform.position
-            );
+                target.transform.position);
 
+        int differenceX = Mathf.Abs(
+            targetPosition.x - userPosition.x);
 
-        int differenceX =
-            Mathf.Abs(
-                targetPosition.x -
-                userPosition.x
-            );
+        int differenceY = Mathf.Abs(
+            targetPosition.y - userPosition.y);
 
+        int distance = Mathf.Max(differenceX, differenceY);
 
-        int differenceY =
-            Mathf.Abs(
-                targetPosition.y -
-                userPosition.y
-            );
+        int minimumDistance = Mathf.Clamp(
+            GetMinDistance(), 0, GetRange());
 
+        int maximumDistance = GetRange();
 
-        int distance =
-            Mathf.Max(
-                differenceX,
-                differenceY
-            );
-
-
-        int minimumDistance =
-            Mathf.Clamp(
-                GetMinDistance(),
-                0,
-                GetRange()
-            );
-
-
-        int maximumDistance =
-            GetRange();
-
-
-        if (
-            distance <
-            minimumDistance
-        )
-        {
+        if (distance < minimumDistance || distance > maximumDistance)
             return false;
-        }
-
-
-        if (
-            distance >
-            maximumDistance
-        )
-        {
-            return false;
-        }
-
 
         List<Vector2Int> rangeTiles =
-            GetRangeTiles(
-                gridManager,
-                user
-            );
+            GetRangeTiles(gridManager, user);
 
-
-        return rangeTiles.Contains(
-            targetPosition
-        );
+        return rangeTiles.Contains(targetPosition);
     }
-
 
     // ==================================================
     // FRIENDLY TURRET HEAL TARGET
@@ -283,81 +130,36 @@ public class FrontAttack : AbilitySO
 
     private bool IsFriendlyTurretHealTarget(
         GameObject user,
-        GameObject target
-    )
+        GameObject target)
     {
-        if (
-            user == null ||
-            target == null
-        )
-        {
+        if (user == null || target == null)
             return false;
-        }
 
-
-        turretbehav turret =
-            target.GetComponent<turretbehav>();
-
+        turretbehav turret = target.GetComponent<turretbehav>();
 
         if (turret == null)
-        {
             return false;
-        }
 
+        UnitData userUnitData = user.GetComponent<UnitData>();
 
-        UnitData userUnitData =
-            user.GetComponent<UnitData>();
-
-
-        if (userUnitData == null)
-        {
+        if (userUnitData == null ||
+            !userUnitData.HasMeleeTurretHealUpgrade())
             return false;
-        }
-
-
-        if (
-            !userUnitData.HasMeleeTurretHealUpgrade()
-        )
-        {
-            return false;
-        }
-
 
         HealthManager userHealth =
             user.GetComponent<HealthManager>();
 
-
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
-
-        if (
-            userHealth == null ||
-            targetHealth == null
-        )
-        {
+        if (userHealth == null || targetHealth == null)
             return false;
-        }
-
 
         if (targetHealth.IsDead())
-        {
             return false;
-        }
 
-
-        if (
-            userHealth.GetTeam() !=
-            targetHealth.GetTeam()
-        )
-        {
-            return false;
-        }
-
-
-        return true;
+        return userHealth.GetTeam() == targetHealth.GetTeam();
     }
-
 
     // ==================================================
     // HITBOX
@@ -366,138 +168,65 @@ public class FrontAttack : AbilitySO
     public override List<Vector2Int> GetHitboxTiles(
         GridManager gridManager,
         GameObject user,
-        GameObject target = null
-    )
+        GameObject target = null)
     {
-        List<Vector2Int> tiles =
-            new List<Vector2Int>();
+        List<Vector2Int> tiles = new List<Vector2Int>();
 
-
-        if (
-            gridManager == null ||
-            user == null
-        )
-        {
+        if (gridManager == null || user == null)
             return tiles;
-        }
-
 
         Vector2Int userPosition =
-            GetLogicalUserPosition(
-                gridManager,
-                user
-            );
+            GetLogicalUserPosition(gridManager, user);
 
+        int abilityRange = Mathf.Max(1, GetRange());
 
-        int abilityRange =
-            Mathf.Max(
-                1,
-                GetRange()
-            );
-
-
-        Vector2Int direction =
-            Vector2Int.zero;
-
+        Vector2Int direction = Vector2Int.zero;
 
         if (target != null)
         {
+            // Actual attack: face the selected target.
             Vector2Int targetPosition =
                 gridManager.WorldToGridPosition(
-                    target.transform.position
-                );
+                    target.transform.position);
 
-
-            direction =
-                GetAttackDirection(
-                    userPosition,
-                    targetPosition
-                );
+            direction = GetAttackDirection(
+                userPosition, targetPosition);
         }
-
-
-        if (
-            direction ==
-            Vector2Int.zero
-        )
+        else
         {
-            direction =
-                DetectNearbyEnemyDirection(
-                    gridManager,
-                    user,
-                    userPosition
-                );
+            // Preview: aim using the mouse, like the shotgun.
+            direction = GetMouseDirection(gridManager, user);
         }
 
-
-        if (
-            direction ==
-            Vector2Int.zero
-        )
+        // Fallback if no valid aim direction is available.
+        if (direction == Vector2Int.zero)
         {
-            direction =
-                GetUserFacingDirection(
-                    user
-                );
+            direction = DetectNearbyEnemyDirection(
+                gridManager, user, userPosition);
         }
 
+        if (direction == Vector2Int.zero)
+            direction = GetUserFacingDirection(user);
 
-        Vector2Int sideDirection =
-            GetSideDirection(
-                direction
-            );
+        Vector2Int sideDirection = GetSideDirection(direction);
 
-
-        for (
-            int distance = 1;
-            distance <= abilityRange;
-            distance++
-        )
+        for (int distance = 1; distance <= abilityRange; distance++)
         {
             Vector2Int center =
-                userPosition +
-                direction * distance;
-
-
-            Vector2Int left =
-                center -
-                sideDirection;
-
-
-            Vector2Int middle =
-                center;
-
-
-            Vector2Int right =
-                center +
-                sideDirection;
-
+                userPosition + direction * distance;
 
             AddValidTile(
-                gridManager,
-                tiles,
-                left
-            );
-
+                gridManager, tiles, center - sideDirection);
 
             AddValidTile(
-                gridManager,
-                tiles,
-                middle
-            );
-
+                gridManager, tiles, center);
 
             AddValidTile(
-                gridManager,
-                tiles,
-                right
-            );
+                gridManager, tiles, center + sideDirection);
         }
-
 
         return tiles;
     }
-
 
     // ==================================================
     // ATTACK DIRECTION
@@ -505,44 +234,26 @@ public class FrontAttack : AbilitySO
 
     private Vector2Int GetAttackDirection(
         Vector2Int userPosition,
-        Vector2Int targetPosition
-    )
+        Vector2Int targetPosition)
     {
-        Vector2Int difference =
-            targetPosition -
-            userPosition;
+        Vector2Int difference = targetPosition - userPosition;
 
-
-        if (
-            difference ==
-            Vector2Int.zero
-        )
-        {
+        if (difference == Vector2Int.zero)
             return Vector2Int.zero;
-        }
 
-
-        if (
-            Mathf.Abs(difference.x) >
-            Mathf.Abs(difference.y)
-        )
+        if (Mathf.Abs(difference.x) > Mathf.Abs(difference.y))
         {
             return difference.x > 0
                 ? Vector2Int.right
                 : Vector2Int.left;
         }
 
-
-        if (
-            Mathf.Abs(difference.y) >
-            Mathf.Abs(difference.x)
-        )
+        if (Mathf.Abs(difference.y) > Mathf.Abs(difference.x))
         {
             return difference.y > 0
                 ? Vector2Int.up
                 : Vector2Int.down;
         }
-
 
         if (difference.x != 0)
         {
@@ -551,176 +262,87 @@ public class FrontAttack : AbilitySO
                 : Vector2Int.left;
         }
 
-
         return difference.y > 0
             ? Vector2Int.up
             : Vector2Int.down;
     }
 
-
     // ==================================================
-    // NEARBY ENEMY
+    // NEARBY ENEMY FALLBACK
     // ==================================================
 
     private Vector2Int DetectNearbyEnemyDirection(
         GridManager gridManager,
         GameObject user,
-        Vector2Int userPosition
-    )
+        Vector2Int userPosition)
     {
         HealthManager userHealth =
             user.GetComponent<HealthManager>();
 
+        GameObject closestEnemy = null;
+        Vector2Int closestEnemyPosition = Vector2Int.zero;
+        int closestDistance = int.MaxValue;
 
-        GameObject closestEnemy =
-            null;
-
-
-        Vector2Int closestEnemyPosition =
-            Vector2Int.zero;
-
-
-        int closestDistance =
-            int.MaxValue;
-
-
-        for (
-            int x = -1;
-            x <= 1;
-            x++
-        )
+        for (int x = -1; x <= 1; x++)
         {
-            for (
-                int y = -1;
-                y <= 1;
-                y++
-            )
+            for (int y = -1; y <= 1; y++)
             {
-                if (
-                    x == 0 &&
-                    y == 0
-                )
-                {
+                if (x == 0 && y == 0)
                     continue;
-                }
-
 
                 Vector2Int position =
-                    userPosition +
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                    userPosition + new Vector2Int(x, y);
 
-
-                if (
-                    !gridManager.IsInsideGrid(
-                        position
-                    )
-                )
-                {
+                if (!gridManager.IsInsideGrid(position))
                     continue;
-                }
 
+                GameObject unit = gridManager.GetUnitAt(position);
 
-                GameObject unit =
-                    gridManager.GetUnitAt(
-                        position
-                    );
-
-
-                if (
-                    unit == null ||
-                    unit == user
-                )
-                {
+                if (unit == null || unit == user)
                     continue;
-                }
-
 
                 HealthManager health =
                     unit.GetComponent<HealthManager>();
 
-
-                if (
-                    health == null ||
-                    health.IsDead()
-                )
-                {
+                if (health == null || health.IsDead())
                     continue;
-                }
 
-
-                if (
-                    userHealth != null &&
-                    health.GetTeam() ==
-                    userHealth.GetTeam()
-                )
-                {
+                if (userHealth != null &&
+                    health.GetTeam() == userHealth.GetTeam())
                     continue;
-                }
 
+                int distance = Mathf.Abs(x) + Mathf.Abs(y);
 
-                int distance =
-                    Mathf.Abs(x) +
-                    Mathf.Abs(y);
-
-
-                if (
-                    distance <
-                    closestDistance
-                )
+                if (distance < closestDistance)
                 {
-                    closestDistance =
-                        distance;
-
-
-                    closestEnemy =
-                        unit;
-
-
-                    closestEnemyPosition =
-                        position;
+                    closestDistance = distance;
+                    closestEnemy = unit;
+                    closestEnemyPosition = position;
                 }
             }
         }
 
-
         if (closestEnemy == null)
-        {
             return Vector2Int.zero;
-        }
-
 
         return GetAttackDirection(
-            userPosition,
-            closestEnemyPosition
-        );
+            userPosition, closestEnemyPosition);
     }
-
 
     // ==================================================
     // FACING
     // ==================================================
 
-    private Vector2Int GetUserFacingDirection(
-        GameObject user
-    )
+    private Vector2Int GetUserFacingDirection(GameObject user)
     {
-        Vector3 forward =
-            user.transform.up;
+        Vector3 forward = user.transform.up;
 
-
-        if (
-            Mathf.Abs(forward.x) >
-            Mathf.Abs(forward.y)
-        )
+        if (Mathf.Abs(forward.x) > Mathf.Abs(forward.y))
         {
             return forward.x > 0
                 ? Vector2Int.right
                 : Vector2Int.left;
         }
-
 
         if (forward.y != 0)
         {
@@ -729,27 +351,17 @@ public class FrontAttack : AbilitySO
                 : Vector2Int.down;
         }
 
-
         return Vector2Int.up;
     }
 
-
-    private Vector2Int GetSideDirection(
-        Vector2Int direction
-    )
+    private Vector2Int GetSideDirection(Vector2Int direction)
     {
-        if (
-            direction == Vector2Int.up ||
-            direction == Vector2Int.down
-        )
-        {
+        if (direction == Vector2Int.up ||
+            direction == Vector2Int.down)
             return Vector2Int.right;
-        }
-
 
         return Vector2Int.up;
     }
-
 
     // ==================================================
     // USE
@@ -757,91 +369,39 @@ public class FrontAttack : AbilitySO
 
     public override bool Use(
         GameObject user,
-        GameObject target
-    )
+        GameObject target)
     {
-        if (
-            user == null ||
-            target == null
-        )
-        {
+        if (user == null || target == null)
             return false;
-        }
-
 
         GridManager gridManager =
             Object.FindFirstObjectByType<GridManager>();
 
-
         if (gridManager == null)
-        {
             return false;
-        }
 
-
-        if (
-            !CanHit(
-                gridManager,
-                user,
-                target
-            )
-        )
-        {
+        if (!CanHit(gridManager, user, target))
             return false;
-        }
-
 
         List<Vector2Int> hitbox =
-            GetHitboxTiles(
-                gridManager,
-                user,
-                target
-            );
+            GetHitboxTiles(gridManager, user, target);
 
-
-        if (
-            hitbox == null ||
-            hitbox.Count == 0
-        )
-        {
+        if (hitbox == null || hitbox.Count == 0)
             return false;
-        }
 
+        bool hitSomething = false;
 
-        bool hitSomething =
-            false;
-
-
-        foreach (
-            Vector2Int position in hitbox
-        )
+        foreach (Vector2Int position in hitbox)
         {
-            if (
-                AttackTile(
-                    gridManager,
-                    position,
-                    user
-                )
-            )
-            {
+            if (AttackTile(gridManager, position, user))
                 hitSomething = true;
-            }
         }
-
 
         if (hitSomething)
-        {
-            PlayHitEffect(
-                gridManager,
-                user,
-                target
-            );
-        }
-
+            PlayHitEffect(gridManager, user, target);
 
         return hitSomething;
     }
-
 
     // ==================================================
     // ATTACK TILE
@@ -850,127 +410,59 @@ public class FrontAttack : AbilitySO
     private bool AttackTile(
         GridManager gridManager,
         Vector2Int position,
-        GameObject user
-    )
+        GameObject user)
     {
-        if (
-            !gridManager.IsInsideGrid(
-                position
-            )
-        )
-        {
+        if (!gridManager.IsInsideGrid(position))
             return false;
-        }
 
+        GameObject target = gridManager.GetUnitAt(position);
 
-        GameObject target =
-            gridManager.GetUnitAt(
-                position
-            );
-
-
-        if (
-            target == null ||
-            target == user
-        )
-        {
+        if (target == null || target == user)
             return false;
-        }
-
 
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
-
-        if (
-            targetHealth == null ||
-            targetHealth.IsDead()
-        )
-        {
+        if (targetHealth == null || targetHealth.IsDead())
             return false;
-        }
-
 
         HealthManager userHealth =
             user.GetComponent<HealthManager>();
 
+        // Friendly turret healing.
+        turretbehav turret = target.GetComponent<turretbehav>();
+        UnitData userUnitData = user.GetComponent<UnitData>();
 
-        // ==================================================
-        // FRIENDLY TURRET HEAL
-        // ==================================================
-
-        turretbehav turret =
-            target.GetComponent<turretbehav>();
-
-
-        UnitData userUnitData =
-            user.GetComponent<UnitData>();
-
-
-        if (
-            turret != null &&
+        if (turret != null &&
             userUnitData != null &&
             userHealth != null &&
-            targetHealth.GetTeam() ==
-            userHealth.GetTeam() &&
-            userUnitData.HasMeleeTurretHealUpgrade()
-        )
+            targetHealth.GetTeam() == userHealth.GetTeam() &&
+            userUnitData.HasMeleeTurretHealUpgrade())
         {
-            // Base FrontAttack damage.
-            int baseDamage =
-                GetDamage();
+            int baseDamage = GetDamage();
 
-
-            // Fixed bonus supplied by
-            // the Engineer turret-heal upgrade.
             int bonusHeal =
                 userUnitData.GetMeleeTurretHealAmount();
 
-
-            // Total turret healing.
-            int totalHeal =
-                baseDamage +
-                bonusHeal;
-
+            int totalHeal = baseDamage + bonusHeal;
 
             if (totalHeal > 0)
             {
-                targetHealth.Heal(
-                    totalHeal
-                );
-
-
+                targetHealth.Heal(totalHeal);
                 return true;
             }
         }
 
-
-        // ==================================================
-        // NORMAL FRIENDLY FIRE BLOCK
-        // ==================================================
-
-        if (
-            userHealth != null &&
-            targetHealth.GetTeam() ==
-            userHealth.GetTeam()
-        )
-        {
+        // Block normal friendly fire.
+        if (userHealth != null &&
+            targetHealth.GetTeam() == userHealth.GetTeam())
             return false;
-        }
 
-
-        // ==================================================
-        // NORMAL DAMAGE
-        // ==================================================
-
-        targetHealth.TakeDamage(
-            GetDamage()
-        );
-
+        // Normal damage.
+        targetHealth.TakeDamage(GetDamage());
 
         return true;
     }
-
 
     // ==================================================
     // EFFECT
@@ -979,37 +471,24 @@ public class FrontAttack : AbilitySO
     private void PlayHitEffect(
         GridManager gridManager,
         GameObject user,
-        GameObject target
-    )
+        GameObject target)
     {
         if (hitEffectPrefab == null)
-        {
             return;
-        }
-
 
         Vector3 position =
-            target.transform.position +
-            hitEffectOffset;
+            target.transform.position + hitEffectOffset;
 
-
-        GameObject effect =
-            Object.Instantiate(
-                hitEffectPrefab,
-                position,
-                Quaternion.identity
-            );
-
+        GameObject effect = Object.Instantiate(
+            hitEffectPrefab,
+            position,
+            Quaternion.identity);
 
         if (effect == null)
-        {
             return;
-        }
-
 
         ParticleSystem particles =
             effect.GetComponent<ParticleSystem>();
-
 
         if (particles != null)
         {

@@ -1149,8 +1149,8 @@ public class ChainLightning : AbilitySO
             )
             {
                 if (
-                    candidate.GetInstanceID() <
-                    closestEnemy.GetInstanceID()
+                    candidate.GetEntityId() <
+                    closestEnemy.GetEntityId()
                 )
                 {
                     closestEnemy =
