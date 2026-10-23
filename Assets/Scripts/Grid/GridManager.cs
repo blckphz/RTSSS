@@ -1139,6 +1139,80 @@ public class GridManager : MonoBehaviour
 
 
     // ============================================================
+    // UNIT FOOTPRINT HELPERS
+    // The unit's transform/registered cell is its anchor. Footprints
+    // are centered on that anchor for odd sizes (e.g. 3x3).
+    // ============================================================
+
+    public int GetUnitFootprintSize(GameObject unit)
+    {
+        if (unit == null) return 1;
+
+        AttackUnit attackUnit = unit.GetComponent<AttackUnit>();
+        if (attackUnit != null)
+        {
+            CharacterSO data = attackUnit.GetCharacterData();
+            if (data != null) return Mathf.Max(1, data.GetFootprintSize());
+        }
+
+        return 1;
+    }
+
+    private Vector2Int GetFootprintMinOffset(int size)
+    {
+        return new Vector2Int(-(size / 2), -(size / 2));
+    }
+
+    public bool IsCellInUnitFootprint(GameObject unit, Vector2Int anchor, Vector2Int cell)
+    {
+        int size = GetUnitFootprintSize(unit);
+        Vector2Int minOffset = GetFootprintMinOffset(size);
+        return cell.x >= anchor.x + minOffset.x &&
+               cell.x < anchor.x + minOffset.x + size &&
+               cell.y >= anchor.y + minOffset.y &&
+               cell.y < anchor.y + minOffset.y + size;
+    }
+
+    public bool IsFootprintInsideGrid(GameObject unit, Vector2Int anchor)
+    {
+        int size = GetUnitFootprintSize(unit);
+        Vector2Int minOffset = GetFootprintMinOffset(size);
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                Vector2Int cell = anchor + minOffset + new Vector2Int(x, y);
+                if (!IsInsideGrid(cell)) return false;
+            }
+        }
+        return true;
+    }
+
+    // Looks for units whose anchor is elsewhere but whose footprint covers this cell.
+    // The occupancy array continues storing one anchor entry per unit, preserving
+    // existing resize/recovery/movement bookkeeping.
+    private GameObject FindFootprintOccupant(Vector2Int position, GameObject ignoreUnit = null)
+    {
+        if (occupiedCells == null) return null;
+        for (int x = 0; x < occupiedCells.GetLength(0); x++)
+        {
+            for (int y = 0; y < occupiedCells.GetLength(1); y++)
+            {
+                GameObject candidate = occupiedCells[x, y];
+                if (candidate == null || candidate == ignoreUnit) continue;
+                Vector2Int anchor = ArrayToLogicalPosition(new Vector2Int(x, y));
+                if (anchor == position || !IsCellInUnitFootprint(candidate, anchor, position)) continue;
+                if (!candidate.activeInHierarchy) continue;
+                HealthManager health = candidate.GetComponent<HealthManager>();
+                if (health != null && health.IsDead()) continue;
+                if (!movingUnits.Contains(candidate) && WorldToGridPosition(candidate.transform.position) != anchor) continue;
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    // ============================================================
     // OCCUPANT VALIDATION
     // ============================================================
 
@@ -1398,6 +1472,9 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
+        GameObject footprintOccupant = FindFootprintOccupant(position);
+        if (footprintOccupant != null) return true;
+
         Vector2Int array =
             LogicalToArrayPosition(
                 position
@@ -1460,6 +1537,9 @@ public class GridManager : MonoBehaviour
         {
             return null;
         }
+
+        GameObject footprintOccupant = FindFootprintOccupant(position);
+        if (footprintOccupant != null) return footprintOccupant;
 
         Vector2Int array =
             LogicalToArrayPosition(
@@ -1638,26 +1718,23 @@ public class GridManager : MonoBehaviour
         GameObject unit,
         Vector2Int position)
     {
-        if (
-            unit == null ||
-            !IsInsideGrid(position)
-        )
-        {
+        if (unit == null || !IsFootprintInsideGrid(unit, position))
             return false;
+
+        int size = GetUnitFootprintSize(unit);
+        Vector2Int minOffset = GetFootprintMinOffset(size);
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                Vector2Int cell = position + minOffset + new Vector2Int(x, y);
+                GameObject occupant = GetUnitAt(cell);
+                if (occupant != null && occupant != unit)
+                    return false;
+            }
         }
 
-        GameObject occupant =
-            GetUnitAt(position);
-
-        /*
-         * Bushes are NOT stored in occupiedCells.
-         *
-         * Therefore bush tiles remain walkable.
-         */
-
-        return
-            occupant == null ||
-            occupant == unit;
+        return true;
     }
 
 
@@ -1670,13 +1747,20 @@ public class GridManager : MonoBehaviour
         Vector2Int position,
         bool playSound = true)
     {
-        if (
-            unit == null ||
-            occupiedCells == null ||
-            !IsInsideGrid(position)
-        )
-        {
+        if (unit == null || occupiedCells == null || !IsFootprintInsideGrid(unit, position))
             return false;
+
+        // Validate every footprint cell before removing the unit's old registration.
+        int footprintSize = GetUnitFootprintSize(unit);
+        Vector2Int footprintOffset = GetFootprintMinOffset(footprintSize);
+        for (int fx = 0; fx < footprintSize; fx++)
+        {
+            for (int fy = 0; fy < footprintSize; fy++)
+            {
+                Vector2Int cell = position + footprintOffset + new Vector2Int(fx, fy);
+                GameObject occupant = GetUnitAt(cell);
+                if (occupant != null && occupant != unit) return false;
+            }
         }
 
         Vector2Int array =
@@ -1968,6 +2052,9 @@ public class GridManager : MonoBehaviour
         {
             return false;
         }
+
+        if (!CanMoveToCell(unit, newPosition))
+            return false;
 
         Vector2Int oldArray =
             LogicalToArrayPosition(

@@ -28,10 +28,8 @@ MonoBehaviour:
   roundsToSurvive: 3
   obstacles:
   - prefab: {fileID: 4842063353313913221, guid: b26b256594154f549aeaaa4b94016709, type: 3}
-    amount: 3
-  bushes:
-  - prefab: {fileID: 2407729020461627544, guid: 07f8472d0dfd996448b701b715b91ca0, type: 3}
-    amount: 3
+    amount: 1
+  bushes: []
   enemies:
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
@@ -41,4 +39,7 @@ MonoBehaviour:
     enemyId: penis
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+    enemyId: penis
+  - prefab: {fileID: 6677648231893425325, guid: 8b6293c2b54aca843b6c095e4e59877f, type: 3}
+    character: {fileID: 11400000, guid: d3de529cd20e92445bbc8bc6e64590b7, type: 2}
     enemyId: penis

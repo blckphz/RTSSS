@@ -30,3 +30,4 @@ MonoBehaviour:
   arrowSpeed: 17
   maxTargets: 2
   abilitySpawnPointName: AbilitySpawnPoint
+  targetPointName: VisualTargetPoint

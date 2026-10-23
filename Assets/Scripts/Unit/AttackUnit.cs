@@ -1340,7 +1340,7 @@ public class AttackUnit : MonoBehaviour
         attackInProgress = false;
     }
 
-public bool AddAbilityUse(AbilitySO abilitySO)
+    public bool AddAbilityUse(AbilitySO abilitySO)
     {
         if (abilitySO == null)
         {

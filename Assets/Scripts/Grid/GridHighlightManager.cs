@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -47,15 +48,7 @@ public class GridHighlightManager : MonoBehaviour
     [SerializeField, Min(0.01f)]
     private float explosionPulseDuration = 0.12f;
 
-    // ============================================================
-    // PLAYER INTERACTION LOCK
-    // ============================================================
-
     private bool playerHighlightsDisabled;
-
-    // ============================================================
-    // TILE DATA
-    // ============================================================
 
     private readonly Dictionary<Vector2Int, GridHighlightVisuals> tileVisuals =
         new Dictionary<Vector2Int, GridHighlightVisuals>(256);
@@ -69,23 +62,11 @@ public class GridHighlightManager : MonoBehaviour
     private readonly HashSet<Vector2Int> explosionCells =
         new HashSet<Vector2Int>();
 
-    // ============================================================
-    // ABILITY OUTLINES
-    // ============================================================
-
     private readonly HashSet<HoverInfoTrigger> activeAbilityOutlines =
         new HashSet<HoverInfoTrigger>();
 
-    // ============================================================
-    // UNIT CACHE
-    // ============================================================
-
     private readonly Dictionary<GameObject, AttackUnit> unitComponentCache =
         new Dictionary<GameObject, AttackUnit>(32);
-
-    // ============================================================
-    // TEMP
-    // ============================================================
 
     private readonly List<Vector2Int> tempCellList =
         new List<Vector2Int>(64);
@@ -99,10 +80,6 @@ public class GridHighlightManager : MonoBehaviour
     private readonly List<Transform> tempTargetTransformList =
         new List<Transform>(16);
 
-    // ============================================================
-    // CURRENT STATE
-    // ============================================================
-
     private Vector2Int placementPosition;
     private bool hasPlacementPosition;
 
@@ -114,16 +91,8 @@ public class GridHighlightManager : MonoBehaviour
     private bool suppressMovementHighlight;
     private bool currentAbilityIsHeal;
 
-    // ============================================================
-    // DIRECTIONAL ABILITY PREVIEW STATE
-    // ============================================================
-
     private Vector2Int lastShotgunDirection;
     private bool hasLastShotgunDirection;
-
-    // ============================================================
-    // UNITY
-    // ============================================================
 
     private void Awake()
     {
@@ -585,8 +554,7 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ============================================================
-    // DIRECTIONAL ABILITY LIVE PREVIEW
-    // ShotgunBehav and FrontAttack
+    // DIRECTIONAL ABILITY PREVIEW
     // ============================================================
 
     public void RefreshAbilityPreview()
@@ -605,8 +573,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        // Enemy FrontAttack does not aim at the mouse.
-        // Restore and retain its original full range instead.
         if (ability is FrontAttack && !IsPlayerUnit(currentRangeUser))
         {
             RefreshFullRangePreview();
@@ -617,8 +583,6 @@ public class GridHighlightManager : MonoBehaviour
             ability is ShotgunBehav ||
             ability is FrontAttack;
 
-        // Preserve support for other abilities that use the
-        // Shotgun range shape.
         if (!isDirectionalAbility &&
             ability.GetRangeShape() != AbilitySO.RangeShape.Shotgun)
         {
@@ -652,8 +616,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        // Only rebuild when the currently highlighted cells
-        // differ from the ability's original range.
         List<Vector2Int> rangeTiles =
             currentAbility.GetRangeTiles(
                 gridManager,
@@ -699,8 +661,6 @@ public class GridHighlightManager : MonoBehaviour
             }
         }
 
-        // Refresh both old and new positions so tiles from the
-        // previous directional preview are correctly restored.
         for (int i = 0; i < tempCellList.Count; i++)
         {
             RefreshTile(tempCellList[i]);
@@ -772,8 +732,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        // Remember previous preview tiles so they can be redrawn
-        // after the old directional preview is cleared.
         tempCellList.Clear();
         tempCellList.AddRange(abilityCells);
 
@@ -786,7 +744,6 @@ public class GridHighlightManager : MonoBehaviour
 
         tempCellList.Clear();
 
-        // Use the actual hitbox, not the full range.
         List<Vector2Int> newTiles =
             currentAbility.GetHitboxTiles(
                 gridManager,
@@ -900,13 +857,56 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ============================================================
-    // ACTIVATE ABILITY
+    // ACTIVATE ABILITY - DIAGNOSTIC VERSION
     // ============================================================
+
+    private bool IsTargetFootprintInAbilityCells(GameObject target)
+    {
+        if (target == null || gridManager == null)
+        {
+            return false;
+        }
+
+        Vector2Int anchor =
+            gridManager.GetUnitGridPosition(target);
+
+        int size = Mathf.Max(
+            1,
+            gridManager.GetUnitFootprintSize(target)
+        );
+
+        int minOffset = -(size / 2);
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                Vector2Int tile = anchor + new Vector2Int(
+                    minOffset + x,
+                    minOffset + y
+                );
+
+                if (gridManager.IsInsideGrid(tile) &&
+                    abilityCells.Contains(tile))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 
     public bool TryActivateAbilityOnUnit(GameObject target)
     {
+        Debug.Log(
+            $"[Targeting] Click target: " +
+            $"{(target != null ? target.name : "NULL")}"
+        );
+
         if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
         {
+            Debug.Log("[Targeting] BLOCKED: player highlights disabled");
             return false;
         }
 
@@ -914,6 +914,11 @@ public class GridHighlightManager : MonoBehaviour
             currentAbility == null ||
             currentRangeUserUnit == null)
         {
+            Debug.Log(
+                $"[Targeting] BLOCKED: missing reference. " +
+                $"Ability={currentAbility}, User={currentRangeUserUnit}"
+            );
+
             return false;
         }
 
@@ -924,15 +929,34 @@ public class GridHighlightManager : MonoBehaviour
 
         if (gridManager == null)
         {
+            Debug.Log("[Targeting] BLOCKED: GridManager missing");
             return false;
         }
 
         Vector2Int targetPosition =
             gridManager.GetUnitGridPosition(target);
 
-        if (!abilityCells.Contains(targetPosition) ||
-            !IsValidAbilityTarget(target))
+        bool footprintInCells =
+            IsTargetFootprintInAbilityCells(target);
+
+        bool validTarget =
+            IsValidAbilityTarget(target);
+
+        Debug.Log(
+            $"[Targeting] Target={target.name}, " +
+            $"Anchor={targetPosition}, " +
+            $"FootprintInCells={footprintInCells}, " +
+            $"ValidTarget={validTarget}, " +
+            $"Ability={currentAbility.name}"
+        );
+
+        if (!footprintInCells || !validTarget)
         {
+            Debug.Log(
+                "[Targeting] BLOCKED: footprint/range " +
+                "or target validation"
+            );
+
             return false;
         }
 
@@ -940,10 +964,18 @@ public class GridHighlightManager : MonoBehaviour
 
         if (!userUnit.IsAbilityReady(currentAbility))
         {
+            Debug.Log("[Targeting] BLOCKED: ability not ready");
             return false;
         }
 
-        bool started = userUnit.PlayerAttack(target, currentAbility);
+        Debug.Log("[Targeting] Calling PlayerAttack...");
+
+        bool started =
+            userUnit.PlayerAttack(target, currentAbility);
+
+        Debug.Log(
+            $"[Targeting] PlayerAttack returned: {started}"
+        );
 
         if (!started)
         {
@@ -984,7 +1016,9 @@ public class GridHighlightManager : MonoBehaviour
             return null;
         }
 
-        if (unitComponentCache.TryGetValue(target, out AttackUnit cached))
+        if (unitComponentCache.TryGetValue(
+                target,
+                out AttackUnit cached))
         {
             if (cached != null)
             {
@@ -1105,9 +1139,7 @@ public class GridHighlightManager : MonoBehaviour
             return false;
         }
 
-        Vector2Int position = gridManager.GetUnitGridPosition(target);
-
-        return abilityCells.Contains(position) &&
+        return IsTargetFootprintInAbilityCells(target) &&
                IsValidAbilityTarget(target);
     }
 
@@ -1278,7 +1310,8 @@ public class GridHighlightManager : MonoBehaviour
             Transform target = tempTargetTransformList[i];
 
             if (!targetOriginalScales.TryGetValue(
-                    target, out Vector3 originalScale))
+                    target,
+                    out Vector3 originalScale))
             {
                 originalScale = target.localScale;
                 targetOriginalScales[target] = originalScale;

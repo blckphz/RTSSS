@@ -392,12 +392,10 @@ public class UnitMoveBrainManager : MonoBehaviour
             return true;
         }
 
-        GameObject occupant =
-            gridManager.GetUnitAt(position);
+        if (movingUnit != null)
+            return !gridManager.CanMoveToCell(movingUnit, position);
 
-        return
-            occupant != null &&
-            occupant != movingUnit;
+        return gridManager.GetUnitAt(position) != null;
     }
 
 
@@ -494,6 +492,27 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
 
         return count;
+    }
+
+
+    private int GetDistanceBetweenFootprints(
+        Vector2Int a, GameObject unitA,
+        Vector2Int b, GameObject unitB,
+        bool diagonal)
+    {
+        int sizeA = gridManager.GetUnitFootprintSize(unitA);
+        int sizeB = gridManager.GetUnitFootprintSize(unitB);
+        int minAx = a.x - sizeA / 2;
+        int minAy = a.y - sizeA / 2;
+        int maxAx = minAx + sizeA - 1;
+        int maxAy = minAy + sizeA - 1;
+        int minBx = b.x - sizeB / 2;
+        int minBy = b.y - sizeB / 2;
+        int maxBx = minBx + sizeB - 1;
+        int maxBy = minBy + sizeB - 1;
+        int dx = Mathf.Max(0, Mathf.Max(minAx - maxBx, minBx - maxAx));
+        int dy = Mathf.Max(0, Mathf.Max(minAy - maxBy, minBy - maxAy));
+        return diagonal ? Mathf.Max(dx, dy) : dx + dy;
     }
 
 
@@ -606,12 +625,10 @@ public class UnitMoveBrainManager : MonoBehaviour
                     other.transform.position
                 );
 
-            int distance =
-                GetMovementDistance(
-                    myPosition,
-                    enemyPosition,
-                    canWalkDiagonally
-                );
+            int distance = GetDistanceBetweenFootprints(
+                myPosition, currentUnit.gameObject,
+                enemyPosition, other.gameObject,
+                canWalkDiagonally);
 
             float score = 0f;
 
@@ -743,12 +760,11 @@ public class UnitMoveBrainManager : MonoBehaviour
             int movementCost =
                 pathCache.Count - 1;
 
-            int distanceToEnemy =
-                GetMovementDistance(
-                    candidate,
-                    target,
-                    canWalkDiagonally
-                );
+            GameObject targetObject = gridManager.GetUnitAt(target);
+            int distanceToEnemy = GetDistanceBetweenFootprints(
+                candidate, movingUnit,
+                target, targetObject,
+                canWalkDiagonally);
 
             float score =
                 movementCost * 10f;
@@ -829,29 +845,17 @@ public class UnitMoveBrainManager : MonoBehaviour
             return;
         }
 
-        int minX =
-            Mathf.Max(
-                gridManager.GetMinX(),
-                target.x - attackRange
-            );
+        GameObject targetObject = gridManager.GetUnitAt(target);
+        int targetSize = gridManager.GetUnitFootprintSize(targetObject);
+        int targetMinX = target.x - targetSize / 2;
+        int targetMinY = target.y - targetSize / 2;
+        int targetMaxX = targetMinX + targetSize - 1;
+        int targetMaxY = targetMinY + targetSize - 1;
 
-        int maxX =
-            Mathf.Min(
-                gridManager.GetMaxX(),
-                target.x + attackRange
-            );
-
-        int minY =
-            Mathf.Max(
-                gridManager.GetMinY(),
-                target.y - attackRange
-            );
-
-        int maxY =
-            Mathf.Min(
-                gridManager.GetMaxY(),
-                target.y + attackRange
-            );
+        int minX = Mathf.Max(gridManager.GetMinX(), targetMinX - attackRange);
+        int maxX = Mathf.Min(gridManager.GetMaxX(), targetMaxX + attackRange);
+        int minY = Mathf.Max(gridManager.GetMinY(), targetMinY - attackRange);
+        int maxY = Mathf.Min(gridManager.GetMaxY(), targetMaxY + attackRange);
 
         for (
             int x = minX;
@@ -865,30 +869,12 @@ public class UnitMoveBrainManager : MonoBehaviour
                 y++
             )
             {
-                if (
-                    x == target.x &&
-                    y == target.y
-                )
-                {
-                    continue;
-                }
-
-                Vector2Int position =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
-
-                if (
-                    GetMovementDistance(
-                        position,
-                        target,
-                        canWalkDiagonally
-                    ) <= attackRange
-                )
-                {
+                Vector2Int position = new Vector2Int(x, y);
+                int dx = Mathf.Max(0, Mathf.Max(targetMinX - x, x - targetMaxX));
+                int dy = Mathf.Max(0, Mathf.Max(targetMinY - y, y - targetMaxY));
+                int distance = canWalkDiagonally ? Mathf.Max(dx, dy) : dx + dy;
+                if (distance > 0 && distance <= attackRange)
                     results.Add(position);
-                }
             }
         }
     }
@@ -1123,19 +1109,15 @@ public class UnitMoveBrainManager : MonoBehaviour
             }
         }
 
-        GameObject occupant =
-            gridManager.GetUnitAt(next);
-
-        if (
-            occupant != null &&
-            occupant != movingUnit &&
-            next != destination
-        )
+        if (movingUnit != null)
         {
-            return false;
+            // Validate the complete footprint at every candidate anchor.
+            // A path destination must not overlap a different unit.
+            return gridManager.CanMoveToCell(movingUnit, next);
         }
 
-        return true;
+        GameObject occupant = gridManager.GetUnitAt(next);
+        return occupant == null || next == destination;
     }
 
 
