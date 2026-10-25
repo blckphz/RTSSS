@@ -52,9 +52,7 @@ public class EggBehav : MonoBehaviour
     private void Update()
     {
         if (!initialized)
-        {
             return;
-        }
 
         elapsedTime += Time.deltaTime;
 
@@ -68,9 +66,7 @@ public class EggBehav : MonoBehaviour
             t
         );
 
-        float arc = Mathf.Sin(
-            t * Mathf.PI
-        ) * arcHeight;
+        float arc = Mathf.Sin(t * Mathf.PI) * arcHeight;
 
         position.y += arc;
 
@@ -78,21 +74,15 @@ public class EggBehav : MonoBehaviour
         transform.rotation = originalRotation;
 
         if (t >= 1f)
-        {
             Land();
-        }
     }
 
     private void Land()
     {
         if (!initialized)
-        {
             return;
-        }
 
         initialized = false;
-
-        // Snap to the target tile.
         transform.position = targetPosition;
 
         if (gridManager == null)
@@ -105,16 +95,9 @@ public class EggBehav : MonoBehaviour
             return;
         }
 
-        // Convert the landing position to a grid cell.
         Vector2Int gridPosition =
-            gridManager.WorldToGridPosition(
-                targetPosition
-            );
+            gridManager.WorldToGridPosition(targetPosition);
 
-        // Register the egg as an obstacle.
-        gridManager.RegisterWalkableObstacle(
-            gridPosition
-        );
+        gridManager.RegisterWalkableObstacle(gridPosition);
     }
 }
-

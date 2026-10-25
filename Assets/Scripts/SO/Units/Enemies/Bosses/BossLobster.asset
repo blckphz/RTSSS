@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
   characterName: King Claw
   icon: {fileID: 0}
-  prefabToSpawn: {fileID: 6677648231893425325, guid: 8b6293c2b54aca843b6c095e4e59877f, type: 3}
+  prefabToSpawn: {fileID: 4030345030637247355, guid: 53e32e8f07cc7c841aaeb6de4d94e88d, type: 3}
   team: 2
   isPlayerCharacter: 0
   maxHealth: 250
@@ -22,7 +22,6 @@ MonoBehaviour:
   canwalkdiagonally: 1
   enemyFootprintSize: 3
   abilities:
-  - {fileID: 11400000, guid: 290813bbeff38e84eab8ee4e434b9316, type: 2}
-  - {fileID: 11400000, guid: 69956dd6a1939074ab098d912d983d92, type: 2}
+  - {fileID: 11400000, guid: 65df33496ba4da24d8f146e3fe131e3e, type: 2}
   RangedAttacker: 0
   upgrades: []

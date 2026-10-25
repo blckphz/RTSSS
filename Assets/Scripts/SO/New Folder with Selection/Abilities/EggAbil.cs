@@ -47,8 +47,12 @@ public class EggAbil : AbilitySO
             return false;
         }
 
-        if (!CanHitTile(gridManager, user, targetTile))
+        // Choose a random unoccupied tile instead of the supplied target.
+        if (!TryGetRandomUnoccupiedTile(gridManager, out targetTile))
         {
+            Debug.LogWarning(
+                "[EggAbil] No unoccupied tile is available."
+            );
             return false;
         }
 
@@ -70,8 +74,7 @@ public class EggAbil : AbilitySO
             Quaternion.identity
         );
 
-        EggBehav eggBehaviour =
-            egg.GetComponent<EggBehav>();
+        EggBehav eggBehaviour = egg.GetComponent<EggBehav>();
 
         if (eggBehaviour == null)
         {
@@ -97,10 +100,8 @@ public class EggAbil : AbilitySO
         GameObject target
     )
     {
-        if (user == null || target == null)
-        {
+        if (user == null)
             return false;
-        }
 
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
@@ -113,15 +114,55 @@ public class EggAbil : AbilitySO
             return false;
         }
 
-        Vector2Int targetTile =
-            gridManager.WorldToGridPosition(
-                target.transform.position
-            );
-
         return UseAtTile(
             user,
             gridManager,
-            targetTile
+            Vector2Int.zero
         );
+    }
+
+    private bool TryGetRandomUnoccupiedTile(
+        GridManager gridManager,
+        out Vector2Int selectedTile
+    )
+    {
+        selectedTile = Vector2Int.zero;
+
+        int minX = gridManager.GetMinX();
+        int maxX = gridManager.GetMaxX();
+        int minY = gridManager.GetMinY();
+        int maxY = gridManager.GetMaxY();
+
+        // Collect all currently valid tiles first.
+        System.Collections.Generic.List<Vector2Int> availableTiles =
+            new System.Collections.Generic.List<Vector2Int>();
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = minY; y <= maxY; y++)
+            {
+                Vector2Int tile = new Vector2Int(x, y);
+
+                if (!gridManager.IsInsideGrid(tile))
+                    continue;
+
+                if (gridManager.IsWalkableObstacle(tile))
+                    continue;
+
+                if (gridManager.IsCellOccupied(tile))
+                    continue;
+
+                availableTiles.Add(tile);
+            }
+        }
+
+        if (availableTiles.Count == 0)
+            return false;
+
+        selectedTile = availableTiles[
+            Random.Range(0, availableTiles.Count)
+        ];
+
+        return true;
     }
 }

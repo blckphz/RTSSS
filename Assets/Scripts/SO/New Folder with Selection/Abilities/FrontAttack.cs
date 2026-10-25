@@ -14,17 +14,7 @@ public class FrontAttack : AbilitySO
     [SerializeField] private bool logEveryHitboxTile = true;
     [SerializeField] private bool logFootprintChecks = true;
 
-    private void DebugLog(string message)
-    {
-        if (enableAttackDebug)
-            Debug.Log($"[FrontAttack:{GetAbilityName()}] {message}", this);
-    }
 
-    private void DebugWarning(string message)
-    {
-        if (enableAttackDebug)
-            Debug.LogWarning($"[FrontAttack:{GetAbilityName()}] {message}", this);
-    }
 
     // ==================================================
     // UNIT HELPERS
@@ -142,14 +132,6 @@ public class FrontAttack : AbilitySO
             }
         }
 
-        if (logFootprintChecks)
-        {
-            DebugLog(
-                $"Footprint | Unit={root.name} | Anchor={anchor} | " +
-                $"Size={size} | Tiles={TilesToString(tiles)}"
-            );
-        }
-
         return tiles;
     }
 
@@ -208,7 +190,6 @@ public class FrontAttack : AbilitySO
 
         if (gridManager == null || user == null)
         {
-            DebugWarning("GetRangeTiles failed: grid or user is null.");
             return tiles;
         }
 
@@ -239,10 +220,6 @@ public class FrontAttack : AbilitySO
             }
         }
 
-        DebugLog(
-            $"Range tiles built | User={user.name} | Origin={origin} | " +
-            $"MinRange={minDistance} | MaxRange={range} | Count={tiles.Count}"
-        );
 
         return tiles;
     }
@@ -260,7 +237,6 @@ public class FrontAttack : AbilitySO
 
         if (gridManager == null || user == null)
         {
-            DebugWarning("GetHitboxTiles failed: grid or user is null.");
             return tiles;
         }
 
@@ -297,11 +273,6 @@ public class FrontAttack : AbilitySO
             {
                 Vector2Int fallback =
                     gridManager.WorldToGridPosition(target.transform.position);
-
-                DebugWarning(
-                    $"Target footprint is empty for {target.name}; " +
-                    $"using fallback tile {fallback}."
-                );
 
                 direction = GetAttackDirection(origin, fallback);
             }
@@ -345,13 +316,6 @@ public class FrontAttack : AbilitySO
             );
         }
 
-        DebugLog(
-            $"Hitbox built | User={user.name} | Origin={origin} | " +
-            $"Target={(target != null ? target.name : "none")} | " +
-            $"Direction={direction} | Range={range} | " +
-            $"Tiles={TilesToString(tiles)}"
-        );
-
         return tiles;
     }
 
@@ -383,31 +347,10 @@ public class FrontAttack : AbilitySO
         GameObject user,
         GameObject target)
     {
-        DebugLog(
-            $"CanHit START | User={(user != null ? user.name : "NULL")} | " +
-            $"Target={(target != null ? target.name : "NULL")}"
-        );
-
-        if (gridManager == null || user == null || target == null)
-        {
-            DebugWarning("CanHit FAILED: grid, user, or target is null.");
-            return false;
-        }
 
         GameObject userRoot = GetUnitRoot(user);
         GameObject targetRoot = GetUnitRoot(target);
 
-        if (userRoot == targetRoot)
-        {
-            DebugWarning("CanHit FAILED: target is the attacker itself.");
-            return false;
-        }
-
-        if (!CanUseAfterMovement(user))
-        {
-            DebugWarning("CanHit FAILED: ability cannot be used after movement.");
-            return false;
-        }
 
         bool friendlyTurretHeal =
             IsFriendlyTurretHealTarget(userRoot, targetRoot);
@@ -416,11 +359,6 @@ public class FrontAttack : AbilitySO
             !friendlyTurretHeal &&
             !CanTargetObject(userRoot, targetRoot))
         {
-            DebugWarning(
-                $"CanHit FAILED: target team/type rejected | " +
-                $"UserTeam={FindAttackUnit(userRoot)?.GetTeam()} | " +
-                $"TargetTeam={FindAttackUnit(targetRoot)?.GetTeam()}"
-            );
 
             return false;
         }
@@ -429,7 +367,6 @@ public class FrontAttack : AbilitySO
 
         if (targetHealth != null && targetHealth.IsDead())
         {
-            DebugWarning("CanHit FAILED: target is dead.");
             return false;
         }
 
@@ -438,9 +375,6 @@ public class FrontAttack : AbilitySO
 
         if (targetTiles.Count == 0)
         {
-            DebugWarning(
-                $"CanHit FAILED: target {targetRoot.name} has no valid footprint tiles."
-            );
 
             return false;
         }
@@ -453,23 +387,10 @@ public class FrontAttack : AbilitySO
         int closestDistance =
             GetClosestDistance(userPosition, targetTiles);
 
-        DebugLog(
-            $"Range check | UserTile={userPosition} | " +
-            $"TargetAnchor={GetLogicalPosition(gridManager, targetRoot)} | " +
-            $"TargetSize={GetFootprintSize(targetRoot)} | " +
-            $"TargetTiles={TilesToString(targetTiles)} | " +
-            $"ClosestDistance={closestDistance} | " +
-            $"Allowed={minDistance}..{range}"
-        );
 
         if (closestDistance < minDistance ||
             closestDistance > range)
         {
-            DebugWarning(
-                $"CanHit FAILED: target outside range | " +
-                $"Distance={closestDistance} | " +
-                $"Allowed={minDistance}..{range}"
-            );
 
             return false;
         }
@@ -479,25 +400,13 @@ public class FrontAttack : AbilitySO
 
         bool intersects = TilesIntersect(hitbox, targetTiles);
 
-        DebugLog(
-            $"Hitbox intersection | Target={targetRoot.name} | " +
-            $"Hitbox={TilesToString(hitbox)} | " +
-            $"TargetTiles={TilesToString(targetTiles)} | " +
-            $"Intersects={intersects}"
-        );
 
         if (!intersects)
         {
-            DebugWarning(
-                "CanHit FAILED: target is in range but outside the directional hitbox."
-            );
 
             return false;
         }
 
-        DebugLog(
-            $"CanHit SUCCESS | User={userRoot.name} | Target={targetRoot.name}"
-        );
 
         return true;
     }
@@ -551,31 +460,11 @@ public class FrontAttack : AbilitySO
 
     public override bool Use(GameObject user, GameObject target)
     {
-        DebugLog(
-            $"USE START | User={(user != null ? user.name : "NULL")} | " +
-            $"Target={(target != null ? target.name : "NULL")}"
-        );
 
-        if (user == null || target == null)
-        {
-            DebugWarning("Use FAILED: user or target is null.");
-            return false;
-        }
 
         GridManager gridManager =
             Object.FindFirstObjectByType<GridManager>();
 
-        if (gridManager == null)
-        {
-            DebugWarning("Use FAILED: no GridManager found.");
-            return false;
-        }
-
-        if (!CanHit(gridManager, user, target))
-        {
-            DebugWarning("Use FAILED: CanHit returned false.");
-            return false;
-        }
 
         GameObject userRoot = GetUnitRoot(user);
         GameObject targetRoot = GetUnitRoot(target);
@@ -585,7 +474,6 @@ public class FrontAttack : AbilitySO
 
         if (hitbox.Count == 0)
         {
-            DebugWarning("Use FAILED: hitbox contains no valid tiles.");
             return false;
         }
 
@@ -600,10 +488,6 @@ public class FrontAttack : AbilitySO
 
             if (logEveryHitboxTile)
             {
-                DebugLog(
-                    $"Hitbox tile lookup | Tile={tile} | " +
-                    $"Occupant={(occupant != null ? occupant.name : "EMPTY")}"
-                );
             }
 
             if (occupant != null)
@@ -634,11 +518,6 @@ public class FrontAttack : AbilitySO
 
             if (logFootprintChecks)
             {
-                DebugLog(
-                    $"Candidate footprint test | Unit={unitRoot.name} | " +
-                    $"Tiles={TilesToString(footprint)} | " +
-                    $"HitboxIntersects={intersects}"
-                );
             }
 
             if (intersects)
@@ -674,18 +553,10 @@ public class FrontAttack : AbilitySO
 
             if (!TilesIntersect(hitbox, footprint))
             {
-                DebugLog(
-                    $"Candidate rejected | Unit={candidateRoot.name} | " +
-                    "No footprint tile intersects hitbox."
-                );
 
                 continue;
             }
 
-            DebugLog(
-                $"Candidate accepted | Unit={candidateRoot.name} | " +
-                $"Footprint={TilesToString(footprint)}"
-            );
 
             if (AttackUnitAtTile(userRoot, candidateRoot))
             {
@@ -695,17 +566,7 @@ public class FrontAttack : AbilitySO
 
         if (hitSomething)
         {
-            DebugLog("USE SUCCESS | At least one unit was hit or healed.");
             PlayHitEffect(targetRoot);
-        }
-        else
-        {
-            DebugWarning(
-                $"USE FAILED TO AFFECT ANYTHING | " +
-                $"Target={targetRoot.name} | " +
-                $"Hitbox={TilesToString(hitbox)} | " +
-                $"Candidates={candidates.Count}"
-            );
         }
 
         return hitSomething;
@@ -725,16 +586,12 @@ public class FrontAttack : AbilitySO
 
         if (targetHealth == null)
         {
-            DebugWarning(
-                $"Attack skipped | Target={target.name} has no HealthManager."
-            );
 
             return false;
         }
 
         if (targetHealth.IsDead())
         {
-            DebugLog($"Attack skipped | Target={target.name} is dead.");
             return false;
         }
 
@@ -758,22 +615,10 @@ public class FrontAttack : AbilitySO
                 GetRuntimeDamage(user) +
                 userData.GetMeleeTurretHealAmount();
 
-            DebugLog(
-                $"HEAL CHECK | Target={target.name} | " +
-                $"Amount={healAmount} | Team={targetHealth.GetTeam()}"
-            );
 
-            if (healAmount <= 0)
-            {
-                DebugWarning("Heal skipped: calculated heal amount is zero or less.");
-                return false;
-            }
 
             targetHealth.Heal(healAmount);
 
-            DebugLog(
-                $"HEAL APPLIED | Target={target.name} | Amount={healAmount}"
-            );
 
             return true;
         }
@@ -781,33 +626,20 @@ public class FrontAttack : AbilitySO
         if (userHealth != null &&
             targetHealth.GetTeam() == userHealth.GetTeam())
         {
-            DebugWarning(
-                $"DAMAGE BLOCKED | Friendly fire | User={user.name} | " +
-                $"Target={target.name} | Team={targetHealth.GetTeam()}"
-            );
 
             return false;
         }
 
         int damage = GetRuntimeDamage(user);
 
-        DebugLog(
-            $"DAMAGE CHECK | User={user.name} | Target={target.name} | " +
-            $"Amount={damage} | UserTeam={userHealth?.GetTeam()} | " +
-            $"TargetTeam={targetHealth.GetTeam()}"
-        );
 
         if (damage <= 0)
         {
-            DebugWarning("Damage skipped: calculated damage is zero or less.");
             return false;
         }
 
         targetHealth.TakeDamage(damage);
 
-        DebugLog(
-            $"DAMAGE APPLIED | Target={target.name} | Amount={damage}"
-        );
 
         return true;
     }
@@ -820,22 +652,17 @@ public class FrontAttack : AbilitySO
     {
         if (hitEffectPrefab == null)
         {
-            DebugLog("No hit effect prefab assigned.");
             return;
         }
 
         if (target == null)
         {
-            DebugWarning("Cannot spawn hit effect: target is null.");
             return;
         }
 
         Vector3 position =
             target.transform.position + hitEffectOffset;
 
-        DebugLog(
-            $"Spawning hit effect | Target={target.name} | Position={position}"
-        );
 
         GameObject effect = Object.Instantiate(
             hitEffectPrefab,

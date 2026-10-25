@@ -133,5 +133,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a82be661003a55408b38546ff5f42d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EggBehav
-  arcHeight: 2
+  arcHeight: 1
   gridManager: {fileID: 0}
