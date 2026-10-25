@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 2c079f3ff3d61784ba7c05fa27927f0f
+guid: 361579d2ec89f86418ec0d9eecd3610d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8165846294418040759
-    second: 3basic_0
+      213: -1622783539285179212
+    second: bushnoberries_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -56,7 +56,9 @@ TextureImporter:
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
+  spriteTessellationMethod: 0
   spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
@@ -126,13 +128,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: 3basic_0
+      name: bushnoberries_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 400
-        height: 400
+        width: 658
+        height: 560
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +143,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 948d5ca4f061dae80800000000000000
-      internalID: -8165846294418040759
+      spriteID: 4b44e8908f6ba79e0800000000000000
+      internalID: -1622783539285179212
       vertices: []
       indices: 
       edges: []
@@ -161,7 +163,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      3basic_0: -8165846294418040759
+      bushnoberries_0: -1622783539285179212
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

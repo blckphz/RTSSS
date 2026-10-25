@@ -1,88 +1,51 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
 
 public class WaterManager : MonoBehaviour
 {
-    [SerializeField] private Tilemap groundTilemap;
     [SerializeField] private Tilemap waterTilemap;
 
-    [SerializeField] private InputActionReference growWaterAction;
-
-    private void OnEnable()
+    private void Update()
     {
-        growWaterAction.action.performed += OnGrowWater;
-        growWaterAction.action.Enable();
-    }
-
-    private void OnDisable()
-    {
-        growWaterAction.action.performed -= OnGrowWater;
-        growWaterAction.action.Disable();
-    }
-
-    private void OnGrowWater(InputAction.CallbackContext context)
-    {
-        ExpandWaterInward();
-    }
-
-    private void ExpandWaterInward()
-    {
-        BoundsInt bounds = groundTilemap.cellBounds;
-
-        HashSet<Vector3Int> groundToWater = new HashSet<Vector3Int>();
-
-        for (int x = bounds.xMin; x < bounds.xMax; x++)
+        if (Keyboard.current != null &&
+            Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            for (int y = bounds.yMin; y < bounds.yMax; y++)
+            GrowWater();
+        }
+    }
+
+    private void GrowWater()
+    {
+        BoundsInt bounds = waterTilemap.cellBounds;
+
+        // Collect all currently occupied water tiles
+        var waterPositions = new System.Collections.Generic.List<Vector3Int>();
+
+        foreach (Vector3Int pos in bounds.allPositionsWithin)
+        {
+            if (waterTilemap.HasTile(pos))
             {
-                Vector3Int cell = new Vector3Int(x, y, 0);
-
-                // Only consider ground tiles
-                if (!groundTilemap.HasTile(cell))
-                    continue;
-
-                // Already water? Ignore it.
-                if (waterTilemap.HasTile(cell))
-                    continue;
-
-                // Is this ground tile touching water?
-                if (IsAdjacentToWater(cell))
-                {
-                    groundToWater.Add(cell);
-                }
+                waterPositions.Add(pos);
             }
         }
 
-        // Convert the entire outer layer at once.
-        foreach (Vector3Int cell in groundToWater)
+        // Grow each water tile in all 8 directions
+        foreach (Vector3Int pos in waterPositions)
         {
-            TileBase groundTile = groundTilemap.GetTile(cell);
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int y = -1; y <= 1; y++)
+                {
+                    Vector3Int neighbor = pos + new Vector3Int(x, y, 0);
 
-            waterTilemap.SetTile(cell, groundTile);
-            groundTilemap.SetTile(cell, null);
+                    if (!waterTilemap.HasTile(neighbor))
+                    {
+                        TileBase tile = waterTilemap.GetTile(pos);
+                        waterTilemap.SetTile(neighbor, tile);
+                    }
+                }
+            }
         }
-    }
-
-    private bool IsAdjacentToWater(Vector3Int cell)
-    {
-        Vector3Int[] directions =
-        {
-            Vector3Int.up,
-            Vector3Int.down,
-            Vector3Int.left,
-            Vector3Int.right
-        };
-
-        foreach (Vector3Int direction in directions)
-        {
-            Vector3Int neighbor = cell + direction;
-
-            if (waterTilemap.HasTile(neighbor))
-                return true;
-        }
-
-        return false;
     }
 }

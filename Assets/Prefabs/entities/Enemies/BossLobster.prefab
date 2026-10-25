@@ -684,19 +684,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   characterData: {fileID: 11400000, guid: d3de529cd20e92445bbc8bc6e64590b7, type: 2}
-  unitData: {fileID: 0}
+  unitData: {fileID: 3931024438314069250}
   abilities: []
   healthManager: {fileID: 1059586679484440838}
   animationController: {fileID: 6122139459183885319}
   upgradeableCombatUnit: {fileID: 0}
   dayNightManager: {fileID: 0}
-  useDirectionalEnemyAttackAnimation: 1
+  useDirectionalEnemyAttackAnimation: 0
   attackAnimatorLayerName: attackLayer
-  dayNightType: 1
+  dayNightType: 2
   dayDamageBonus: 0
-  nightDamageBonus: 10
-  dayMoveRangeBonus: -1
-  nightMoveRangeBonus: 1
+  nightDamageBonus: 0
+  dayMoveRangeBonus: 0
+  nightMoveRangeBonus: 0
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &7183446912517216329
 MonoBehaviour:
@@ -822,7 +822,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitMoveBrain
   attackUnit: {fileID: 3287218238532545765}
-  tilePin: {fileID: 0}
+  tilePin: {fileID: 2034843437972693172}
   animationController: {fileID: 6122139459183885319}
   moveDuration: 0.25
   facingDirection: {x: 0, y: 1}
@@ -845,7 +845,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitAttackBrain
   attackUnit: {fileID: 3287218238532545765}
-  animationController: {fileID: 0}
+  animationController: {fileID: 6122139459183885319}
 --- !u!114 &2034843437972693172
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -874,7 +874,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b915052cf5ca8644882da3dc9527c18a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+  character: {fileID: 11400000, guid: d3de529cd20e92445bbc8bc6e64590b7, type: 2}
 --- !u!95 &4928279244272581604
 Animator:
   serializedVersion: 7
@@ -885,7 +885,7 @@ Animator:
   m_GameObject: {fileID: 6677648231893425325}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: e0969d32fed89c84dba48fcd9189a93f, type: 2}
+  m_Controller: {fileID: 9100000, guid: 6e50fa744bdc3f14aa7d93d8d9ad0593, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -910,18 +910,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   animator: {fileID: 4928279244272581604}
-  walkDownState: basicEnemyWalkDown
-  walkUpState: basicEnemyWalkUp
-  walkLeftState: basicEnemyWalkLeft
-  walkRightState: basicEnemyWalkRight
+  walkDownState: lobsterwalkdown
+  walkUpState: lobsterwalkup
+  walkLeftState: lobsterwalkleft
+  walkRightState: lobsterwalkright
   idleState: Idle
   attackTrigger: Attack
   attackSequenceBool: IsAttacking
-  attackAnimatorLayerName: attackLayer
-  enemyAttackUpState: enemyattackup
-  enemyAttackDownState: enemyattackdown
-  enemyAttackLeftState: enemyattackleft
-  enemyAttackRightState: enemyattackright
+  attackAnimatorLayerName: attacklayer
+  enemyAttackUpState: 
+  enemyAttackDownState: 
+  enemyAttackLeftState: 
+  enemyAttackRightState: 
+  skipWalkAnimation: 0
+  skipAttackAnimations: 1
 --- !u!114 &3501266934075814228
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -25,9 +25,6 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
     [SerializeField]
     private string idleState = "Idle";
 
-    [Header("Generic Attack Animation")]
-    [SerializeField]
-    private string attackTrigger = "Attack";
 
     [Header("Attack Sequence Animator Bool")]
     [SerializeField]
@@ -49,6 +46,13 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
 
     [SerializeField]
     private string enemyAttackRightState = "enemyattackright";
+
+    [Header("Animation Settings")]
+    [SerializeField]
+    private bool skipWalkAnimation = false;
+
+    [SerializeField]
+    private bool skipAttackAnimations = false;
 
     private bool isWalking;
 
@@ -93,9 +97,7 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
         }
 
         attackAnimatorLayerIndex =
-            animator.GetLayerIndex(
-                attackAnimatorLayerName
-            );
+            animator.GetLayerIndex(attackAnimatorLayerName);
 
         if (attackAnimatorLayerIndex < 0)
         {
@@ -104,14 +106,14 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
                 + attackAnimatorLayerName,
                 this
             );
-
-            return;
         }
-
-        animator.SetLayerWeight(
-            attackAnimatorLayerIndex,
-            1f
-        );
+        else
+        {
+            animator.SetLayerWeight(
+                attackAnimatorLayerIndex,
+                1f
+            );
+        }
 
         if (!string.IsNullOrEmpty(attackSequenceBool))
         {
@@ -170,6 +172,12 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
 
     public void PlayAttackAnimation()
     {
+        if (skipAttackAnimations)
+        {
+            attackFinished = true;
+            return;
+        }
+
         if (animator == null)
         {
             attackFinished = true;
@@ -178,9 +186,6 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
 
         attackFinished = false;
 
-        animator.SetTrigger(
-            attackTrigger
-        );
     }
 
 
@@ -284,6 +289,15 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
             return;
         }
 
+        // Keep movement state accurate even when walk animations
+        // are disabled.
+        isWalking = true;
+
+        if (skipWalkAnimation)
+        {
+            return;
+        }
+
         Vector2Int visualDirection =
             ConvertDirectionToWorldDirection(
                 direction
@@ -305,8 +319,6 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
         {
             PlayWalkRight();
         }
-
-        isWalking = true;
     }
 
 
@@ -343,6 +355,11 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
     )
     {
         if (animator == null)
+        {
+            return;
+        }
+
+        if (skipWalkAnimation)
         {
             return;
         }
@@ -385,6 +402,25 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
 
         if (direction == Vector2Int.zero)
         {
+            return;
+        }
+
+        // Skip the attack animation but preserve attack callbacks.
+        if (skipAttackAnimations)
+        {
+            attackHitEventReceived = true;
+            attackFinishedEventReceived = true;
+            attackFinished = true;
+
+            AttackUnit attackUnit =
+                GetComponentInParent<AttackUnit>();
+
+            if (attackUnit != null)
+            {
+                attackUnit.OnAttackAnimationEvent();
+                attackUnit.OnAttackAnimationFinished();
+            }
+
             return;
         }
 
@@ -450,6 +486,7 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
 
         attackHitEventReceived = false;
         attackFinishedEventReceived = false;
+        attackFinished = false;
 
         animator.Play(
             stateToPlay,
@@ -517,7 +554,6 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
     public void AttackFinished()
     {
         attackFinishedEventReceived = true;
-
         attackFinished = true;
 
         AttackUnit attackUnit =
@@ -715,5 +751,17 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
     public bool HasAttackFinished()
     {
         return attackFinishedEventReceived;
+    }
+
+
+    public bool SkipsAttackAnimations()
+    {
+        return skipAttackAnimations;
+    }
+
+
+    public bool SkipsWalkAnimation()
+    {
+        return skipWalkAnimation;
     }
 }

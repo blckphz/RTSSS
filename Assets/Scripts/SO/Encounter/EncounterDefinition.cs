@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -106,8 +107,7 @@ public class EncounterDefinition : ScriptableObject
     [Min(1)]
     public int height = 11;
 
-    public GridShapeType shape =
-        GridShapeType.Box;
+    public GridShapeType shape = GridShapeType.Box;
 
 
     // ============================================================
@@ -184,7 +184,23 @@ public class EncounterDefinition : ScriptableObject
     // ============================================================
 
     [Header("Enemy Spawn")]
+    [Tooltip(
+        "Regular enemies spawn using the existing enemy spawn logic."
+    )]
     public List<EnemySpawnData> enemies =
+        new List<EnemySpawnData>();
+
+
+    // ============================================================
+    // BOSSES
+    // ============================================================
+
+    [Header("Boss Spawn")]
+    [Tooltip(
+        "Bosses are spawned at the centre of the grid. " +
+        "The grid spawning script must implement this placement."
+    )]
+    public List<EnemySpawnData> bosses =
         new List<EnemySpawnData>();
 }
 

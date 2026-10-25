@@ -108,6 +108,18 @@ public class EncounterSpawner : MonoBehaviour
         spawnedBushPositions.Clear();
 
         // -----------------------------------------------------
+        // BOSSES
+        // -----------------------------------------------------
+        // Spawn bosses first so obstacles, bushes, and regular
+        // enemies cannot occupy the centre cell beforehand.
+        // -----------------------------------------------------
+
+        SpawnBosses(
+            encounter,
+            false
+        );
+
+        // -----------------------------------------------------
         // NORMAL OBSTACLES
         // -----------------------------------------------------
 
@@ -144,6 +156,74 @@ public class EncounterSpawner : MonoBehaviour
             encounter,
             false
         );
+    }
+
+
+    // =========================================================
+    // BOSS SPAWNING
+    // =========================================================
+
+    private int SpawnBosses(
+        EncounterDefinition encounter,
+        bool lockForCurrentRound
+    )
+    {
+        if (
+            encounter == null ||
+            encounter.bosses == null ||
+            gridManager == null
+        )
+        {
+            return 0;
+        }
+
+        // GridManager uses logical coordinates centred at (0, 0).
+        Vector2Int centre = Vector2Int.zero;
+
+        int spawnedCount = 0;
+
+        for (
+            int bossIndex = 0;
+            bossIndex < encounter.bosses.Count;
+            bossIndex++
+        )
+        {
+            EnemySpawnData bossData =
+                encounter.bosses[bossIndex];
+
+            if (
+                bossData == null ||
+                bossData.prefab == null
+            )
+            {
+                continue;
+            }
+
+            bool spawned = SpawnUnitAtPosition(
+                bossData.prefab,
+                bossData.character,
+                bossData.enemyId,
+                lockForCurrentRound,
+                centre
+            );
+
+            if (spawned)
+            {
+                spawnedCount++;
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"Could not spawn boss '{bossData.enemyId}' " +
+                    $"at grid centre {centre}. The centre cell may " +
+                    "be unavailable, or another boss may already " +
+                    "occupy it.",
+                    this
+                );
+            }
+        }
+
+        return spawnedCount;
     }
 
 
@@ -683,20 +763,7 @@ public class EncounterSpawner : MonoBehaviour
         bool lockForCurrentRound
     )
     {
-        if (prefab == null)
-        {
-            return false;
-        }
-
-        if (gridManager == null)
-        {
-            return false;
-        }
-
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
+        if (prefab == null || gridManager == null)
         {
             return false;
         }
@@ -710,10 +777,42 @@ public class EncounterSpawner : MonoBehaviour
             return false;
         }
 
-        GameObject unit =
-            Instantiate(
-                prefab
-            );
+        return SpawnUnitAtPosition(
+            prefab,
+            character,
+            enemyId,
+            lockForCurrentRound,
+            position
+        );
+    }
+
+
+    // =========================================================
+    // SPAWN UNIT AT A SPECIFIC GRID POSITION
+    // =========================================================
+
+    private bool SpawnUnitAtPosition(
+        GameObject prefab,
+        CharacterSO character,
+        string enemyId,
+        bool lockForCurrentRound,
+        Vector2Int position
+    )
+    {
+        if (prefab == null || gridManager == null)
+        {
+            return false;
+        }
+
+        if (
+            encounterManager != null &&
+            encounterManager.IsFinished()
+        )
+        {
+            return false;
+        }
+
+        GameObject unit = Instantiate(prefab);
 
         if (unit == null)
         {
@@ -725,24 +824,18 @@ public class EncounterSpawner : MonoBehaviour
                 ? "EncounterEnemy"
                 : enemyId + "_Enemy";
 
-
         // -----------------------------------------------------
         // UNIT DATA
         // -----------------------------------------------------
 
-        UnitData unitData =
-            unit.GetComponent<UnitData>();
+        UnitData unitData = unit.GetComponent<UnitData>();
 
         if (unitData == null)
         {
-            unitData =
-                unit.AddComponent<UnitData>();
+            unitData = unit.AddComponent<UnitData>();
         }
 
-        unitData.Initialize(
-            character
-        );
-
+        unitData.Initialize(character);
 
         // -----------------------------------------------------
         // ENCOUNTER UNIT
@@ -753,50 +846,31 @@ public class EncounterSpawner : MonoBehaviour
 
         if (encounterUnit == null)
         {
-            encounterUnit =
-                unit.AddComponent<EncounterUnit>();
+            encounterUnit = unit.AddComponent<EncounterUnit>();
         }
 
-        encounterUnit.SetEncounterUnitId(
-            enemyId
-        );
-
+        encounterUnit.SetEncounterUnitId(enemyId);
 
         // -----------------------------------------------------
-        // GRID
+        // GRID PLACEMENT
         // -----------------------------------------------------
 
-        bool placed =
-            gridManager.PlaceUnit(
-                unit,
-                position
-            );
+        bool placed = gridManager.PlaceUnit(unit, position);
 
         if (!placed)
         {
-            Destroy(
-                unit
-            );
-
+            Destroy(unit);
             return false;
         }
-
 
         // -----------------------------------------------------
         // WAVE TURN LOCK
         // -----------------------------------------------------
 
         /*
-         * Only Wave 2+ passes TRUE here.
-         *
-         * Wave 1:
-         *     false -> can act in Round 1
-         *
-         * Wave 2:
-         *     true -> skips Round 2
-         *
-         * Wave 3:
-         *     true -> skips Round 3
+         * Initial encounter wave passes false, so units can act
+         * during Round 1. Later waves may pass true to lock the
+         * spawned enemy for the current round.
          */
         if (
             lockForCurrentRound &&

@@ -1,7 +1,7 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-
 
 // ============================================================
 // GRID SHAPE TYPE
@@ -14,7 +14,6 @@ public enum GridShapeType
     Pyramid,
     Donut
 }
-
 
 // ============================================================
 // GRID SHAPE EVALUATOR
@@ -30,28 +29,13 @@ public static class GridShapeEvaluator
         int minRadius = 2,
         int maxRadius = 5)
     {
-        int minX =
-            -(width / 2);
+        int minX = -(width / 2);
+        int maxX = minX + width - 1;
+        int minY = -(height / 2);
+        int maxY = minY + height - 1;
 
-        int maxX =
-            minX +
-            width -
-            1;
-
-        int minY =
-            -(height / 2);
-
-        int maxY =
-            minY +
-            height -
-            1;
-
-        if (
-            position.x < minX ||
-            position.x > maxX ||
-            position.y < minY ||
-            position.y > maxY
-        )
+        if (position.x < minX || position.x > maxX ||
+            position.y < minY || position.y > maxY)
         {
             return false;
         }
@@ -59,70 +43,34 @@ public static class GridShapeEvaluator
         switch (shapeType)
         {
             case GridShapeType.Box:
-                {
-                    return true;
-                }
+                return true;
 
             case GridShapeType.Manhattan:
-                {
-                    int radius =
-                        Mathf.Min(
-                            width,
-                            height
-                        ) / 2;
-
-                    return
-                        Mathf.Abs(position.x) +
-                        Mathf.Abs(position.y) <= radius;
-                }
+                int radius = Mathf.Min(width, height) / 2;
+                return Mathf.Abs(position.x) + Mathf.Abs(position.y) <= radius;
 
             case GridShapeType.Pyramid:
-                {
-                    int rowOffset =
-                        position.y -
-                        minY;
+                int rowOffset = position.y - minY;
+                int currentHalfWidth = (width / 2) - rowOffset;
 
-                    int currentHalfWidth =
-                        (width / 2) -
-                        rowOffset;
+                if (currentHalfWidth < 0)
+                    return false;
 
-                    if (currentHalfWidth < 0)
-                    {
-                        return false;
-                    }
-
-                    return
-                        position.x >=
-                            -currentHalfWidth &&
-                        position.x <=
-                            currentHalfWidth;
-                }
+                return position.x >= -currentHalfWidth &&
+                       position.x <= currentHalfWidth;
 
             case GridShapeType.Donut:
-                {
-                    int distSq =
-                        (position.x * position.x) +
-                        (position.y * position.y);
+                int distSq = position.x * position.x + position.y * position.y;
+                int minSq = minRadius * minRadius;
+                int maxSq = maxRadius * maxRadius;
 
-                    int minSq =
-                        minRadius *
-                        minRadius;
-
-                    int maxSq =
-                        maxRadius *
-                        maxRadius;
-
-                    return
-                        distSq >= minSq &&
-                        distSq <= maxSq;
-                }
+                return distSq >= minSq && distSq <= maxSq;
 
             default:
                 return false;
         }
     }
 }
-
 
 // ============================================================
 // GRID MANAGER
@@ -135,124 +83,88 @@ public class GridManager : MonoBehaviour
     // ============================================================
 
     [Header("Grid References")]
-
-    [SerializeField]
-    private Grid grid;
-
-    [SerializeField]
-    private GameObject floorTilePrefab;
-
-    [SerializeField]
-    private Transform floorParent;
-
+    [SerializeField] private Grid grid;
+    [SerializeField] private GameObject floorTilePrefab;
+    [SerializeField] private Transform floorParent;
 
     // ============================================================
     // GRID CONFIGURATION
     // ============================================================
 
     [Header("Grid Configuration")]
-
-    [SerializeField, Min(1)]
-    private int width = 11;
-
-    [SerializeField, Min(1)]
-    private int height = 11;
-
-    [SerializeField]
-    private GridShapeType gridShape =
-        GridShapeType.Box;
+    [SerializeField, Min(1)] private int width = 11;
+    [SerializeField, Min(1)] private int height = 11;
+    [SerializeField] private GridShapeType gridShape = GridShapeType.Box;
 
     private int minRadius = 2;
     private int maxRadius = 5;
-
 
     // ============================================================
     // GRID CENTERING
     // ============================================================
 
     [Header("Grid Centering")]
-
-    [SerializeField]
-    private bool centerGridAtWorldOrigin = true;
-
+    [SerializeField] private bool centerGridAtWorldOrigin = true;
 
     // ============================================================
     // HIGHLIGHT MANAGER
     // ============================================================
 
     [Header("Highlight Manager")]
-
-    [SerializeField]
-    private GridHighlightManager highlightManager;
-
+    [SerializeField] private GridHighlightManager highlightManager;
 
     // ============================================================
     // GIZMOS
     // ============================================================
 
     [Header("Gizmos")]
-
-    [SerializeField]
-    private bool showGridGizmos = true;
-
-    [SerializeField]
-    private bool showCenterGizmo = true;
-
+    [SerializeField] private bool showGridGizmos = true;
+    [SerializeField] private bool showCenterGizmo = true;
 
     // ============================================================
     // DATA
     // ============================================================
 
     private GameObject[,] occupiedCells;
-
     private GameObject[,] floorTiles;
-
     private Transform gridTransform;
-
     private bool initialized;
 
-
     // ============================================================
-    // ACTIVE MOVEMENT TRACKING
-    //
-    // IMPORTANT:
-    //
-    // StartMoveUnit() changes logical occupancy immediately,
-    // while the GameObject Transform may still be visually
-    // travelling from the old tile to the new tile.
-    //
-    // Therefore Transform position must NOT be used to recover
-    // occupancy for units currently being animated.
+    // MOVEMENT TRACKING
     // ============================================================
 
     private readonly HashSet<GameObject> movingUnits =
         new HashSet<GameObject>();
 
+    // ============================================================
+    // FOOTPRINT CACHE
+    // ============================================================
+
+    private readonly Dictionary<GameObject, int> footprintSizeCache =
+        new Dictionary<GameObject, int>();
+
+    private int maxCachedFootprintSize = 1;
 
     // ============================================================
     // WALKABLE OBSTACLES
     // ============================================================
 
-    private readonly HashSet<Vector2Int>
-        walkableObstacleCells =
-            new HashSet<Vector2Int>();
-
+    private readonly HashSet<Vector2Int> walkableObstacleCells =
+        new HashSet<Vector2Int>();
 
     // ============================================================
     // ORIGINAL GRID TRANSFORM POSITION
     // ============================================================
 
     private Vector3 originalGridLocalPosition;
-
     private bool originalGridPositionCached;
-
 
     // ============================================================
     // GRID CHANGED EVENT
     // ============================================================
 
     public event Action OnGridChanged;
-
 
     // ============================================================
     // INITIALIZATION
@@ -263,80 +175,39 @@ public class GridManager : MonoBehaviour
         Initialize();
     }
 
-
     private void Initialize()
     {
         if (grid == null)
-        {
-            grid =
-                GetComponent<Grid>();
-        }
+            grid = GetComponent<Grid>();
 
         if (grid == null)
-        {
-            Debug.LogError(
-                "[GridManager] No Grid component found!",
-                this
-            );
-
             return;
-        }
 
-        gridTransform =
-            grid.transform;
+        gridTransform = grid.transform;
 
         if (!originalGridPositionCached)
         {
-            originalGridLocalPosition =
-                gridTransform.localPosition;
-
+            originalGridLocalPosition = gridTransform.localPosition;
             originalGridPositionCached = true;
         }
 
-        if (
-            width < 1 ||
-            height < 1
-        )
-        {
-            Debug.LogError(
-                "[GridManager] Width and Height must be at least 1!",
-                this
-            );
-
+        if (width < 1 || height < 1)
             return;
-        }
 
-        occupiedCells =
-            new GameObject[
-                width,
-                height
-            ];
-
-        floorTiles =
-            new GameObject[
-                width,
-                height
-            ];
+        occupiedCells = new GameObject[width, height];
+        floorTiles = new GameObject[width, height];
 
         if (floorParent == null)
-        {
-            floorParent =
-                transform;
-        }
+            floorParent = transform;
 
         if (highlightManager == null)
-        {
-            highlightManager =
-                GetComponent<GridHighlightManager>();
-        }
+            highlightManager = GetComponent<GridHighlightManager>();
 
         CenterGrid();
-
         CreateFloor();
 
         initialized = true;
     }
-
 
     // ============================================================
     // RUNTIME SHAPE & DIMENSION MUTATORS
@@ -357,7 +228,6 @@ public class GridManager : MonoBehaviour
         );
     }
 
-
     public void SetGridSizeAndShape(
         GridShapeType newShape,
         int newWidth,
@@ -374,7 +244,6 @@ public class GridManager : MonoBehaviour
         );
     }
 
-
     public void SetGridShape(
         GridShapeType newShape,
         int newWidth = -1,
@@ -384,80 +253,44 @@ public class GridManager : MonoBehaviour
         bool destroyInvalidUnits = true)
     {
         if (newWidth > 0)
-        {
             width = newWidth;
-        }
 
         if (newHeight > 0)
-        {
             height = newHeight;
-        }
 
         if (newMinRadius >= 0)
-        {
             minRadius = newMinRadius;
-        }
 
         if (newMaxRadius > 0)
-        {
             maxRadius = newMaxRadius;
-        }
 
-        gridShape =
-            newShape;
+        gridShape = newShape;
 
         if (grid == null)
-        {
-            grid =
-                GetComponent<Grid>();
-        }
+            grid = GetComponent<Grid>();
 
         if (grid == null)
-        {
-            Debug.LogError(
-                "[GridManager] Cannot change grid shape because " +
-                "no Grid component exists.",
-                this
-            );
-
             return;
-        }
 
         if (gridTransform == null)
-        {
-            gridTransform =
-                grid.transform;
-        }
+            gridTransform = grid.transform;
 
         if (!originalGridPositionCached)
         {
-            originalGridLocalPosition =
-                gridTransform.localPosition;
-
+            originalGridLocalPosition = gridTransform.localPosition;
             originalGridPositionCached = true;
         }
 
         ClearGridHighlights();
 
-        GameObject[,] previousOccupants =
-            occupiedCells;
+        GameObject[,] previousOccupants = occupiedCells;
 
         ClearFloorTiles();
 
-        occupiedCells =
-            new GameObject[
-                width,
-                height
-            ];
-
-        floorTiles =
-            new GameObject[
-                width,
-                height
-            ];
+        occupiedCells = new GameObject[width, height];
+        floorTiles = new GameObject[width, height];
 
         CenterGrid();
-
         CreateFloor();
 
         if (previousOccupants != null)
@@ -471,83 +304,47 @@ public class GridManager : MonoBehaviour
         RemoveInvalidWalkableObstacleCells();
 
         initialized = true;
-
         NotifyGridChanged();
     }
-
 
     // ============================================================
     // WALKABLE OBSTACLES
     // ============================================================
 
-    public void RegisterWalkableObstacle(
-        Vector2Int position)
+    public void RegisterWalkableObstacle(Vector2Int position)
     {
         if (!IsInsideGrid(position))
-        {
             return;
-        }
 
-        walkableObstacleCells.Add(
-            position
-        );
+        walkableObstacleCells.Add(position);
     }
 
-
-    public void UnregisterWalkableObstacle(
-        Vector2Int position)
+    public void UnregisterWalkableObstacle(Vector2Int position)
     {
-        walkableObstacleCells.Remove(
-            position
-        );
+        walkableObstacleCells.Remove(position);
     }
 
-
-    public bool IsWalkableObstacle(
-        Vector2Int position)
+    public bool IsWalkableObstacle(Vector2Int position)
     {
-        return
-            walkableObstacleCells.Contains(
-                position
-            );
+        return walkableObstacleCells.Contains(position);
     }
-
 
     private void RemoveInvalidWalkableObstacleCells()
     {
         if (walkableObstacleCells.Count == 0)
-        {
             return;
-        }
 
-        List<Vector2Int> invalidCells =
-            new List<Vector2Int>();
+        List<Vector2Int> invalidCells = new List<Vector2Int>();
 
-        foreach (
-            Vector2Int position
-            in walkableObstacleCells
-        )
+        foreach (Vector2Int position in walkableObstacleCells)
         {
             if (!IsInsideGrid(position))
-            {
-                invalidCells.Add(
-                    position
-                );
-            }
+                invalidCells.Add(position);
         }
 
-        for (
-            int i = 0;
-            i < invalidCells.Count;
-            i++
-        )
-        {
-            walkableObstacleCells.Remove(
-                invalidCells[i]
-            );
-        }
+        for (int i = 0; i < invalidCells.Count; i++)
+            walkableObstacleCells.Remove(invalidCells[i]);
     }
-
 
     // ============================================================
     // RESTORE PREVIOUS OCCUPANTS
@@ -558,113 +355,78 @@ public class GridManager : MonoBehaviour
         bool destroyInvalidUnits)
     {
         if (previousOccupants == null)
-        {
             return;
-        }
 
-        int oldWidth =
-            previousOccupants.GetLength(0);
-
-        int oldHeight =
-            previousOccupants.GetLength(1);
-
-        int oldMinX =
-            -(oldWidth / 2);
-
-        int oldMinY =
-            -(oldHeight / 2);
+        int oldWidth = previousOccupants.GetLength(0);
+        int oldHeight = previousOccupants.GetLength(1);
+        int oldMinX = -(oldWidth / 2);
+        int oldMinY = -(oldHeight / 2);
 
         for (int x = 0; x < oldWidth; x++)
         {
             for (int y = 0; y < oldHeight; y++)
             {
-                GameObject unit =
-                    previousOccupants[x, y];
+                GameObject unit = previousOccupants[x, y];
 
                 if (unit == null)
-                {
                     continue;
-                }
 
-                Vector2Int logicalPos =
-                    new Vector2Int(
-                        oldMinX + x,
-                        oldMinY + y
-                    );
+                GetUnitFootprintSize(unit);
+
+                Vector2Int logicalPos = new Vector2Int(
+                    oldMinX + x,
+                    oldMinY + y
+                );
 
                 if (IsInsideGrid(logicalPos))
                 {
                     Vector2Int newArrayPos =
-                        LogicalToArrayPosition(
-                            logicalPos
-                        );
+                        LogicalToArrayPosition(logicalPos);
 
-                    if (
-                        newArrayPos.x >= 0 &&
-                        newArrayPos.x <
-                            occupiedCells.GetLength(0) &&
-                        newArrayPos.y >= 0 &&
-                        newArrayPos.y <
-                            occupiedCells.GetLength(1)
-                    )
+                    if (IsArrayPositionValid(newArrayPos, occupiedCells))
                     {
                         GameObject existing =
-                            occupiedCells[
-                                newArrayPos.x,
-                                newArrayPos.y
-                            ];
+                            occupiedCells[newArrayPos.x, newArrayPos.y];
 
-                        if (
-                            existing == null ||
-                            existing == unit
-                        )
+                        if (existing == null || existing == unit)
                         {
-                            occupiedCells[
-                                newArrayPos.x,
-                                newArrayPos.y
-                            ] = unit;
-
-                            SynchronizeUnitPosition(
-                                unit,
-                                logicalPos
-                            );
+                            occupiedCells[newArrayPos.x, newArrayPos.y] = unit;
+                            SynchronizeUnitPosition(unit, logicalPos);
                         }
                         else
                         {
-                            Debug.LogWarning(
-                                $"[GridManager] Grid resize collision | " +
-                                $"Cell={logicalPos} | " +
-                                $"Existing={existing.name} | " +
-                                $"Incoming={unit.name}",
-                                this
-                            );
-
                             if (destroyInvalidUnits)
-                            {
                                 Destroy(unit);
-                            }
                             else
-                            {
                                 unit.SetActive(false);
-                            }
                         }
                     }
                 }
                 else
                 {
                     if (destroyInvalidUnits)
-                    {
                         Destroy(unit);
-                    }
                     else
-                    {
                         unit.SetActive(false);
-                    }
                 }
             }
         }
     }
 
+    // ============================================================
+    // ARRAY BOUNDS HELPER
+    // ============================================================
+
+    private bool IsArrayPositionValid(
+        Vector2Int position,
+        GameObject[,] array)
+    {
+        return array != null &&
+               position.x >= 0 &&
+               position.x < array.GetLength(0) &&
+               position.y >= 0 &&
+               position.y < array.GetLength(1);
+    }
 
     // ============================================================
     // CLEAR FLOOR TILES
@@ -673,15 +435,10 @@ public class GridManager : MonoBehaviour
     private void ClearFloorTiles()
     {
         if (floorTiles == null)
-        {
             return;
-        }
 
-        int lenX =
-            floorTiles.GetLength(0);
-
-        int lenY =
-            floorTiles.GetLength(1);
+        int lenX = floorTiles.GetLength(0);
+        int lenY = floorTiles.GetLength(1);
 
         for (int x = 0; x < lenX; x++)
         {
@@ -689,16 +446,12 @@ public class GridManager : MonoBehaviour
             {
                 if (floorTiles[x, y] != null)
                 {
-                    Destroy(
-                        floorTiles[x, y]
-                    );
-
+                    Destroy(floorTiles[x, y]);
                     floorTiles[x, y] = null;
                 }
             }
         }
     }
-
 
     // ============================================================
     // CLEAR GRID HIGHLIGHTS
@@ -706,31 +459,21 @@ public class GridManager : MonoBehaviour
 
     private void ClearGridHighlights()
     {
-        if (highlightManager == null)
+        if (highlightManager == null && gridTransform != null)
         {
-            if (gridTransform != null)
-            {
-                highlightManager =
-                    gridTransform.GetComponent<
-                        GridHighlightManager
-                    >();
-            }
+            highlightManager =
+                gridTransform.GetComponent<GridHighlightManager>();
         }
 
         if (highlightManager != null)
-        {
             highlightManager.ClearAllHighlights();
-        }
 
         GridHighlightBrain highlightBrain =
             FindFirstObjectByType<GridHighlightBrain>();
 
         if (highlightBrain != null)
-        {
             highlightBrain.ClearAllHighlights();
-        }
     }
-
 
     // ============================================================
     // NOTIFY GRID CHANGED
@@ -744,11 +487,8 @@ public class GridManager : MonoBehaviour
             FindFirstObjectByType<GridHighlightBrain>();
 
         if (highlightBrain != null)
-        {
             highlightBrain.ResetForNewEncounter();
-        }
     }
-
 
     // ============================================================
     // CENTER GRID
@@ -756,46 +496,27 @@ public class GridManager : MonoBehaviour
 
     private void CenterGrid()
     {
-        if (!centerGridAtWorldOrigin)
-        {
+        if (!centerGridAtWorldOrigin || grid == null)
             return;
-        }
-
-        if (grid == null)
-        {
-            return;
-        }
 
         if (!originalGridPositionCached)
         {
-            originalGridLocalPosition =
-                gridTransform.localPosition;
-
+            originalGridLocalPosition = gridTransform.localPosition;
             originalGridPositionCached = true;
         }
 
-        gridTransform.localPosition =
-            originalGridLocalPosition;
+        gridTransform.localPosition = originalGridLocalPosition;
 
-        Vector3 centerWorld =
-            grid.GetCellCenterWorld(
-                new Vector3Int(
-                    width / 2,
-                    height / 2,
-                    0
-                )
-            );
+        Vector3 centerWorld = grid.GetCellCenterWorld(
+            new Vector3Int(width / 2, height / 2, 0)
+        );
 
         Vector3 localOffset =
-            gridTransform.InverseTransformVector(
-                centerWorld
-            );
+            gridTransform.InverseTransformVector(centerWorld);
 
         gridTransform.localPosition =
-            originalGridLocalPosition -
-            localOffset;
+            originalGridLocalPosition - localOffset;
     }
-
 
     // ============================================================
     // LOGICAL RANGE & MAPPINGS
@@ -806,33 +527,22 @@ public class GridManager : MonoBehaviour
         return -(width / 2);
     }
 
-
     public int GetMaxX()
     {
-        return
-            GetMinX() +
-            width -
-            1;
+        return GetMinX() + width - 1;
     }
-
 
     public int GetMinY()
     {
         return -(height / 2);
     }
 
-
     public int GetMaxY()
     {
-        return
-            GetMinY() +
-            height -
-            1;
+        return GetMinY() + height - 1;
     }
 
-
-    private Vector2Int LogicalToArrayPosition(
-        Vector2Int logicalPos)
+    private Vector2Int LogicalToArrayPosition(Vector2Int logicalPos)
     {
         return new Vector2Int(
             logicalPos.x - GetMinX(),
@@ -840,9 +550,7 @@ public class GridManager : MonoBehaviour
         );
     }
 
-
-    private Vector2Int ArrayToLogicalPosition(
-        Vector2Int arrayPos)
+    private Vector2Int ArrayToLogicalPosition(Vector2Int arrayPos)
     {
         return new Vector2Int(
             arrayPos.x + GetMinX(),
@@ -850,9 +558,7 @@ public class GridManager : MonoBehaviour
         );
     }
 
-
-    private Vector3Int LogicalToUnityCell(
-        Vector2Int logicalPos)
+    private Vector3Int LogicalToUnityCell(Vector2Int logicalPos)
     {
         return new Vector3Int(
             logicalPos.x + width / 2,
@@ -861,16 +567,13 @@ public class GridManager : MonoBehaviour
         );
     }
 
-
-    private Vector2Int UnityCellToLogical(
-        Vector3Int unityCell)
+    private Vector2Int UnityCellToLogical(Vector3Int unityCell)
     {
         return new Vector2Int(
             unityCell.x - width / 2,
             unityCell.y - height / 2
         );
     }
-
 
     // ============================================================
     // WORLD / GRID SPACE CONVERSIONS
@@ -879,161 +582,99 @@ public class GridManager : MonoBehaviour
     private bool IsGridControlledByBoard()
     {
         if (BoardViewController.Instance == null)
-        {
             return false;
-        }
 
         Transform board =
-            BoardViewController.Instance
-                .GetBoardTransform();
+            BoardViewController.Instance.GetBoardTransform();
 
-        return
-            board != null &&
-            gridTransform.IsChildOf(board);
+        return board != null &&
+               gridTransform != null &&
+               gridTransform.IsChildOf(board);
     }
 
-
-    private Vector3 ConvertWorldToGridSpace(
-        Vector3 worldPosition)
+    private Vector3 ConvertWorldToGridSpace(Vector3 worldPosition)
     {
-        if (
-            BoardViewController.Instance == null ||
-            IsGridControlledByBoard()
-        )
+        if (BoardViewController.Instance == null ||
+            IsGridControlledByBoard())
         {
             return worldPosition;
         }
 
         Vector3 center =
-            BoardViewController.Instance
-                .GetRotationCenter();
+            BoardViewController.Instance.GetRotationCenter();
 
         int rotation =
-            BoardViewController.Instance
-                .GetCurrentRotation();
+            BoardViewController.Instance.GetCurrentRotation();
 
-        Quaternion inverseRotation =
-            Quaternion.AngleAxis(
-                -rotation,
-                Vector3.forward
-            );
+        Quaternion inverseRotation = Quaternion.AngleAxis(
+            -rotation,
+            Vector3.forward
+        );
 
-        return
-            center +
-            (
-                inverseRotation *
-                (worldPosition - center)
-            );
+        return center +
+               inverseRotation * (worldPosition - center);
     }
 
-
-    private Vector3 ConvertGridToWorldSpace(
-        Vector3 gridWorldPosition)
+    private Vector3 ConvertGridToWorldSpace(Vector3 gridWorldPosition)
     {
-        if (
-            BoardViewController.Instance == null ||
-            IsGridControlledByBoard()
-        )
+        if (BoardViewController.Instance == null ||
+            IsGridControlledByBoard())
         {
             return gridWorldPosition;
         }
 
         Vector3 center =
-            BoardViewController.Instance
-                .GetRotationCenter();
+            BoardViewController.Instance.GetRotationCenter();
 
         int rotation =
-            BoardViewController.Instance
-                .GetCurrentRotation();
+            BoardViewController.Instance.GetCurrentRotation();
 
-        Quaternion rotationQuaternion =
-            Quaternion.AngleAxis(
-                rotation,
-                Vector3.forward
-            );
-
-        return
-            center +
-            (
-                rotationQuaternion *
-                (gridWorldPosition - center)
-            );
-    }
-
-
-    public Vector2Int WorldToGridPosition(
-        Vector3 worldPosition)
-    {
-        if (grid == null)
-        {
-            return Vector2Int.zero;
-        }
-
-        Vector3 gridSpace =
-            ConvertWorldToGridSpace(
-                worldPosition
-            );
-
-        Vector3Int unityCell =
-            grid.WorldToCell(
-                gridSpace
-            );
-
-        return UnityCellToLogical(
-            unityCell
+        Quaternion rotationQuaternion = Quaternion.AngleAxis(
+            rotation,
+            Vector3.forward
         );
+
+        return center +
+               rotationQuaternion * (gridWorldPosition - center);
     }
 
-
-    public Vector3 GridToWorldPosition(
-        Vector2Int gridPosition)
+    public Vector2Int WorldToGridPosition(Vector3 worldPosition)
     {
         if (grid == null)
-        {
-            return Vector3.zero;
-        }
+            return Vector2Int.zero;
 
-        Vector3Int unityCell =
-            LogicalToUnityCell(
-                gridPosition
-            );
+        Vector3 gridSpace = ConvertWorldToGridSpace(worldPosition);
+        Vector3Int unityCell = grid.WorldToCell(gridSpace);
+
+        return UnityCellToLogical(unityCell);
+    }
+
+    public Vector3 GridToWorldPosition(Vector2Int gridPosition)
+    {
+        if (grid == null)
+            return Vector3.zero;
+
+        Vector3Int unityCell = LogicalToUnityCell(gridPosition);
 
         Vector3 unrotatedWorld =
-            grid.GetCellCenterWorld(
-                unityCell
-            );
+            grid.GetCellCenterWorld(unityCell);
 
-        return ConvertGridToWorldSpace(
-            unrotatedWorld
-        );
+        return ConvertGridToWorldSpace(unrotatedWorld);
     }
-
 
     // ============================================================
     // CHECKS & FLOOR CREATION
     // ============================================================
 
-    public bool IsInsideGrid(
-        Vector2Int position)
+    public bool IsInsideGrid(Vector2Int position)
     {
-        int minX =
-            GetMinX();
+        int minX = GetMinX();
+        int maxX = GetMaxX();
+        int minY = GetMinY();
+        int maxY = GetMaxY();
 
-        int maxX =
-            GetMaxX();
-
-        int minY =
-            GetMinY();
-
-        int maxY =
-            GetMaxY();
-
-        if (
-            position.x < minX ||
-            position.x > maxX ||
-            position.y < minY ||
-            position.y > maxY
-        )
+        if (position.x < minX || position.x > maxX ||
+            position.y < minY || position.y > maxY)
         {
             return false;
         }
@@ -1048,114 +689,81 @@ public class GridManager : MonoBehaviour
         );
     }
 
-
     private void CreateFloor()
     {
-        if (floorTilePrefab == null)
-        {
+        if (floorTilePrefab == null || floorTiles == null)
             return;
-        }
 
-        if (floorTiles == null)
-        {
-            return;
-        }
-
-        int minX =
-            GetMinX();
-
-        int maxX =
-            GetMaxX();
-
-        int minY =
-            GetMinY();
-
-        int maxY =
-            GetMaxY();
+        int minX = GetMinX();
+        int maxX = GetMaxX();
+        int minY = GetMinY();
+        int maxY = GetMaxY();
 
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
             {
-                Vector2Int logicalPos =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                Vector2Int logicalPos = new Vector2Int(x, y);
 
                 if (!IsInsideGrid(logicalPos))
-                {
                     continue;
-                }
 
-                Vector3 worldPos =
-                    GridToWorldPosition(
-                        logicalPos
-                    );
+                Vector3 worldPos = GridToWorldPosition(logicalPos);
 
-                GameObject tile =
-                    Instantiate(
-                        floorTilePrefab,
-                        worldPos,
-                        Quaternion.identity,
-                        floorParent
-                    );
+                GameObject tile = Instantiate(
+                    floorTilePrefab,
+                    worldPos,
+                    Quaternion.identity,
+                    floorParent
+                );
 
-                tile.name =
-                    $"Floor_{x}_{y}";
+                tile.name = $"Floor_{x}_{y}";
 
                 Vector2Int arrayPos =
-                    LogicalToArrayPosition(
-                        logicalPos
-                    );
+                    LogicalToArrayPosition(logicalPos);
 
-                if (
-                    arrayPos.x >= 0 &&
-                    arrayPos.x <
-                        floorTiles.GetLength(0) &&
-                    arrayPos.y >= 0 &&
-                    arrayPos.y <
-                        floorTiles.GetLength(1)
-                )
+                if (IsArrayPositionValid(arrayPos, floorTiles))
                 {
-                    floorTiles[
-                        arrayPos.x,
-                        arrayPos.y
-                    ] = tile;
+                    floorTiles[arrayPos.x, arrayPos.y] = tile;
                 }
                 else
                 {
-                    Debug.LogError(
-                        $"[GridManager] CreateFloor calculated invalid array position " +
-                        $"{arrayPos} for logical position {logicalPos}.",
-                        this
-                    );
-
                     Destroy(tile);
                 }
             }
         }
     }
 
-
     // ============================================================
     // UNIT FOOTPRINT HELPERS
-    // The unit's transform/registered cell is its anchor. Footprints
-    // are centered on that anchor for odd sizes (e.g. 3x3).
     // ============================================================
 
     public int GetUnitFootprintSize(GameObject unit)
     {
-        if (unit == null) return 1;
+        if (unit == null)
+            return 1;
+
+        if (footprintSizeCache.TryGetValue(unit, out int cachedSize))
+            return cachedSize;
+
+        int size = 1;
 
         AttackUnit attackUnit = unit.GetComponent<AttackUnit>();
+
         if (attackUnit != null)
         {
             CharacterSO data = attackUnit.GetCharacterData();
-            if (data != null) return Mathf.Max(1, data.GetFootprintSize());
+
+            if (data != null)
+                size = Mathf.Max(1, data.GetFootprintSize());
         }
 
-        return 1;
+        footprintSizeCache[unit] = size;
+
+        if (size > maxCachedFootprintSize)
+            maxCachedFootprintSize = size;
+
+        return size;
     }
 
     private Vector2Int GetFootprintMinOffset(int size)
@@ -1163,52 +771,101 @@ public class GridManager : MonoBehaviour
         return new Vector2Int(-(size / 2), -(size / 2));
     }
 
-    public bool IsCellInUnitFootprint(GameObject unit, Vector2Int anchor, Vector2Int cell)
+    public bool IsCellInUnitFootprint(
+        GameObject unit,
+        Vector2Int anchor,
+        Vector2Int cell)
     {
         int size = GetUnitFootprintSize(unit);
         Vector2Int minOffset = GetFootprintMinOffset(size);
+
         return cell.x >= anchor.x + minOffset.x &&
                cell.x < anchor.x + minOffset.x + size &&
                cell.y >= anchor.y + minOffset.y &&
                cell.y < anchor.y + minOffset.y + size;
     }
 
-    public bool IsFootprintInsideGrid(GameObject unit, Vector2Int anchor)
+    public bool IsFootprintInsideGrid(
+        GameObject unit,
+        Vector2Int anchor)
     {
         int size = GetUnitFootprintSize(unit);
         Vector2Int minOffset = GetFootprintMinOffset(size);
+
         for (int x = 0; x < size; x++)
         {
             for (int y = 0; y < size; y++)
             {
-                Vector2Int cell = anchor + minOffset + new Vector2Int(x, y);
-                if (!IsInsideGrid(cell)) return false;
+                Vector2Int cell =
+                    anchor + minOffset + new Vector2Int(x, y);
+
+                if (!IsInsideGrid(cell))
+                    return false;
             }
         }
+
         return true;
     }
 
-    // Looks for units whose anchor is elsewhere but whose footprint covers this cell.
-    // The occupancy array continues storing one anchor entry per unit, preserving
-    // existing resize/recovery/movement bookkeeping.
-    private GameObject FindFootprintOccupant(Vector2Int position, GameObject ignoreUnit = null)
+    // ============================================================
+    // OPTIMIZED FOOTPRINT OCCUPANT LOOKUP
+    // ============================================================
+
+    private GameObject FindFootprintOccupant(
+        Vector2Int position,
+        GameObject ignoreUnit = null)
     {
-        if (occupiedCells == null) return null;
-        for (int x = 0; x < occupiedCells.GetLength(0); x++)
+        if (occupiedCells == null)
+            return null;
+
+        int searchRadius = Mathf.Max(1, maxCachedFootprintSize);
+
+        int minX = Mathf.Max(GetMinX(), position.x - searchRadius);
+        int maxX = Mathf.Min(GetMaxX(), position.x + searchRadius);
+        int minY = Mathf.Max(GetMinY(), position.y - searchRadius);
+        int maxY = Mathf.Min(GetMaxY(), position.y + searchRadius);
+
+        for (int x = minX; x <= maxX; x++)
         {
-            for (int y = 0; y < occupiedCells.GetLength(1); y++)
+            for (int y = minY; y <= maxY; y++)
             {
-                GameObject candidate = occupiedCells[x, y];
-                if (candidate == null || candidate == ignoreUnit) continue;
-                Vector2Int anchor = ArrayToLogicalPosition(new Vector2Int(x, y));
-                if (anchor == position || !IsCellInUnitFootprint(candidate, anchor, position)) continue;
-                if (!candidate.activeInHierarchy) continue;
-                HealthManager health = candidate.GetComponent<HealthManager>();
-                if (health != null && health.IsDead()) continue;
-                if (!movingUnits.Contains(candidate) && WorldToGridPosition(candidate.transform.position) != anchor) continue;
+                Vector2Int anchor = new Vector2Int(x, y);
+                Vector2Int array = LogicalToArrayPosition(anchor);
+
+                if (!IsArrayPositionValid(array, occupiedCells))
+                    continue;
+
+                GameObject candidate = occupiedCells[array.x, array.y];
+
+                if (candidate == null ||
+                    candidate == ignoreUnit ||
+                    anchor == position)
+                {
+                    continue;
+                }
+
+                if (!candidate.activeInHierarchy)
+                    continue;
+
+                HealthManager health =
+                    candidate.GetComponent<HealthManager>();
+
+                if (health != null && health.IsDead())
+                    continue;
+
+                if (!IsCellInUnitFootprint(candidate, anchor, position))
+                    continue;
+
+                if (!movingUnits.Contains(candidate) &&
+                    WorldToGridPosition(candidate.transform.position) != anchor)
+                {
+                    continue;
+                }
+
                 return candidate;
             }
         }
+
         return null;
     }
 
@@ -1221,80 +878,53 @@ public class GridManager : MonoBehaviour
         Vector2Int position)
     {
         if (occupant == null)
-        {
             return false;
-        }
 
         if (!occupant.activeInHierarchy)
         {
             RemoveUnit(position);
-
             return false;
         }
 
-        HealthManager health =
-            occupant.GetComponent<HealthManager>();
+        HealthManager health = occupant.GetComponent<HealthManager>();
 
-        if (
-            health != null &&
-            health.IsDead()
-        )
+        if (health != null && health.IsDead())
         {
             RemoveUnit(position);
-
             return false;
         }
 
         return true;
     }
 
-
     // ============================================================
     // REMOVE STALE REFERENCES TO A UNIT
     // ============================================================
 
-    private void RemoveUnitReferences(
-        GameObject unit)
+    private void RemoveUnitReferences(GameObject unit)
     {
-        if (
-            unit == null ||
-            occupiedCells == null
-        )
-        {
+        if (unit == null || occupiedCells == null)
             return;
-        }
 
-        for (int x = 0; x < width; x++)
+        int lenX = occupiedCells.GetLength(0);
+        int lenY = occupiedCells.GetLength(1);
+
+        for (int x = 0; x < lenX; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < lenY; y++)
             {
-                if (
-                    occupiedCells[x, y] ==
-                    unit
-                )
-                {
-                    occupiedCells[x, y] =
-                        null;
-                }
+                if (occupiedCells[x, y] == unit)
+                    occupiedCells[x, y] = null;
             }
         }
     }
 
-
     // ============================================================
     // FIND ACTUAL UNIT AT POSITION
-    //
-    // IMPORTANT:
-    //
-    // Moving units are intentionally ignored here.
-    //
-    // Their Transform can still be between tiles while their
-    // logical GridManager occupancy has already been advanced
-    // to the destination.
+    // Retained for explicit recovery operations only.
     // ============================================================
 
-    private GameObject FindUnitAtActualPosition(
-        Vector2Int position)
+    private GameObject FindUnitAtActualPosition(Vector2Int position)
     {
         HealthManager[] healthManagers =
             FindObjectsByType<HealthManager>(
@@ -1302,56 +932,26 @@ public class GridManager : MonoBehaviour
                 FindObjectsSortMode.None
             );
 
-        for (
-            int i = 0;
-            i < healthManagers.Length;
-            i++
-        )
+        for (int i = 0; i < healthManagers.Length; i++)
         {
-            HealthManager health =
-                healthManagers[i];
+            HealthManager health = healthManagers[i];
 
             if (health == null)
-            {
                 continue;
-            }
 
-            GameObject candidate =
-                health.gameObject;
+            GameObject candidate = health.gameObject;
 
-            if (candidate == null)
-            {
+            if (candidate == null || !candidate.activeInHierarchy)
                 continue;
-            }
-
-            if (!candidate.activeInHierarchy)
-            {
-                continue;
-            }
 
             if (health.IsDead())
-            {
                 continue;
-            }
-
-            // ====================================================
-            // DO NOT RECOVER MOVING UNITS FROM THEIR TRANSFORM.
-            // ====================================================
 
             if (movingUnits.Contains(candidate))
-            {
                 continue;
-            }
 
-            Vector2Int actualPosition =
-                WorldToGridPosition(
-                    candidate.transform.position
-                );
-
-            if (actualPosition != position)
-            {
+            if (WorldToGridPosition(candidate.transform.position) != position)
                 continue;
-            }
 
             return candidate;
         }
@@ -1359,376 +959,153 @@ public class GridManager : MonoBehaviour
         return null;
     }
 
-
     // ============================================================
     // RECOVER AND REGISTER UNIT
     // ============================================================
 
-    private GameObject RecoverUnitAtPosition(
-        Vector2Int position)
+    private GameObject RecoverUnitAtPosition(Vector2Int position)
     {
-        GameObject recovered =
-            FindUnitAtActualPosition(
-                position
-            );
+        GameObject recovered = FindUnitAtActualPosition(position);
 
         if (recovered == null)
-        {
             return null;
-        }
 
-        // --------------------------------------------------------
-        // Make sure this unit isn't registered somewhere else.
-        // --------------------------------------------------------
+        GetUnitFootprintSize(recovered);
+        RemoveUnitReferences(recovered);
 
-        RemoveUnitReferences(
-            recovered
-        );
+        Vector2Int array = LogicalToArrayPosition(position);
 
-
-        // --------------------------------------------------------
-        // Register it at the actual requested tile.
-        // --------------------------------------------------------
-
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
-
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
-        {
+        if (!IsArrayPositionValid(array, occupiedCells))
             return null;
-        }
 
+        GameObject existing = occupiedCells[array.x, array.y];
 
-        // --------------------------------------------------------
-        // Do not overwrite another valid unit.
-        // --------------------------------------------------------
-
-        GameObject existing =
-            occupiedCells[
-                array.x,
-                array.y
-            ];
-
-        if (
-            existing != null &&
+        if (existing != null &&
             existing != recovered &&
-            IsOccupantValid(
-                existing,
-                position
-            )
-        )
+            IsOccupantValid(existing, position))
         {
-            Debug.LogWarning(
-                $"[GridManager] RECOVERY BLOCKED | " +
-                $"Tile={position} | " +
-                $"Existing={existing.name} | " +
-                $"Recovered={recovered.name}",
-                this
-            );
-
             return existing;
         }
 
-
-        occupiedCells[
-            array.x,
-            array.y
-        ] = recovered;
-
-
-        Debug.Log(
-            $"[GridManager] OCCUPANCY RECOVERED | " +
-            $"Unit={recovered.name} | " +
-            $"Tile={position}",
-            recovered
-        );
-
+        occupiedCells[array.x, array.y] = recovered;
 
         return recovered;
     }
 
-
     // ============================================================
-    // IS CELL OCCUPIED
+    // IS CELL OCCUPIED — OPTIMIZED
     // ============================================================
 
-    public bool IsCellOccupied(
-        Vector2Int position)
+    public bool IsCellOccupied(Vector2Int position)
     {
-        if (
-            occupiedCells == null ||
-            !IsInsideGrid(position)
-        )
-        {
+        if (occupiedCells == null || !IsInsideGrid(position))
             return false;
-        }
 
         GameObject footprintOccupant = FindFootprintOccupant(position);
-        if (footprintOccupant != null) return true;
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
-
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
-        {
-            return false;
-        }
-
-        GameObject occupant =
-            occupiedCells[
-                array.x,
-                array.y
-            ];
-
-        if (
-            IsOccupantValid(
-                occupant,
-                position
-            )
-        )
-        {
+        if (footprintOccupant != null)
             return true;
-        }
 
+        Vector2Int array = LogicalToArrayPosition(position);
 
-        // --------------------------------------------------------
-        // Recovery
-        // --------------------------------------------------------
+        if (!IsArrayPositionValid(array, occupiedCells))
+            return false;
 
-        GameObject recovered =
-            RecoverUnitAtPosition(
-                position
-            );
+        GameObject occupant = occupiedCells[array.x, array.y];
 
-        return
-            recovered != null;
+        return IsOccupantValid(occupant, position);
     }
 
-
     // ============================================================
-    // GET UNIT AT
+    // GET UNIT AT — OPTIMIZED
     // ============================================================
 
-    public GameObject GetUnitAt(
-        Vector2Int position)
+    public GameObject GetUnitAt(Vector2Int position)
     {
-        if (
-            occupiedCells == null ||
-            !IsInsideGrid(position)
-        )
-        {
+        if (occupiedCells == null || !IsInsideGrid(position))
             return null;
-        }
 
         GameObject footprintOccupant = FindFootprintOccupant(position);
-        if (footprintOccupant != null) return footprintOccupant;
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
+        if (footprintOccupant != null)
+            return footprintOccupant;
 
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
-        {
-            Debug.LogError(
-                $"[GridManager] GetUnitAt out of range!\n" +
-                $"Logical Position: {position}\n" +
-                $"Array Position: {array}\n" +
-                $"Array Size: " +
-                $"{occupiedCells.GetLength(0)}x" +
-                $"{occupiedCells.GetLength(1)}\n" +
-                $"Logical X Range: " +
-                $"{GetMinX()}..{GetMaxX()}\n" +
-                $"Logical Y Range: " +
-                $"{GetMinY()}..{GetMaxY()}",
-                this
-            );
+        Vector2Int array = LogicalToArrayPosition(position);
 
+        if (!IsArrayPositionValid(array, occupiedCells))
             return null;
-        }
 
+        GameObject unit = occupiedCells[array.x, array.y];
 
-        // ========================================================
-        // NORMAL LOOKUP
-        // ========================================================
+        if (!IsOccupantValid(unit, position))
+            return null;
 
-        GameObject unit =
-            occupiedCells[
-                array.x,
-                array.y
-            ];
+        if (movingUnits.Contains(unit))
+            return unit;
 
+        Vector2Int actualPosition =
+            WorldToGridPosition(unit.transform.position);
 
-        if (
-            IsOccupantValid(
-                unit,
-                position
-            )
-        )
-        {
-            // ----------------------------------------------------
-            // IMPORTANT:
-            //
-            // During movement, logical occupancy is authoritative.
-            //
-            // The Transform may still be between tiles, so do not
-            // classify the registration as stale while moving.
-            // ----------------------------------------------------
+        if (actualPosition == position)
+            return unit;
 
-            if (movingUnits.Contains(unit))
-            {
-                return unit;
-            }
-
-
-            // ----------------------------------------------------
-            // Normal stationary-unit validation.
-            // ----------------------------------------------------
-
-            Vector2Int actualPosition =
-                WorldToGridPosition(
-                    unit.transform.position
-                );
-
-            if (actualPosition == position)
-            {
-                return unit;
-            }
-
-
-            // ----------------------------------------------------
-            // The array entry is stale.
-            // ----------------------------------------------------
-
-            Debug.LogWarning(
-                $"[GridManager] STALE OCCUPANCY | " +
-                $"Tile={position} | " +
-                $"RegisteredUnit={unit.name} | " +
-                $"ActualTile={actualPosition} | " +
-                $"Removing stale registration.",
-                unit
-            );
-
-            occupiedCells[
-                array.x,
-                array.y
-            ] = null;
-        }
-
-
-        // ========================================================
-        // RECOVERY LOOKUP
-        // ========================================================
-
-        GameObject recovered =
-            RecoverUnitAtPosition(
-                position
-            );
-
-        if (recovered != null)
-        {
-            return recovered;
-        }
-
+        occupiedCells[array.x, array.y] = null;
 
         return null;
     }
-
 
     // ============================================================
     // GET UNIT GRID POSITION
     // ============================================================
 
-    public Vector2Int GetUnitGridPosition(
-        GameObject unit)
+    public Vector2Int GetUnitGridPosition(GameObject unit)
     {
         if (unit == null)
-        {
             return Vector2Int.zero;
-        }
 
-        /*
-         * IMPORTANT:
-         *
-         * World position is used as the source of truth here
-         * for stationary units.
-         *
-         * UnitTilePin can become stale if another system moves
-         * the GameObject without notifying GridManager.
-         *
-         * During an active movement animation, however, the
-         * logical occupancy remains authoritative.
-         */
-
-        if (movingUnits.Contains(unit))
+        if (movingUnits.Contains(unit) && occupiedCells != null)
         {
-            for (int x = 0; x < width; x++)
+            int lenX = occupiedCells.GetLength(0);
+            int lenY = occupiedCells.GetLength(1);
+
+            for (int x = 0; x < lenX; x++)
             {
-                for (int y = 0; y < height; y++)
+                for (int y = 0; y < lenY; y++)
                 {
                     if (occupiedCells[x, y] == unit)
                     {
                         return ArrayToLogicalPosition(
-                            new Vector2Int(
-                                x,
-                                y
-                            )
+                            new Vector2Int(x, y)
                         );
                     }
                 }
             }
         }
 
-        return WorldToGridPosition(
-            unit.transform.position
-        );
+        return WorldToGridPosition(unit.transform.position);
     }
-
 
     // ============================================================
     // CAN MOVE TO CELL
     // ============================================================
 
-    public bool CanMoveToCell(
-        GameObject unit,
-        Vector2Int position)
+    public bool CanMoveToCell(GameObject unit, Vector2Int position)
     {
         if (unit == null || !IsFootprintInsideGrid(unit, position))
             return false;
 
         int size = GetUnitFootprintSize(unit);
         Vector2Int minOffset = GetFootprintMinOffset(size);
+
         for (int x = 0; x < size; x++)
         {
             for (int y = 0; y < size; y++)
             {
-                Vector2Int cell = position + minOffset + new Vector2Int(x, y);
+                Vector2Int cell =
+                    position + minOffset + new Vector2Int(x, y);
+
                 GameObject occupant = GetUnitAt(cell);
+
                 if (occupant != null && occupant != unit)
                     return false;
             }
@@ -1736,7 +1113,6 @@ public class GridManager : MonoBehaviour
 
         return true;
     }
-
 
     // ============================================================
     // PLACE UNIT
@@ -1747,95 +1123,58 @@ public class GridManager : MonoBehaviour
         Vector2Int position,
         bool playSound = true)
     {
-        if (unit == null || occupiedCells == null || !IsFootprintInsideGrid(unit, position))
+        if (unit == null ||
+            occupiedCells == null ||
+            !IsFootprintInsideGrid(unit, position))
+        {
             return false;
+        }
 
-        // Validate every footprint cell before removing the unit's old registration.
         int footprintSize = GetUnitFootprintSize(unit);
-        Vector2Int footprintOffset = GetFootprintMinOffset(footprintSize);
+        Vector2Int footprintOffset =
+            GetFootprintMinOffset(footprintSize);
+
         for (int fx = 0; fx < footprintSize; fx++)
         {
             for (int fy = 0; fy < footprintSize; fy++)
             {
-                Vector2Int cell = position + footprintOffset + new Vector2Int(fx, fy);
+                Vector2Int cell =
+                    position + footprintOffset + new Vector2Int(fx, fy);
+
                 GameObject occupant = GetUnitAt(cell);
-                if (occupant != null && occupant != unit) return false;
+
+                if (occupant != null && occupant != unit)
+                    return false;
             }
         }
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
+        Vector2Int array = LogicalToArrayPosition(position);
 
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
-        {
-            Debug.LogError(
-                $"[GridManager] PlaceUnit out of range! " +
-                $"Position={position}, Array={array}",
-                this
-            );
-
+        if (!IsArrayPositionValid(array, occupiedCells))
             return false;
-        }
 
+        RemoveUnitReferences(unit);
 
-        // --------------------------------------------------------
-        // Remove any old registration of this unit.
-        // --------------------------------------------------------
-
-        RemoveUnitReferences(
-            unit
-        );
-
-
-        GameObject existing =
-            occupiedCells[
-                array.x,
-                array.y
-            ];
-
+        GameObject existing = occupiedCells[array.x, array.y];
 
         if (existing != null)
         {
             if (existing == unit)
             {
-                SynchronizeUnitPosition(
-                    unit,
-                    position
-                );
-
+                SynchronizeUnitPosition(unit, position);
                 return true;
             }
 
             if (IsOccupantValid(existing, position))
-            {
                 return false;
-            }
         }
 
+        occupiedCells[array.x, array.y] = unit;
 
-        occupiedCells[
-            array.x,
-            array.y
-        ] = unit;
-
-
-        SynchronizeUnitPosition(
-            unit,
-            position
-        );
+        SynchronizeUnitPosition(unit, position);
 
         return true;
     }
-
 
     // ============================================================
     // SYNCHRONIZE UNIT POSITION
@@ -1846,28 +1185,19 @@ public class GridManager : MonoBehaviour
         Vector2Int position)
     {
         if (unit == null)
-        {
             return;
-        }
 
-        UnitTilePin pin =
-            unit.GetComponent<UnitTilePin>();
+        UnitTilePin pin = unit.GetComponent<UnitTilePin>();
 
         if (pin != null)
         {
-            pin.SetTile(
-                position
-            );
+            pin.SetTile(position);
         }
         else
         {
-            unit.transform.position =
-                GridToWorldPosition(
-                    position
-                );
+            unit.transform.position = GridToWorldPosition(position);
         }
     }
-
 
     // ============================================================
     // REGISTER UNIT IF MISSING
@@ -1877,121 +1207,61 @@ public class GridManager : MonoBehaviour
         GameObject unit,
         Vector2Int position)
     {
-        if (
-            unit == null ||
+        if (unit == null ||
             occupiedCells == null ||
-            !IsInsideGrid(position)
-        )
+            !IsInsideGrid(position))
         {
             return false;
         }
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
+        GetUnitFootprintSize(unit);
 
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
-        {
+        Vector2Int array = LogicalToArrayPosition(position);
+
+        if (!IsArrayPositionValid(array, occupiedCells))
             return false;
-        }
 
-
-        GameObject occupant =
-            occupiedCells[
-                array.x,
-                array.y
-            ];
-
+        GameObject occupant = occupiedCells[array.x, array.y];
 
         if (occupant == unit)
-        {
             return true;
-        }
 
-
-        if (
-            occupant != null &&
-            IsOccupantValid(
-                occupant,
-                position
-            )
-        )
-        {
+        if (occupant != null && IsOccupantValid(occupant, position))
             return false;
-        }
 
+        RemoveUnitReferences(unit);
 
-        RemoveUnitReferences(
-            unit
-        );
-
-
-        occupiedCells[
-            array.x,
-            array.y
-        ] = unit;
+        occupiedCells[array.x, array.y] = unit;
 
         return true;
     }
-
 
     // ============================================================
     // REMOVE UNIT
     // ============================================================
 
-    public void RemoveUnit(
-        Vector2Int position)
+    public void RemoveUnit(Vector2Int position)
     {
-        if (
-            occupiedCells == null ||
-            !IsInsideGrid(position)
-        )
-        {
+        if (occupiedCells == null || !IsInsideGrid(position))
             return;
-        }
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
+        Vector2Int array = LogicalToArrayPosition(position);
 
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
-        {
+        if (!IsArrayPositionValid(array, occupiedCells))
             return;
-        }
 
-        occupiedCells[
-            array.x,
-            array.y
-        ] = null;
+        occupiedCells[array.x, array.y] = null;
     }
 
-
-    public void RemoveUnit(
-        GameObject unit)
+    public void RemoveUnit(GameObject unit)
     {
+        if (unit == null)
+            return;
+
         movingUnits.Remove(unit);
-
-        RemoveUnitReferences(
-            unit
-        );
+        footprintSizeCache.Remove(unit);
+        RemoveUnitReferences(unit);
     }
-
 
     // ============================================================
     // CLEANUP DEAD UNITS
@@ -2000,38 +1270,28 @@ public class GridManager : MonoBehaviour
     public void CleanupDeadUnits()
     {
         if (occupiedCells == null)
-        {
             return;
-        }
 
-        for (int x = 0; x < width; x++)
+        int lenX = occupiedCells.GetLength(0);
+        int lenY = occupiedCells.GetLength(1);
+
+        for (int x = 0; x < lenX; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < lenY; y++)
             {
-                GameObject unit =
-                    occupiedCells[x, y];
+                GameObject unit = occupiedCells[x, y];
 
                 if (unit == null)
-                {
                     continue;
-                }
 
-                Vector2Int logical =
-                    ArrayToLogicalPosition(
-                        new Vector2Int(
-                            x,
-                            y
-                        )
-                    );
-
-                IsOccupantValid(
-                    unit,
-                    logical
+                Vector2Int logical = ArrayToLogicalPosition(
+                    new Vector2Int(x, y)
                 );
+
+                IsOccupantValid(unit, logical);
             }
         }
     }
-
 
     // ============================================================
     // MOVEMENT
@@ -2042,13 +1302,11 @@ public class GridManager : MonoBehaviour
         Vector2Int oldPosition,
         Vector2Int newPosition)
     {
-        if (
-            unit == null ||
+        if (unit == null ||
             occupiedCells == null ||
             !IsInsideGrid(oldPosition) ||
             !IsInsideGrid(newPosition) ||
-            oldPosition == newPosition
-        )
+            oldPosition == newPosition)
         {
             return false;
         }
@@ -2056,255 +1314,106 @@ public class GridManager : MonoBehaviour
         if (!CanMoveToCell(unit, newPosition))
             return false;
 
-        Vector2Int oldArray =
-            LogicalToArrayPosition(
-                oldPosition
-            );
+        GetUnitFootprintSize(unit);
 
-        Vector2Int newArray =
-            LogicalToArrayPosition(
-                newPosition
-            );
+        Vector2Int oldArray = LogicalToArrayPosition(oldPosition);
+        Vector2Int newArray = LogicalToArrayPosition(newPosition);
 
-        if (
-            oldArray.x < 0 ||
-            oldArray.x >=
-                occupiedCells.GetLength(0) ||
-            oldArray.y < 0 ||
-            oldArray.y >=
-                occupiedCells.GetLength(1) ||
-            newArray.x < 0 ||
-            newArray.x >=
-                occupiedCells.GetLength(0) ||
-            newArray.y < 0 ||
-            newArray.y >=
-                occupiedCells.GetLength(1)
-        )
+        if (!IsArrayPositionValid(oldArray, occupiedCells) ||
+            !IsArrayPositionValid(newArray, occupiedCells))
         {
-            Debug.LogError(
-                $"[GridManager] StartMoveUnit array position out of range.\n" +
-                $"Old Logical: {oldPosition}\n" +
-                $"Old Array: {oldArray}\n" +
-                $"New Logical: {newPosition}\n" +
-                $"New Array: {newArray}\n" +
-                $"Array Size: " +
-                $"{occupiedCells.GetLength(0)}x{occupiedCells.GetLength(1)}",
-                this
-            );
-
             return false;
         }
 
-
-        // ========================================================
-        // ENSURE MOVING UNIT IS REGISTERED
-        // ========================================================
-
         GameObject oldOccupant =
-            occupiedCells[
-                oldArray.x,
-                oldArray.y
-            ];
+            occupiedCells[oldArray.x, oldArray.y];
 
         if (oldOccupant != unit)
         {
-            bool registered =
-                EnsureUnitRegistered(
-                    unit,
-                    oldPosition
-                );
+            bool registered = EnsureUnitRegistered(unit, oldPosition);
 
             if (!registered)
-            {
-                Debug.LogWarning(
-                    $"[GridManager] StartMoveUnit failed to register " +
-                    $"{unit.name} at {oldPosition}.",
-                    unit
-                );
-
                 return false;
-            }
         }
 
-
-        // ========================================================
-        // DESTINATION CHECK
-        // ========================================================
-
         GameObject destinationOccupant =
-            occupiedCells[
-                newArray.x,
-                newArray.y
-            ];
+            occupiedCells[newArray.x, newArray.y];
 
         if (destinationOccupant != null)
         {
-            if (
-                destinationOccupant != unit &&
-                IsOccupantValid(
-                    destinationOccupant,
-                    newPosition
-                )
-            )
+            if (destinationOccupant != unit &&
+                IsOccupantValid(destinationOccupant, newPosition))
             {
                 return false;
             }
 
-            if (
-                destinationOccupant != null &&
-                destinationOccupant != unit
-            )
+            if (destinationOccupant != null &&
+                destinationOccupant != unit)
             {
-                occupiedCells[
-                    newArray.x,
-                    newArray.y
-                ] = null;
+                occupiedCells[newArray.x, newArray.y] = null;
             }
         }
 
+        occupiedCells[oldArray.x, oldArray.y] = null;
+        occupiedCells[newArray.x, newArray.y] = unit;
 
-        // ========================================================
-        // MOVE OCCUPANCY
-        //
-        // Logical occupancy changes BEFORE the visual Transform.
-        // ========================================================
-
-        occupiedCells[
-            oldArray.x,
-            oldArray.y
-        ] = null;
-
-        occupiedCells[
-            newArray.x,
-            newArray.y
-        ] = unit;
-
-
-        // ========================================================
-        // MARK UNIT AS CURRENTLY MOVING
-        // ========================================================
-
-        movingUnits.Add(
-            unit
-        );
-
+        movingUnits.Add(unit);
 
         return true;
     }
-
 
     // ============================================================
     // FINISH MOVE
     // ============================================================
 
-    public void FinishMoveUnit(
-        GameObject unit,
-        Vector2Int position)
+    public void FinishMoveUnit(GameObject unit, Vector2Int position)
     {
-        if (
-            unit == null ||
+        if (unit == null ||
             occupiedCells == null ||
-            !IsInsideGrid(position)
-        )
+            !IsInsideGrid(position))
         {
             if (unit != null)
-            {
                 movingUnits.Remove(unit);
-            }
 
             return;
         }
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
+        Vector2Int array = LogicalToArrayPosition(position);
 
-        if (
-            array.x < 0 ||
-            array.x >=
-                occupiedCells.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                occupiedCells.GetLength(1)
-        )
+        if (!IsArrayPositionValid(array, occupiedCells))
         {
             movingUnits.Remove(unit);
             return;
         }
 
-
-        // ========================================================
-        // VERIFY FINAL OCCUPANCY
-        // ========================================================
-
-        if (
-            occupiedCells[
-                array.x,
-                array.y
-            ] != unit
-        )
+        if (occupiedCells[array.x, array.y] != unit)
         {
-            Debug.LogWarning(
-                $"[GridManager] FinishMoveUnit found unexpected " +
-                $"occupancy at {position} for {unit.name}.",
-                unit
-            );
-
             movingUnits.Remove(unit);
             return;
         }
 
-
-        // ========================================================
-        // UPDATE VISUAL POSITION
-        // ========================================================
-
-        UnitTilePin pin =
-            unit.GetComponent<UnitTilePin>();
+        UnitTilePin pin = unit.GetComponent<UnitTilePin>();
 
         if (pin != null)
         {
-            pin.UpdateTileAfterMovement(
-                position
-            );
+            pin.UpdateTileAfterMovement(position);
         }
         else
         {
-            unit.transform.position =
-                GridToWorldPosition(
-                    position
-                );
+            unit.transform.position = GridToWorldPosition(position);
         }
 
-
-        // ========================================================
-        // MOVEMENT COMPLETE
-        // ========================================================
-
-        movingUnits.Remove(
-            unit
-        );
+        movingUnits.Remove(unit);
     }
-
 
     // ============================================================
     // IS UNIT MOVING
     // ============================================================
 
-    public bool IsUnitMoving(
-        GameObject unit)
+    public bool IsUnitMoving(GameObject unit)
     {
-        if (unit == null)
-        {
-            return false;
-        }
-
-        return movingUnits.Contains(
-            unit
-        );
+        return unit != null && movingUnits.Contains(unit);
     }
-
 
     // ============================================================
     // MOVE UNIT
@@ -2315,57 +1424,29 @@ public class GridManager : MonoBehaviour
         Vector2Int oldPosition,
         Vector2Int newPosition)
     {
-        if (
-            !StartMoveUnit(
-                unit,
-                oldPosition,
-                newPosition
-            )
-        )
-        {
+        if (!StartMoveUnit(unit, oldPosition, newPosition))
             return false;
-        }
 
-        FinishMoveUnit(
-            unit,
-            newPosition
-        );
+        FinishMoveUnit(unit, newPosition);
 
         return true;
     }
-
 
     // ============================================================
     // RANDOM FREE CELL
     // ============================================================
 
-    public bool TryGetRandomFreeCell(
-        out Vector2Int position)
+    public bool TryGetRandomFreeCell(out Vector2Int position)
     {
-        position =
-            Vector2Int.zero;
+        position = Vector2Int.zero;
 
         if (occupiedCells == null)
-        {
-            Debug.LogError(
-                "[GridManager] Grid has not been initialized!",
-                this
-            );
-
             return false;
-        }
 
-        int minX =
-            GetMinX();
-
-        int maxX =
-            GetMaxX();
-
-        int minY =
-            GetMinY();
-
-        int maxY =
-            GetMaxY();
+        int minX = GetMinX();
+        int maxX = GetMaxX();
+        int minY = GetMinY();
+        int maxY = GetMaxY();
 
         int freeCellCount = 0;
 
@@ -2373,23 +1454,11 @@ public class GridManager : MonoBehaviour
         {
             for (int y = minY; y <= maxY; y++)
             {
-                Vector2Int cell =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                Vector2Int cell = new Vector2Int(x, y);
 
-                if (!IsInsideGrid(cell))
-                {
-                    continue;
-                }
-
-                if (IsWalkableObstacle(cell))
-                {
-                    continue;
-                }
-
-                if (IsCellOccupied(cell))
+                if (!IsInsideGrid(cell) ||
+                    IsWalkableObstacle(cell) ||
+                    IsCellOccupied(cell))
                 {
                     continue;
                 }
@@ -2399,51 +1468,26 @@ public class GridManager : MonoBehaviour
         }
 
         if (freeCellCount == 0)
-        {
-            Debug.LogWarning(
-                "[GridManager] No free cells available!",
-                this
-            );
-
             return false;
-        }
 
-        int randomIndex =
-            UnityEngine.Random.Range(
-                0,
-                freeCellCount
-            );
+        int randomIndex = UnityEngine.Random.Range(0, freeCellCount);
 
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
             {
-                Vector2Int cell =
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                Vector2Int cell = new Vector2Int(x, y);
 
-                if (!IsInsideGrid(cell))
-                {
-                    continue;
-                }
-
-                if (IsWalkableObstacle(cell))
-                {
-                    continue;
-                }
-
-                if (IsCellOccupied(cell))
+                if (!IsInsideGrid(cell) ||
+                    IsWalkableObstacle(cell) ||
+                    IsCellOccupied(cell))
                 {
                     continue;
                 }
 
                 if (randomIndex == 0)
                 {
-                    position =
-                        cell;
-
+                    position = cell;
                     return true;
                 }
 
@@ -2454,103 +1498,67 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
-
     // ============================================================
     // GETTERS & HELPERS
     // ============================================================
 
-    public GameObject GetFloorTile(
-        Vector2Int position)
+    public GameObject GetFloorTile(Vector2Int position)
     {
-        if (
-            floorTiles == null ||
-            !IsInsideGrid(position)
-        )
-        {
+        if (floorTiles == null || !IsInsideGrid(position))
             return null;
-        }
 
-        Vector2Int array =
-            LogicalToArrayPosition(
-                position
-            );
+        Vector2Int array = LogicalToArrayPosition(position);
 
-        if (
-            array.x < 0 ||
-            array.x >=
-                floorTiles.GetLength(0) ||
-            array.y < 0 ||
-            array.y >=
-                floorTiles.GetLength(1)
-        )
-        {
+        if (!IsArrayPositionValid(array, floorTiles))
             return null;
-        }
 
-        return floorTiles[
-            array.x,
-            array.y
-        ];
+        return floorTiles[array.x, array.y];
     }
 
-
-    public int GetDistance(
-        Vector2Int a,
-        Vector2Int b)
+    public int GetDistance(Vector2Int a, Vector2Int b)
     {
-        return
-            Mathf.Abs(a.x - b.x) +
-            Mathf.Abs(a.y - b.y);
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
-
 
     public int GetWidth()
     {
         return width;
     }
 
-
     public int GetHeight()
     {
         return height;
     }
-
 
     public GridShapeType GetShape()
     {
         return gridShape;
     }
 
-
     public Grid GetGrid()
     {
         return grid;
     }
-
 
     public GridHighlightManager GetHighlightManager()
     {
         return highlightManager;
     }
 
-
     public int GetMinRadius()
     {
         return minRadius;
     }
-
 
     public int GetMaxRadius()
     {
         return maxRadius;
     }
 
-
     public bool IsInitialized()
     {
         return initialized;
     }
-
 
     // ============================================================
     // GIZMOS
@@ -2559,143 +1567,68 @@ public class GridManager : MonoBehaviour
     private void OnDrawGizmos()
     {
         if (!showGridGizmos)
-        {
             return;
-        }
 
         if (grid == null)
-        {
-            grid =
-                GetComponent<Grid>();
-        }
+            grid = GetComponent<Grid>();
 
         if (grid == null)
-        {
             return;
-        }
 
-        Gizmos.color =
-            Color.gray;
+        Gizmos.color = Color.gray;
 
-        int minX =
-            GetMinX();
-
-        int maxX =
-            GetMaxX();
-
-        int minY =
-            GetMinY();
-
-        int maxY =
-            GetMaxY();
+        int minX = GetMinX();
+        int maxX = GetMaxX();
+        int minY = GetMinY();
+        int maxY = GetMaxY();
 
         for (int x = minX; x <= maxX; x++)
         {
             for (int y = minY; y <= maxY; y++)
             {
-                if (
-                    !IsInsideGrid(
-                        new Vector2Int(
-                            x,
-                            y
-                        )
-                    )
-                )
-                {
+                if (!IsInsideGrid(new Vector2Int(x, y)))
                     continue;
-                }
 
-                Vector3 bl =
-                    GetLogicalGridCorner(
-                        x,
-                        y
-                    );
+                Vector3 bl = GetLogicalGridCorner(x, y);
+                Vector3 br = GetLogicalGridCorner(x + 1, y);
+                Vector3 tr = GetLogicalGridCorner(x + 1, y + 1);
+                Vector3 tl = GetLogicalGridCorner(x, y + 1);
 
-                Vector3 br =
-                    GetLogicalGridCorner(
-                        x + 1,
-                        y
-                    );
-
-                Vector3 tr =
-                    GetLogicalGridCorner(
-                        x + 1,
-                        y + 1
-                    );
-
-                Vector3 tl =
-                    GetLogicalGridCorner(
-                        x,
-                        y + 1
-                    );
-
-                Gizmos.DrawLine(
-                    bl,
-                    br
-                );
-
-                Gizmos.DrawLine(
-                    br,
-                    tr
-                );
-
-                Gizmos.DrawLine(
-                    tr,
-                    tl
-                );
-
-                Gizmos.DrawLine(
-                    tl,
-                    bl
-                );
+                Gizmos.DrawLine(bl, br);
+                Gizmos.DrawLine(br, tr);
+                Gizmos.DrawLine(tr, tl);
+                Gizmos.DrawLine(tl, bl);
             }
         }
 
         if (showCenterGizmo)
         {
-            Gizmos.color =
-                Color.yellow;
+            Gizmos.color = Color.yellow;
 
-            Vector3 center =
-                GridToWorldPosition(
-                    Vector2Int.zero
-                );
+            Vector3 center = GridToWorldPosition(Vector2Int.zero);
 
-            Gizmos.DrawSphere(
-                center,
-                0.15f
+            Gizmos.DrawSphere(center, 0.15f);
+
+            Gizmos.DrawLine(
+                center + Vector3.left * 0.5f,
+                center + Vector3.right * 0.5f
             );
 
             Gizmos.DrawLine(
-                center +
-                Vector3.left * 0.5f,
-                center +
-                Vector3.right * 0.5f
-            );
-
-            Gizmos.DrawLine(
-                center +
-                Vector3.down * 0.5f,
-                center +
-                Vector3.up * 0.5f
+                center + Vector3.down * 0.5f,
+                center + Vector3.up * 0.5f
             );
         }
     }
 
-
-    private Vector3 GetLogicalGridCorner(
-        int x,
-        int y)
+    private Vector3 GetLogicalGridCorner(int x, int y)
     {
-        Vector3Int cell =
-            new Vector3Int(
-                x + width / 2,
-                y + height / 2,
-                0
-            );
-
-        return ConvertGridToWorldSpace(
-            grid.CellToWorld(cell)
+        Vector3Int cell = new Vector3Int(
+            x + width / 2,
+            y + height / 2,
+            0
         );
+
+        return ConvertGridToWorldSpace(grid.CellToWorld(cell));
     }
 }
