@@ -57,6 +57,31 @@ public class ExplosionAttack : MonoBehaviour
 
 
     // ============================================================
+    // KNOCKBACK
+    // ============================================================
+
+    [Header("Knockback")]
+
+    [SerializeField]
+    private bool applyKnockback = true;
+
+    [Tooltip("Maximum push distance for units near the explosion center.")]
+
+    [SerializeField, Min(0)]
+    private int maxKnockbackDistance = 3;
+
+    [Tooltip("Minimum push distance for units at the explosion edge.")]
+
+    [SerializeField, Min(0)]
+    private int minKnockbackDistance = 1;
+
+    [Tooltip("Time taken to move one tile during knockback.")]
+
+    [SerializeField, Min(0f)]
+    private float knockbackStepDuration = 0.08f;
+
+
+    // ============================================================
     // BEHAVIOUR
     // ============================================================
 
@@ -113,11 +138,9 @@ public class ExplosionAttack : MonoBehaviour
 
     private void Awake()
     {
-        cachedAnimator =
-            GetComponent<Animator>();
+        cachedAnimator = GetComponent<Animator>();
 
-        cachedParticleSystem =
-            GetComponent<ParticleSystem>();
+        cachedParticleSystem = GetComponent<ParticleSystem>();
     }
 
 
@@ -136,12 +159,9 @@ public class ExplosionAttack : MonoBehaviour
     // INITIALIZE
     // ============================================================
 
-    public void Initialize(
-        GameObject explosionOwner
-    )
+    public void Initialize(GameObject explosionOwner)
     {
-        owner =
-            explosionOwner;
+        owner = explosionOwner;
 
         FindManagers();
 
@@ -153,93 +173,81 @@ public class ExplosionAttack : MonoBehaviour
     // SETTERS
     // ============================================================
 
-    public void SetExplosionDelay(
-        float delay
-    )
+    public void SetExplosionDelay(float delay)
     {
-        explosionDelay =
-            Mathf.Max(
-                0f,
-                delay
-            );
+        explosionDelay = Mathf.Max(0f, delay);
     }
 
 
-    public void SetExplosionRadius(
-        int newRadius
-    )
+    public void SetExplosionRadius(int newRadius)
     {
-        radius =
-            Mathf.Max(
-                0,
-                newRadius
-            );
+        radius = Mathf.Max(0, newRadius);
     }
 
 
-    public void SetExplosionDamage(
-        int newDamage
-    )
+    public void SetExplosionDamage(int newDamage)
     {
-        damage =
-            Mathf.Max(
-                0,
-                newDamage
-            );
+        damage = Mathf.Max(0, newDamage);
 
         Debug.Log(
             $"[ExplosionAttack] DAMAGE SET | " +
-            $"Object={name} | " +
-            $"Damage={damage}",
+            $"Object={name} | Damage={damage}",
             this
         );
     }
 
 
-    public void SetExplosionShape(
-        AbilitySO.RangeShape newShape
-    )
+    public void SetExplosionShape(AbilitySO.RangeShape newShape)
     {
-        explosionShape =
-            newShape;
+        explosionShape = newShape;
 
         Debug.Log(
             $"[ExplosionAttack] SHAPE SET | " +
-            $"Object={name} | " +
-            $"Shape={explosionShape}",
+            $"Object={name} | Shape={explosionShape}",
             this
         );
     }
 
 
-    public void SetTotalDamageFalloff(
-        float newFalloff
-    )
+    public void SetTotalDamageFalloff(float newFalloff)
     {
-        totalDamageFalloff =
-            Mathf.Clamp(
-                newFalloff,
-                0f,
-                100f
-            );
+        totalDamageFalloff = Mathf.Clamp(newFalloff, 0f, 100f);
     }
 
 
-    public void SetOwner(
-        GameObject explosionOwner
-    )
+    public void SetOwner(GameObject explosionOwner)
     {
-        owner =
-            explosionOwner;
+        owner = explosionOwner;
     }
 
 
-    public void SetAllowFriendlyFire(
-        bool enabled
-    )
+    public void SetAllowFriendlyFire(bool enabled)
     {
-        allowFriendlyFire =
-            enabled;
+        allowFriendlyFire = enabled;
+    }
+
+
+    public void SetApplyKnockback(bool enabled)
+    {
+        applyKnockback = enabled;
+    }
+
+
+    public void SetMaxKnockbackDistance(int distance)
+    {
+        maxKnockbackDistance = Mathf.Max(0, distance);
+    }
+
+
+    public void SetMinKnockbackDistance(int distance)
+    {
+        minKnockbackDistance = Mathf.Max(0, distance);
+    }
+
+
+    public void SetKnockbackStepDuration(float duration)
+    {
+        knockbackStepDuration = Mathf.Max(0f, duration);
     }
 
 
@@ -251,8 +259,7 @@ public class ExplosionAttack : MonoBehaviour
     {
         if (gridManager == null)
         {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
+            gridManager = FindFirstObjectByType<GridManager>();
         }
 
         if (highlightManager == null)
@@ -265,8 +272,7 @@ public class ExplosionAttack : MonoBehaviour
         {
             Debug.LogError(
                 $"[ExplosionAttack] FAILED | " +
-                $"No GridManager found | " +
-                $"Explosion={name}",
+                $"No GridManager found | Explosion={name}",
                 this
             );
         }
@@ -279,20 +285,14 @@ public class ExplosionAttack : MonoBehaviour
 
     private void TryStartExplosion()
     {
-        if (
-            !explodeOnStart ||
-            exploded
-        )
+        if (!explodeOnStart || exploded)
         {
             return;
         }
 
         if (explosionDelay > 0f)
         {
-            Invoke(
-                nameof(Explode),
-                explosionDelay
-            );
+            Invoke(nameof(Explode), explosionDelay);
         }
         else
         {
@@ -320,8 +320,7 @@ public class ExplosionAttack : MonoBehaviour
         {
             Debug.LogError(
                 $"[ExplosionAttack] FAILED | " +
-                $"Cannot explode without GridManager | " +
-                $"Explosion={name}",
+                $"Cannot explode without GridManager | Explosion={name}",
                 this
             );
 
@@ -336,9 +335,7 @@ public class ExplosionAttack : MonoBehaviour
         // ========================================================
 
         Vector2Int center =
-            gridManager.WorldToGridPosition(
-                transform.position
-            );
+            gridManager.WorldToGridPosition(transform.position);
 
 
         // ========================================================
@@ -355,8 +352,7 @@ public class ExplosionAttack : MonoBehaviour
                 ? ownerHealth.GetTeam()
                 : (Team)(-1);
 
-        bool hasOwnerTeam =
-            ownerHealth != null;
+        bool hasOwnerTeam = ownerHealth != null;
 
 
         // ========================================================
@@ -372,6 +368,9 @@ public class ExplosionAttack : MonoBehaviour
             $"Damage={damage} | " +
             $"Shape={explosionShape} | " +
             $"FriendlyFire={allowFriendlyFire} | " +
+            $"Knockback={applyKnockback} | " +
+            $"MaxKnockback={maxKnockbackDistance} | " +
+            $"MinKnockback={minKnockbackDistance} | " +
             $"Owner={(owner != null ? owner.name : "NULL")} | " +
             $"OwnerTeam={(hasOwnerTeam ? ownerTeam.ToString() : "NONE")}",
             this
@@ -392,34 +391,18 @@ public class ExplosionAttack : MonoBehaviour
         // EXPLOSION TILES
         // ========================================================
 
-        for (
-            int x = -radius;
-            x <= radius;
-            x++
-        )
+        for (int x = -radius; x <= radius; x++)
         {
-            for (
-                int y = -radius;
-                y <= radius;
-                y++
-            )
+            for (int y = -radius; y <= radius; y++)
             {
-                int distance =
-                    Mathf.Abs(x) +
-                    Mathf.Abs(y);
+                int distance = Mathf.Abs(x) + Mathf.Abs(y);
 
 
                 // ------------------------------------------------
                 // SHAPE CHECK
                 // ------------------------------------------------
 
-                if (
-                    !IsInsideExplosionShape(
-                        x,
-                        y,
-                        distance
-                    )
-                )
+                if (!IsInsideExplosionShape(x, y, distance))
                 {
                     continue;
                 }
@@ -430,27 +413,18 @@ public class ExplosionAttack : MonoBehaviour
                 // ------------------------------------------------
 
                 Vector2Int position =
-                    center +
-                    new Vector2Int(
-                        x,
-                        y
-                    );
+                    center + new Vector2Int(x, y);
 
 
                 // ------------------------------------------------
                 // GRID CHECK
                 // ------------------------------------------------
 
-                if (
-                    !gridManager.IsInsideGrid(
-                        position
-                    )
-                )
+                if (!gridManager.IsInsideGrid(position))
                 {
                     Debug.Log(
                         $"[ExplosionAttack] TILE SKIP | " +
-                        $"Outside grid | " +
-                        $"Tile={position}",
+                        $"Outside grid | Tile={position}",
                         this
                     );
 
@@ -463,20 +437,19 @@ public class ExplosionAttack : MonoBehaviour
                 // ------------------------------------------------
 
                 int tileDamage =
-                    CalculateDamageAtDistance(
-                        distance
-                    );
+                    CalculateDamageAtDistance(distance);
 
 
                 // ------------------------------------------------
-                // ATTACK
+                // ATTACK AND KNOCKBACK
                 // ------------------------------------------------
 
                 AttackTile(
                     position,
                     hasOwnerTeam,
                     ownerTeam,
-                    tileDamage
+                    tileDamage,
+                    center
                 );
 
 
@@ -484,14 +457,9 @@ public class ExplosionAttack : MonoBehaviour
                 // VISUAL
                 // ------------------------------------------------
 
-                if (
-                    animateTiles &&
-                    highlightManager != null
-                )
+                if (animateTiles && highlightManager != null)
                 {
-                    highlightManager.FlashExplosionTile(
-                        position
-                    );
+                    highlightManager.FlashExplosionTile(position);
                 }
             }
         }
@@ -503,27 +471,11 @@ public class ExplosionAttack : MonoBehaviour
 
         Debug.Log(
             $"[ExplosionAttack] EXPLOSION COMPLETE | " +
-            $"Explosion={name} | " +
-            $"Center={center}",
+            $"Explosion={name} | Center={center}",
             this
         );
 
-
-        // ========================================================
-        // DESTROY
-        // ========================================================
-        //
-        // IMPORTANT:
-        //
-        // The explosion is NOT destroyed here anymore.
-        //
-        // The Animator Animation Event calls:
-        //
-        // AnimationEvent_DisableExplosion()
-        //
-        // when the explosion animation has finished.
-        //
-        // ========================================================
+        // The animation event handles destroying the explosion.
     }
 
 
@@ -534,64 +486,50 @@ public class ExplosionAttack : MonoBehaviour
     private bool IsInsideExplosionShape(
         int x,
         int y,
-        int distance
-    )
+        int distance)
     {
         switch (explosionShape)
         {
             case AbilitySO.RangeShape.Diamond:
 
-                return
-                    distance <= radius;
+                return distance <= radius;
 
 
             case AbilitySO.RangeShape.Box:
 
-                return
-                    Mathf.Abs(x) <= radius &&
-                    Mathf.Abs(y) <= radius;
+                return Mathf.Abs(x) <= radius &&
+                       Mathf.Abs(y) <= radius;
 
 
             case AbilitySO.RangeShape.FourDirections:
 
-                return
-                    (
-                        x == 0 ||
-                        y == 0
-                    ) &&
-                    distance <= radius;
+                return (x == 0 || y == 0) &&
+                       distance <= radius;
 
 
             case AbilitySO.RangeShape.Diagonal:
 
-                return
-                    Mathf.Abs(x) ==
-                    Mathf.Abs(y) &&
-                    distance <= radius;
+                return Mathf.Abs(x) == Mathf.Abs(y) &&
+                       distance <= radius;
 
 
             case AbilitySO.RangeShape.FourdirectionsAndDiragonal:
 
-                return
-                    (
-                        x == 0 ||
-                        y == 0 ||
-                        Mathf.Abs(x) ==
-                        Mathf.Abs(y)
-                    ) &&
-                    distance <= radius;
+                return (
+                    x == 0 ||
+                    y == 0 ||
+                    Mathf.Abs(x) == Mathf.Abs(y)
+                ) && distance <= radius;
 
 
             case AbilitySO.RangeShape.Shotgun:
 
-                return
-                    distance <= radius;
+                return distance <= radius;
 
 
             default:
 
-                return
-                    distance <= radius;
+                return distance <= radius;
         }
     }
 
@@ -600,35 +538,48 @@ public class ExplosionAttack : MonoBehaviour
     // DAMAGE CALCULATION
     // ============================================================
 
-    private int CalculateDamageAtDistance(
-        int distance
-    )
+    private int CalculateDamageAtDistance(int distance)
     {
         if (radius <= 0)
         {
             return damage;
         }
 
-        float normalizedDistance =
-            (float)distance /
-            radius;
+        float normalizedDistance = (float)distance / radius;
 
         float damageMultiplier =
-            1f -
-            (
-                normalizedDistance *
-                (totalDamageFalloff / 100f)
-            );
+            1f - normalizedDistance * (totalDamageFalloff / 100f);
 
-        damageMultiplier =
-            Mathf.Clamp01(
-                damageMultiplier
-            );
+        damageMultiplier = Mathf.Clamp01(damageMultiplier);
 
-        return Mathf.RoundToInt(
-            damage *
-            damageMultiplier
+        return Mathf.RoundToInt(damage * damageMultiplier);
+    }
+
+
+    // ============================================================
+    // KNOCKBACK DISTANCE CALCULATION
+    // ============================================================
+
+    private int CalculateKnockbackDistance(int distanceFromCenter)
+    {
+        if (radius <= 0)
+        {
+            return maxKnockbackDistance;
+        }
+
+        float normalizedDistance = Mathf.Clamp01(
+            (float)distanceFromCenter / radius
         );
+
+        // Close to center: maximum push.
+        // At the edge: minimum push.
+        float knockback = Mathf.Lerp(
+            maxKnockbackDistance,
+            minKnockbackDistance,
+            normalizedDistance
+        );
+
+        return Mathf.RoundToInt(knockback);
     }
 
 
@@ -640,13 +591,10 @@ public class ExplosionAttack : MonoBehaviour
         Vector2Int position,
         bool hasOwnerTeam,
         Team ownerTeam,
-        int tileDamage
-    )
+        int tileDamage,
+        Vector2Int explosionCenter)
     {
-        GameObject target =
-            gridManager.GetUnitAt(
-                position
-            );
+        GameObject target = gridManager.GetUnitAt(position);
 
         if (target == null)
         {
@@ -655,7 +603,7 @@ public class ExplosionAttack : MonoBehaviour
 
 
         // ========================================================
-        // NEVER DAMAGE THE OWNER
+        // NEVER AFFECT THE OWNER
         // ========================================================
 
         if (target == owner)
@@ -663,8 +611,7 @@ public class ExplosionAttack : MonoBehaviour
             Debug.Log(
                 $"[ExplosionAttack] TARGET SKIPPED | " +
                 $"Target is explosion owner | " +
-                $"Target={target.name} | " +
-                $"Tile={position}",
+                $"Target={target.name} | Tile={position}",
                 target
             );
 
@@ -676,17 +623,12 @@ public class ExplosionAttack : MonoBehaviour
         // HEALTH MANAGER
         // ========================================================
 
-        if (
-            !target.TryGetComponent<HealthManager>(
-                out var targetHealth
-            )
-        )
+        if (!target.TryGetComponent<HealthManager>(out var targetHealth))
         {
             Debug.LogWarning(
                 $"[ExplosionAttack] TARGET SKIPPED | " +
                 $"Target has no HealthManager | " +
-                $"Target={target.name} | " +
-                $"Tile={position}",
+                $"Target={target.name} | Tile={position}",
                 target
             );
 
@@ -702,9 +644,7 @@ public class ExplosionAttack : MonoBehaviour
         {
             Debug.Log(
                 $"[ExplosionAttack] TARGET SKIPPED | " +
-                $"Target is already dead | " +
-                $"Target={target.name} | " +
-                $"Tile={position}",
+                $"Target is already dead | Target={target.name}",
                 target
             );
 
@@ -716,9 +656,7 @@ public class ExplosionAttack : MonoBehaviour
         // TEAM
         // ========================================================
 
-        Team targetTeam =
-            targetHealth.GetTeam();
-
+        Team targetTeam = targetHealth.GetTeam();
 
         Debug.Log(
             $"[ExplosionAttack] TEAM CHECK | " +
@@ -743,12 +681,50 @@ public class ExplosionAttack : MonoBehaviour
             Debug.Log(
                 $"[ExplosionAttack] TARGET SKIPPED | " +
                 $"Friendly fire disabled | " +
-                $"Target={target.name} | " +
-                $"Team={targetTeam}",
+                $"Target={target.name} | Team={targetTeam}",
                 target
             );
 
             return;
+        }
+
+
+        // ========================================================
+        // DISTANCE-BASED KNOCKBACK
+        // ========================================================
+
+        if (applyKnockback)
+        {
+            int distanceFromCenter =
+                Mathf.Abs(position.x - explosionCenter.x) +
+                Mathf.Abs(position.y - explosionCenter.y);
+
+            int calculatedKnockback =
+                CalculateKnockbackDistance(distanceFromCenter);
+
+            if (calculatedKnockback > 0)
+            {
+                UnitMoveBrain moveBrain =
+                    target.GetComponent<UnitMoveBrain>();
+
+                if (moveBrain != null)
+                {
+                    Debug.Log(
+                        $"[ExplosionAttack] KNOCKBACK | " +
+                        $"Target={target.name} | " +
+                        $"DistanceFromCenter={distanceFromCenter} | " +
+                        $"Radius={radius} | " +
+                        $"KnockbackDistance={calculatedKnockback}",
+                        target
+                    );
+
+                    moveBrain.ApplyKnockback(
+                        explosionCenter,
+                        calculatedKnockback,
+                        knockbackStepDuration
+                    );
+                }
+            }
         }
 
 
@@ -759,7 +735,7 @@ public class ExplosionAttack : MonoBehaviour
         if (tileDamage <= 0)
         {
             Debug.Log(
-                $"[ExplosionAttack] TARGET SKIPPED | " +
+                $"[ExplosionAttack] DAMAGE SKIPPED | " +
                 $"Calculated damage is {tileDamage} | " +
                 $"Target={target.name}",
                 target
@@ -773,8 +749,7 @@ public class ExplosionAttack : MonoBehaviour
         // DAMAGE BEFORE
         // ========================================================
 
-        int healthBefore =
-            targetHealth.GetHealth();
+        int healthBefore = targetHealth.GetHealth();
 
 
         // ========================================================
@@ -791,19 +766,14 @@ public class ExplosionAttack : MonoBehaviour
             target
         );
 
-
-        targetHealth.TakeDamage(
-            tileDamage
-        );
+        targetHealth.TakeDamage(tileDamage);
 
 
         // ========================================================
         // DAMAGE AFTER
         // ========================================================
 
-        int healthAfter =
-            targetHealth.GetHealth();
-
+        int healthAfter = targetHealth.GetHealth();
 
         Debug.Log(
             $"[ExplosionAttack] DAMAGE RESULT | " +
@@ -825,22 +795,13 @@ public class ExplosionAttack : MonoBehaviour
     {
         if (cachedAnimator != null)
         {
-            cachedAnimator.Play(
-                0,
-                0,
-                0f
-            );
+            cachedAnimator.Play(0, 0, 0f);
         }
 
         if (cachedParticleSystem != null)
         {
-            cachedParticleSystem.Stop(
-                true
-            );
-
-            cachedParticleSystem.Play(
-                true
-            );
+            cachedParticleSystem.Stop(true);
+            cachedParticleSystem.Play(true);
         }
     }
 
@@ -856,10 +817,7 @@ public class ExplosionAttack : MonoBehaviour
             return;
         }
 
-        Destroy(
-            gameObject,
-            destroyDelay
-        );
+        Destroy(gameObject, destroyDelay);
     }
 
 
@@ -874,10 +832,7 @@ public class ExplosionAttack : MonoBehaviour
             return;
         }
 
-        Destroy(
-            gameObject,
-            destroyDelay
-        );
+        Destroy(gameObject, destroyDelay);
     }
 
 
