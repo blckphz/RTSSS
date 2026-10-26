@@ -149,16 +149,7 @@ public class ArrowAttack : AbilitySO
             return false;
         }
 
-        Debug.Log(
-            $"[ArrowAttack] FIRING | " +
-            $"User={user.name} | " +
-            $"Target={targetObject.name} | " +
-            $"Direction={direction} | " +
-            $"BaseDamage={GetDamage()} | " +
-            $"EffectiveDamage={effectiveDamage} | " +
-            $"EffectiveMaxTargets={effectiveMaxTargets}",
-            user
-        );
+   
 
         arrow.Initialize(
             user,

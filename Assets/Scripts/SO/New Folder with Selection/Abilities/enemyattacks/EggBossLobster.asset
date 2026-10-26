@@ -19,12 +19,12 @@ MonoBehaviour:
   NeedEnemy: 0
   damage: 0
   cooldown: 1
-  canAttackWithThisAfterMove: 1
+  canAttackWithThisAfterMove: 0
   usesPerTurn: 2
   useDuration: 0
   targetType: 0
   range: 20
   minDistance: 0
   rangeShape: 0
-  eggPrefab: {fileID: 3402354264503820813, guid: a75f295541a21354bb6d7de1741ed492, type: 3}
+  eggPrefab: {fileID: 1342193521889048633, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
   projectileSpeed: 8

@@ -17,7 +17,7 @@ MonoBehaviour:
   prefabToSpawn: {fileID: 4030345030637247355, guid: 53e32e8f07cc7c841aaeb6de4d94e88d, type: 3}
   team: 2
   isPlayerCharacter: 0
-  maxHealth: 250
+  maxHealth: 33
   moveRange: 3
   canwalkdiagonally: 1
   enemyFootprintSize: 3

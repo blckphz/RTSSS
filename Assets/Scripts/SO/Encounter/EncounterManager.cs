@@ -361,10 +361,6 @@ public class EncounterManager : MonoBehaviour
 
         startingRound = false;
 
-        Debug.Log(
-            "[EncounterManager] Starting combat Round " + round,
-            this
-        );
 
         roundManager.StartRound();
     }

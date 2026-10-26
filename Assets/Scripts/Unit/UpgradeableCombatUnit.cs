@@ -87,15 +87,7 @@ public class UpgradeableCombatUnit :
         }
 
 
-        Debug.Log(
-            $"[UpgradeableCombatUnit] FindReferences() on " +
-            $"{gameObject.name} | " +
-            $"HealthManager=" +
-            $"{(healthManager != null ? healthManager.gameObject.name : "NULL")} | " +
-            $"AttackUnit=" +
-            $"{(attackUnit != null ? attackUnit.gameObject.name : "NULL")}",
-            this
-        );
+      
     }
 
 
@@ -110,21 +102,12 @@ public class UpgradeableCombatUnit :
 
         if (updateManager == null)
         {
-            Debug.LogWarning(
-                $"[UpgradeableCombatUnit] Could not find " +
-                $"UpdateManager when registering " +
-                $"{gameObject.name} as Fortress target.",
-                this
-            );
+           
 
             return;
         }
 
-        Debug.Log(
-            $"[UpgradeableCombatUnit] Registering " +
-            $"{gameObject.name} as Fortress target.",
-            this
-        );
+     
 
         updateManager.RegisterFortressTarget(this);
     }
@@ -379,14 +362,6 @@ public class UpgradeableCombatUnit :
             baseDamage +
             bonusDamage;
 
-        Debug.Log(
-            $"[UpgradeableCombatUnit] Effective Damage on " +
-            $"{gameObject.name} | " +
-            $"Base={baseDamage} | " +
-            $"Bonus={bonusDamage} | " +
-            $"Total={totalDamage}",
-            this
-        );
 
         return totalDamage;
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,11 +7,8 @@ using UnityEngine;
 public class RoundManager : MonoBehaviour
 {
     [Header("Round State")]
-    [SerializeField]
-    private int currentRound = 1;
-
-    [SerializeField]
-    private RoundState currentState = RoundState.Setup;
+    [SerializeField] private int currentRound = 1;
+    [SerializeField] private RoundState currentState = RoundState.Setup;
 
     public enum RoundState
     {
@@ -30,50 +28,23 @@ public class RoundManager : MonoBehaviour
     public event Action<int> OnRoundChanged;
     public event Action<RoundState> OnRoundStateChanged;
     public event Action OnEnemyTurnStarted;
-
-
-    // ============================================================
-    // REFERENCES
-    // ============================================================
+    public event Action<bool> OnBossWaterStatusChecked;
 
     [Header("References")]
-    [SerializeField]
-    private CombatManager combatManager;
+    [SerializeField] private CombatManager combatManager;
+    [SerializeField] private GridManager gridManager;
+    [SerializeField] private EncounterManager encounterManager;
+    [SerializeField] private CanvasInfoManager canvasInfoManager;
+    [SerializeField] private CanvasJuiceManager canvasJuiceManager;
+    [SerializeField] private NextRoundTextManager nextRoundTextManager;
+    [SerializeField] private GridHighlightManager gridHighlightManager;
+    [SerializeField] private LineWalkPreview lineWalkPreview;
 
-    [SerializeField]
-    private GridManager gridManager;
-
-    [SerializeField]
-    private EncounterManager encounterManager;
-
-    [SerializeField]
-    private CanvasInfoManager canvasInfoManager;
-
-    [SerializeField]
-    private CanvasJuiceManager canvasJuiceManager;
-
-    [SerializeField]
-    private NextRoundTextManager nextRoundTextManager;
-
-    [SerializeField]
-    private GridHighlightManager gridHighlightManager;
-
-    [SerializeField]
-    private LineWalkPreview lineWalkPreview;
-
-
-    // ============================================================
-    // SETTINGS
-    // ============================================================
+    [Header("Water Check")]
+    [SerializeField] private BossLobsterBrain bossLobster;
 
     [Header("Settings")]
-    [SerializeField]
-    private float delayBetweenUnits = 0.1f;
-
-
-    // ============================================================
-    // STATE
-    // ============================================================
+    [SerializeField] private float delayBetweenUnits = 0.1f;
 
     private WaitForSeconds unitDelay;
 
@@ -85,68 +56,38 @@ public class RoundManager : MonoBehaviour
 
     private bool roundRunning;
 
-
-    // ============================================================
-    // UNITY
-    // ============================================================
-
     private void Awake()
     {
         if (combatManager == null)
-        {
-            combatManager =
-                FindFirstObjectByType<CombatManager>();
-        }
+            combatManager = FindFirstObjectByType<CombatManager>();
 
         if (gridManager == null)
-        {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
+            gridManager = FindFirstObjectByType<GridManager>();
 
         if (encounterManager == null)
-        {
-            encounterManager =
-                FindFirstObjectByType<EncounterManager>();
-        }
+            encounterManager = FindFirstObjectByType<EncounterManager>();
 
         if (canvasInfoManager == null)
-        {
-            canvasInfoManager =
-                FindFirstObjectByType<CanvasInfoManager>();
-        }
+            canvasInfoManager = FindFirstObjectByType<CanvasInfoManager>();
 
         if (canvasJuiceManager == null)
-        {
-            canvasJuiceManager =
-                FindFirstObjectByType<CanvasJuiceManager>();
-        }
+            canvasJuiceManager = FindFirstObjectByType<CanvasJuiceManager>();
 
         if (nextRoundTextManager == null)
-        {
-            nextRoundTextManager =
-                FindFirstObjectByType<NextRoundTextManager>();
-        }
+            nextRoundTextManager = FindFirstObjectByType<NextRoundTextManager>();
 
         if (gridHighlightManager == null)
-        {
-            gridHighlightManager =
-                FindFirstObjectByType<GridHighlightManager>();
-        }
+            gridHighlightManager = FindFirstObjectByType<GridHighlightManager>();
 
         if (lineWalkPreview == null)
-        {
-            lineWalkPreview =
-                FindFirstObjectByType<LineWalkPreview>();
-        }
+            lineWalkPreview = FindFirstObjectByType<LineWalkPreview>();
 
-        unitDelay =
-            new WaitForSeconds(
-                Mathf.Max(
-                    0f,
-                    delayBetweenUnits
-                )
-            );
+        if (bossLobster == null)
+            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+
+        unitDelay = new WaitForSeconds(
+            Mathf.Max(0f, delayBetweenUnits)
+        );
 
         EnablePlayerTurnInteraction();
     }
@@ -156,6 +97,29 @@ public class RoundManager : MonoBehaviour
         EnablePlayerTurnInteraction();
     }
 
+    // ============================================================
+    // WATER CHECK
+    // ============================================================
+
+    private void CheckBossOnWater()
+    {
+        if (bossLobster == null)
+            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+
+        if (bossLobster == null)
+        {
+            Debug.LogWarning(
+                "[RoundManager] BossLobsterBrain was not found."
+            );
+            return;
+        }
+
+        bool isOnWater = bossLobster.IsOnWater();
+
+        Debug.Log("[RoundManager] Boss on water: " + isOnWater);
+
+        OnBossWaterStatusChecked?.Invoke(isOnWater);
+    }
 
     // ============================================================
     // START ROUND
@@ -164,14 +128,10 @@ public class RoundManager : MonoBehaviour
     public void StartRound()
     {
         if (roundRunning)
-        {
             return;
-        }
 
         if (currentState != RoundState.Setup)
-        {
             return;
-        }
 
         if (!IsPlayerOnField())
         {
@@ -179,38 +139,24 @@ public class RoundManager : MonoBehaviour
                 "[RoundManager] Cannot start round. " +
                 "No living player unit is on the field."
             );
-
             return;
         }
 
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
-        {
+        if (encounterManager != null && encounterManager.IsFinished())
             return;
-        }
 
         roundRunning = true;
 
+        CheckBossOnWater();
         EnablePlayerTurnInteraction();
-
         RefreshCachedUnits();
-
         ResetAllUnitMovement();
-
         UpdateAllUnitCooldowns();
 
-        Debug.Log(
-            "[RoundManager] Starting Round " +
-            currentRound
-        );
+        Debug.Log("[RoundManager] Starting Round " + currentRound);
 
-        StartCoroutine(
-            RunRoundPipeline()
-        );
+        StartCoroutine(RunRoundPipeline());
     }
-
 
     // ============================================================
     // ROUND PIPELINE
@@ -219,95 +165,40 @@ public class RoundManager : MonoBehaviour
     private IEnumerator RunRoundPipeline()
     {
         if (gridManager != null)
-        {
             gridManager.CleanupDeadUnits();
-        }
 
         EnsureEnemiesExist();
 
-
-        // ========================================================
-        // PLAYER + ALLY TURN
-        // ========================================================
-
-        SetRoundState(
-            RoundState.PlayerAndAllyTurn
-        );
-
+        SetRoundState(RoundState.PlayerAndAllyTurn);
         EnablePlayerTurnInteraction();
 
         if (canvasInfoManager != null)
-        {
             canvasInfoManager.RefreshCurrentSelection();
-        }
 
-        yield return StartCoroutine(
-            ExecutePlayerAndAllyTurn()
-        );
+        yield return StartCoroutine(ExecutePlayerAndAllyTurn());
 
-
-        // ========================================================
-        // ENCOUNTER FINISHED?
-        // ========================================================
-
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
+        if (encounterManager != null && encounterManager.IsFinished())
         {
             EndRound();
-
             yield break;
         }
 
-
-        // ========================================================
-        // ENEMY TURN
-        // ========================================================
-
-        SetRoundState(
-            RoundState.EnemyTurn
-        );
-
-        /*
-         * Locks:
-         *
-         * 1. Player input.
-         * 2. Player/ally grid highlights.
-         * 3. Player walk-line preview.
-         */
+        SetRoundState(RoundState.EnemyTurn);
         DisablePlayerTurnInteraction();
 
         OnEnemyTurnStarted?.Invoke();
 
-
-        // Wait for the "enemy turn" / cinematic text to finish.
         if (nextRoundTextManager != null)
         {
-            while (
-                nextRoundTextManager.IsAnimating
-            )
-            {
+            while (nextRoundTextManager.IsAnimating)
                 yield return null;
-            }
         }
 
-
-        // Run all enemies.
-        yield return StartCoroutine(
-            ExecuteEnemyTurn()
-        );
-
-
-        // ========================================================
-        // BACK TO PLAYER
-        // ========================================================
+        yield return StartCoroutine(ExecuteEnemyTurn());
 
         EnablePlayerTurnInteraction();
-
         EndRound();
     }
-
 
     // ============================================================
     // PLAYER + ALLY TURN
@@ -317,35 +208,17 @@ public class RoundManager : MonoBehaviour
     {
         RefreshCachedUnits();
 
-        for (
-            int i = 0;
-            i < cachedUnits.Count;
-            i++
-        )
+        for (int i = 0; i < cachedUnits.Count; i++)
         {
-            AttackUnit unit =
-                cachedUnits[i];
+            AttackUnit unit = cachedUnits[i];
 
             if (!IsValidUnit(unit))
-            {
                 continue;
-            }
 
-            Team team =
-                unit.GetTeam();
+            Team team = unit.GetTeam();
 
-            if (
-                team != Team.Player &&
-                team != Team.Ally
-            )
-            {
+            if (team != Team.Player && team != Team.Ally)
                 continue;
-            }
-
-
-            // ====================================================
-            // NO ABILITIES = SKIP TURN
-            // ====================================================
 
             if (!HasAnyAbility(unit))
             {
@@ -354,37 +227,20 @@ public class RoundManager : MonoBehaviour
                     unit.name,
                     unit
                 );
-
                 continue;
             }
 
-
-            // ====================================================
-            // EXECUTE UNIT TURN
-            // ====================================================
-
             yield return StartCoroutine(
-                CombatUtility.ExecuteUnitTurnCoroutine(
-                    unit,
-                    gridManager
-                )
+                CombatUtility.ExecuteUnitTurnCoroutine(unit, gridManager)
             );
 
             if (delayBetweenUnits > 0f)
-            {
                 yield return unitDelay;
-            }
 
-            if (
-                encounterManager != null &&
-                encounterManager.IsFinished()
-            )
-            {
+            if (encounterManager != null && encounterManager.IsFinished())
                 yield break;
-            }
         }
     }
-
 
     // ============================================================
     // ENEMY TURN
@@ -393,19 +249,9 @@ public class RoundManager : MonoBehaviour
     private IEnumerator ExecuteEnemyTurn()
     {
         List<AttackUnit> enemies =
-            CombatUtility.GetUnitsByTeam(
-                Team.Enemy
-            );
+            CombatUtility.GetUnitsByTeam(Team.Enemy);
 
-
-        // ========================================================
-        // NO ENEMIES
-        // ========================================================
-
-        if (
-            enemies == null ||
-            enemies.Count == 0
-        )
+        if (enemies == null || enemies.Count == 0)
         {
             if (nextRoundTextManager != null)
             {
@@ -415,26 +261,15 @@ public class RoundManager : MonoBehaviour
 
                 nextRoundTextManager.ShowPlayerTurn();
 
-                while (
-                    nextRoundTextManager.IsAnimating
-                )
-                {
+                while (nextRoundTextManager.IsAnimating)
                     yield return null;
-                }
             }
 
             if (combatManager != null)
-            {
                 combatManager.ClearEnemyTurnLocks();
-            }
 
             yield break;
         }
-
-
-        // ========================================================
-        // MISSING COMBAT MANAGER
-        // ========================================================
 
         if (combatManager == null)
         {
@@ -442,131 +277,68 @@ public class RoundManager : MonoBehaviour
                 "[RoundManager] CombatManager is missing. " +
                 "Cannot execute enemy turn."
             );
-
             yield break;
         }
 
-
-        // ========================================================
-        // EACH ENEMY
-        // ========================================================
-
-        for (
-            int i = 0;
-            i < enemies.Count;
-            i++
-        )
+        for (int i = 0; i < enemies.Count; i++)
         {
-            AttackUnit enemy =
-                enemies[i];
+            AttackUnit enemy = enemies[i];
 
-            if (enemy == null)
-            {
+            if (enemy == null || !CombatUtility.IsAlive(enemy))
                 continue;
-            }
 
-            if (!CombatUtility.IsAlive(enemy))
-            {
+            if (combatManager.IsEnemyLocked(enemy))
                 continue;
-            }
 
-
-            // ====================================================
-            // NO ABILITIES = SKIP TURN
-            // ====================================================
-
-            if (!HasAnyAbility(enemy))
+            if (ConditionManager.IsStunned(enemy))
             {
-                Debug.Log(
-                    "[RoundManager] Skipping enemy with no abilities: " +
-                    enemy.name,
-                    enemy
-                );
-
-                continue;
-            }
-
-
-            // ====================================================
-            // ENEMY LOCK
-            // ====================================================
-
-            if (
-                combatManager.IsEnemyLocked(
-                    enemy
-                )
-            )
-            {
-                Debug.Log(
-                    "[RoundManager] Skipping locked enemy: " +
-                    enemy.name,
-                    enemy
-                );
-
-                continue;
-            }
-
-
-            // ====================================================
-            // STUN
-            // ====================================================
-
-            if (
-                ConditionManager.IsStunned(
-                    enemy
-                )
-            )
-            {
-                ConditionManager.ConsumeStunTurn(
-                    enemy
-                );
+                ConditionManager.ConsumeStunTurn(enemy);
 
                 if (delayBetweenUnits > 0f)
-                {
                     yield return unitDelay;
-                }
 
                 continue;
             }
 
-
-            // ====================================================
-            // CAMERA
-            // ====================================================
-
             if (canvasJuiceManager != null)
+                canvasJuiceManager.MoveCameraToUnit(enemy.transform);
+
+            yield return null;
+
+            BossLobsterBrain bossBrain =
+                enemy.GetComponent<BossLobsterBrain>();
+
+            // A retreating boss must not execute its normal AI.
+            if (bossBrain != null && bossBrain.IsRetreating())
             {
-                canvasJuiceManager.MoveCameraToUnit(
-                    enemy.transform
+                yield return StartCoroutine(
+                    ExecuteBossRetreat(bossBrain)
+                );
+            }
+            else
+            {
+                if (!HasAnyAbility(enemy))
+                {
+                    Debug.Log(
+                        "[RoundManager] Skipping enemy with no abilities: " +
+                        enemy.name,
+                        enemy
+                    );
+                    continue;
+                }
+
+                yield return StartCoroutine(
+                    CombatUtility.ExecuteEnemyTurn(
+                        enemy,
+                        !combatManager.EnemiesMoveAfterRound,
+                        combatManager.EnemiesAttackAfterMoving
+                    )
                 );
             }
 
             yield return null;
 
-
-            // ====================================================
-            // ENEMY ACTION
-            // ====================================================
-
-            yield return StartCoroutine(
-                CombatUtility.ExecuteEnemyTurn(
-                    enemy,
-                    !combatManager.EnemiesMoveAfterRound,
-                    combatManager.EnemiesAttackAfterMoving
-                )
-            );
-
-            yield return null;
-
-
-            // ====================================================
-            // ENCOUNTER FINISHED
-            // ====================================================
-
-            if (
-                encounterManager != null &&
-                encounterManager.IsFinished()
-            )
+            if (encounterManager != null && encounterManager.IsFinished())
             {
                 combatManager.ClearEnemyTurnLocks();
 
@@ -580,21 +352,9 @@ public class RoundManager : MonoBehaviour
                 yield break;
             }
 
-
-            // ====================================================
-            // NEXT ENEMY
-            // ====================================================
-
             if (delayBetweenUnits > 0f)
-            {
                 yield return unitDelay;
-            }
         }
-
-
-        // ========================================================
-        // ENEMY TURN FINISHED
-        // ========================================================
 
         if (nextRoundTextManager != null)
         {
@@ -604,17 +364,55 @@ public class RoundManager : MonoBehaviour
 
             nextRoundTextManager.ShowPlayerTurn();
 
-            while (
-                nextRoundTextManager.IsAnimating
-            )
-            {
+            while (nextRoundTextManager.IsAnimating)
                 yield return null;
-            }
         }
 
         combatManager.ClearEnemyTurnLocks();
     }
 
+    // ============================================================
+    // BOSS RETREAT
+    // ============================================================
+
+    private IEnumerator ExecuteBossRetreat(BossLobsterBrain boss)
+    {
+        if (boss == null || !boss.IsRetreating())
+            yield break;
+
+        UnitMoveBrain moveBrain = boss.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+        {
+            Debug.LogWarning(
+                "[RoundManager] Retreating boss has no UnitMoveBrain.",
+                boss
+            );
+            yield break;
+        }
+
+        Vector2Int spawnTile = boss.GetSpawnTile();
+
+        Debug.Log(
+            $"[RoundManager] Boss '{boss.name}' retreat destination: {spawnTile}.",
+            boss
+        );
+
+        yield return StartCoroutine(boss.TryRetreat());
+
+        // Don't advance to another enemy while the boss is still moving.
+        while (moveBrain != null && moveBrain.IsMoving())
+            yield return null;
+
+        if (boss != null && boss.IsRetreating())
+        {
+            Debug.Log(
+                "[RoundManager] Boss remains in retreat mode and can continue " +
+                "on a later turn if it ran out of movement or its path was blocked.",
+                boss
+            );
+        }
+    }
 
     // ============================================================
     // PLAYER INTERACTION CONTROL
@@ -622,68 +420,25 @@ public class RoundManager : MonoBehaviour
 
     private void DisablePlayerTurnInteraction()
     {
-        /*
-         * Lock actual player controls.
-         */
         CombatUtility.SetPlayerInputLocked(true);
 
-
-        /*
-         * Clear and block player/ally grid highlights.
-         */
         if (gridHighlightManager != null)
-        {
-            gridHighlightManager.SetPlayerHighlightsDisabled(
-                true
-            );
-        }
+            gridHighlightManager.SetPlayerHighlightsDisabled(true);
 
-
-        /*
-         * Clear and block the player walk-line preview.
-         *
-         * LineWalkPreview owns the LineRenderer and also
-         * prevents its Update() method from drawing the line
-         * again during the enemy turn.
-         */
         if (lineWalkPreview != null)
-        {
-            lineWalkPreview.SetPlayerWalkPreviewDisabled(
-                true
-            );
-        }
+            lineWalkPreview.SetPlayerWalkPreviewDisabled(true);
     }
 
     private void EnablePlayerTurnInteraction()
     {
-        /*
-         * Unlock player input.
-         */
         CombatUtility.SetPlayerInputLocked(false);
 
-
-        /*
-         * Allow player/ally movement and ability highlights.
-         */
         if (gridHighlightManager != null)
-        {
-            gridHighlightManager.SetPlayerHighlightsDisabled(
-                false
-            );
-        }
+            gridHighlightManager.SetPlayerHighlightsDisabled(false);
 
-
-        /*
-         * Allow the walk-line preview again.
-         */
         if (lineWalkPreview != null)
-        {
-            lineWalkPreview.SetPlayerWalkPreviewDisabled(
-                false
-            );
-        }
+            lineWalkPreview.SetPlayerWalkPreviewDisabled(false);
     }
-
 
     // ============================================================
     // END ROUND
@@ -691,23 +446,10 @@ public class RoundManager : MonoBehaviour
 
     private void EndRound()
     {
-        /*
-         * Always restore player interaction here.
-         *
-         * This protects against cases where the encounter ends
-         * during the enemy phase.
-         */
         EnablePlayerTurnInteraction();
 
         if (canvasJuiceManager != null)
-        {
             canvasJuiceManager.MoveCameraToNormalPosition();
-        }
-
-
-        // ========================================================
-        // VICTORY
-        // ========================================================
 
         if (encounterManager != null)
         {
@@ -716,42 +458,22 @@ public class RoundManager : MonoBehaviour
             if (encounterManager.IsFinished())
             {
                 roundRunning = false;
-
-                SetRoundState(
-                    RoundState.Setup
-                );
-
+                SetRoundState(RoundState.Setup);
                 return;
             }
         }
 
-
-        // ========================================================
-        // NEXT ROUND
-        // ========================================================
-
         currentRound++;
-
         roundRunning = false;
 
-        SetRoundState(
-            RoundState.Setup
-        );
-
-        OnRoundChanged?.Invoke(
-            currentRound
-        );
+        SetRoundState(RoundState.Setup);
+        OnRoundChanged?.Invoke(currentRound);
 
         Debug.Log(
-            "[RoundManager] Round " +
-            (currentRound - 1) +
-            " complete. " +
-            "Preparing Round " +
-            currentRound +
-            "."
+            "[RoundManager] Round " + (currentRound - 1) +
+            " complete. Preparing Round " + currentRound + "."
         );
     }
-
 
     // ============================================================
     // RESET
@@ -762,52 +484,29 @@ public class RoundManager : MonoBehaviour
         StopAllCoroutines();
 
         currentRound = 1;
-
-        currentState =
-            RoundState.Setup;
-
+        currentState = RoundState.Setup;
         roundRunning = false;
 
         roundAbilityLogs.Clear();
         cachedUnits.Clear();
 
-
         if (combatManager != null)
-        {
             combatManager.ClearEnemyTurnLocks();
-        }
-
 
         EnablePlayerTurnInteraction();
 
-
         if (gridHighlightManager != null)
-        {
             gridHighlightManager.ClearAllHighlights();
-        }
-
 
         if (lineWalkPreview != null)
-        {
             lineWalkPreview.ClearPreview();
-        }
-
 
         if (canvasJuiceManager != null)
-        {
             canvasJuiceManager.MoveCameraToNormalPosition();
-        }
 
-
-        OnRoundChanged?.Invoke(
-            currentRound
-        );
-
-        OnRoundStateChanged?.Invoke(
-            currentState
-        );
+        OnRoundChanged?.Invoke(currentRound);
+        OnRoundStateChanged?.Invoke(currentState);
     }
-
 
     // ============================================================
     // CACHE UNITS
@@ -817,32 +516,19 @@ public class RoundManager : MonoBehaviour
     {
         cachedUnits.Clear();
 
-        List<AttackUnit> units =
-            CombatUtility.GetAllAliveUnits();
+        List<AttackUnit> units = CombatUtility.GetAllAliveUnits();
 
         if (units == null)
-        {
             return;
-        }
 
-        for (
-            int i = 0;
-            i < units.Count;
-            i++
-        )
+        for (int i = 0; i < units.Count; i++)
         {
-            AttackUnit unit =
-                units[i];
+            AttackUnit unit = units[i];
 
             if (unit != null)
-            {
-                cachedUnits.Add(
-                    unit
-                );
-            }
+                cachedUnits.Add(unit);
         }
     }
-
 
     // ============================================================
     // RESET MOVEMENT
@@ -850,30 +536,19 @@ public class RoundManager : MonoBehaviour
 
     private void ResetAllUnitMovement()
     {
-        for (
-            int i = 0;
-            i < cachedUnits.Count;
-            i++
-        )
+        for (int i = 0; i < cachedUnits.Count; i++)
         {
-            AttackUnit unit =
-                cachedUnits[i];
+            AttackUnit unit = cachedUnits[i];
 
             if (unit == null)
-            {
                 continue;
-            }
 
-            UnitMoveBrain moveBrain =
-                unit.GetComponent<UnitMoveBrain>();
+            UnitMoveBrain moveBrain = unit.GetComponent<UnitMoveBrain>();
 
             if (moveBrain != null)
-            {
                 moveBrain.ResetMovement();
-            }
         }
     }
-
 
     // ============================================================
     // COOLDOWNS
@@ -881,37 +556,21 @@ public class RoundManager : MonoBehaviour
 
     private void UpdateAllUnitCooldowns()
     {
-        for (
-            int i = 0;
-            i < cachedUnits.Count;
-            i++
-        )
+        for (int i = 0; i < cachedUnits.Count; i++)
         {
-            AttackUnit unit =
-                cachedUnits[i];
+            AttackUnit unit = cachedUnits[i];
 
             if (unit == null)
-            {
                 continue;
-            }
 
             unit.StartNewRound();
 
-
-            // ====================================================
-            // TURRET
-            // ====================================================
-
-            turretbehav turret =
-                unit.GetComponent<turretbehav>();
+            turretbehav turret = unit.GetComponent<turretbehav>();
 
             if (turret != null)
-            {
                 turret.ConsumeChainLightningCharge();
-            }
         }
     }
-
 
     // ============================================================
     // ENSURE ENEMIES
@@ -919,33 +578,20 @@ public class RoundManager : MonoBehaviour
 
     private bool EnsureEnemiesExist()
     {
-        if (
-            encounterManager != null &&
-            encounterManager.IsEncounterRunning()
-        )
-        {
+        if (encounterManager != null && encounterManager.IsEncounterRunning())
             return false;
-        }
 
         if (combatManager == null)
-        {
             return false;
-        }
 
-        if (
-            CombatUtility.GetUnitCount(
-                Team.Enemy
-            ) == 0
-        )
+        if (CombatUtility.GetUnitCount(Team.Enemy) == 0)
         {
             combatManager.CheckForEnemies();
-
             return true;
         }
 
         return false;
     }
-
 
     // ============================================================
     // PLAYER CHECK
@@ -953,37 +599,20 @@ public class RoundManager : MonoBehaviour
 
     private bool IsPlayerOnField()
     {
-        List<AttackUnit> players =
-            CombatUtility.GetUnitsByTeam(
-                Team.Player
-            );
+        List<AttackUnit> players = CombatUtility.GetUnitsByTeam(Team.Player);
 
-        if (
-            players == null ||
-            players.Count == 0
-        )
-        {
+        if (players == null || players.Count == 0)
             return false;
-        }
 
-        for (
-            int i = 0;
-            i < players.Count;
-            i++
-        )
+        for (int i = 0; i < players.Count; i++)
         {
-            AttackUnit player =
-                players[i];
+            AttackUnit player = players[i];
 
             if (player == null)
-            {
                 continue;
-            }
 
             if (!CombatUtility.IsAlive(player))
-            {
                 continue;
-            }
 
             return true;
         }
@@ -991,56 +620,39 @@ public class RoundManager : MonoBehaviour
         return false;
     }
 
-
     // ============================================================
     // UNIT VALIDATION
     // ============================================================
 
-    private bool IsValidUnit(
-        AttackUnit unit)
+    private bool IsValidUnit(AttackUnit unit)
     {
-        return CombatUtility.IsAlive(
-            unit
-        );
+        return CombatUtility.IsAlive(unit);
     }
-
 
     // ============================================================
     // ABILITY CHECK
     // ============================================================
 
-    private bool HasAnyAbility(
-        AttackUnit unit)
+    private bool HasAnyAbility(AttackUnit unit)
     {
         if (unit == null)
-        {
             return false;
-        }
 
         return unit.GetAbilityCount() > 0;
     }
-
 
     // ============================================================
     // ROUND STATE
     // ============================================================
 
-    private void SetRoundState(
-        RoundState newState)
+    private void SetRoundState(RoundState newState)
     {
         if (currentState == newState)
-        {
             return;
-        }
 
-        currentState =
-            newState;
-
-        OnRoundStateChanged?.Invoke(
-            currentState
-        );
+        currentState = newState;
+        OnRoundStateChanged?.Invoke(currentState);
     }
-
 
     // ============================================================
     // PUBLIC STATE
@@ -1048,8 +660,7 @@ public class RoundManager : MonoBehaviour
 
     public bool IsSetupPhase()
     {
-        return currentState ==
-               RoundState.Setup;
+        return currentState == RoundState.Setup;
     }
 
     public bool IsRoundRunning()
@@ -1069,8 +680,7 @@ public class RoundManager : MonoBehaviour
 
     public bool IsEnemyTurn()
     {
-        return currentState ==
-               RoundState.EnemyTurn;
+        return currentState == RoundState.EnemyTurn;
     }
 
     public bool HasPlayerOnField()
@@ -1078,14 +688,11 @@ public class RoundManager : MonoBehaviour
         return IsPlayerOnField();
     }
 
-
     // ============================================================
     // ABILITY LOG
     // ============================================================
 
-    public void LogAbilityUse(
-        string unitName,
-        string abilityName)
+    public void LogAbilityUse(string unitName, string abilityName)
     {
         roundAbilityLogs.Add(
             new AbilityLogEntry
@@ -1097,19 +704,13 @@ public class RoundManager : MonoBehaviour
         );
     }
 
-    public List<AbilityLogEntry>
-        GetAbilityLogsForRound(int round)
+    public List<AbilityLogEntry> GetAbilityLogsForRound(int round)
     {
-        return roundAbilityLogs.FindAll(
-            log => log.round == round
-        );
+        return roundAbilityLogs.FindAll(log => log.round == round);
     }
 
-    public List<AbilityLogEntry>
-        GetAllAbilityLogs()
+    public List<AbilityLogEntry> GetAllAbilityLogs()
     {
-        return new List<AbilityLogEntry>(
-            roundAbilityLogs
-        );
+        return new List<AbilityLogEntry>(roundAbilityLogs);
     }
 }

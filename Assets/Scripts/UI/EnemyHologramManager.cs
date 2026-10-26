@@ -1,3 +1,4 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,21 +11,17 @@ public class EnemyHologramManager : MonoBehaviour
     // ============================================================
 
     [Header("Hologram")]
+    [SerializeField] private GameObject hologramPrefab;
     [SerializeField]
-    private GameObject hologramPrefab;
-
-    [SerializeField]
-    private Vector3 hologramOffset = new Vector3(0f, 0.05f, 0f);
-
+    private Vector3 hologramOffset =
+        new Vector3(0f, 0.05f, 0f);
 
     // ============================================================
     // HOLOGRAM POOL
     // ============================================================
 
     [Header("Hologram Pool")]
-    [SerializeField]
-    [Min(1)]
-    private int poolSize = 1;
+    [SerializeField, Min(1)] private int poolSize = 1;
 
     private readonly List<GameObject> hologramPool =
         new List<GameObject>();
@@ -33,81 +30,67 @@ public class EnemyHologramManager : MonoBehaviour
         new List<SpriteRenderer>();
 
     private GameObject hologramInstance;
-
     private SpriteRenderer hologramSpriteRenderer;
-
     private Vector3 hologramBaseScale = Vector3.one;
-
 
     // ============================================================
     // LINE
     // ============================================================
 
     [Header("Path Line Renderer")]
-    [SerializeField]
-    private GameObject lineRendererManagerObject;
-
-    [SerializeField]
-    private Vector3 lineOffset = Vector3.zero;
+    [SerializeField] private GameObject lineRendererManagerObject;
+    [SerializeField] private Vector3 lineOffset = Vector3.zero;
 
     private LineRenderer pathLineRenderer;
-
 
     // ============================================================
     // SETTINGS
     // ============================================================
 
     [Header("Settings")]
-    [SerializeField]
-    private bool showHologram = true;
-
+    [SerializeField] private bool showHologram = true;
 
     // ============================================================
     // PULSE
     // ============================================================
 
     [Header("Hologram Pulse")]
-    [SerializeField]
-    private bool pulseHologram = true;
-
-    [SerializeField]
-    private float pulseSpeed = 1f;
-
-    [SerializeField]
-    private float pulseAmount = 0.08f;
-
+    [SerializeField] private bool pulseHologram = true;
+    [SerializeField] private float pulseSpeed = 1f;
+    [SerializeField] private float pulseAmount = 0.08f;
 
     // ============================================================
     // TRANSPARENCY
     // ============================================================
 
     [Header("Hologram Transparency")]
-    [SerializeField]
-    private float transparencySpeed = 3f;
+    [SerializeField] private float transparencySpeed = 3f;
 
     [Range(0f, 1f)]
-    [SerializeField]
-    private float maxAlpha = 0.7f;
+    [SerializeField] private float maxAlpha = 0.7f;
 
     [Range(0f, 1f)]
-    [SerializeField]
-    private float minAlpha = 0.5f;
+    [SerializeField] private float minAlpha = 0.5f;
 
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
+    [Header("Debug")]
+    [SerializeField] private bool debugRetreatHologram = false;
 
     // ============================================================
     // STATE
     // ============================================================
 
     private AttackUnit selectedEnemy;
-
     private UnitMoveBrain selectedMoveBrain;
-
     private SpriteRenderer cachedEnemySpriteRenderer;
 
     private Coroutine effectsCoroutine;
 
     private bool isShowing;
-
+    private bool wasRetreating;
 
     // ============================================================
     // UNITY
@@ -133,6 +116,57 @@ public class EnemyHologramManager : MonoBehaviour
         ClearSelection();
     }
 
+    private void Update()
+    {
+        if (!showHologram)
+            return;
+
+        if (selectedEnemy == null || selectedMoveBrain == null)
+            return;
+
+        if (selectedEnemy.IsDead())
+        {
+            ClearSelection();
+            return;
+        }
+
+        BossLobsterBrain bossBrain =
+            selectedEnemy.GetComponent<BossLobsterBrain>();
+
+        bool retreating =
+            bossBrain != null && bossBrain.IsRetreating();
+
+        // Refresh every frame during retreat so the line follows
+        // the lobster while the hologram stays at the spawn tile.
+        if (retreating)
+        {
+            if (!wasRetreating && debugRetreatHologram)
+            {
+                Debug.Log(
+                    "[Hologram] Enemy started retreating. " +
+                    "Showing original spawn tile.",
+                    selectedEnemy
+                );
+            }
+
+            RefreshHologram();
+        }
+        else if (wasRetreating)
+        {
+            if (debugRetreatHologram)
+            {
+                Debug.Log(
+                    "[Hologram] Enemy stopped retreating. " +
+                    "Returning to normal movement prediction.",
+                    selectedEnemy
+                );
+            }
+
+            RefreshHologram();
+        }
+
+        wasRetreating = retreating;
+    }
 
     // ============================================================
     // LINE RENDERER
@@ -171,7 +205,6 @@ public class EnemyHologramManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // CREATE POOL
     // ============================================================
@@ -196,14 +229,9 @@ public class EnemyHologramManager : MonoBehaviour
         for (int i = 0; i < poolSize; i++)
         {
             GameObject hologram =
-                Instantiate(
-                    hologramPrefab,
-                    transform
-                );
+                Instantiate(hologramPrefab, transform);
 
-            hologram.name =
-                $"Enemy Movement Hologram {i}";
-
+            hologram.name = $"Enemy Movement Hologram {i}";
             hologram.SetActive(false);
 
             SpriteRenderer spriteRenderer =
@@ -227,13 +255,9 @@ public class EnemyHologramManager : MonoBehaviour
             hologramSpriteRenderer = hologramSpriteRenderers[0];
 
             if (hologramInstance != null)
-            {
-                hologramBaseScale =
-                    hologramInstance.transform.localScale;
-            }
+                hologramBaseScale = hologramInstance.transform.localScale;
         }
     }
-
 
     // ============================================================
     // GET INSTANCE
@@ -241,18 +265,14 @@ public class EnemyHologramManager : MonoBehaviour
 
     private void EnsureHologramInstance()
     {
-        if (
-            hologramInstance != null &&
-            hologramSpriteRenderer != null
-        )
+        if (hologramInstance != null &&
+            hologramSpriteRenderer != null)
         {
             return;
         }
 
         if (hologramPool.Count == 0)
-        {
             CreateHologramPool();
-        }
 
         if (hologramPool.Count == 0)
             return;
@@ -276,7 +296,6 @@ public class EnemyHologramManager : MonoBehaviour
             }
         }
 
-        // Fallback
         hologramInstance = hologramPool[0];
         hologramSpriteRenderer = hologramSpriteRenderers[0];
 
@@ -287,72 +306,43 @@ public class EnemyHologramManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // SELECTION
     // ============================================================
 
     private void OnSelectionChanged(
         HoverInfoTrigger trigger,
-        bool selected
-    )
+        bool selected)
     {
         if (trigger == null)
             return;
 
-        AttackUnit unit =
-            trigger.GetAttackUnit();
-
-        // --------------------------------------------------------
-        // DESELECT
-        // --------------------------------------------------------
+        AttackUnit unit = trigger.GetAttackUnit();
 
         if (!selected)
         {
             if (unit == selectedEnemy)
-            {
                 ClearSelection();
-            }
 
             return;
         }
 
-        // --------------------------------------------------------
-        // INVALID
-        // --------------------------------------------------------
-
-        if (
-            unit == null ||
-            unit.IsDead()
-        )
+        if (unit == null || unit.IsDead())
         {
             ClearSelection();
             return;
         }
-
-        // --------------------------------------------------------
-        // TEAM
-        // --------------------------------------------------------
 
         Team team = unit.GetTeam();
 
-        if (
-            team == Team.Player ||
-            team == Team.Ally
-        )
+        if (team == Team.Player || team == Team.Ally)
         {
             ClearSelection();
             return;
         }
 
-        // --------------------------------------------------------
-        // SELECT
-        // --------------------------------------------------------
-
         selectedEnemy = unit;
-
-        selectedMoveBrain =
-            selectedEnemy.GetComponent<UnitMoveBrain>();
+        selectedMoveBrain = selectedEnemy.GetComponent<UnitMoveBrain>();
 
         if (selectedMoveBrain == null)
         {
@@ -379,21 +369,24 @@ public class EnemyHologramManager : MonoBehaviour
             return;
         }
 
+        BossLobsterBrain bossBrain =
+            selectedEnemy.GetComponent<BossLobsterBrain>();
+
+        wasRetreating =
+            bossBrain != null && bossBrain.IsRetreating();
+
         UpdateHologramSprite();
-
         RefreshHologram();
-
         StartEffectsCoroutine();
     }
-
 
     // ============================================================
     // REFRESH
     // ============================================================
 
     /// <summary>
-    /// Recalculates the predicted destination and moves the hologram.
-    /// Call this whenever the enemy's movement/path state changes.
+    /// During retreat, displays the original spawn tile.
+    /// Otherwise, displays the normal predicted movement tile.
     /// </summary>
     public void RefreshHologram()
     {
@@ -403,10 +396,7 @@ public class EnemyHologramManager : MonoBehaviour
             return;
         }
 
-        if (
-            selectedEnemy == null ||
-            selectedMoveBrain == null
-        )
+        if (selectedEnemy == null || selectedMoveBrain == null)
         {
             HideHologram();
             return;
@@ -415,17 +405,6 @@ public class EnemyHologramManager : MonoBehaviour
         if (selectedEnemy.IsDead())
         {
             ClearSelection();
-            return;
-        }
-
-        if (
-            !selectedMoveBrain.TryGetPredictedMoveTile(
-                out Vector2Int predictedTile,
-                true
-            )
-        )
-        {
-            HideHologram();
             return;
         }
 
@@ -438,12 +417,41 @@ public class EnemyHologramManager : MonoBehaviour
             return;
         }
 
-        ShowHologramAt(
-            gridManager,
-            predictedTile
-        );
-    }
+        BossLobsterBrain bossBrain =
+            selectedEnemy.GetComponent<BossLobsterBrain>();
 
+        // IMPORTANT:
+        // Keep the hologram visible at the lobster's spawn tile
+        // for the entire retreat.
+        if (bossBrain != null && bossBrain.IsRetreating())
+        {
+            Vector2Int spawnTile = bossBrain.GetSpawnTile();
+
+            if (debugRetreatHologram)
+            {
+                Debug.Log(
+                    $"[Hologram] Retreat prediction | " +
+                    $"Enemy={selectedEnemy.name} | " +
+                    $"SpawnTile={spawnTile}",
+                    selectedEnemy
+                );
+            }
+
+            ShowHologramAt(gridManager, spawnTile);
+            return;
+        }
+
+        // Normal prediction for other enemies and normal movement.
+        if (!selectedMoveBrain.TryGetPredictedMoveTile(
+            out Vector2Int predictedTile,
+            true))
+        {
+            HideHologram();
+            return;
+        }
+
+        ShowHologramAt(gridManager, predictedTile);
+    }
 
     // ============================================================
     // SPRITE
@@ -475,22 +483,18 @@ public class EnemyHologramManager : MonoBehaviour
             cachedEnemySpriteRenderer.sortingOrder + 1;
     }
 
-
     // ============================================================
     // SHOW
     // ============================================================
 
     private void ShowHologramAt(
         GridManager gridManager,
-        Vector2Int tile
-    )
+        Vector2Int tile)
     {
         EnsureHologramInstance();
 
-        if (
-            hologramInstance == null ||
-            hologramSpriteRenderer == null
-        )
+        if (hologramInstance == null ||
+            hologramSpriteRenderer == null)
         {
             return;
         }
@@ -501,19 +505,13 @@ public class EnemyHologramManager : MonoBehaviour
         hologramInstance.transform.position =
             worldPosition + hologramOffset;
 
-        hologramInstance.transform.localScale =
-            hologramBaseScale;
-
         if (!hologramInstance.activeSelf)
-        {
             hologramInstance.SetActive(true);
-        }
 
         isShowing = true;
 
         UpdatePathLine(worldPosition);
     }
-
 
     // ============================================================
     // PATH LINE
@@ -545,7 +543,6 @@ public class EnemyHologramManager : MonoBehaviour
         pathLineRenderer.enabled = true;
     }
 
-
     // ============================================================
     // EFFECT COROUTINE
     // ============================================================
@@ -561,7 +558,6 @@ public class EnemyHologramManager : MonoBehaviour
             StartCoroutine(HologramEffectsRoutine());
     }
 
-
     private void StopEffectsCoroutine()
     {
         if (effectsCoroutine == null)
@@ -570,7 +566,6 @@ public class EnemyHologramManager : MonoBehaviour
         StopCoroutine(effectsCoroutine);
         effectsCoroutine = null;
     }
-
 
     private IEnumerator HologramEffectsRoutine()
     {
@@ -581,39 +576,22 @@ public class EnemyHologramManager : MonoBehaviour
 
             float time = Time.time;
 
-            // ----------------------------------------------------
-            // PULSE
-            // ----------------------------------------------------
-
             if (pulseHologram)
             {
                 float pulse =
-                    1f +
-                    Mathf.Sin(time * pulseSpeed) *
-                    pulseAmount;
+                    1f + Mathf.Sin(time * pulseSpeed) * pulseAmount;
 
                 hologramInstance.transform.localScale =
                     hologramBaseScale * pulse;
             }
 
-            // ----------------------------------------------------
-            // TRANSPARENCY
-            // ----------------------------------------------------
-
             if (transparencySpeed > 0f)
             {
                 float pingPong =
-                    Mathf.PingPong(
-                        time * transparencySpeed,
-                        1f
-                    );
+                    Mathf.PingPong(time * transparencySpeed, 1f);
 
                 float alpha =
-                    Mathf.Lerp(
-                        maxAlpha,
-                        minAlpha,
-                        pingPong
-                    );
+                    Mathf.Lerp(maxAlpha, minAlpha, pingPong);
 
                 SetHologramAlpha(alpha);
             }
@@ -624,7 +602,6 @@ public class EnemyHologramManager : MonoBehaviour
         effectsCoroutine = null;
     }
 
-
     // ============================================================
     // ALPHA
     // ============================================================
@@ -634,16 +611,11 @@ public class EnemyHologramManager : MonoBehaviour
         if (hologramSpriteRenderer == null)
             return;
 
-        Color color =
-            hologramSpriteRenderer.color;
+        Color color = hologramSpriteRenderer.color;
+        color.a = Mathf.Clamp01(alpha);
 
-        color.a =
-            Mathf.Clamp01(alpha);
-
-        hologramSpriteRenderer.color =
-            color;
+        hologramSpriteRenderer.color = color;
     }
-
 
     // ============================================================
     // HIDE
@@ -657,23 +629,17 @@ public class EnemyHologramManager : MonoBehaviour
 
         for (int i = 0; i < hologramPool.Count; i++)
         {
-            GameObject hologram =
-                hologramPool[i];
+            GameObject hologram = hologramPool[i];
 
             if (hologram != null)
                 hologram.SetActive(false);
         }
 
         if (hologramInstance != null)
-        {
-            hologramInstance.transform.localScale =
-                hologramBaseScale;
-        }
+            hologramInstance.transform.localScale = hologramBaseScale;
 
         if (hologramSpriteRenderer != null)
-        {
             SetHologramAlpha(maxAlpha);
-        }
 
         if (pathLineRenderer != null)
         {
@@ -681,7 +647,6 @@ public class EnemyHologramManager : MonoBehaviour
             pathLineRenderer.enabled = false;
         }
     }
-
 
     // ============================================================
     // CLEAR
@@ -692,10 +657,10 @@ public class EnemyHologramManager : MonoBehaviour
         selectedEnemy = null;
         selectedMoveBrain = null;
         cachedEnemySpriteRenderer = null;
+        wasRetreating = false;
 
         HideHologram();
     }
-
 
     // ============================================================
     // PUBLIC API
@@ -706,24 +671,20 @@ public class EnemyHologramManager : MonoBehaviour
         ClearSelection();
     }
 
-
     public AttackUnit GetSelectedEnemy()
     {
         return selectedEnemy;
     }
-
 
     public UnitMoveBrain GetSelectedMoveBrain()
     {
         return selectedMoveBrain;
     }
 
-
     public bool IsShowingHologram()
     {
         return isShowing;
     }
-
 
     public void SetHologramVisible(bool visible)
     {
@@ -742,9 +703,8 @@ public class EnemyHologramManager : MonoBehaviour
         }
     }
 
-
     /// <summary>
-    /// Call this when the selected enemy's movement/path changes.
+    /// Manually refresh the selected enemy's hologram.
     /// </summary>
     public void Refresh()
     {

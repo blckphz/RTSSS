@@ -53,6 +53,7 @@ GameObject:
   - component: {fileID: 7114984761666167545}
   - component: {fileID: 181488290778755698}
   - component: {fileID: 33233096686326158}
+  - component: {fileID: 6177750929629816050}
   m_Layer: 0
   m_Name: bosslobster
   m_TagString: Untagged
@@ -199,11 +200,11 @@ MonoBehaviour:
   dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 1
   attackAnimatorLayerName: attackLayer
-  dayNightType: 1
+  dayNightType: 2
   dayDamageBonus: 0
-  nightDamageBonus: 10
-  dayMoveRangeBonus: -1
-  nightMoveRangeBonus: 1
+  nightDamageBonus: 0
+  dayMoveRangeBonus: 0
+  nightMoveRangeBonus: 0
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &333921039009739865
 MonoBehaviour:
@@ -277,7 +278,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.005378425, y: 0.3414784}
+  m_Offset: {x: -0.005378425, y: -0.042596728}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -287,7 +288,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.66474605, y: 0.6422447}
+  m_Size: {x: 0.66474605, y: 1.4103949}
   m_EdgeRadius: 0
 --- !u!50 &2092831927803253448
 Rigidbody2D:
@@ -333,7 +334,7 @@ MonoBehaviour:
   animationController: {fileID: 181488290778755698}
   moveDuration: 0.25
   facingDirection: {x: 0, y: 1}
-  attackRange: 1
+  attackRange: 0
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
   preferCloserAttackPosition: 1
@@ -367,7 +368,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
   fixedRotation: {x: 0, y: 0, z: 0}
-  lockRotationEveryFrame: 1
+  lockRotationEveryFrame: 0
   unitId: 
 --- !u!114 &8573224804150887999
 MonoBehaviour:
@@ -445,6 +446,19 @@ MonoBehaviour:
   useStunVisual: 1
   smoothStunVisual: 1
   visualFadeSpeed: 8
+--- !u!114 &6177750929629816050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4030345030637247355}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 440a333c5bf6a3c4b88003cfd5d597b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  retreatHealthPercent: 0.708
 --- !u!1 &4035946682169948788
 GameObject:
   m_ObjectHideFlags: 0
@@ -471,7 +485,7 @@ Transform:
   m_GameObject: {fileID: 4035946682169948788}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.015, y: 0.892, z: 0}
+  m_LocalPosition: {x: -0.015, y: 0.124, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

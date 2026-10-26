@@ -61,8 +61,6 @@ public class UnitMoveBrainManager : MonoBehaviour
     private readonly List<AttackUnit> targetUnitBuffer =
         new List<AttackUnit>(64);
 
-    // Caches footprint-movement checks during one BFS traversal.
-    // Cleared before each traversal to prevent stale occupancy results.
     private readonly Dictionary<Vector2Int, bool> movingUnitBlockedCache =
         new Dictionary<Vector2Int, bool>(256);
 
@@ -145,7 +143,6 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (movingUnit == null)
             return gridManager.GetUnitAt(position) != null;
 
-        // If the moving unit changes, discard results from the old unit.
         if (cachedMovingUnit != movingUnit)
             BeginBlockedCellCache(movingUnit);
 
@@ -223,6 +220,80 @@ public class UnitMoveBrainManager : MonoBehaviour
                 bfsQueueCache.Enqueue(next);
                 results.Add(next);
             }
+        }
+    }
+
+    // ============================================================
+    // REACHABLE DISTANCES
+    // Single BFS, limited to the movement budget.
+    // ============================================================
+
+    public void GetReachableCellDistances(
+        Vector2Int start,
+        int moveRange,
+        bool canWalkDiagonally,
+        Dictionary<Vector2Int, int> results,
+        GameObject movingUnit = null)
+    {
+        if (results == null)
+            return;
+
+        results.Clear();
+
+        EnsureGridManager();
+
+        if (gridManager == null ||
+            moveRange <= 0 ||
+            !gridManager.IsInsideGrid(start))
+        {
+            return;
+        }
+
+        bfsQueueCache.Clear();
+        visitedCache.Clear();
+        distanceCache.Clear();
+        cameFromCache.Clear();
+
+        BeginBlockedCellCache(movingUnit);
+
+        bfsQueueCache.Enqueue(start);
+        visitedCache.Add(start);
+        distanceCache[start] = 0;
+
+        int directionCount = GetDirectionCount(canWalkDiagonally);
+
+        while (bfsQueueCache.Count > 0)
+        {
+            Vector2Int current = bfsQueueCache.Dequeue();
+            int currentDistance = distanceCache[current];
+
+            if (currentDistance >= moveRange)
+                continue;
+
+            for (int i = 0; i < directionCount; i++)
+            {
+                Vector2Int direction = Directions[i];
+                Vector2Int next = current + direction;
+
+                if (visitedCache.Contains(next))
+                    continue;
+
+                if (!gridManager.IsInsideGrid(next))
+                    continue;
+
+                if (!CanEnterCell(current, next, direction, movingUnit))
+                    continue;
+
+                visitedCache.Add(next);
+                distanceCache[next] = currentDistance + 1;
+                bfsQueueCache.Enqueue(next);
+            }
+        }
+
+        foreach (KeyValuePair<Vector2Int, int> entry in distanceCache)
+        {
+            if (entry.Value > 0 && entry.Value <= moveRange)
+                results[entry.Key] = entry.Value;
         }
     }
 
@@ -840,4 +911,7 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         path.Reverse();
     }
+
+
+
 }
