@@ -1,228 +1,128 @@
+
 using UnityEngine;
 
 public class GridShapeManager : MonoBehaviour
 {
-    // ============================================================
-    // GRID REFERENCE
-    // ============================================================
-
     [Header("Grid Reference")]
-    [SerializeField]
-    private GridManager gridManager;
-
-
-    // ============================================================
-    // HIGHLIGHT REFERENCES
-    // ============================================================
+    [SerializeField] private GridManager gridManager;
 
     [Header("Highlight References")]
-    [SerializeField]
-    private GridHighlightBrain highlightBrain;
-
-
-    // ============================================================
-    // DONUT SETTINGS
-    // ============================================================
+    [SerializeField] private GridHighlightBrain highlightBrain;
 
     [Header("Donut Shape Settings")]
+    [SerializeField, Min(0)] private int minRadius = 2;
+    [SerializeField, Min(1)] private int maxRadius = 5;
 
-    [Tooltip("Inner empty radius for Donut shape")]
-    [SerializeField, Min(0)]
-    private int minRadius = 2;
-
-    [Tooltip("Outer edge radius for Donut shape")]
-    [SerializeField, Min(1)]
-    private int maxRadius = 5;
-
-
-    // ============================================================
-    // UNITY
-    // ============================================================
+    private void Awake()
+    {
+        FindReferences();
+    }
 
     private void Start()
     {
         FindReferences();
     }
 
-
-    // ============================================================
-    // REFERENCES
-    // ============================================================
-
     private void FindReferences()
     {
         if (gridManager == null)
-        {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
-
+            gridManager = FindFirstObjectByType<GridManager>();
 
         if (highlightBrain == null)
-        {
-            highlightBrain =
-                FindFirstObjectByType<GridHighlightBrain>();
-        }
+            highlightBrain = FindFirstObjectByType<GridHighlightBrain>();
+    }
 
+    public void ResizeGridRelative(int widthDelta, int heightDelta)
+    {
+        FindReferences();
 
         if (gridManager == null)
         {
             Debug.LogError(
-                "[GridShapeManager] No GridManager instance found in scene!",
-                this
-            );
+                "[GridShapeManager] GridManager not found!", this);
+            return;
         }
 
+        int oldWidth = gridManager.GetWidth();
+        int oldHeight = gridManager.GetHeight();
 
-        if (highlightBrain == null)
+        int newWidth = Mathf.Max(1, oldWidth + widthDelta);
+        int newHeight = Mathf.Max(1, oldHeight + heightDelta);
+
+        if (newWidth == oldWidth && newHeight == oldHeight)
+            return;
+
+        gridManager.SetGridDimensions(newWidth, newHeight);
+
+        RefreshGrid();
+
+        Debug.Log(
+            $"[GridShapeManager] Grid resized: " +
+            $"{oldWidth}x{oldHeight} -> {newWidth}x{newHeight}",
+            this);
+    }
+
+    public void SetGridDimensionsDirect(int width, int height)
+    {
+        FindReferences();
+
+        if (gridManager == null)
         {
-            Debug.LogWarning(
-                "[GridShapeManager] No GridHighlightBrain instance found in scene!",
-                this
-            );
+            Debug.LogError(
+                "[GridShapeManager] GridManager not found!", this);
+            return;
         }
-    }
-
-
-    // ============================================================
-    // RELATIVE RESIZE
-    // ============================================================
-
-    public void ResizeGridRelative(
-        int widthDelta,
-        int heightDelta)
-    {
-        if (gridManager == null)
-            return;
-
-
-        int newWidth =
-            Mathf.Max(
-                1,
-                gridManager.GetWidth() +
-                widthDelta
-            );
-
-
-        int newHeight =
-            Mathf.Max(
-                1,
-                gridManager.GetHeight() +
-                heightDelta
-            );
-
 
         gridManager.SetGridDimensions(
-            newWidth,
-            newHeight
-        );
+            Mathf.Max(1, width),
+            Mathf.Max(1, height));
 
-
-        RefreshHighlightGrid();
+        RefreshGrid();
     }
 
-
-    // ============================================================
-    // DIRECT RESIZE
-    // ============================================================
-
-    public void SetGridDimensionsDirect(
-        int width,
-        int height)
+    public void SetGridShapeDirect(GridShapeType shape)
     {
+        FindReferences();
+
         if (gridManager == null)
             return;
-
-
-        gridManager.SetGridDimensions(
-            width,
-            height
-        );
-
-
-        RefreshHighlightGrid();
-    }
-
-
-    // ============================================================
-    // DIRECT SHAPE SETTING
-    // ============================================================
-
-    public void SetGridShapeDirect(
-        GridShapeType shape)
-    {
-        if (gridManager == null)
-            return;
-
 
         gridManager.SetGridShape(
             shape,
             gridManager.GetWidth(),
             gridManager.GetHeight(),
             gridManager.GetMinRadius(),
-            gridManager.GetMaxRadius()
-        );
+            gridManager.GetMaxRadius());
 
-
-        RefreshHighlightGrid();
+        RefreshGrid();
     }
 
-
-    // ============================================================
-    // DONUT SETTINGS
-    // ============================================================
-
-    public void SetDonutSettings(
-        int newMinRadius,
-        int newMaxRadius)
+    public void SetDonutSettings(int newMinRadius, int newMaxRadius)
     {
-        minRadius =
-            Mathf.Max(
-                0,
-                newMinRadius
-            );
+        minRadius = Mathf.Max(0, newMinRadius);
+        maxRadius = Mathf.Max(minRadius, newMaxRadius);
 
-
-        maxRadius =
-            Mathf.Max(
-                minRadius,
-                newMaxRadius
-            );
-
+        FindReferences();
 
         if (gridManager == null)
             return;
-
 
         gridManager.SetGridShape(
             GridShapeType.Donut,
             gridManager.GetWidth(),
             gridManager.GetHeight(),
             minRadius,
-            maxRadius
-        );
+            maxRadius);
 
-
-        RefreshHighlightGrid();
+        RefreshGrid();
     }
 
-
-    // ============================================================
-    // HIGHLIGHT REFRESH
-    // ============================================================
-
-    private void RefreshHighlightGrid()
+    public void RefreshGrid()
     {
-        if (highlightBrain == null)
-        {
-            highlightBrain =
-                FindFirstObjectByType<GridHighlightBrain>();
-        }
-
+        FindReferences();
 
         if (highlightBrain == null)
             return;
-
 
         highlightBrain.RefreshGridBounds();
         highlightBrain.RefreshActiveHighlights();

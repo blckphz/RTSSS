@@ -25,19 +25,19 @@ public class VictoryManager : MonoBehaviour
         if (gameStateManager == null)
         {
             gameStateManager =
-                FindFirstObjectByType<GameStateManager>();
+                FindAnyObjectByType<GameStateManager>();
         }
 
         if (transitionManager == null)
         {
             transitionManager =
-                FindFirstObjectByType<transitionGameManager>();
+                FindAnyObjectByType<transitionGameManager>();
         }
 
         if (musicManager == null)
         {
             musicManager =
-                FindFirstObjectByType<musicManager>();
+                FindAnyObjectByType<musicManager>();
         }
 
         if (victoryCanvas == null)
@@ -63,7 +63,7 @@ public class VictoryManager : MonoBehaviour
         if (gameStateManager == null)
         {
             gameStateManager =
-                FindFirstObjectByType<GameStateManager>();
+                FindAnyObjectByType<GameStateManager>();
         }
 
         if (gameStateManager != null)

@@ -6,167 +6,104 @@ public class CanvasJuiceManager : MonoBehaviour
 {
     public static CanvasJuiceManager Instance;
 
-
     // =========================================================
     // CANVAS / INFO BOX
     // =========================================================
 
     [Header("Canvas / Info Box")]
-
-    [SerializeField]
-    private CanvasGroup canvasGroup;
-
-    [Tooltip("The info box GameObject. Its Scene position is used as the final position.")]
-    [SerializeField]
-    private GameObject infoBox;
-
-    [SerializeField]
-    private RectTransform tooltip;
-
-    [SerializeField]
-    private Camera uiCamera;
-
+    [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private GameObject infoBox;
+    [SerializeField] private RectTransform tooltip;
+    [SerializeField] private Camera uiCamera;
 
     // =========================================================
     // INFO BOX ANIMATION
     // =========================================================
 
     [Header("Info Box Animation")]
-
-    [SerializeField]
-    private float hoverTransparency = 1f;
-
-    [SerializeField]
-    private float fadeDuration = 0.15f;
-
-    [SerializeField]
-    private float infoBoxMoveDuration = 0.3f;
+    [SerializeField] private float hoverTransparency = 1f;
+    [SerializeField] private float fadeDuration = 0.15f;
+    [SerializeField] private float infoBoxMoveDuration = 0.3f;
 
     [Tooltip("World-space offset from the cached Scene position when hidden.")]
-    [SerializeField]
-    private Vector3 hiddenOffset =
-        new Vector3(-5f, 0f, 0f);
+    [SerializeField] private Vector3 hiddenOffset = new Vector3(-5f, 0f, 0f);
 
-    [Tooltip("Scale of the info box while hidden. 0.85 = 85% of normal size.")]
     [SerializeField, Range(0.1f, 1f)]
     private float hiddenScale = 0.85f;
 
-    [SerializeField]
-    private float scaleAnimationDuration = 0.3f;
-
+    [SerializeField] private float scaleAnimationDuration = 0.3f;
 
     // =========================================================
     // CAMERA
     // =========================================================
 
     [Header("Camera")]
-
-    [SerializeField]
-    private Transform cameraTarget;
-
-    [Tooltip("Position used as the fallback/default camera position.")]
-    [SerializeField]
-    private Transform normalPosition;
-
-    [Tooltip("Position used while an ability is selected in inspect mode.")]
-    [SerializeField]
-    private Transform abilityCameraPosition;
-
-    [Tooltip("Offset from the selected unit.")]
-    [SerializeField]
-    private Vector3 unitCameraOffset;
-
-    [SerializeField]
-    private float cameraMoveDuration = 0.5f;
-
+    [SerializeField] private Transform cameraTarget;
+    [SerializeField] private Transform normalPosition;
+    [SerializeField] private Transform abilityCameraPosition;
+    [SerializeField] private Vector3 unitCameraOffset;
+    [SerializeField] private float cameraMoveDuration = 0.5f;
 
     // =========================================================
     // CAMERA LOCK
     // =========================================================
 
     [Header("Camera Lock")]
-
-    [SerializeField]
-    private bool inspectMode = false;
-
-    [Tooltip("Input used to toggle camera lock.")]
-    [SerializeField]
-    private InputActionReference cameraLockAction;
-
+    [SerializeField] private bool inspectMode = false;
+    [SerializeField] private InputActionReference cameraLockAction;
 
     // =========================================================
     // FREE CAMERA
     // =========================================================
 
     [Header("Free Camera")]
-
-    [SerializeField]
-    private cameraMoveScript freeCamera;
-
+    [SerializeField] private cameraMoveScript freeCamera;
 
     // =========================================================
     // UNIT FOLLOWING
     // =========================================================
 
     [Header("Unit Following")]
-
-    [SerializeField]
-    private float unitFollowSpeed = 8f;
-
+    [SerializeField] private float unitFollowSpeed = 8f;
 
     // =========================================================
     // MANAGERS
     // =========================================================
 
     [Header("Managers")]
-
-    [SerializeField]
-    private CanvasInfoManager canvasInfoManager;
-
+    [SerializeField] private CanvasInfoManager canvasInfoManager;
 
     // =========================================================
     // SELECTION
     // =========================================================
 
     private Transform currentSelectedUnit;
-
     private Transform currentFollowTarget;
-
 
     // =========================================================
     // SAVED FREE CAMERA POSITION
     // =========================================================
 
     private Vector3 savedFreeCameraPosition;
-
     private bool hasSavedFreeCameraPosition = false;
-
 
     // =========================================================
     // INFO BOX POSITION / SCALE
     // =========================================================
 
     private Vector3 cachedInfoBoxPosition;
-
     private Vector3 cachedInfoBoxScale;
-
     private bool hasCachedInfoBoxPosition = false;
-
 
     // =========================================================
     // COROUTINES
     // =========================================================
 
     private Coroutine fadeCoroutine;
-
     private Coroutine infoBoxMoveCoroutine;
-
     private Coroutine cameraMoveCoroutine;
-
     private Coroutine followCoroutine;
-
     private Coroutine normalCameraCoroutine;
-
 
     // =========================================================
     // UNITY
@@ -182,53 +119,26 @@ public class CanvasJuiceManager : MonoBehaviour
 
         Instance = this;
 
-
-        // -----------------------------------------------------
-        // FIND CANVAS INFO MANAGER
-        // -----------------------------------------------------
-
         if (canvasInfoManager == null)
         {
             canvasInfoManager =
                 FindFirstObjectByType<CanvasInfoManager>();
         }
 
-
-        // -----------------------------------------------------
-        // CACHE INFO BOX
-        // -----------------------------------------------------
-
         CacheInfoBoxPosition();
-
-
-        // -----------------------------------------------------
-        // START CANVAS HIDDEN
-        // -----------------------------------------------------
 
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 0f;
-
             canvasGroup.interactable = false;
-
             canvasGroup.blocksRaycasts = false;
         }
 
-
-        // -----------------------------------------------------
-        // FREE CAMERA
-        // -----------------------------------------------------
-
         if (inspectMode)
-        {
             DisableFreeCamera();
-        }
         else
-        {
             EnableFreeCamera();
-        }
     }
-
 
     private void OnEnable()
     {
@@ -241,7 +151,6 @@ public class CanvasJuiceManager : MonoBehaviour
         }
     }
 
-
     private void OnDisable()
     {
         if (cameraLockAction != null)
@@ -253,12 +162,10 @@ public class CanvasJuiceManager : MonoBehaviour
         }
     }
 
-
     private void Update()
     {
         UpdateTooltipPosition();
     }
-
 
     // =========================================================
     // INFO BOX POSITION / SCALE
@@ -267,59 +174,28 @@ public class CanvasJuiceManager : MonoBehaviour
     private void CacheInfoBoxPosition()
     {
         if (infoBox == null)
-        {
             return;
-        }
 
-
-        // -----------------------------------------------------
-        // CACHE SCENE POSITION
-        // -----------------------------------------------------
-
-        cachedInfoBoxPosition =
-            infoBox.transform.position;
-
-
-        // -----------------------------------------------------
-        // CACHE SCENE SCALE
-        // -----------------------------------------------------
-
-        cachedInfoBoxScale =
-            infoBox.transform.localScale;
-
-
+        cachedInfoBoxPosition = infoBox.transform.position;
+        cachedInfoBoxScale = infoBox.transform.localScale;
         hasCachedInfoBoxPosition = true;
 
-
-        // -----------------------------------------------------
-        // START HIDDEN
-        // -----------------------------------------------------
-
         infoBox.transform.position =
-            cachedInfoBoxPosition +
-            hiddenOffset;
+            cachedInfoBoxPosition + hiddenOffset;
 
         infoBox.transform.localScale =
-            cachedInfoBoxScale *
-            hiddenScale;
+            cachedInfoBoxScale * hiddenScale;
     }
-
 
     private Vector3 GetHiddenInfoBoxPosition()
     {
-        return
-            cachedInfoBoxPosition +
-            hiddenOffset;
+        return cachedInfoBoxPosition + hiddenOffset;
     }
-
 
     private Vector3 GetHiddenInfoBoxScale()
     {
-        return
-            cachedInfoBoxScale *
-            hiddenScale;
+        return cachedInfoBoxScale * hiddenScale;
     }
-
 
     // =========================================================
     // SHOW INFO BOX
@@ -327,179 +203,85 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private void ShowInfoBox()
     {
-        if (
-            infoBox == null ||
-            !hasCachedInfoBoxPosition
-        )
+        if (infoBox == null || !hasCachedInfoBoxPosition)
         {
-            FadeCanvasTo(
-                hoverTransparency
-            );
-
+            FadeCanvasTo(hoverTransparency);
             return;
         }
 
-
         if (infoBoxMoveCoroutine != null)
-        {
-            StopCoroutine(
-                infoBoxMoveCoroutine
-            );
-        }
-
+            StopCoroutine(infoBoxMoveCoroutine);
 
         infoBoxMoveCoroutine =
-            StartCoroutine(
-                ShowInfoBoxCoroutine()
-            );
+            StartCoroutine(ShowInfoBoxCoroutine());
     }
-
 
     private IEnumerator ShowInfoBoxCoroutine()
     {
-        Vector3 startPosition =
-            infoBox.transform.position;
+        Vector3 startPosition = infoBox.transform.position;
+        Vector3 targetPosition = cachedInfoBoxPosition;
 
-        Vector3 targetPosition =
-            cachedInfoBoxPosition;
+        Vector3 startScale = infoBox.transform.localScale;
+        Vector3 targetScale = cachedInfoBoxScale;
 
-
-        Vector3 startScale =
-            infoBox.transform.localScale;
-
-        Vector3 targetScale =
-            cachedInfoBoxScale;
-
-
-        float startAlpha =
-            canvasGroup != null
-                ? canvasGroup.alpha
-                : 0f;
-
+        float startAlpha = canvasGroup != null
+            ? canvasGroup.alpha
+            : 0f;
 
         float elapsed = 0f;
-
-
-        // -----------------------------------------------------
-        // ENABLE CANVAS INTERACTION
-        // -----------------------------------------------------
 
         if (canvasGroup != null)
         {
             canvasGroup.interactable = true;
-
             canvasGroup.blocksRaycasts = true;
         }
 
-
-        // -----------------------------------------------------
-        // USE THE LONGEST ANIMATION TIME
-        // -----------------------------------------------------
-
-        float duration =
-            Mathf.Max(
-                infoBoxMoveDuration,
-                scaleAnimationDuration,
-                fadeDuration
-            );
-
-
-        // -----------------------------------------------------
-        // ANIMATE
-        // -----------------------------------------------------
+        float duration = Mathf.Max(
+            infoBoxMoveDuration,
+            scaleAnimationDuration,
+            fadeDuration
+        );
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
 
-
-            float t =
-                Mathf.Clamp01(
-                    elapsed / duration
-                );
-
-
-            // Smooth ease-in/ease-out.
-            float eased =
-                t *
-                t *
-                (3f - 2f * t);
-
-
-            // -------------------------------------------------
-            // POSITION
-            // -------------------------------------------------
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = t * t * (3f - 2f * t);
 
             if (infoBox != null)
             {
-                infoBox.transform.position =
-                    Vector3.Lerp(
-                        startPosition,
-                        targetPosition,
-                        eased
-                    );
+                infoBox.transform.position = Vector3.Lerp(
+                    startPosition, targetPosition, eased);
 
-
-                // ---------------------------------------------
-                // SCALE
-                // ---------------------------------------------
-
-                infoBox.transform.localScale =
-                    Vector3.Lerp(
-                        startScale,
-                        targetScale,
-                        eased
-                    );
+                infoBox.transform.localScale = Vector3.Lerp(
+                    startScale, targetScale, eased);
             }
-
-
-            // -------------------------------------------------
-            // FADE
-            // -------------------------------------------------
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha =
-                    Mathf.Lerp(
-                        startAlpha,
-                        hoverTransparency,
-                        eased
-                    );
+                canvasGroup.alpha = Mathf.Lerp(
+                    startAlpha, hoverTransparency, eased);
             }
-
 
             yield return null;
         }
 
-
-        // -----------------------------------------------------
-        // FORCE FINAL VALUES
-        // -----------------------------------------------------
-
         if (infoBox != null)
         {
-            infoBox.transform.position =
-                cachedInfoBoxPosition;
-
-            infoBox.transform.localScale =
-                cachedInfoBoxScale;
+            infoBox.transform.position = cachedInfoBoxPosition;
+            infoBox.transform.localScale = cachedInfoBoxScale;
         }
-
 
         if (canvasGroup != null)
         {
-            canvasGroup.alpha =
-                hoverTransparency;
-
+            canvasGroup.alpha = hoverTransparency;
             canvasGroup.interactable = true;
-
             canvasGroup.blocksRaycasts = true;
         }
 
-
         infoBoxMoveCoroutine = null;
     }
-
 
     // =========================================================
     // HIDE INFO BOX
@@ -507,163 +289,79 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private void HideInfoBox()
     {
-        if (
-            infoBox == null ||
-            !hasCachedInfoBoxPosition
-        )
+        if (infoBox == null || !hasCachedInfoBoxPosition)
         {
             FadeCanvasTo(0f);
-
             return;
         }
 
-
         if (infoBoxMoveCoroutine != null)
-        {
-            StopCoroutine(
-                infoBoxMoveCoroutine
-            );
-        }
-
+            StopCoroutine(infoBoxMoveCoroutine);
 
         infoBoxMoveCoroutine =
-            StartCoroutine(
-                HideInfoBoxCoroutine()
-            );
+            StartCoroutine(HideInfoBoxCoroutine());
     }
-
 
     private IEnumerator HideInfoBoxCoroutine()
     {
-        Vector3 startPosition =
-            infoBox.transform.position;
+        Vector3 startPosition = infoBox.transform.position;
+        Vector3 targetPosition = GetHiddenInfoBoxPosition();
 
-        Vector3 targetPosition =
-            GetHiddenInfoBoxPosition();
+        Vector3 startScale = infoBox.transform.localScale;
+        Vector3 targetScale = GetHiddenInfoBoxScale();
 
-
-        Vector3 startScale =
-            infoBox.transform.localScale;
-
-        Vector3 targetScale =
-            GetHiddenInfoBoxScale();
-
-
-        float startAlpha =
-            canvasGroup != null
-                ? canvasGroup.alpha
-                : hoverTransparency;
-
+        float startAlpha = canvasGroup != null
+            ? canvasGroup.alpha
+            : hoverTransparency;
 
         float elapsed = 0f;
 
-
-        // -----------------------------------------------------
-        // USE THE LONGEST ANIMATION TIME
-        // -----------------------------------------------------
-
-        float duration =
-            Mathf.Max(
-                infoBoxMoveDuration,
-                scaleAnimationDuration,
-                fadeDuration
-            );
-
-
-        // -----------------------------------------------------
-        // ANIMATE
-        // -----------------------------------------------------
+        float duration = Mathf.Max(
+            infoBoxMoveDuration,
+            scaleAnimationDuration,
+            fadeDuration
+        );
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
 
-
-            float t =
-                Mathf.Clamp01(
-                    elapsed / duration
-                );
-
-
-            float eased =
-                t *
-                t *
-                (3f - 2f * t);
-
-
-            // -------------------------------------------------
-            // POSITION
-            // -------------------------------------------------
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = t * t * (3f - 2f * t);
 
             if (infoBox != null)
             {
-                infoBox.transform.position =
-                    Vector3.Lerp(
-                        startPosition,
-                        targetPosition,
-                        eased
-                    );
+                infoBox.transform.position = Vector3.Lerp(
+                    startPosition, targetPosition, eased);
 
-
-                // ---------------------------------------------
-                // SCALE
-                // ---------------------------------------------
-
-                infoBox.transform.localScale =
-                    Vector3.Lerp(
-                        startScale,
-                        targetScale,
-                        eased
-                    );
+                infoBox.transform.localScale = Vector3.Lerp(
+                    startScale, targetScale, eased);
             }
-
-
-            // -------------------------------------------------
-            // FADE
-            // -------------------------------------------------
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha =
-                    Mathf.Lerp(
-                        startAlpha,
-                        0f,
-                        eased
-                    );
+                canvasGroup.alpha = Mathf.Lerp(
+                    startAlpha, 0f, eased);
             }
-
 
             yield return null;
         }
 
-
-        // -----------------------------------------------------
-        // FORCE FINAL VALUES
-        // -----------------------------------------------------
-
         if (infoBox != null)
         {
-            infoBox.transform.position =
-                targetPosition;
-
-            infoBox.transform.localScale =
-                targetScale;
+            infoBox.transform.position = targetPosition;
+            infoBox.transform.localScale = targetScale;
         }
-
 
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 0f;
-
             canvasGroup.interactable = false;
-
             canvasGroup.blocksRaycasts = false;
         }
 
-
         infoBoxMoveCoroutine = null;
     }
-
 
     // =========================================================
     // CAMERA LOCK INPUT
@@ -675,114 +373,62 @@ public class CanvasJuiceManager : MonoBehaviour
         ToggleInspectMode();
     }
 
-
     public void ToggleInspectMode()
     {
-        SetInspectMode(
-            !inspectMode
-        );
+        SetInspectMode(!inspectMode);
     }
 
-
-    public void SetInspectMode(
-        bool enabled
-    )
+    public void SetInspectMode(bool enabled)
     {
-        // =====================================================
-        // TURNING LOCK OFF
-        // =====================================================
-
         if (!enabled)
         {
             inspectMode = false;
 
             StopFollowingUnit();
 
-
             if (normalCameraCoroutine != null)
             {
-                StopCoroutine(
-                    normalCameraCoroutine
-                );
-
+                StopCoroutine(normalCameraCoroutine);
                 normalCameraCoroutine = null;
             }
 
-
             MoveCameraBackToSavedFreePosition();
-
             return;
         }
 
-
-        // =====================================================
-        // TURNING LOCK ON
-        // =====================================================
-
-        if (
-            cameraTarget != null &&
-            !inspectMode
-        )
+        if (cameraTarget != null && !inspectMode)
         {
-            savedFreeCameraPosition =
-                cameraTarget.position;
-
+            savedFreeCameraPosition = cameraTarget.position;
             hasSavedFreeCameraPosition = true;
         }
 
-
         inspectMode = true;
-
 
         if (normalCameraCoroutine != null)
         {
-            StopCoroutine(
-                normalCameraCoroutine
-            );
-
+            StopCoroutine(normalCameraCoroutine);
             normalCameraCoroutine = null;
         }
-
-
-        // =====================================================
-        // ABILITY HAS PRIORITY
-        // =====================================================
 
         if (HasSelectedAbility())
         {
             MoveCameraToAbilityPosition();
-
             return;
         }
-
-
-        // =====================================================
-        // UNIT SECOND
-        // =====================================================
 
         if (currentSelectedUnit != null)
         {
-            MoveCameraToUnit(
-                currentSelectedUnit
-            );
-
+            MoveCameraToUnit(currentSelectedUnit);
             return;
         }
 
-
-        // =====================================================
-        // NOTHING SELECTED
-        // =====================================================
-
         DisableFreeCamera();
     }
-
 
     public bool IsInspectMode()
     {
         return inspectMode;
     }
-
 
     // =========================================================
     // ABILITY CHECK
@@ -790,159 +436,76 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private bool HasSelectedAbility()
     {
-        return
-            canvasInfoManager != null &&
-            canvasInfoManager.HasSelectedAbility();
+        return canvasInfoManager != null &&
+               canvasInfoManager.HasSelectedAbility();
     }
-
 
     // =========================================================
     // UNIT SELECTION
     // =========================================================
 
-    public void ShowUnitInfo(
-        Transform unit
-    )
+    public void ShowUnitInfo(Transform unit)
     {
         if (unit == null)
-        {
             return;
-        }
-
 
         currentSelectedUnit = unit;
-
-
-        // -----------------------------------------------------
-        // SHOW INFO BOX
-        // -----------------------------------------------------
 
         ShowInfoBox();
 
-
-        // -----------------------------------------------------
-        // NORMAL CAMERA
-        // -----------------------------------------------------
-
         if (!inspectMode)
         {
             EnableFreeCamera();
-
             return;
         }
-
-
-        // -----------------------------------------------------
-        // ABILITY HAS PRIORITY
-        // -----------------------------------------------------
 
         if (HasSelectedAbility())
-        {
             MoveCameraToAbilityPosition();
-        }
         else
-        {
             MoveCameraToUnit(unit);
-        }
     }
 
-
-    public void MoveCameraToUnit(
-        Transform unit
-    )
+    public void MoveCameraToUnit(Transform unit)
     {
-        if (
-            unit == null ||
-            cameraTarget == null
-        )
-        {
+        if (unit == null || cameraTarget == null)
             return;
-        }
-
 
         currentSelectedUnit = unit;
 
-
         if (!inspectMode)
         {
             EnableFreeCamera();
-
             return;
         }
-
-
-        // -----------------------------------------------------
-        // ABILITY HAS PRIORITY
-        // -----------------------------------------------------
 
         if (HasSelectedAbility())
         {
             MoveCameraToAbilityPosition();
-
             return;
         }
 
-
-        // -----------------------------------------------------
-        // DISABLE FREE CAMERA
-        // -----------------------------------------------------
-
         DisableFreeCamera();
-
-
         StopFollowingUnit();
 
         currentFollowTarget = unit;
 
-
         if (cameraMoveCoroutine != null)
         {
-            StopCoroutine(
-                cameraMoveCoroutine
-            );
-
+            StopCoroutine(cameraMoveCoroutine);
             cameraMoveCoroutine = null;
         }
 
-
-        // -----------------------------------------------------
-        // CALCULATE CAMERA POSITION
-        // -----------------------------------------------------
-
-        Vector3 targetPosition =
-            unit.position +
-            unitCameraOffset;
-
-        targetPosition.z =
-            cameraTarget.position.z;
-
-
-        // -----------------------------------------------------
-        // MOVE CAMERA
-        // -----------------------------------------------------
+        Vector3 targetPosition = unit.position + unitCameraOffset;
+        targetPosition.z = cameraTarget.position.z;
 
         cameraMoveCoroutine =
-            StartCoroutine(
-                MoveCameraCoroutine(
-                    targetPosition
-                )
-            );
-
-
-        // -----------------------------------------------------
-        // FOLLOW UNIT
-        // -----------------------------------------------------
+            StartCoroutine(MoveCameraCoroutine(targetPosition));
 
         followCoroutine =
-            StartCoroutine(
-                FollowUnitCoroutine(unit)
-            );
+            StartCoroutine(FollowUnitCoroutine(unit));
     }
 
-
-    private IEnumerator FollowUnitCoroutine(
-        Transform unit
-    )
+    private IEnumerator FollowUnitCoroutine(Transform unit)
     {
         while (
             currentFollowTarget == unit &&
@@ -954,30 +517,21 @@ public class CanvasJuiceManager : MonoBehaviour
         )
         {
             Vector3 targetPosition =
-                unit.position +
-                unitCameraOffset;
+                unit.position + unitCameraOffset;
 
+            targetPosition.z = cameraTarget.position.z;
 
-            targetPosition.z =
-                cameraTarget.position.z;
-
-
-            cameraTarget.position =
-                Vector3.Lerp(
-                    cameraTarget.position,
-                    targetPosition,
-                    unitFollowSpeed *
-                    Time.deltaTime
-                );
-
+            cameraTarget.position = Vector3.Lerp(
+                cameraTarget.position,
+                targetPosition,
+                unitFollowSpeed * Time.deltaTime
+            );
 
             yield return null;
         }
 
-
         followCoroutine = null;
     }
-
 
     // =========================================================
     // STOP FOLLOWING
@@ -987,25 +541,18 @@ public class CanvasJuiceManager : MonoBehaviour
     {
         currentFollowTarget = null;
 
-
         if (followCoroutine != null)
         {
-            StopCoroutine(
-                followCoroutine
-            );
-
+            StopCoroutine(followCoroutine);
             followCoroutine = null;
         }
     }
 
-
     public void ClearSelectedUnit()
     {
         currentSelectedUnit = null;
-
         StopFollowingUnit();
     }
-
 
     // =========================================================
     // ABILITY CAMERA
@@ -1016,51 +563,27 @@ public class CanvasJuiceManager : MonoBehaviour
         if (!inspectMode)
         {
             EnableFreeCamera();
-
             return;
         }
 
-
-        if (
-            abilityCameraPosition == null ||
-            cameraTarget == null
-        )
-        {
+        if (abilityCameraPosition == null || cameraTarget == null)
             return;
-        }
-
 
         StopFollowingUnit();
-
         DisableFreeCamera();
 
-
-        Vector3 targetPosition =
-            abilityCameraPosition.position;
-
-
-        targetPosition.z =
-            cameraTarget.position.z;
-
+        Vector3 targetPosition = abilityCameraPosition.position;
+        targetPosition.z = cameraTarget.position.z;
 
         if (cameraMoveCoroutine != null)
         {
-            StopCoroutine(
-                cameraMoveCoroutine
-            );
-
+            StopCoroutine(cameraMoveCoroutine);
             cameraMoveCoroutine = null;
         }
 
-
         cameraMoveCoroutine =
-            StartCoroutine(
-                MoveCameraCoroutine(
-                    targetPosition
-                )
-            );
+            StartCoroutine(MoveCameraCoroutine(targetPosition));
     }
-
 
     // =========================================================
     // RETURN TO SAVED FREE CAMERA POSITION
@@ -1069,76 +592,43 @@ public class CanvasJuiceManager : MonoBehaviour
     private void MoveCameraBackToSavedFreePosition()
     {
         if (cameraTarget == null)
-        {
             return;
-        }
-
 
         StopFollowingUnit();
-
         DisableFreeCamera();
-
 
         if (cameraMoveCoroutine != null)
         {
-            StopCoroutine(
-                cameraMoveCoroutine
-            );
-
+            StopCoroutine(cameraMoveCoroutine);
             cameraMoveCoroutine = null;
         }
 
-
         Vector3 targetPosition;
-
 
         if (hasSavedFreeCameraPosition)
         {
-            targetPosition =
-                savedFreeCameraPosition;
-
-
-            targetPosition.z =
-                cameraTarget.position.z;
+            targetPosition = savedFreeCameraPosition;
+            targetPosition.z = cameraTarget.position.z;
         }
         else if (normalPosition != null)
         {
-            targetPosition =
-                normalPosition.position;
-
-
-            targetPosition.z =
-                cameraTarget.position.z;
+            targetPosition = normalPosition.position;
+            targetPosition.z = cameraTarget.position.z;
         }
         else
         {
-            targetPosition =
-                cameraTarget.position;
+            targetPosition = cameraTarget.position;
         }
-
 
         cameraMoveCoroutine =
-            StartCoroutine(
-                MoveCameraCoroutine(
-                    targetPosition
-                )
-            );
-
+            StartCoroutine(MoveCameraCoroutine(targetPosition));
 
         if (normalCameraCoroutine != null)
-        {
-            StopCoroutine(
-                normalCameraCoroutine
-            );
-        }
-
+            StopCoroutine(normalCameraCoroutine);
 
         normalCameraCoroutine =
-            StartCoroutine(
-                EnableFreeCameraAfterMove()
-            );
+            StartCoroutine(EnableFreeCameraAfterMove());
     }
-
 
     // =========================================================
     // NORMAL CAMERA
@@ -1147,84 +637,48 @@ public class CanvasJuiceManager : MonoBehaviour
     public void MoveCameraToNormalPosition()
     {
         if (cameraTarget == null)
-        {
             return;
-        }
-
 
         StopFollowingUnit();
-
         DisableFreeCamera();
-
 
         if (cameraMoveCoroutine != null)
         {
-            StopCoroutine(
-                cameraMoveCoroutine
-            );
-
+            StopCoroutine(cameraMoveCoroutine);
             cameraMoveCoroutine = null;
         }
 
-
         Vector3 targetPosition;
-
 
         if (normalPosition != null)
         {
-            targetPosition =
-                normalPosition.position;
-
-
-            targetPosition.z =
-                cameraTarget.position.z;
+            targetPosition = normalPosition.position;
+            targetPosition.z = cameraTarget.position.z;
         }
         else
         {
-            targetPosition =
-                cameraTarget.position;
+            targetPosition = cameraTarget.position;
         }
-
 
         cameraMoveCoroutine =
-            StartCoroutine(
-                MoveCameraCoroutine(
-                    targetPosition
-                )
-            );
-
+            StartCoroutine(MoveCameraCoroutine(targetPosition));
 
         if (normalCameraCoroutine != null)
-        {
-            StopCoroutine(
-                normalCameraCoroutine
-            );
-        }
-
+            StopCoroutine(normalCameraCoroutine);
 
         normalCameraCoroutine =
-            StartCoroutine(
-                EnableFreeCameraAfterMove()
-            );
+            StartCoroutine(EnableFreeCameraAfterMove());
     }
-
 
     private IEnumerator EnableFreeCameraAfterMove()
     {
-        yield return new WaitForSeconds(
-            cameraMoveDuration
-        );
-
+        yield return new WaitForSeconds(cameraMoveDuration);
 
         normalCameraCoroutine = null;
 
-
         if (!inspectMode)
-        {
             EnableFreeCamera();
-        }
     }
-
 
     // =========================================================
     // FREE CAMERA
@@ -1233,20 +687,14 @@ public class CanvasJuiceManager : MonoBehaviour
     public void EnableFreeCamera()
     {
         if (freeCamera != null)
-        {
             freeCamera.EnableFreeMode();
-        }
     }
-
 
     public void DisableFreeCamera()
     {
         if (freeCamera != null)
-        {
             freeCamera.DisableFreeMode();
-        }
     }
-
 
     // =========================================================
     // DESELECT / HIDE
@@ -1254,202 +702,106 @@ public class CanvasJuiceManager : MonoBehaviour
 
     public void HideHoverInfo()
     {
-        // -----------------------------------------------------
-        // HIDE INFO BOX
-        // -----------------------------------------------------
-
         HideInfoBox();
 
-
-        // -----------------------------------------------------
-        // CLEAR UNIT
-        // -----------------------------------------------------
-
         currentSelectedUnit = null;
-
         StopFollowingUnit();
-
-
-        // =====================================================
-        // KEEP INSPECT MODE ACTIVE
-        // =====================================================
 
         if (inspectMode)
         {
             DisableFreeCamera();
 
-
-            // -------------------------------------------------
-            // IF ABILITY IS SELECTED
-            // -------------------------------------------------
-
             if (HasSelectedAbility())
-            {
                 MoveCameraToAbilityPosition();
-            }
-
-
-            // -------------------------------------------------
-            // OTHERWISE:
-            // Stay exactly where the camera currently is.
-            // Inspect mode remains active.
-            // -------------------------------------------------
 
             return;
         }
 
-
-        // =====================================================
-        // NORMAL MODE
-        // =====================================================
-
         EnableFreeCamera();
     }
-
 
     // =========================================================
     // CAMERA MOVEMENT
     // =========================================================
 
-    private IEnumerator MoveCameraCoroutine(
-        Vector3 targetPosition
-    )
+    private IEnumerator MoveCameraCoroutine(Vector3 targetPosition)
     {
         if (cameraTarget == null)
-        {
             yield break;
-        }
 
-
-        Vector3 startPosition =
-            cameraTarget.position;
-
+        Vector3 startPosition = cameraTarget.position;
 
         float elapsed = 0f;
 
-
-        while (
-            elapsed <
-            cameraMoveDuration
-        )
+        while (elapsed < cameraMoveDuration)
         {
+            if (cameraTarget == null)
+                yield break;
+
             elapsed += Time.deltaTime;
 
+            float t = cameraMoveDuration > 0f
+                ? Mathf.Clamp01(elapsed / cameraMoveDuration)
+                : 1f;
 
-            float t =
-                elapsed /
-                cameraMoveDuration;
+            t = t * t * (3f - 2f * t);
 
-
-            // Smooth ease-in/ease-out.
-            t =
-                t *
-                t *
-                (3f - 2f * t);
-
-
-            cameraTarget.position =
-                Vector3.Lerp(
-                    startPosition,
-                    targetPosition,
-                    t
-                );
-
+            cameraTarget.position = Vector3.Lerp(
+                startPosition,
+                targetPosition,
+                t
+            );
 
             yield return null;
         }
 
-
-        cameraTarget.position =
-            targetPosition;
-
+        if (cameraTarget != null)
+            cameraTarget.position = targetPosition;
 
         cameraMoveCoroutine = null;
     }
-
 
     // =========================================================
     // CANVAS FADE
     // =========================================================
 
-    private void FadeCanvasTo(
-        float targetAlpha
-    )
+    private void FadeCanvasTo(float targetAlpha)
     {
         if (canvasGroup == null)
-        {
             return;
-        }
-
 
         if (fadeCoroutine != null)
-        {
-            StopCoroutine(
-                fadeCoroutine
-            );
-        }
-
+            StopCoroutine(fadeCoroutine);
 
         fadeCoroutine =
-            StartCoroutine(
-                FadeCanvasCoroutine(
-                    targetAlpha
-                )
-            );
+            StartCoroutine(FadeCanvasCoroutine(targetAlpha));
     }
 
-
-    private IEnumerator FadeCanvasCoroutine(
-        float targetAlpha
-    )
+    private IEnumerator FadeCanvasCoroutine(float targetAlpha)
     {
-        float startAlpha =
-            canvasGroup.alpha;
-
-
+        float startAlpha = canvasGroup.alpha;
         float elapsed = 0f;
 
-
-        while (
-            elapsed <
-            fadeDuration
-        )
+        while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
 
+            float t = fadeDuration > 0f
+                ? elapsed / fadeDuration
+                : 1f;
 
-            float t =
-                elapsed /
-                fadeDuration;
-
-
-            canvasGroup.alpha =
-                Mathf.Lerp(
-                    startAlpha,
-                    targetAlpha,
-                    t
-                );
-
+            canvasGroup.alpha = Mathf.Lerp(
+                startAlpha, targetAlpha, t);
 
             yield return null;
         }
 
-
-        canvasGroup.alpha =
-            targetAlpha;
-
-
-        canvasGroup.interactable =
-            targetAlpha > 0f;
-
-
-        canvasGroup.blocksRaycasts =
-            targetAlpha > 0f;
-
+        canvasGroup.alpha = targetAlpha;
+        canvasGroup.interactable = targetAlpha > 0f;
+        canvasGroup.blocksRaycasts = targetAlpha > 0f;
 
         fadeCoroutine = null;
     }
-
 
     // =========================================================
     // TOOLTIP
@@ -1457,20 +809,12 @@ public class CanvasJuiceManager : MonoBehaviour
 
     private void UpdateTooltipPosition()
     {
-        if (
-            tooltip == null ||
-            Mouse.current == null
-        )
-        {
+        if (tooltip == null || Mouse.current == null)
             return;
-        }
-
 
         Vector2 mousePosition =
             Mouse.current.position.ReadValue();
 
-
-        tooltip.position =
-            mousePosition;
+        tooltip.position = mousePosition;
     }
 }

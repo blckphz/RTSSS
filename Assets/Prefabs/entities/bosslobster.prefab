@@ -278,7 +278,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.005378425, y: -0.042596728}
+  m_Offset: {x: 0.011285678, y: -0.042596698}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -288,7 +288,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.66474605, y: 1.4103949}
+  m_Size: {x: 0.92025447, y: 1.4103949}
   m_EdgeRadius: 0
 --- !u!50 &2092831927803253448
 Rigidbody2D:
@@ -334,6 +334,9 @@ MonoBehaviour:
   animationController: {fileID: 181488290778755698}
   moveDuration: 0.25
   facingDirection: {x: 0, y: 1}
+  defaultKnockbackDistance: 1
+  knockbackStepDuration: 0.08
+  knockbackArcHeight: 0.5
   attackRange: 0
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
@@ -458,7 +461,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 440a333c5bf6a3c4b88003cfd5d597b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  retreatHealthPercent: 0.708
+  moveBrain: {fileID: 0}
+  attackUnit: {fileID: 0}
+  healthManager: {fileID: 0}
+  retreatHealthThreshold: 0.25
+  retreating: 0
+  retreatArrivalDistance: 0
+  isOnWater: 0
+  waterLayers:
+    serializedVersion: 2
+    m_Bits: 16
 --- !u!1 &4035946682169948788
 GameObject:
   m_ObjectHideFlags: 0

@@ -43,7 +43,7 @@ public class CombatManager : MonoBehaviour
     private void FindReferences()
     {
         if (gridManager == null)
-            gridManager = FindFirstObjectByType<GridManager>();
+            gridManager = FindAnyObjectByType<GridManager>();
     }
 
     // =========================================================

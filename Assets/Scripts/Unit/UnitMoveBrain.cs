@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -31,6 +32,7 @@ public class UnitMoveBrain : MonoBehaviour
     [Header("Explosion Knockback")]
     [SerializeField, Min(0)] private int defaultKnockbackDistance = 1;
     [SerializeField, Min(0f)] private float knockbackStepDuration = 0.08f;
+    [SerializeField, Min(0f)] private float knockbackArcHeight = 0.5f;
 
     private bool isBeingKnockedBack;
 
@@ -276,10 +278,16 @@ public class UnitMoveBrain : MonoBehaviour
 
     public GridManager GetGridManager()
     {
-        if (UnitMoveBrainManager.Instance == null)
-            return null;
+        if (UnitMoveBrainManager.Instance != null)
+        {
+            GridManager managerGrid =
+                UnitMoveBrainManager.Instance.GetGridManager();
 
-        return UnitMoveBrainManager.Instance.GetGridManager();
+            if (managerGrid != null)
+                return managerGrid;
+        }
+
+        return FindFirstObjectByType<GridManager>();
     }
 
     public CharacterSO GetCharacterData()
@@ -293,7 +301,6 @@ public class UnitMoveBrain : MonoBehaviour
     public bool CanWalkDiagonally()
     {
         CharacterSO characterData = GetCharacterData();
-
         return characterData != null && characterData.canwalkdiagonally;
     }
 
@@ -362,10 +369,8 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
 
         Vector2Int currentPosition = GetCurrentTile();
-
-        Vector2Int targetPosition = gridManager.WorldToGridPosition(
-            target.transform.position
-        );
+        Vector2Int targetPosition =
+            gridManager.WorldToGridPosition(target.transform.position);
 
         int currentDistance = manager.GetMovementDistance(
             currentPosition,
@@ -513,10 +518,8 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
 
         Vector2Int currentPosition = GetCurrentTile();
-
-        Vector2Int targetPosition = gridManager.WorldToGridPosition(
-            target.transform.position
-        );
+        Vector2Int targetPosition =
+            gridManager.WorldToGridPosition(target.transform.position);
 
         int currentDistance = manager.GetMovementDistance(
             currentPosition,
@@ -726,7 +729,8 @@ public class UnitMoveBrain : MonoBehaviour
         int distance = -1,
         float stepDuration = -1f)
     {
-        if (attackUnit == null || attackUnit.IsDead())
+        // Do not require AttackUnit on the player.
+        if (attackUnit != null && attackUnit.IsDead())
             return;
 
         if (isBeingKnockedBack)
@@ -746,13 +750,25 @@ public class UnitMoveBrain : MonoBehaviour
         GridManager gridManager = GetGridManager();
 
         if (gridManager == null)
+        {
+            Debug.LogError(
+                $"[UnitMoveBrain] No GridManager found for {name}.",
+                this
+            );
             return;
+        }
 
         Vector2Int currentTile = GetCurrentTile();
         Vector2Int direction = currentTile - explosionCenter;
 
         if (direction == Vector2Int.zero)
+        {
+            Debug.LogWarning(
+                $"[UnitMoveBrain] Cannot calculate knockback direction for {name}.",
+                this
+            );
             return;
+        }
 
         if (!CanWalkDiagonally())
         {
@@ -786,6 +802,12 @@ public class UnitMoveBrain : MonoBehaviour
         movementCoroutine = StartCoroutine(
             KnockbackRoutine(direction, distance, stepDuration)
         );
+
+        Debug.Log(
+            $"[UnitMoveBrain] Knockback started: {name}, " +
+            $"direction {direction}, distance {distance}.",
+            this
+        );
     }
 
     private IEnumerator KnockbackRoutine(
@@ -804,9 +826,11 @@ public class UnitMoveBrain : MonoBehaviour
 
         SetMovingState(true);
 
+        float duration = Mathf.Max(0.01f, stepDuration);
+
         for (int i = 0; i < distance; i++)
         {
-            if (attackUnit == null || attackUnit.IsDead())
+            if (attackUnit != null && attackUnit.IsDead())
                 break;
 
             Vector2Int fromTile = GetCurrentTile();
@@ -829,29 +853,32 @@ public class UnitMoveBrain : MonoBehaviour
 
             float elapsed = 0f;
 
-            while (elapsed < stepDuration)
+            while (elapsed < duration)
             {
-                if (attackUnit == null || attackUnit.IsDead())
+                if (attackUnit != null && attackUnit.IsDead())
                     break;
 
                 elapsed += Time.deltaTime;
 
-                float t = stepDuration <= 0f
-                    ? 1f
-                    : Mathf.Clamp01(elapsed / stepDuration);
+                float t = Mathf.Clamp01(elapsed / duration);
 
-                transform.position = Vector3.Lerp(
+                Vector3 position = Vector3.Lerp(
                     startPosition,
                     endPosition,
                     t
                 );
 
+                // Add a smooth arc while moving between tiles.
+                position.y +=
+                    4f * knockbackArcHeight * t * (1f - t);
+
+                transform.position = position;
+
                 yield return null;
             }
 
-            if (attackUnit == null || attackUnit.IsDead())
+            if (attackUnit != null && attackUnit.IsDead())
             {
-                // Finish the grid reservation before exiting.
                 transform.position = startPosition;
                 gridManager.FinishMoveUnit(gameObject, fromTile);
                 break;

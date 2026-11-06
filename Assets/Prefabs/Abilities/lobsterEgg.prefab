@@ -156,7 +156,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 70f594f5ac364f54eb2212c3e5a1f2f6, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9d6452e2a773b5149bf2e47f96996238, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -321,8 +321,8 @@ Transform:
   m_GameObject: {fileID: 1342193521889048633}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.922, y: -2.36353, z: 0}
-  m_LocalScale: {x: 2.130029, y: 2.130029, z: 2.130029}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 2.0735404, y: 2.0735404, z: 2.0735404}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4336237237855706598}
@@ -441,20 +441,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fce4ece8eca951c4da0c20b80bfe4a9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  characterData: {fileID: 0}
-  unitData: {fileID: 0}
+  characterData: {fileID: 11400000, guid: f95c31f0edaa3d649bb20a314d42b62d, type: 2}
+  unitData: {fileID: 1591600405030389278}
   abilities: []
   healthManager: {fileID: 5597512002002341062}
   animationController: {fileID: 0}
   upgradeableCombatUnit: {fileID: 0}
   dayNightManager: {fileID: 0}
-  useDirectionalEnemyAttackAnimation: 1
+  useDirectionalEnemyAttackAnimation: 0
   attackAnimatorLayerName: attackLayer
-  dayNightType: 1
+  dayNightType: 2
   dayDamageBonus: 0
-  nightDamageBonus: 10
-  dayMoveRangeBonus: -1
-  nightMoveRangeBonus: 1
+  nightDamageBonus: 0
+  dayMoveRangeBonus: 0
+  nightMoveRangeBonus: 0
   logicalGridPosition: {x: 0, y: 0}
 --- !u!114 &4218220681573103927
 MonoBehaviour:
@@ -528,7 +528,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.00537844, y: 0.5615489}
+  m_Offset: {x: -0.005378425, y: -0.0030870438}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -538,7 +538,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.66474605, y: 1.0823857}
+  m_Size: {x: 0.66474605, y: 0.7274718}
   m_EdgeRadius: 0
 --- !u!50 &8804957507484952323
 Rigidbody2D:
@@ -584,6 +584,9 @@ MonoBehaviour:
   animationController: {fileID: 0}
   moveDuration: 0.25
   facingDirection: {x: 0, y: 1}
+  defaultKnockbackDistance: 1
+  knockbackStepDuration: 0.08
+  knockbackArcHeight: 0.5
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
@@ -632,7 +635,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b915052cf5ca8644882da3dc9527c18a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  character: {fileID: 0}
+  character: {fileID: 11400000, guid: f95c31f0edaa3d649bb20a314d42b62d, type: 2}
 --- !u!114 &1982358313785316896
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -645,7 +648,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a82be661003a55408b38546ff5f42d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EggBehav
-  arcHeight: 2
+  arcHeight: 3
   gridManager: {fileID: 0}
 --- !u!1 &6022029324816977651
 GameObject:

@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -39,6 +38,7 @@ public class RoundManager : MonoBehaviour
     [SerializeField] private NextRoundTextManager nextRoundTextManager;
     [SerializeField] private GridHighlightManager gridHighlightManager;
     [SerializeField] private LineWalkPreview lineWalkPreview;
+    [SerializeField] private WaterManager waterManager;
 
     [Header("Water Check")]
     [SerializeField] private BossLobsterBrain bossLobster;
@@ -59,31 +59,34 @@ public class RoundManager : MonoBehaviour
     private void Awake()
     {
         if (combatManager == null)
-            combatManager = FindFirstObjectByType<CombatManager>();
+            combatManager = FindAnyObjectByType<CombatManager>();
 
         if (gridManager == null)
-            gridManager = FindFirstObjectByType<GridManager>();
+            gridManager = FindAnyObjectByType<GridManager>();
 
         if (encounterManager == null)
-            encounterManager = FindFirstObjectByType<EncounterManager>();
+            encounterManager = FindAnyObjectByType<EncounterManager>();
 
         if (canvasInfoManager == null)
-            canvasInfoManager = FindFirstObjectByType<CanvasInfoManager>();
+            canvasInfoManager = FindAnyObjectByType<CanvasInfoManager>();
 
         if (canvasJuiceManager == null)
-            canvasJuiceManager = FindFirstObjectByType<CanvasJuiceManager>();
+            canvasJuiceManager = FindAnyObjectByType<CanvasJuiceManager>();
 
         if (nextRoundTextManager == null)
-            nextRoundTextManager = FindFirstObjectByType<NextRoundTextManager>();
+            nextRoundTextManager = FindAnyObjectByType<NextRoundTextManager>();
 
         if (gridHighlightManager == null)
-            gridHighlightManager = FindFirstObjectByType<GridHighlightManager>();
+            gridHighlightManager = FindAnyObjectByType<GridHighlightManager>();
 
         if (lineWalkPreview == null)
-            lineWalkPreview = FindFirstObjectByType<LineWalkPreview>();
+            lineWalkPreview = FindAnyObjectByType<LineWalkPreview>();
+
+        if (waterManager == null)
+            waterManager = FindAnyObjectByType<WaterManager>();
 
         if (bossLobster == null)
-            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+            bossLobster = FindAnyObjectByType<BossLobsterBrain>();
 
         unitDelay = new WaitForSeconds(
             Mathf.Max(0f, delayBetweenUnits)
@@ -95,30 +98,6 @@ public class RoundManager : MonoBehaviour
     private void OnDestroy()
     {
         EnablePlayerTurnInteraction();
-    }
-
-    // ============================================================
-    // WATER CHECK
-    // ============================================================
-
-    private void CheckBossOnWater()
-    {
-        if (bossLobster == null)
-            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
-
-        if (bossLobster == null)
-        {
-            Debug.LogWarning(
-                "[RoundManager] BossLobsterBrain was not found."
-            );
-            return;
-        }
-
-        bool isOnWater = bossLobster.IsOnWater();
-
-        Debug.Log("[RoundManager] Boss on water: " + isOnWater);
-
-        OnBossWaterStatusChecked?.Invoke(isOnWater);
     }
 
     // ============================================================
@@ -134,26 +113,17 @@ public class RoundManager : MonoBehaviour
             return;
 
         if (!IsPlayerOnField())
-        {
-            Debug.LogWarning(
-                "[RoundManager] Cannot start round. " +
-                "No living player unit is on the field."
-            );
             return;
-        }
 
         if (encounterManager != null && encounterManager.IsFinished())
             return;
 
         roundRunning = true;
 
-        CheckBossOnWater();
         EnablePlayerTurnInteraction();
         RefreshCachedUnits();
         ResetAllUnitMovement();
         UpdateAllUnitCooldowns();
-
-        Debug.Log("[RoundManager] Starting Round " + currentRound);
 
         StartCoroutine(RunRoundPipeline());
     }
@@ -185,6 +155,9 @@ public class RoundManager : MonoBehaviour
 
         SetRoundState(RoundState.EnemyTurn);
         DisablePlayerTurnInteraction();
+
+        if (waterManager != null)
+            waterManager.AdvanceTide();
 
         OnEnemyTurnStarted?.Invoke();
 
@@ -221,14 +194,7 @@ public class RoundManager : MonoBehaviour
                 continue;
 
             if (!HasAnyAbility(unit))
-            {
-                Debug.Log(
-                    "[RoundManager] Skipping unit with no abilities: " +
-                    unit.name,
-                    unit
-                );
                 continue;
-            }
 
             yield return StartCoroutine(
                 CombatUtility.ExecuteUnitTurnCoroutine(unit, gridManager)
@@ -272,19 +238,16 @@ public class RoundManager : MonoBehaviour
         }
 
         if (combatManager == null)
-        {
-            Debug.LogWarning(
-                "[RoundManager] CombatManager is missing. " +
-                "Cannot execute enemy turn."
-            );
             yield break;
-        }
 
         for (int i = 0; i < enemies.Count; i++)
         {
             AttackUnit enemy = enemies[i];
 
             if (enemy == null || !CombatUtility.IsAlive(enemy))
+                continue;
+
+            if (enemy.GetComponent<EggBehav>() != null)
                 continue;
 
             if (combatManager.IsEnemyLocked(enemy))
@@ -300,16 +263,21 @@ public class RoundManager : MonoBehaviour
                 continue;
             }
 
+            BossLobsterBrain bossBrain =
+                enemy.GetComponent<BossLobsterBrain>();
+
+            bool isRetreatingBoss =
+                bossBrain != null && bossBrain.IsRetreating();
+
+            if (!isRetreatingBoss && !HasAnyAbility(enemy))
+                continue;
+
             if (canvasJuiceManager != null)
                 canvasJuiceManager.MoveCameraToUnit(enemy.transform);
 
             yield return null;
 
-            BossLobsterBrain bossBrain =
-                enemy.GetComponent<BossLobsterBrain>();
-
-            // A retreating boss must not execute its normal AI.
-            if (bossBrain != null && bossBrain.IsRetreating())
+            if (isRetreatingBoss)
             {
                 yield return StartCoroutine(
                     ExecuteBossRetreat(bossBrain)
@@ -317,16 +285,6 @@ public class RoundManager : MonoBehaviour
             }
             else
             {
-                if (!HasAnyAbility(enemy))
-                {
-                    Debug.Log(
-                        "[RoundManager] Skipping enemy with no abilities: " +
-                        enemy.name,
-                        enemy
-                    );
-                    continue;
-                }
-
                 yield return StartCoroutine(
                     CombatUtility.ExecuteEnemyTurn(
                         enemy,
@@ -383,35 +341,12 @@ public class RoundManager : MonoBehaviour
         UnitMoveBrain moveBrain = boss.GetComponent<UnitMoveBrain>();
 
         if (moveBrain == null)
-        {
-            Debug.LogWarning(
-                "[RoundManager] Retreating boss has no UnitMoveBrain.",
-                boss
-            );
             yield break;
-        }
-
-        Vector2Int spawnTile = boss.GetSpawnTile();
-
-        Debug.Log(
-            $"[RoundManager] Boss '{boss.name}' retreat destination: {spawnTile}.",
-            boss
-        );
 
         yield return StartCoroutine(boss.TryRetreat());
 
-        // Don't advance to another enemy while the boss is still moving.
         while (moveBrain != null && moveBrain.IsMoving())
             yield return null;
-
-        if (boss != null && boss.IsRetreating())
-        {
-            Debug.Log(
-                "[RoundManager] Boss remains in retreat mode and can continue " +
-                "on a later turn if it ran out of movement or its path was blocked.",
-                boss
-            );
-        }
     }
 
     // ============================================================
@@ -468,11 +403,6 @@ public class RoundManager : MonoBehaviour
 
         SetRoundState(RoundState.Setup);
         OnRoundChanged?.Invoke(currentRound);
-
-        Debug.Log(
-            "[RoundManager] Round " + (currentRound - 1) +
-            " complete. Preparing Round " + currentRound + "."
-        );
     }
 
     // ============================================================
@@ -523,10 +453,8 @@ public class RoundManager : MonoBehaviour
 
         for (int i = 0; i < units.Count; i++)
         {
-            AttackUnit unit = units[i];
-
-            if (unit != null)
-                cachedUnits.Add(unit);
+            if (units[i] != null)
+                cachedUnits.Add(units[i]);
         }
     }
 
@@ -608,13 +536,8 @@ public class RoundManager : MonoBehaviour
         {
             AttackUnit player = players[i];
 
-            if (player == null)
-                continue;
-
-            if (!CombatUtility.IsAlive(player))
-                continue;
-
-            return true;
+            if (player != null && CombatUtility.IsAlive(player))
+                return true;
         }
 
         return false;
@@ -635,10 +558,7 @@ public class RoundManager : MonoBehaviour
 
     private bool HasAnyAbility(AttackUnit unit)
     {
-        if (unit == null)
-            return false;
-
-        return unit.GetAbilityCount() > 0;
+        return unit != null && unit.GetAbilityCount() > 0;
     }
 
     // ============================================================

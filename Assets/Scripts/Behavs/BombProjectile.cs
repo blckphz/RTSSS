@@ -1,9 +1,9 @@
+
 using UnityEngine;
 
 public class BombProjectile : MonoBehaviour
 {
     private GameObject user;
-
     private Vector3 startPosition;
     private Vector3 targetPosition;
 
@@ -13,25 +13,15 @@ public class BombProjectile : MonoBehaviour
     private int explosionRadius;
     private float explosionDelay;
     private float speed;
-
-    // IMPORTANT:
-    // This is the damage calculated by BombAttack when
-    // the bomb was fired.
     private int explosionDamage;
 
     private float flightTime;
     private float elapsedTime;
-
     private float arcHeight = 2f;
 
     private Quaternion originalRotation;
-
     private bool initialized;
-
-
-    // ============================================================
-    // INITIALIZE
-    // ============================================================
+    private bool hasExploded;
 
     public void Initialize(
         GameObject user,
@@ -41,238 +31,124 @@ public class BombProjectile : MonoBehaviour
         int explosionRadius,
         float explosionDelay,
         float speed,
-        int explosionDamage
-    )
+        int explosionDamage)
     {
-        this.user =
-            user;
+        this.user = user;
+        this.targetPosition = targetPosition;
+        this.gridManager = gridManager;
+        this.explosionPrefab = explosionPrefab;
+        this.explosionRadius = Mathf.Max(0, explosionRadius);
+        this.explosionDelay = Mathf.Max(0f, explosionDelay);
+        this.speed = Mathf.Max(0.01f, speed);
+        this.explosionDamage = Mathf.Max(0, explosionDamage);
 
-        this.targetPosition =
-            targetPosition;
+        startPosition = transform.position;
+        originalRotation = transform.rotation;
 
-        this.gridManager =
-            gridManager;
+        float distance = Vector3.Distance(
+            startPosition,
+            targetPosition
+        );
 
-        this.explosionPrefab =
-            explosionPrefab;
-
-        this.explosionRadius =
-            Mathf.Max(
-                0,
-                explosionRadius
-            );
-
-        this.explosionDelay =
-            Mathf.Max(
-                0f,
-                explosionDelay
-            );
-
-        this.speed =
-            Mathf.Max(
-                0.01f,
-                speed
-            );
-
-        this.explosionDamage =
-            Mathf.Max(
-                0,
-                explosionDamage
-            );
-
-
-        startPosition =
-            transform.position;
-
-        originalRotation =
-            transform.rotation;
-
-
-        float distance =
-            Vector3.Distance(
-                startPosition,
-                targetPosition
-            );
-
-
-        flightTime =
-            Mathf.Max(
-                0.05f,
-                distance / this.speed
-            );
-
-
+        flightTime = Mathf.Max(0.05f, distance / this.speed);
         elapsedTime = 0f;
-
+        hasExploded = false;
         initialized = true;
 
-
         Debug.Log(
-            $"[BombProjectile] Initialized | " +
-            $"User={user?.name} | " +
-            $"ExplosionDamage={this.explosionDamage}",
-            user
+            $"[BombProjectile] Initialized | User={user?.name} | " +
+            $"ExplosionDamage={this.explosionDamage} | " +
+            $"Radius={this.explosionRadius}",
+            this
         );
     }
-
-
-    // ============================================================
-    // UPDATE
-    // ============================================================
 
     private void Update()
     {
-        if (!initialized)
-        {
+        if (!initialized || hasExploded)
             return;
-        }
 
-        elapsedTime +=
-            Time.deltaTime;
+        elapsedTime += Time.deltaTime;
 
+        float t = Mathf.Clamp01(elapsedTime / flightTime);
 
-        float t =
-            Mathf.Clamp01(
-                elapsedTime /
-                flightTime
-            );
+        Vector3 position = Vector3.Lerp(
+            startPosition,
+            targetPosition,
+            t
+        );
 
+        position.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
 
-        // --------------------------------------------------------
-        // LINEAR POSITION
-        // --------------------------------------------------------
-
-        Vector3 position =
-            Vector3.Lerp(
-                startPosition,
-                targetPosition,
-                t
-            );
-
-
-        // --------------------------------------------------------
-        // ARC
-        // --------------------------------------------------------
-
-        float arc =
-            Mathf.Sin(
-                t * Mathf.PI
-            ) * arcHeight;
-
-
-        position.y += arc;
-
-
-        // --------------------------------------------------------
-        // MOVE
-        // --------------------------------------------------------
-
-        transform.position =
-            position;
-
-
-        // --------------------------------------------------------
-        // KEEP ORIGINAL ROTATION
-        // --------------------------------------------------------
-
-        transform.rotation =
-            originalRotation;
-
-
-        // --------------------------------------------------------
-        // ARRIVED
-        // --------------------------------------------------------
+        transform.position = position;
+        transform.rotation = originalRotation;
 
         if (t >= 1f)
-        {
             Explode();
-        }
     }
-
-
-    // ============================================================
-    // EXPLODE
-    // ============================================================
 
     private void Explode()
     {
-        if (!initialized)
+        if (!initialized || hasExploded)
+            return;
+
+        hasExploded = true;
+        initialized = false;
+
+        if (explosionPrefab == null)
         {
+            Debug.LogError(
+                "[BombProjectile] Explosion prefab is not assigned.",
+                this
+            );
+            Destroy(gameObject);
             return;
         }
 
-        initialized = false;
+        GameObject explosion = Instantiate(
+            explosionPrefab,
+            targetPosition,
+            Quaternion.identity
+        );
 
-
-        // --------------------------------------------------------
-        // SPAWN EXPLOSION
-        // --------------------------------------------------------
-
-        if (explosionPrefab != null)
+        if (explosion == null)
         {
-            GameObject explosion =
-                Instantiate(
-                    explosionPrefab,
-                    targetPosition,
-                    Quaternion.identity
-                );
-
-
-            if (explosion != null)
-            {
-                ExplosionAttack explosionAttack =
-                    explosion.GetComponent<ExplosionAttack>();
-
-
-                if (explosionAttack != null)
-                {
-                    // Set ALL explosion values before Initialize().
-                    //
-                    // Initialize() can immediately call Explode(),
-                    // so these must already be configured.
-
-                    explosionAttack.SetExplosionRadius(
-                        explosionRadius
-                    );
-
-                    explosionAttack.SetExplosionDelay(
-                        explosionDelay
-                    );
-
-                    explosionAttack.SetExplosionDamage(
-                        explosionDamage
-                    );
-
-                    explosionAttack.Initialize(
-                        user
-                    );
-
-
-                    Debug.Log(
-                        $"[BombProjectile] Explosion created | " +
-                        $"Damage={explosionDamage} | " +
-                        $"Radius={explosionRadius}",
-                        user
-                    );
-                }
-                else
-                {
-                    Debug.LogError(
-                        "[BombProjectile] Explosion prefab does not " +
-                        "contain ExplosionAttack.",
-                        explosion
-                    );
-                }
-            }
+            Debug.LogError(
+                "[BombProjectile] Failed to instantiate explosion.",
+                this
+            );
+            Destroy(gameObject);
+            return;
         }
 
+        ExplosionAttack explosionAttack =
+            explosion.GetComponent<ExplosionAttack>();
 
-        // --------------------------------------------------------
-        // DESTROY BOMB
-        // --------------------------------------------------------
+        if (explosionAttack == null)
+        {
+            Debug.LogError(
+                "[BombProjectile] Explosion prefab has no " +
+                "ExplosionAttack component.",
+                explosion
+            );
+            Destroy(gameObject);
+            return;
+        }
 
-        Destroy(
-            gameObject
+        // Configure all values before Initialize.
+        explosionAttack.SetExplosionRadius(explosionRadius);
+        explosionAttack.SetExplosionDamage(explosionDamage);
+        explosionAttack.SetExplosionDelay(explosionDelay);
+
+        Debug.Log(
+            $"[BombProjectile] Initializing explosion | " +
+            $"Damage={explosionDamage} | Radius={explosionRadius} | " +
+            $"Position={targetPosition}",
+            explosion
         );
+
+        explosionAttack.Initialize(user);
+
+        Destroy(gameObject);
     }
 }

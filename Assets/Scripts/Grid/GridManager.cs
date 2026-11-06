@@ -244,6 +244,7 @@ public class GridManager : MonoBehaviour
         );
     }
 
+
     public void SetGridShape(
         GridShapeType newShape,
         int newWidth = -1,

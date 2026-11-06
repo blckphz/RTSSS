@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class EggBehav : MonoBehaviour
@@ -18,19 +17,21 @@ public class EggBehav : MonoBehaviour
 
     private Quaternion originalRotation;
     private bool initialized;
+    private bool hasLanded;
+
+    private AttackUnit attacker;
 
     public void Initialize(
         Vector3 targetPosition,
-        float speed
-    )
+        float speed,
+        AttackUnit attacker)
     {
         if (gridManager == null)
-        {
             gridManager = FindFirstObjectByType<GridManager>();
-        }
 
         this.targetPosition = targetPosition;
         this.speed = Mathf.Max(0.01f, speed);
+        this.attacker = attacker;
 
         startPosition = transform.position;
         originalRotation = transform.rotation;
@@ -47,11 +48,12 @@ public class EggBehav : MonoBehaviour
 
         elapsedTime = 0f;
         initialized = true;
+        hasLanded = false;
     }
 
     private void Update()
     {
-        if (!initialized)
+        if (!initialized || hasLanded)
             return;
 
         elapsedTime += Time.deltaTime;
@@ -79,25 +81,26 @@ public class EggBehav : MonoBehaviour
 
     private void Land()
     {
-        if (!initialized)
+        if (hasLanded)
             return;
 
+        hasLanded = true;
         initialized = false;
+
         transform.position = targetPosition;
 
         if (gridManager == null)
-        {
-            Debug.LogError(
-                "[EggBehav] GridManager was not found.",
-                this
-            );
+            gridManager = FindFirstObjectByType<GridManager>();
 
-            return;
+        if (gridManager != null)
+        {
+            Vector2Int gridPosition =
+                gridManager.WorldToGridPosition(targetPosition);
+
+            gridManager.RegisterWalkableObstacle(gridPosition);
         }
 
-        Vector2Int gridPosition =
-            gridManager.WorldToGridPosition(targetPosition);
-
-        gridManager.RegisterWalkableObstacle(gridPosition);
+        if (attacker != null)
+            attacker.OnEggLanded();
     }
 }
