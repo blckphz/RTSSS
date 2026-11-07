@@ -20,7 +20,7 @@ MonoBehaviour:
   music: {fileID: 0}
   width: 21
   height: 21
-  shape: 3
+  shape: 1
   minRadius: 0
   maxRadius: 12
   victoryCondition: 0

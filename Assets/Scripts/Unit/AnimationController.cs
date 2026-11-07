@@ -99,21 +99,6 @@ public class AnimationController : MonoBehaviour, IAttackAnimation
         attackAnimatorLayerIndex =
             animator.GetLayerIndex(attackAnimatorLayerName);
 
-        if (attackAnimatorLayerIndex < 0)
-        {
-            Debug.LogError(
-                "[AnimationController] Could not find Animator layer: "
-                + attackAnimatorLayerName,
-                this
-            );
-        }
-        else
-        {
-            animator.SetLayerWeight(
-                attackAnimatorLayerIndex,
-                1f
-            );
-        }
 
         if (!string.IsNullOrEmpty(attackSequenceBool))
         {

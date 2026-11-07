@@ -56,10 +56,6 @@ public class GridShapeManager : MonoBehaviour
 
         RefreshGrid();
 
-        Debug.Log(
-            $"[GridShapeManager] Grid resized: " +
-            $"{oldWidth}x{oldHeight} -> {newWidth}x{newHeight}",
-            this);
     }
 
     public void SetGridDimensionsDirect(int width, int height)

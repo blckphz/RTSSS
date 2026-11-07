@@ -16,11 +16,8 @@ AnimatorStateMachine:
     m_State: {fileID: 5488525816603984216}
     m_Position: {x: 360, y: 240, z: 0}
   - serializedVersion: 1
-    m_State: {fileID: -2786520000106212085}
-    m_Position: {x: 360, y: 20, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: 4168018029757090824}
-    m_Position: {x: 395, y: 85, z: 0}
+    m_State: {fileID: 3691353717465210244}
+    m_Position: {x: 350, y: 90, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -179,33 +176,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 0}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1102 &-2786520000106212085
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: basicEnemyWalkUp
-  m_Speed: 0.5
-  m_CycleOffset: 0
-  m_Transitions: []
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: cc2b26e3dbcc0b94681a7f8631fa4df2, type: 2}
+  m_Motion: {fileID: 7400000, guid: d64edbad5aa450644b3da8223b9ef4de, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -395,15 +366,15 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
---- !u!1102 &4168018029757090824
+--- !u!1102 &3691353717465210244
 AnimatorState:
   serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: basicenemyidle
-  m_Speed: 0.5
+  m_Name: SkelWalkUp
+  m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -415,7 +386,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: d64edbad5aa450644b3da8223b9ef4de, type: 2}
+  m_Motion: {fileID: 7400000, guid: cc2b26e3dbcc0b94681a7f8631fa4df2, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -428,7 +399,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: basicEnemyWalkDown
+  m_Name: SkelWalkDown
   m_Speed: 0.5
   m_CycleOffset: 0
   m_Transitions: []
@@ -441,7 +412,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: ac1aa69b6f754ca4f870c29f21b16d73, type: 2}
+  m_Motion: {fileID: 7400000, guid: aa3030a0c23851d41943e1748c0e323a, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

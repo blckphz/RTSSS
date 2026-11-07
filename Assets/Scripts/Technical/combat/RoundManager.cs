@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -56,6 +57,10 @@ public class RoundManager : MonoBehaviour
 
     private bool roundRunning;
 
+    // ==================================================
+    // UNITY
+    // ==================================================
+
     private void Awake()
     {
         if (combatManager == null)
@@ -100,9 +105,9 @@ public class RoundManager : MonoBehaviour
         EnablePlayerTurnInteraction();
     }
 
-    // ============================================================
+    // ==================================================
     // START ROUND
-    // ============================================================
+    // ==================================================
 
     public void StartRound()
     {
@@ -115,8 +120,11 @@ public class RoundManager : MonoBehaviour
         if (!IsPlayerOnField())
             return;
 
-        if (encounterManager != null && encounterManager.IsFinished())
+        if (encounterManager != null &&
+            encounterManager.IsFinished())
+        {
             return;
+        }
 
         roundRunning = true;
 
@@ -128,9 +136,9 @@ public class RoundManager : MonoBehaviour
         StartCoroutine(RunRoundPipeline());
     }
 
-    // ============================================================
+    // ==================================================
     // ROUND PIPELINE
-    // ============================================================
+    // ==================================================
 
     private IEnumerator RunRoundPipeline()
     {
@@ -145,9 +153,11 @@ public class RoundManager : MonoBehaviour
         if (canvasInfoManager != null)
             canvasInfoManager.RefreshCurrentSelection();
 
-        yield return StartCoroutine(ExecutePlayerAndAllyTurn());
+        yield return StartCoroutine(
+            ExecutePlayerAndAllyTurn());
 
-        if (encounterManager != null && encounterManager.IsFinished())
+        if (encounterManager != null &&
+            encounterManager.IsFinished())
         {
             EndRound();
             yield break;
@@ -173,9 +183,9 @@ public class RoundManager : MonoBehaviour
         EndRound();
     }
 
-    // ============================================================
+    // ==================================================
     // PLAYER + ALLY TURN
-    // ============================================================
+    // ==================================================
 
     private IEnumerator ExecutePlayerAndAllyTurn()
     {
@@ -190,27 +200,35 @@ public class RoundManager : MonoBehaviour
 
             Team team = unit.GetTeam();
 
-            if (team != Team.Player && team != Team.Ally)
+            if (team != Team.Player &&
+                team != Team.Ally)
+            {
                 continue;
+            }
 
             if (!HasAnyAbility(unit))
                 continue;
 
             yield return StartCoroutine(
-                CombatUtility.ExecuteUnitTurnCoroutine(unit, gridManager)
+                CombatUtility.ExecuteUnitTurnCoroutine(
+                    unit,
+                    gridManager)
             );
 
             if (delayBetweenUnits > 0f)
                 yield return unitDelay;
 
-            if (encounterManager != null && encounterManager.IsFinished())
+            if (encounterManager != null &&
+                encounterManager.IsFinished())
+            {
                 yield break;
+            }
         }
     }
 
-    // ============================================================
+    // ==================================================
     // ENEMY TURN
-    // ============================================================
+    // ==================================================
 
     private IEnumerator ExecuteEnemyTurn()
     {
@@ -244,8 +262,11 @@ public class RoundManager : MonoBehaviour
         {
             AttackUnit enemy = enemies[i];
 
-            if (enemy == null || !CombatUtility.IsAlive(enemy))
+            if (enemy == null ||
+                !CombatUtility.IsAlive(enemy))
+            {
                 continue;
+            }
 
             if (enemy.GetComponent<EggBehav>() != null)
                 continue;
@@ -267,24 +288,71 @@ public class RoundManager : MonoBehaviour
                 enemy.GetComponent<BossLobsterBrain>();
 
             bool isRetreatingBoss =
-                bossBrain != null && bossBrain.IsRetreating();
+                bossBrain != null &&
+                bossBrain.IsRetreating();
 
             if (!isRetreatingBoss && !HasAnyAbility(enemy))
                 continue;
 
             if (canvasJuiceManager != null)
-                canvasJuiceManager.MoveCameraToUnit(enemy.transform);
+                canvasJuiceManager.MoveCameraToUnit(
+                    enemy.transform);
 
             yield return null;
 
             if (isRetreatingBoss)
             {
-                yield return StartCoroutine(
-                    ExecuteBossRetreat(bossBrain)
-                );
+                // ======================================
+                // RETREATING LOBSTER TURN
+                // ======================================
+
+                // Use abilities BEFORE retreat movement.
+                // EggAbil can therefore detect that the
+                // lobster is retreating and target tiles
+                // toward its pond.
+
+                UnitAttackBrain attackBrain =
+                    enemy.GetComponent<UnitAttackBrain>();
+
+                if (attackBrain != null &&
+                    !enemy.IsDead())
+                {
+                    Debug.Log(
+                        "[RoundManager] Retreating lobster is using abilities."
+                    );
+
+                    yield return attackBrain
+                        .UseAllAvailableAbilitiesCoroutine();
+                }
+
+                // Check that the encounter is still active.
+                if (encounterManager != null &&
+                    encounterManager.IsFinished())
+                {
+                    combatManager.ClearEnemyTurnLocks();
+                    yield break;
+                }
+
+                // Move toward the pond after using abilities.
+                if (!enemy.IsDead() &&
+                    bossBrain != null &&
+                    bossBrain.IsRetreating())
+                {
+                    Debug.Log(
+                        "[RoundManager] Retreating lobster is moving toward the pond."
+                    );
+
+                    yield return StartCoroutine(
+                        ExecuteBossRetreat(bossBrain)
+                    );
+                }
             }
             else
             {
+                // ======================================
+                // NORMAL ENEMY TURN
+                // ======================================
+
                 yield return StartCoroutine(
                     CombatUtility.ExecuteEnemyTurn(
                         enemy,
@@ -296,7 +364,8 @@ public class RoundManager : MonoBehaviour
 
             yield return null;
 
-            if (encounterManager != null && encounterManager.IsFinished())
+            if (encounterManager != null &&
+                encounterManager.IsFinished())
             {
                 combatManager.ClearEnemyTurnLocks();
 
@@ -329,16 +398,18 @@ public class RoundManager : MonoBehaviour
         combatManager.ClearEnemyTurnLocks();
     }
 
-    // ============================================================
+    // ==================================================
     // BOSS RETREAT
-    // ============================================================
+    // ==================================================
 
-    private IEnumerator ExecuteBossRetreat(BossLobsterBrain boss)
+    private IEnumerator ExecuteBossRetreat(
+        BossLobsterBrain boss)
     {
         if (boss == null || !boss.IsRetreating())
             yield break;
 
-        UnitMoveBrain moveBrain = boss.GetComponent<UnitMoveBrain>();
+        UnitMoveBrain moveBrain =
+            boss.GetComponent<UnitMoveBrain>();
 
         if (moveBrain == null)
             yield break;
@@ -349,19 +420,23 @@ public class RoundManager : MonoBehaviour
             yield return null;
     }
 
-    // ============================================================
+    // ==================================================
     // PLAYER INTERACTION CONTROL
-    // ============================================================
+    // ==================================================
 
     private void DisablePlayerTurnInteraction()
     {
         CombatUtility.SetPlayerInputLocked(true);
 
         if (gridHighlightManager != null)
+        {
             gridHighlightManager.SetPlayerHighlightsDisabled(true);
+        }
 
         if (lineWalkPreview != null)
+        {
             lineWalkPreview.SetPlayerWalkPreviewDisabled(true);
+        }
     }
 
     private void EnablePlayerTurnInteraction()
@@ -369,22 +444,28 @@ public class RoundManager : MonoBehaviour
         CombatUtility.SetPlayerInputLocked(false);
 
         if (gridHighlightManager != null)
+        {
             gridHighlightManager.SetPlayerHighlightsDisabled(false);
+        }
 
         if (lineWalkPreview != null)
+        {
             lineWalkPreview.SetPlayerWalkPreviewDisabled(false);
+        }
     }
 
-    // ============================================================
+    // ==================================================
     // END ROUND
-    // ============================================================
+    // ==================================================
 
     private void EndRound()
     {
         EnablePlayerTurnInteraction();
 
         if (canvasJuiceManager != null)
+        {
             canvasJuiceManager.MoveCameraToNormalPosition();
+        }
 
         if (encounterManager != null)
         {
@@ -398,6 +479,26 @@ public class RoundManager : MonoBehaviour
             }
         }
 
+        // ==================================================
+        // BOSS LOBSTER WATER HEALING
+        // ==================================================
+
+        if (bossLobster == null)
+        {
+            bossLobster =
+                FindAnyObjectByType<BossLobsterBrain>();
+        }
+
+        if (bossLobster != null)
+        {
+            bossLobster.RefreshWaterStatus();
+
+            OnBossWaterStatusChecked?.Invoke(
+                bossLobster.IsOnWater());
+
+            bossLobster.HealFromWater();
+        }
+
         currentRound++;
         roundRunning = false;
 
@@ -405,9 +506,9 @@ public class RoundManager : MonoBehaviour
         OnRoundChanged?.Invoke(currentRound);
     }
 
-    // ============================================================
+    // ==================================================
     // RESET
-    // ============================================================
+    // ==================================================
 
     public void ResetRounds()
     {
@@ -432,21 +533,24 @@ public class RoundManager : MonoBehaviour
             lineWalkPreview.ClearPreview();
 
         if (canvasJuiceManager != null)
+        {
             canvasJuiceManager.MoveCameraToNormalPosition();
+        }
 
         OnRoundChanged?.Invoke(currentRound);
         OnRoundStateChanged?.Invoke(currentState);
     }
 
-    // ============================================================
+    // ==================================================
     // CACHE UNITS
-    // ============================================================
+    // ==================================================
 
     private void RefreshCachedUnits()
     {
         cachedUnits.Clear();
 
-        List<AttackUnit> units = CombatUtility.GetAllAliveUnits();
+        List<AttackUnit> units =
+            CombatUtility.GetAllAliveUnits();
 
         if (units == null)
             return;
@@ -458,9 +562,9 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-    // ============================================================
+    // ==================================================
     // RESET MOVEMENT
-    // ============================================================
+    // ==================================================
 
     private void ResetAllUnitMovement()
     {
@@ -471,16 +575,17 @@ public class RoundManager : MonoBehaviour
             if (unit == null)
                 continue;
 
-            UnitMoveBrain moveBrain = unit.GetComponent<UnitMoveBrain>();
+            UnitMoveBrain moveBrain =
+                unit.GetComponent<UnitMoveBrain>();
 
             if (moveBrain != null)
                 moveBrain.ResetMovement();
         }
     }
 
-    // ============================================================
+    // ==================================================
     // COOLDOWNS
-    // ============================================================
+    // ==================================================
 
     private void UpdateAllUnitCooldowns()
     {
@@ -493,21 +598,25 @@ public class RoundManager : MonoBehaviour
 
             unit.StartNewRound();
 
-            turretbehav turret = unit.GetComponent<turretbehav>();
+            turretbehav turret =
+                unit.GetComponent<turretbehav>();
 
             if (turret != null)
                 turret.ConsumeChainLightningCharge();
         }
     }
 
-    // ============================================================
+    // ==================================================
     // ENSURE ENEMIES
-    // ============================================================
+    // ==================================================
 
     private bool EnsureEnemiesExist()
     {
-        if (encounterManager != null && encounterManager.IsEncounterRunning())
+        if (encounterManager != null &&
+            encounterManager.IsEncounterRunning())
+        {
             return false;
+        }
 
         if (combatManager == null)
             return false;
@@ -521,13 +630,14 @@ public class RoundManager : MonoBehaviour
         return false;
     }
 
-    // ============================================================
+    // ==================================================
     // PLAYER CHECK
-    // ============================================================
+    // ==================================================
 
     private bool IsPlayerOnField()
     {
-        List<AttackUnit> players = CombatUtility.GetUnitsByTeam(Team.Player);
+        List<AttackUnit> players =
+            CombatUtility.GetUnitsByTeam(Team.Player);
 
         if (players == null || players.Count == 0)
             return false;
@@ -536,34 +646,38 @@ public class RoundManager : MonoBehaviour
         {
             AttackUnit player = players[i];
 
-            if (player != null && CombatUtility.IsAlive(player))
+            if (player != null &&
+                CombatUtility.IsAlive(player))
+            {
                 return true;
+            }
         }
 
         return false;
     }
 
-    // ============================================================
+    // ==================================================
     // UNIT VALIDATION
-    // ============================================================
+    // ==================================================
 
     private bool IsValidUnit(AttackUnit unit)
     {
         return CombatUtility.IsAlive(unit);
     }
 
-    // ============================================================
+    // ==================================================
     // ABILITY CHECK
-    // ============================================================
+    // ==================================================
 
     private bool HasAnyAbility(AttackUnit unit)
     {
-        return unit != null && unit.GetAbilityCount() > 0;
+        return unit != null &&
+               unit.GetAbilityCount() > 0;
     }
 
-    // ============================================================
+    // ==================================================
     // ROUND STATE
-    // ============================================================
+    // ==================================================
 
     private void SetRoundState(RoundState newState)
     {
@@ -574,9 +688,9 @@ public class RoundManager : MonoBehaviour
         OnRoundStateChanged?.Invoke(currentState);
     }
 
-    // ============================================================
+    // ==================================================
     // PUBLIC STATE
-    // ============================================================
+    // ==================================================
 
     public bool IsSetupPhase()
     {
@@ -608,11 +722,13 @@ public class RoundManager : MonoBehaviour
         return IsPlayerOnField();
     }
 
-    // ============================================================
+    // ==================================================
     // ABILITY LOG
-    // ============================================================
+    // ==================================================
 
-    public void LogAbilityUse(string unitName, string abilityName)
+    public void LogAbilityUse(
+        string unitName,
+        string abilityName)
     {
         roundAbilityLogs.Add(
             new AbilityLogEntry
@@ -624,13 +740,16 @@ public class RoundManager : MonoBehaviour
         );
     }
 
-    public List<AbilityLogEntry> GetAbilityLogsForRound(int round)
+    public List<AbilityLogEntry> GetAbilityLogsForRound(
+        int round)
     {
-        return roundAbilityLogs.FindAll(log => log.round == round);
+        return roundAbilityLogs.FindAll(
+            log => log.round == round);
     }
 
     public List<AbilityLogEntry> GetAllAbilityLogs()
     {
-        return new List<AbilityLogEntry>(roundAbilityLogs);
+        return new List<AbilityLogEntry>(
+            roundAbilityLogs);
     }
 }

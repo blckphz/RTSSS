@@ -29,6 +29,8 @@ MonoBehaviour:
   obstacles:
   - prefab: {fileID: 4842063353313913221, guid: b26b256594154f549aeaaa4b94016709, type: 3}
     amount: 1
+  - prefab: {fileID: 4842063353313913221, guid: b26b256594154f549aeaaa4b94016709, type: 3}
+    amount: 1
   bushes: []
   enemies:
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}

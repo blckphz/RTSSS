@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -140,6 +139,18 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (gridManager == null)
             return true;
 
+        // Manually registered obstacles always block movement.
+        if (gridManager.IsWalkableObstacle(position))
+            return true;
+
+        // Health-managed objects block movement too.
+        // The moving unit itself is ignored so it cannot block
+        // its own movement while its transform is being updated.
+        if (gridManager.HasHealthManagerObstacle(position, movingUnit))
+            return true;
+
+        // When no moving unit is supplied, use the grid's
+        // normal unit occupancy system.
         if (movingUnit == null)
             return gridManager.GetUnitAt(position) != null;
 
@@ -150,6 +161,7 @@ public class UnitMoveBrainManager : MonoBehaviour
             return blocked;
 
         blocked = !gridManager.CanMoveToCell(movingUnit, position);
+
         movingUnitBlockedCache[position] = blocked;
 
         return blocked;
@@ -795,6 +807,16 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (movingUnit != null)
             return !IsBlocked(next, movingUnit);
 
+        // A health-managed object that is not registered as a
+        // grid unit must block even when it is the destination.
+        if (gridManager.IsWalkableObstacle(next) ||
+            gridManager.HasHealthManagerObstacle(next))
+        {
+            return false;
+        }
+
+        // Preserve the existing behaviour that allows a path
+        // to end on an occupied unit destination.
         GameObject occupant = gridManager.GetUnitAt(next);
 
         return occupant == null || next == destination;
@@ -911,7 +933,4 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         path.Reverse();
     }
-
-
-
 }

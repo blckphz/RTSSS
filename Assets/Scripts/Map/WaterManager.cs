@@ -10,6 +10,8 @@ public class WaterManager : MonoBehaviour
     [SerializeField] private TileBase waterTile;
     [SerializeField] private EncounterManager encounterManager;
     [SerializeField] private GridShapeManager gridShapeManager;
+    [SerializeField] private GridManager gridManager;
+    [SerializeField] private BossLobsterBrain bossLobster;
 
     [Header("Grid Size Changes")]
     [SerializeField, Min(0)] private int widthChange = 1;
@@ -25,60 +27,135 @@ public class WaterManager : MonoBehaviour
 
     private void Awake()
     {
+        if (gridManager == null)
+            gridManager = FindFirstObjectByType<GridManager>();
+
         if (gridShapeManager == null)
             gridShapeManager = FindFirstObjectByType<GridShapeManager>();
+
+        if (bossLobster == null)
+            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+    }
+
+    private void Start()
+    {
+        UpdateBossWaterStatus();
     }
 
     public void AdvanceTide()
     {
         if (tideAdvancing)
         {
-            // Stop shrinking after 3 advances.
-            if (shrinkCount < maxShrinkCount)
-            {
-                RetreatWater();
+            // Tide comes in: remove water from the edges.
+            RetreatWater();
 
-                if (gridShapeManager != null)
-                {
-                    gridShapeManager.ResizeGridRelative(
-                        -widthChange,
-                        -heightChange);
-                }
-
-                shrinkCount++;
-
-                Debug.Log(
-                    "[WATER] Shrink count: " +
-                    shrinkCount + "/" + maxShrinkCount);
-            }
-            else
-            {
-                Debug.Log("[WATER] Maximum shrink limit reached.");
-            }
-
-            if (encounterManager != null)
-                encounterManager.TideComesIn();
-        }
-        else
-        {
-            ExpandWater();
-
+            // Shrink one cell from every edge.
             if (gridShapeManager != null)
             {
                 gridShapeManager.ResizeGridRelative(
-                    widthChange,
-                    heightChange);
+                    -widthChange * 2,
+                    -heightChange * 2
+                );
             }
+
+            shrinkCount++;
+
+            if (encounterManager != null)
+                encounterManager.TideComesIn();
+
+            // Reverse tide after reaching maximum shrink.
+            if (shrinkCount >= maxShrinkCount)
+            {
+                tideAdvancing = false;
+            }
+        }
+        else
+        {
+            // Tide goes out: restore water at the edges.
+            ExpandWater();
+
+            // Expand one cell on every edge.
+            if (gridShapeManager != null)
+            {
+                gridShapeManager.ResizeGridRelative(
+                    widthChange * 2,
+                    heightChange * 2
+                );
+            }
+
+            shrinkCount--;
 
             if (encounterManager != null)
                 encounterManager.TideGoesOut();
+
+            // Reverse tide once the original size is restored.
+            if (shrinkCount <= 0)
+            {
+                shrinkCount = 0;
+                tideAdvancing = true;
+            }
         }
+
+        UpdateBossWaterStatus();
+    }
+
+    public void UpdateBossWaterStatus()
+    {
+        if (bossLobster == null)
+            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+
+        if (bossLobster != null)
+            bossLobster.RefreshWaterStatus();
+    }
+
+    public bool IsGridPositionOnWater(Vector2Int gridPosition)
+    {
+        if (waterTilemap == null)
+            return false;
+
+        if (gridManager == null)
+            gridManager = FindFirstObjectByType<GridManager>();
+
+        if (gridManager == null)
+            return false;
+
+        Vector3 worldPosition =
+            gridManager.GridToWorldPosition(gridPosition);
+
+        Vector3Int cellPosition =
+            waterTilemap.WorldToCell(worldPosition);
+
+        TileBase tile =
+            waterTilemap.GetTile(cellPosition);
+
+        return tile != null &&
+               (waterTile == null || tile == waterTile);
+    }
+
+    public bool IsPositionOnWater(Vector3 worldPosition)
+    {
+        if (waterTilemap == null)
+            return false;
+
+        Vector3Int cellPosition =
+            waterTilemap.WorldToCell(worldPosition);
+
+        TileBase tile =
+            waterTilemap.GetTile(cellPosition);
+
+        return tile != null &&
+               (waterTile == null || tile == waterTile);
     }
 
     private void ExpandWater()
     {
+        if (waterTilemap == null || waterTile == null)
+            return;
+
         List<Vector3Int> waterPositions = GetWaterPositions();
-        HashSet<Vector3Int> positionsToAdd = new HashSet<Vector3Int>();
+
+        HashSet<Vector3Int> positionsToAdd =
+            new HashSet<Vector3Int>();
 
         foreach (Vector3Int position in waterPositions)
         {
@@ -96,15 +173,19 @@ public class WaterManager : MonoBehaviour
 
         foreach (Vector3Int position in positionsToAdd)
         {
-            if (waterTile != null)
-                waterTilemap.SetTile(position, waterTile);
+            waterTilemap.SetTile(position, waterTile);
         }
     }
 
     private void RetreatWater()
     {
+        if (waterTilemap == null)
+            return;
+
         List<Vector3Int> waterPositions = GetWaterPositions();
-        List<Vector3Int> positionsToRemove = new List<Vector3Int>();
+
+        List<Vector3Int> positionsToRemove =
+            new List<Vector3Int>();
 
         foreach (Vector3Int position in waterPositions)
         {
@@ -129,7 +210,8 @@ public class WaterManager : MonoBehaviour
 
     private List<Vector3Int> GetWaterPositions()
     {
-        List<Vector3Int> positions = new List<Vector3Int>();
+        List<Vector3Int> positions =
+            new List<Vector3Int>();
 
         if (waterTilemap == null)
             return positions;
@@ -140,8 +222,11 @@ public class WaterManager : MonoBehaviour
         {
             TileBase tile = waterTilemap.GetTile(position);
 
-            if (tile != null && (waterTile == null || tile == waterTile))
+            if (tile != null &&
+                (waterTile == null || tile == waterTile))
+            {
                 positions.Add(position);
+            }
         }
 
         return positions;

@@ -10,6 +10,7 @@ public class BossLobsterBrain : MonoBehaviour
     [SerializeField] private UnitMoveBrain moveBrain;
     [SerializeField] private AttackUnit attackUnit;
     [SerializeField] private HealthManager healthManager;
+    [SerializeField] private WaterManager waterManager;
 
     [Header("Low Health Retreat")]
     [SerializeField, Range(0.01f, 1f)]
@@ -21,26 +22,43 @@ public class BossLobsterBrain : MonoBehaviour
     [SerializeField, Min(0)]
     private int retreatArrivalDistance = 0;
 
+    [Header("Water Bonuses")]
+    [SerializeField, Range(0f, 100f)]
+    private float waterDamageReductionPercent = 30f;
+
+    [SerializeField, Range(0f, 100f)]
+    private float waterHealingPercentPerRound = 5f;
+
+    [Header("Debug")]
+    [SerializeField] private bool enableBossDebug = true;
+
     private Vector2Int spawnTile;
     private bool spawnTileCached;
     private bool lowHealthRetreatTriggered;
     private bool retreatRoutineRunning;
+
     public bool isOnWater;
 
     private Coroutine retreatCoroutine;
 
-    // ==================================================
-    // UNITY LIFECYCLE
-    // ==================================================
+    private void BossDebug(string message)
+    {
+        if (enableBossDebug)
+            Debug.Log("[BossLobsterBrain] " + message, this);
+    }
 
     private void Awake()
     {
         CacheReferences();
+
+        BossDebug("Awake. References cached.");
     }
 
     private void OnEnable()
     {
         HealthManager.OnHealthChanged += HandleHealthChanged;
+
+        BossDebug("Enabled. Listening for health changes.");
     }
 
     private void OnDisable()
@@ -54,13 +72,23 @@ public class BossLobsterBrain : MonoBehaviour
         }
 
         retreatRoutineRunning = false;
+
+        BossDebug("Disabled. Retreat coroutine stopped.");
     }
 
     private void Start()
     {
         CacheReferences();
         CacheSpawnTile();
+
+        RefreshWaterStatus();
         CheckCurrentHealth();
+
+        BossDebug(
+            "Start complete. Retreating: " + retreating +
+            " | Spawn tile cached: " + spawnTileCached +
+            " | Spawn tile: " + spawnTile
+        );
     }
 
     // ==================================================
@@ -77,11 +105,10 @@ public class BossLobsterBrain : MonoBehaviour
 
         if (healthManager == null)
             healthManager = GetComponent<HealthManager>();
-    }
 
-    // ==================================================
-    // SPAWN TILE
-    // ==================================================
+        if (waterManager == null)
+            waterManager = FindFirstObjectByType<WaterManager>();
+    }
 
     private void CacheSpawnTile()
     {
@@ -91,17 +118,22 @@ public class BossLobsterBrain : MonoBehaviour
         CacheReferences();
 
         if (moveBrain == null)
+        {
+            BossDebug("Cannot cache spawn tile: UnitMoveBrain missing.");
             return;
+        }
 
-        Vector2Int initialTile;
+        if (moveBrain.TryGetCurrentTile(out Vector2Int initialTile))
+        {
+            spawnTile = initialTile;
+            spawnTileCached = true;
 
-        bool foundTile = moveBrain.TryGetCurrentTile(out initialTile);
-
-        if (!foundTile)
-            return;
-
-        spawnTile = initialTile;
-        spawnTileCached = true;
+            BossDebug("Spawn tile cached: " + spawnTile);
+        }
+        else
+        {
+            BossDebug("Failed to cache spawn tile: current tile unavailable.");
+        }
     }
 
     public Vector2Int GetSpawnTile()
@@ -111,7 +143,7 @@ public class BossLobsterBrain : MonoBehaviour
     }
 
     // ==================================================
-    // HEALTH TRIGGER
+    // HEALTH
     // ==================================================
 
     private void HandleHealthChanged(HealthManager changedHealth)
@@ -121,6 +153,12 @@ public class BossLobsterBrain : MonoBehaviour
 
         if (changedHealth.gameObject != gameObject)
             return;
+
+        BossDebug(
+            "Health changed. Current HP: " +
+            changedHealth.GetHealth() +
+            " / " + changedHealth.GetMaxHealth()
+        );
 
         CheckHealthForRetreat(changedHealth);
     }
@@ -135,25 +173,123 @@ public class BossLobsterBrain : MonoBehaviour
 
     private void CheckHealthForRetreat(HealthManager currentHealth)
     {
-        if (currentHealth == null)
-            return;
-
-        if (lowHealthRetreatTriggered)
+        if (currentHealth == null || lowHealthRetreatTriggered)
             return;
 
         if (!currentHealth.IsAlive())
+        {
+            BossDebug("Health check: boss is dead.");
             return;
+        }
 
         int currentHP = currentHealth.GetHealth();
         int maxHP = Mathf.Max(1, currentHealth.GetMaxHealth());
 
         float healthFraction = (float)currentHP / maxHP;
 
+        BossDebug(
+            "Health check: " + currentHP +
+            " / " + maxHP +
+            " = " + (healthFraction * 100f).ToString("F1") + "%"
+        );
+
         if (healthFraction <= retreatHealthThreshold)
         {
             lowHealthRetreatTriggered = true;
+
+            BossDebug("Low health threshold reached. Starting retreat.");
+
             BeginRetreat();
         }
+    }
+
+    // ==================================================
+    // WATER STATUS
+    // ==================================================
+
+    public void RefreshWaterStatus()
+    {
+        CacheReferences();
+
+        if (waterManager == null || moveBrain == null)
+        {
+            isOnWater = false;
+            return;
+        }
+
+        if (!moveBrain.TryGetCurrentTile(out Vector2Int currentTile))
+        {
+            isOnWater = false;
+            return;
+        }
+
+        // TRUE on land, FALSE in water.
+        isOnWater =
+            waterManager.IsGridPositionOnWater(currentTile);
+    }
+
+    public bool IsOnWater()
+    {
+        RefreshWaterStatus();
+
+        return !isOnWater;
+    }
+
+    public void SetOnWater(bool value)
+    {
+        RefreshWaterStatus();
+    }
+
+    // ==================================================
+    // WATER DAMAGE REDUCTION
+    // ==================================================
+
+    public int ModifyIncomingDamage(int damage)
+    {
+        if (damage <= 0)
+            return damage;
+
+        RefreshWaterStatus();
+
+        if (isOnWater)
+            return damage;
+
+        float reduction = Mathf.Clamp01(
+            waterDamageReductionPercent / 100f
+        );
+
+        int reducedDamage = Mathf.RoundToInt(
+            damage * (1f - reduction)
+        );
+
+        return Mathf.Max(0, reducedDamage);
+    }
+
+    // ==================================================
+    // WATER ROUND HEALING
+    // ==================================================
+
+    public void HealFromWater()
+    {
+        RefreshWaterStatus();
+
+        if (isOnWater)
+            return;
+
+        CacheReferences();
+
+        if (healthManager == null || !healthManager.IsAlive())
+            return;
+
+        int healingAmount = Mathf.RoundToInt(
+            healthManager.GetMaxHealth() *
+            (waterHealingPercentPerRound / 100f)
+        );
+
+        if (healingAmount <= 0)
+            return;
+
+        healthManager.Heal(healingAmount);
     }
 
     // ==================================================
@@ -170,16 +306,35 @@ public class BossLobsterBrain : MonoBehaviour
         CacheReferences();
         CacheSpawnTile();
 
+        BossDebug(
+            "BeginRetreat called. " +
+            "MoveBrain: " + (moveBrain != null) +
+            " | Spawn tile cached: " + spawnTileCached +
+            " | Spawn tile: " + spawnTile +
+            " | Already retreating: " + retreating
+        );
+
         if (moveBrain == null)
+        {
+            BossDebug("RETREAT FAILED: UnitMoveBrain missing.");
             return;
+        }
 
         if (!spawnTileCached)
+        {
+            BossDebug("RETREAT FAILED: Spawn tile was not cached.");
             return;
+        }
 
         if (retreating)
+        {
+            BossDebug("Retreat already active.");
             return;
+        }
 
         retreating = true;
+
+        BossDebug("RETREAT STARTED.");
     }
 
     public void EndRetreat()
@@ -193,6 +348,8 @@ public class BossLobsterBrain : MonoBehaviour
         }
 
         retreatRoutineRunning = false;
+
+        BossDebug("RETREAT ENDED.");
     }
 
     // ==================================================
@@ -201,35 +358,66 @@ public class BossLobsterBrain : MonoBehaviour
 
     public IEnumerator TryRetreat()
     {
-        if (retreatRoutineRunning)
-            yield break;
+        BossDebug(
+            "TryRetreat called. Retreating: " + retreating +
+            " | Routine running: " + retreatRoutineRunning
+        );
 
-        if (!retreating)
+        if (retreatRoutineRunning || !retreating)
+        {
+            BossDebug("TryRetreat stopped: already running or not retreating.");
             yield break;
+        }
 
         CacheReferences();
         CacheSpawnTile();
 
         if (moveBrain == null || !spawnTileCached)
+        {
+            BossDebug("TryRetreat stopped: missing MoveBrain or spawn tile.");
             yield break;
+        }
 
         GridManager gridManager = moveBrain.GetGridManager();
-        UnitMoveBrainManager pathManager = UnitMoveBrainManager.Instance;
 
-        if (gridManager == null || pathManager == null)
+        UnitMoveBrainManager pathManager =
+            UnitMoveBrainManager.Instance;
+
+        if (gridManager == null)
+        {
+            BossDebug("TryRetreat stopped: GridManager missing.");
             yield break;
+        }
+
+        if (pathManager == null)
+        {
+            BossDebug("TryRetreat stopped: UnitMoveBrainManager missing.");
+            yield break;
+        }
 
         if (!gridManager.IsInsideGrid(spawnTile))
+        {
+            BossDebug(
+                "TryRetreat stopped: spawn tile outside grid: " +
+                spawnTile
+            );
+
             yield break;
+        }
 
         retreatRoutineRunning = true;
+
+        BossDebug("Retreat movement routine started.");
 
         try
         {
             while (retreating)
             {
                 if (moveBrain == null)
+                {
+                    BossDebug("Retreat stopped: MoveBrain destroyed.");
                     yield break;
+                }
 
                 while (moveBrain != null && moveBrain.IsMoving())
                     yield return null;
@@ -237,7 +425,8 @@ public class BossLobsterBrain : MonoBehaviour
                 if (moveBrain == null || !retreating)
                     yield break;
 
-                Vector2Int currentTile = moveBrain.GetCurrentTile();
+                Vector2Int currentTile =
+                    moveBrain.GetCurrentTile();
 
                 int distance = pathManager.GetMovementDistance(
                     currentTile,
@@ -245,36 +434,66 @@ public class BossLobsterBrain : MonoBehaviour
                     moveBrain.CanWalkDiagonally()
                 );
 
+                BossDebug(
+                    "Retreat position: " + currentTile +
+                    " | Destination: " + spawnTile +
+                    " | Distance: " + distance +
+                    " | Steps remaining: " + moveBrain.GetStepsRemaining()
+                );
+
                 if (distance <= retreatArrivalDistance)
                 {
                     retreating = false;
+
+                    BossDebug("Reached retreat destination. Retreat ended.");
+
                     yield break;
                 }
 
                 if (moveBrain.GetStepsRemaining() <= 0)
+                {
+                    BossDebug("Retreat paused: no movement steps remaining.");
                     yield break;
+                }
 
-                List<Vector2Int> path = new List<Vector2Int>();
-
-                bool diagonal = moveBrain.CanWalkDiagonally();
+                List<Vector2Int> path =
+                    new List<Vector2Int>();
 
                 bool pathFound = pathManager.FindPath(
                     currentTile,
                     spawnTile,
-                    diagonal,
+                    moveBrain.CanWalkDiagonally(),
                     path,
                     gameObject
                 );
 
                 if (!pathFound || path == null || path.Count < 2)
+                {
+                    BossDebug(
+                        "Retreat stopped: no valid path to spawn tile."
+                    );
+
                     yield break;
+                }
 
                 Vector2Int nextTile = path[1];
 
-                bool moveStarted = moveBrain.TryMoveTo(nextTile);
+                BossDebug(
+                    "Retreat path found. Next tile: " + nextTile
+                );
+
+                bool moveStarted =
+                    moveBrain.TryMoveTo(nextTile);
 
                 if (!moveStarted)
+                {
+                    BossDebug(
+                        "Retreat stopped: TryMoveTo failed for " +
+                        nextTile
+                    );
+
                     yield break;
+                }
 
                 while (moveBrain != null && moveBrain.IsMoving())
                     yield return null;
@@ -282,10 +501,23 @@ public class BossLobsterBrain : MonoBehaviour
                 if (moveBrain == null || !retreating)
                     yield break;
 
-                Vector2Int newTile = moveBrain.GetCurrentTile();
+                Vector2Int newTile =
+                    moveBrain.GetCurrentTile();
 
                 if (newTile == currentTile)
+                {
+                    BossDebug(
+                        "Retreat stopped: movement finished but tile did not change."
+                    );
+
                     yield break;
+                }
+
+                BossDebug(
+                    "Retreat movement successful. New tile: " + newTile
+                );
+
+                RefreshWaterStatus();
 
                 yield return null;
             }
@@ -294,19 +526,11 @@ public class BossLobsterBrain : MonoBehaviour
         {
             retreatRoutineRunning = false;
             retreatCoroutine = null;
+
+            BossDebug(
+                "Retreat movement routine finished. " +
+                "Retreating state: " + retreating
+            );
         }
     }
-
-    public bool IsOnWater()
-    {
-        return isOnWater;
-    }
-
-    public void SetOnWater(bool value)
-    {
-        isOnWater = value;
-    }
-
-
 }
-

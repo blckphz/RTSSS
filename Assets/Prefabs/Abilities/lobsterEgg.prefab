@@ -322,7 +322,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.0735404, y: 2.0735404, z: 2.0735404}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4336237237855706598}
@@ -588,11 +588,11 @@ MonoBehaviour:
   knockbackStepDuration: 0.08
   knockbackArcHeight: 0.5
   attackRange: 1
-  preferLowHealthEnemies: 1
-  preferCloserEnemies: 1
-  preferCloserAttackPosition: 1
+  preferLowHealthEnemies: 0
+  preferCloserEnemies: 0
+  preferCloserAttackPosition: 0
   preferMoreOpenPositions: 0
-  preferSidePositions: 1
+  preferSidePositions: 0
 --- !u!114 &4862302050102009376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -621,7 +621,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
   fixedRotation: {x: 0, y: 0, z: 0}
-  lockRotationEveryFrame: 1
+  lockRotationEveryFrame: 0
   unitId: 
 --- !u!114 &1591600405030389278
 MonoBehaviour:
@@ -649,7 +649,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EggBehav
   arcHeight: 3
+  arcSamples: 50
+  roundsToHatch: 3
+  hatchEnemyPrefab: {fileID: 3672387048786953020, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+  hatchCharacter: {fileID: 11400000, guid: 8a447fb6e71e8cf42b0ecbeb262a0310, type: 2}
   gridManager: {fileID: 0}
+  roundManager: {fileID: 0}
 --- !u!1 &6022029324816977651
 GameObject:
   m_ObjectHideFlags: 0

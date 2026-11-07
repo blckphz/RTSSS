@@ -519,8 +519,7 @@ GameObject:
   - component: {fileID: 28333543}
   - component: {fileID: 28333544}
   - component: {fileID: 28333546}
-  - component: {fileID: 28333547}
-  m_Layer: 0
+  m_Layer: 4
   m_Name: water
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77441,19 +77440,6 @@ TilemapCollider2D:
   m_MaximumTileChangeCount: 1000
   m_ExtrusionFactor: 0
   m_UseDelaunayMesh: 0
---- !u!114 &28333547
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 28333542}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f803c788292f8c42a75952e9c58816e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  waterTilemap: {fileID: 28333543}
 --- !u!1 &49484611
 GameObject:
   m_ObjectHideFlags: 0
@@ -121782,7 +121768,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1233}
+  m_AnchoredPosition: {x: -1242, y: 1179.1234}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -122244,6 +122230,9 @@ MonoBehaviour:
   showStealthText: 1
   stealthText: Hidden
   stealthColor: {r: 0.3, g: 1, b: 0.5, a: 1}
+  showWaterStatus: 1
+  waterStatusText: On Water
+  waterStatusColor: {r: 0.25, g: 0.8, b: 1, a: 1}
   tooltipManager: {fileID: 733581652}
   gridManager: {fileID: 804482595}
   highlightManager: {fileID: 804482593}
@@ -126672,7 +126661,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 12.06
+    OrthographicSize: 14.72
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -127741,7 +127730,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
   m_Value: 0
-  m_Size: 0.5947553
+  m_Size: 0.5947784
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -128611,7 +128600,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EggBehav
   arcHeight: 2
+  arcSamples: 50
+  roundsToHatch: 3
+  hatchEnemyPrefab: {fileID: 0}
+  hatchCharacter: {fileID: 0}
   gridManager: {fileID: 0}
+  roundManager: {fileID: 0}
 --- !u!50 &980574336
 Rigidbody2D:
   serializedVersion: 5
@@ -199088,9 +199082,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaterManager
   waterTilemap: {fileID: 2033833689}
   waterTile: {fileID: 11400000, guid: 4e8a24cd919704b40a9287873af6cb23, type: 2}
-  roundsPerDirection: 3
   encounterManager: {fileID: 0}
-  debugTide: 1
+  gridShapeManager: {fileID: 0}
+  gridManager: {fileID: 0}
+  bossLobster: {fileID: 0}
+  widthChange: 1
+  heightChange: 1
+  maxShrinkCount: 3
+  tideAdvancing: 1
 --- !u!1 &1837794498
 GameObject:
   m_ObjectHideFlags: 0
@@ -219437,6 +219436,7 @@ GameObject:
   - component: {fileID: 2033833689}
   - component: {fileID: 2033833688}
   - component: {fileID: 2033833690}
+  - component: {fileID: 2033833691}
   m_Layer: 0
   m_Name: Earth
   m_TagString: Untagged
@@ -232683,7 +232683,7 @@ TilemapCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2033833686}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
@@ -232706,7 +232706,7 @@ TilemapCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -232714,6 +232714,19 @@ TilemapCollider2D:
   m_MaximumTileChangeCount: 1000
   m_ExtrusionFactor: 0
   m_UseDelaunayMesh: 0
+--- !u!114 &2033833691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2033833686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06fe08c468674114d8e36dc09d618864, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaterTrigger
+  sandTilemap: {fileID: 2033833689}
 --- !u!1 &2040668463
 GameObject:
   m_ObjectHideFlags: 0
@@ -233603,63 +233616,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 53e32e8f07cc7c841aaeb6de4d94e88d, type: 3}
---- !u!1001 &4584096971696196258
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1342193521889048633, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_Name
-      value: lobsterEgg
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 5.922
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -2.36353
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5482027445264834960, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 48abbbe6d33fd3744b9198e25974906e, type: 3}
 --- !u!1001 &4983059765215234484
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -233717,6 +233673,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a75f295541a21354bb6d7de1741ed492, type: 3}
+--- !u!1001 &7459162239896030579
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.57706
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.50243
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1573064344903011187, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3672387048786953020, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
+      propertyPath: m_Name
+      value: lobsterHatchling
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6e00f55d2c6a7db47b62e33575cb0e37, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -233727,4 +233740,4 @@ SceneRoots:
   - {fileID: 1257410128}
   - {fileID: 4983059765215234484}
   - {fileID: 4218823590772696695}
-  - {fileID: 4584096971696196258}
+  - {fileID: 7459162239896030579}

@@ -11,14 +11,13 @@ public class tooltipManager : MonoBehaviour
     [SerializeField] private RectTransform tooltipBackground;
     [SerializeField] private CanvasGroup canvasGroup;
 
-[Header("Tooltip Background Padding")]
+    [Header("Tooltip Background Padding")]
     [SerializeField] private float backgroundPaddingX = 30f;
     [SerializeField] private float backgroundPaddingY = 20f;
 
     [Header("Tooltip Position")]
     [SerializeField]
-    private Vector2 mouseOffset =
-        new Vector2(15f, -15f);
+    private Vector2 mouseOffset = new Vector2(15f, -15f);
 
     [Header("Animation")]
     [SerializeField] private float fadeSpeed = 10f;
@@ -26,37 +25,23 @@ public class tooltipManager : MonoBehaviour
 
     private RectTransform tooltipRect;
     private Canvas canvas;
-
     private bool isShowing;
 
     private void Awake()
     {
         if (tooltipObject != null)
-        {
-            tooltipRect =
-                tooltipObject.GetComponent<RectTransform>();
-        }
+            tooltipRect = tooltipObject.GetComponent<RectTransform>();
 
         if (canvasGroup == null && tooltipObject != null)
-        {
-            canvasGroup =
-                tooltipObject.GetComponent<CanvasGroup>();
-        }
+            canvasGroup = tooltipObject.GetComponent<CanvasGroup>();
 
         if (canvasGroup == null && tooltipObject != null)
-        {
-            canvasGroup =
-                tooltipObject.AddComponent<CanvasGroup>();
-        }
+            canvasGroup = tooltipObject.AddComponent<CanvasGroup>();
 
-        canvas =
-            GetComponentInParent<Canvas>();
+        canvas = GetComponentInParent<Canvas>();
 
         if (canvas == null)
-        {
-            canvas =
-                FindFirstObjectByType<Canvas>();
-        }
+            canvas = FindFirstObjectByType<Canvas>();
 
         HideTooltipImmediate();
     }
@@ -64,30 +49,26 @@ public class tooltipManager : MonoBehaviour
     private void Update()
     {
         if (!isShowing)
-        {
             return;
-        }
 
         FollowMouse();
 
         if (canvasGroup != null)
         {
-            canvasGroup.alpha =
-                Mathf.MoveTowards(
-                    canvasGroup.alpha,
-                    1f,
-                    fadeSpeed * Time.unscaledDeltaTime
-                );
+            canvasGroup.alpha = Mathf.MoveTowards(
+                canvasGroup.alpha,
+                1f,
+                fadeSpeed * Time.unscaledDeltaTime
+            );
         }
 
         if (tooltipRect != null)
         {
-            tooltipRect.localScale =
-                Vector3.Lerp(
-                    tooltipRect.localScale,
-                    Vector3.one * popInScale,
-                    fadeSpeed * Time.unscaledDeltaTime
-                );
+            tooltipRect.localScale = Vector3.Lerp(
+                tooltipRect.localScale,
+                Vector3.one * popInScale,
+                fadeSpeed * Time.unscaledDeltaTime
+            );
         }
     }
 
@@ -102,14 +83,10 @@ public class tooltipManager : MonoBehaviour
     )
     {
         if (tooltipText == null)
-        {
             return;
-        }
 
         if (tooltipObject != null)
-        {
             tooltipObject.SetActive(true);
-        }
 
         isShowing = true;
 
@@ -122,9 +99,7 @@ public class tooltipManager : MonoBehaviour
                     "Cannot move or attack.\n" +
                     $"Chance: {stunChance:0}%\n" +
                     $"Duration: {stunDuration} turn" +
-                    (stunDuration == 1
-                        ? ""
-                        : "s");
+                    (stunDuration == 1 ? "" : "s");
 
                 break;
 
@@ -153,6 +128,14 @@ public class tooltipManager : MonoBehaviour
 
                 break;
 
+            case "water":
+
+                tooltipText.text =
+                    "<b>ON WATER</b>\n" +
+                    "This unit is currently standing on water.";
+
+                break;
+
             default:
 
                 tooltipText.text = "";
@@ -161,7 +144,6 @@ public class tooltipManager : MonoBehaviour
         }
 
         tooltipText.ForceMeshUpdate();
-
         Canvas.ForceUpdateCanvases();
 
         UpdateTooltipSize();
@@ -171,15 +153,10 @@ public class tooltipManager : MonoBehaviour
         FollowMouse();
 
         if (canvasGroup != null)
-        {
             canvasGroup.alpha = 0f;
-        }
 
         if (tooltipRect != null)
-        {
-            tooltipRect.localScale =
-                Vector3.zero;
-        }
+            tooltipRect.localScale = Vector3.zero;
     }
 
     // =========================================================
@@ -191,14 +168,10 @@ public class tooltipManager : MonoBehaviour
         isShowing = false;
 
         if (canvasGroup != null)
-        {
             canvasGroup.alpha = 0f;
-        }
 
         if (tooltipObject != null)
-        {
             tooltipObject.SetActive(false);
-        }
     }
 
     private void HideTooltipImmediate()
@@ -206,20 +179,13 @@ public class tooltipManager : MonoBehaviour
         isShowing = false;
 
         if (canvasGroup != null)
-        {
             canvasGroup.alpha = 0f;
-        }
 
         if (tooltipRect != null)
-        {
-            tooltipRect.localScale =
-                Vector3.zero;
-        }
+            tooltipRect.localScale = Vector3.zero;
 
         if (tooltipObject != null)
-        {
             tooltipObject.SetActive(false);
-        }
     }
 
     // =========================================================
@@ -228,34 +194,17 @@ public class tooltipManager : MonoBehaviour
 
     private void UpdateTooltipSize()
     {
-        if (tooltipText == null)
-        {
+        if (tooltipText == null || tooltipBackground == null)
             return;
-        }
-
-        if (tooltipBackground == null)
-        {
-            return;
-        }
 
         tooltipText.ForceMeshUpdate();
 
-        Vector2 preferredSize =
-            tooltipText.GetPreferredValues();
+        Vector2 preferredSize = tooltipText.GetPreferredValues();
 
-        float width =
-            preferredSize.x +
-            backgroundPaddingX;
+        float width = preferredSize.x + backgroundPaddingX;
+        float height = preferredSize.y + backgroundPaddingY;
 
-        float height =
-            preferredSize.y +
-            backgroundPaddingY;
-
-        tooltipBackground.sizeDelta =
-            new Vector2(
-                width,
-                height
-            );
+        tooltipBackground.sizeDelta = new Vector2(width, height);
     }
 
     // =========================================================
@@ -265,9 +214,7 @@ public class tooltipManager : MonoBehaviour
     private void FollowMouse()
     {
         if (tooltipRect == null)
-        {
             return;
-        }
 
         Vector2 mousePosition =
             Mouse.current != null
@@ -276,54 +223,36 @@ public class tooltipManager : MonoBehaviour
 
         if (canvas == null)
         {
-            tooltipRect.position =
-                mousePosition + mouseOffset;
-
+            tooltipRect.position = mousePosition + mouseOffset;
             return;
         }
 
-        if (
-            canvas.renderMode ==
-            RenderMode.ScreenSpaceOverlay
-        )
+        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
         {
-            tooltipRect.position =
-                mousePosition + mouseOffset;
-
+            tooltipRect.position = mousePosition + mouseOffset;
             return;
         }
 
-        Camera canvasCamera =
-            canvas.worldCamera;
+        Camera canvasCamera = canvas.worldCamera;
 
         if (canvasCamera == null)
-        {
-            canvasCamera =
-                Camera.main;
-        }
+            canvasCamera = Camera.main;
 
         RectTransform canvasRect =
             canvas.transform as RectTransform;
 
         if (canvasRect == null)
-        {
             return;
-        }
 
         Vector2 localPoint;
 
-        if (
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRect,
-                mousePosition,
-                canvasCamera,
-                out localPoint
-            )
-        )
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            mousePosition,
+            canvasCamera,
+            out localPoint))
         {
-            tooltipRect.localPosition =
-                localPoint + mouseOffset;
+            tooltipRect.localPosition = localPoint + mouseOffset;
         }
     }
-
 }

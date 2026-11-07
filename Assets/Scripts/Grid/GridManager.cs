@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,6 +9,7 @@ using UnityEngine;
 public enum GridShapeType
 {
     Box,
+    Circle,
     Manhattan,
     Pyramid,
     Donut
@@ -45,9 +45,22 @@ public static class GridShapeEvaluator
             case GridShapeType.Box:
                 return true;
 
+            // CIRCLE: Euclidean distance from the center.
+            case GridShapeType.Circle:
+                float circleRadius = Mathf.Min(width, height) / 2f;
+
+                int circleDistSq =
+                    position.x * position.x +
+                    position.y * position.y;
+
+                return circleDistSq <= circleRadius * circleRadius;
+
+            // MANHATTAN: Diamond-shaped grid.
             case GridShapeType.Manhattan:
                 int radius = Mathf.Min(width, height) / 2;
-                return Mathf.Abs(position.x) + Mathf.Abs(position.y) <= radius;
+
+                return Mathf.Abs(position.x) +
+                       Mathf.Abs(position.y) <= radius;
 
             case GridShapeType.Pyramid:
                 int rowOffset = position.y - minY;
@@ -60,7 +73,10 @@ public static class GridShapeEvaluator
                        position.x <= currentHalfWidth;
 
             case GridShapeType.Donut:
-                int distSq = position.x * position.x + position.y * position.y;
+                int distSq =
+                    position.x * position.x +
+                    position.y * position.y;
+
                 int minSq = minRadius * minRadius;
                 int maxSq = maxRadius * maxRadius;
 
@@ -154,6 +170,13 @@ public class GridManager : MonoBehaviour
         new HashSet<Vector2Int>();
 
     // ============================================================
+    // HEALTH MANAGER OBSTACLES
+    // ============================================================
+
+    private readonly HashSet<HealthManager> healthManagedObjects =
+        new HashSet<HealthManager>();
+
+    // ============================================================
     // ORIGINAL GRID TRANSFORM POSITION
     // ============================================================
 
@@ -173,6 +196,10 @@ public class GridManager : MonoBehaviour
     private void Awake()
     {
         Initialize();
+
+        // Register health-managed objects that were already active
+        // when this GridManager was initialized.
+        RegisterExistingHealthManagers();
     }
 
     private void Initialize()
@@ -210,6 +237,103 @@ public class GridManager : MonoBehaviour
     }
 
     // ============================================================
+    // HEALTH MANAGER REGISTRATION
+    // ============================================================
+
+    public void RegisterHealthManager(HealthManager healthManager)
+    {
+        if (healthManager == null)
+            return;
+
+        healthManagedObjects.Add(healthManager);
+    }
+
+    public void UnregisterHealthManager(HealthManager healthManager)
+    {
+        if (healthManager == null)
+            return;
+
+        healthManagedObjects.Remove(healthManager);
+    }
+
+    private void RegisterExistingHealthManagers()
+    {
+        HealthManager[] managers =
+            FindObjectsByType<HealthManager>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+        for (int i = 0; i < managers.Length; i++)
+        {
+            if (managers[i] != null)
+                RegisterHealthManager(managers[i]);
+        }
+    }
+
+    /// <summary>
+    /// Returns true if an active, living HealthManager object
+    /// occupies the requested grid cell.
+    ///
+    /// Objects already registered as grid units are left to the
+    /// normal unit occupancy checks. This prevents units from
+    /// blocking themselves while moving.
+    ///
+    /// ignoreObject is normally the unit currently being moved.
+    /// </summary>
+    public bool HasHealthManagerObstacle(
+        Vector2Int position,
+        GameObject ignoreObject = null)
+    {
+        if (!IsInsideGrid(position))
+            return false;
+
+        foreach (HealthManager healthManager in healthManagedObjects)
+        {
+            if (healthManager == null)
+                continue;
+
+            if (!healthManager.isActiveAndEnabled)
+                continue;
+
+            if (healthManager.IsDead())
+                continue;
+
+            GameObject obstacle = healthManager.gameObject;
+
+            if (obstacle == null ||
+                !obstacle.activeInHierarchy ||
+                obstacle == ignoreObject)
+            {
+                continue;
+            }
+
+            Vector2Int obstacleAnchor =
+                WorldToGridPosition(obstacle.transform.position);
+
+            int obstacleSize = GetUnitFootprintSize(obstacle);
+
+            if (!IsCellInUnitFootprint(
+                obstacle,
+                obstacleAnchor,
+                position))
+            {
+                continue;
+            }
+
+            // If this object is already occupying the cell through
+            // the normal unit system, let that system handle it.
+            GameObject unitOccupant = GetUnitAt(position);
+
+            if (unitOccupant == obstacle)
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    // ============================================================
     // RUNTIME SHAPE & DIMENSION MUTATORS
     // ============================================================
 
@@ -243,7 +367,6 @@ public class GridManager : MonoBehaviour
             destroyInvalidUnits
         );
     }
-
 
     public void SetGridShape(
         GridShapeType newShape,
@@ -948,6 +1071,12 @@ public class GridManager : MonoBehaviour
             if (health.IsDead())
                 continue;
 
+            // Only AttackUnit objects should be recovered into
+            // the grid's unit occupancy array. Other HealthManager
+            // objects are obstacles, not grid units.
+            if (candidate.GetComponent<AttackUnit>() == null)
+                continue;
+
             if (movingUnits.Contains(candidate))
                 continue;
 
@@ -1105,6 +1234,15 @@ public class GridManager : MonoBehaviour
                 Vector2Int cell =
                     position + minOffset + new Vector2Int(x, y);
 
+                // Manually registered obstacles block movement.
+                if (IsWalkableObstacle(cell))
+                    return false;
+
+                // Any other active, living HealthManager object
+                // blocks movement in its occupied footprint.
+                if (HasHealthManagerObstacle(cell, unit))
+                    return false;
+
                 GameObject occupant = GetUnitAt(cell);
 
                 if (occupant != null && occupant != unit)
@@ -1141,6 +1279,12 @@ public class GridManager : MonoBehaviour
             {
                 Vector2Int cell =
                     position + footprintOffset + new Vector2Int(fx, fy);
+
+                if (IsWalkableObstacle(cell))
+                    return false;
+
+                if (HasHealthManagerObstacle(cell, unit))
+                    return false;
 
                 GameObject occupant = GetUnitAt(cell);
 
@@ -1459,6 +1603,7 @@ public class GridManager : MonoBehaviour
 
                 if (!IsInsideGrid(cell) ||
                     IsWalkableObstacle(cell) ||
+                    HasHealthManagerObstacle(cell) ||
                     IsCellOccupied(cell))
                 {
                     continue;
@@ -1481,6 +1626,7 @@ public class GridManager : MonoBehaviour
 
                 if (!IsInsideGrid(cell) ||
                     IsWalkableObstacle(cell) ||
+                    HasHealthManagerObstacle(cell) ||
                     IsCellOccupied(cell))
                 {
                     continue;
