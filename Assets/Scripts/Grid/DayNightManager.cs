@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -21,13 +22,11 @@ public class DayNightManager : MonoBehaviour
 
     [Header("Night Settings")]
     [SerializeField]
-    private Color nightColor =
-        new Color(0.25f, 0.3f, 0.5f);
+    private Color nightColor = new Color(0.25f, 0.3f, 0.5f);
 
     [SerializeField]
     [Range(0f, 1f)]
     private float nightIntensity = 0.35f;
-
 
     // ============================================================
     // UNITY
@@ -35,26 +34,20 @@ public class DayNightManager : MonoBehaviour
 
     private void Awake()
     {
-
         if (globalLight == null)
         {
-            globalLight =
-                FindFirstObjectByType<Light2D>();
+            globalLight = FindFirstObjectByType<Light2D>();
         }
 
+        ApplyCurrentLighting();
     }
-
 
     // ============================================================
     // SET DAY / NIGHT
     // ============================================================
 
-    public void SetDayNight(
-        DayNight dayNight
-    )
+    public void SetDayNight(DayNight dayNight)
     {
-      
-
         if (dayNight == DayNight.Day)
         {
             SetDay();
@@ -65,32 +58,15 @@ public class DayNightManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // DAY
     // ============================================================
 
     public void SetDay()
     {
-        currentDayNight =
-            DayNight.Day;
-
-  
-
-        if (globalLight == null)
-        {
-
-            return;
-        }
-
-        globalLight.color =
-            dayColor;
-
-        globalLight.intensity =
-            dayIntensity;
-
+        currentDayNight = DayNight.Day;
+        ApplyCurrentLighting();
     }
-
 
     // ============================================================
     // NIGHT
@@ -98,26 +74,30 @@ public class DayNightManager : MonoBehaviour
 
     public void SetNight()
     {
-        currentDayNight =
-            DayNight.Night;
-
-
-        if (globalLight == null)
-        {
-           
-
-            return;
-        }
-
-        globalLight.color =
-            nightColor;
-
-        globalLight.intensity =
-            nightIntensity;
-
-    
+        currentDayNight = DayNight.Night;
+        ApplyCurrentLighting();
     }
 
+    // ============================================================
+    // APPLY LIGHTING
+    // ============================================================
+
+    private void ApplyCurrentLighting()
+    {
+        if (globalLight == null)
+            return;
+
+        if (currentDayNight == DayNight.Day)
+        {
+            globalLight.color = dayColor;
+            globalLight.intensity = dayIntensity;
+        }
+        else
+        {
+            globalLight.color = nightColor;
+            globalLight.intensity = nightIntensity;
+        }
+    }
 
     // ============================================================
     // STATE
@@ -125,29 +105,16 @@ public class DayNightManager : MonoBehaviour
 
     public DayNight GetCurrentDayNight()
     {
-      
-
         return currentDayNight;
     }
 
-
     public bool IsDay()
     {
-        bool result =
-            currentDayNight == DayNight.Day;
-
-     
-        return result;
+        return currentDayNight == DayNight.Day;
     }
-
 
     public bool IsNight()
     {
-        bool result =
-            currentDayNight == DayNight.Night;
-
-    
-
-        return result;
+        return currentDayNight == DayNight.Night;
     }
 }

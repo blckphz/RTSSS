@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -21,6 +22,13 @@ public abstract class AbilitySO : ScriptableObject
         Any
     }
 
+    public enum AbilityTimeRestriction
+    {
+        AnyTime,
+        DayOnly,
+        NightOnly
+    }
+
     [Header("Ability")]
     [SerializeField] private string abilityName;
     [SerializeField] private Sprite abilityIcon;
@@ -29,6 +37,11 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField] private string description;
 
     public AudioClip launchSFX;
+
+    [Header("Day / Night Restriction")]
+    [SerializeField]
+    private AbilityTimeRestriction timeRestriction =
+        AbilityTimeRestriction.AnyTime;
 
     [Tooltip("If TRUE, this ability requires an enemy/object target. If FALSE, it can be used directly on a tile.")]
     public bool NeedEnemy;
@@ -69,6 +82,51 @@ public abstract class AbilitySO : ScriptableObject
     public TargetType GetTargetType() => targetType;
     public bool CanAttackWithThisAfterMove() => canAttackWithThisAfterMove;
     public bool NeedsEnemy() => NeedEnemy;
+
+    public AbilityTimeRestriction GetTimeRestriction()
+    {
+        return timeRestriction;
+    }
+
+    // ============================================================
+    // DAY / NIGHT RESTRICTION
+    // ============================================================
+
+    public bool CanUseDuringCurrentTime()
+    {
+        // No restriction means the ability is always available.
+        if (timeRestriction == AbilityTimeRestriction.AnyTime)
+            return true;
+
+        DayNightManager dayNightManager =
+            FindFirstObjectByType<DayNightManager>();
+
+        if (dayNightManager == null)
+        {
+            Debug.LogWarning(
+                $"[{abilityName}] DayNightManager not found. " +
+                "This restricted ability cannot be used."
+            );
+
+            return false;
+        }
+
+        switch (timeRestriction)
+        {
+            case AbilityTimeRestriction.DayOnly:
+                return dayNightManager.IsDay();
+
+            case AbilityTimeRestriction.NightOnly:
+                return dayNightManager.IsNight();
+
+            default:
+                return true;
+        }
+    }
+
+    // ============================================================
+    // EFFECTIVE DAMAGE / RANGE
+    // ============================================================
 
     public virtual int GetEffectiveDamage(GameObject user)
     {
@@ -112,6 +170,10 @@ public abstract class AbilitySO : ScriptableObject
 
         return component;
     }
+
+    // ============================================================
+    // GRID / DIRECTION HELPERS
+    // ============================================================
 
     protected Vector2Int GetUserGridPosition(
         GridManager gridManager,
@@ -183,6 +245,10 @@ public abstract class AbilitySO : ScriptableObject
         return difference.y > 0 ? Vector2Int.up : Vector2Int.down;
     }
 
+    // ============================================================
+    // MOVEMENT
+    // ============================================================
+
     public bool CanUseAfterMovement(GameObject user)
     {
         if (user == null)
@@ -198,6 +264,10 @@ public abstract class AbilitySO : ScriptableObject
 
         return canAttackWithThisAfterMove;
     }
+
+    // ============================================================
+    // RANGE TILES
+    // ============================================================
 
     public virtual List<Vector2Int> GetRangeTiles(
         GridManager gridManager,
@@ -389,6 +459,10 @@ public abstract class AbilitySO : ScriptableObject
         return tiles;
     }
 
+    // ============================================================
+    // HITBOX
+    // ============================================================
+
     public virtual List<Vector2Int> GetHitboxTiles(
         GridManager gridManager,
         GameObject user,
@@ -409,11 +483,18 @@ public abstract class AbilitySO : ScriptableObject
             tiles.Add(position);
     }
 
+    // ============================================================
+    // CAN HIT OBJECT
+    // ============================================================
+
     public virtual bool CanHit(
         GridManager gridManager,
         GameObject user,
         GameObject target)
     {
+        if (!CanUseDuringCurrentTime())
+            return false;
+
         if (gridManager == null || user == null || target == null)
             return false;
 
@@ -433,7 +514,6 @@ public abstract class AbilitySO : ScriptableObject
             return CanHitTile(gridManager, user, targetPosition);
         }
 
-        // Check every tile occupied by the target's footprint.
         Vector2Int anchor = targetUnit.GetLogicalGridPosition();
 
         CharacterSO character = targetUnit.GetCharacterData();
@@ -466,6 +546,10 @@ public abstract class AbilitySO : ScriptableObject
 
         return false;
     }
+
+    // ============================================================
+    // TARGET VALIDATION
+    // ============================================================
 
     public virtual bool CanTargetObject(GameObject user, GameObject target)
     {
@@ -507,11 +591,18 @@ public abstract class AbilitySO : ScriptableObject
         return false;
     }
 
+    // ============================================================
+    // CAN HIT TILE
+    // ============================================================
+
     public virtual bool CanHitTile(
         GridManager gridManager,
         GameObject user,
         Vector2Int targetPosition)
     {
+        if (!CanUseDuringCurrentTime())
+            return false;
+
         if (gridManager == null || user == null)
             return false;
 
@@ -527,8 +618,15 @@ public abstract class AbilitySO : ScriptableObject
                rangeTiles.Contains(targetPosition);
     }
 
+    // ============================================================
+    // USE ON OBJECT
+    // ============================================================
+
     public virtual bool Use(GameObject user, GameObject target)
     {
+        if (!CanUseDuringCurrentTime())
+            return false;
+
         if (user == null || target == null)
             return false;
 
@@ -538,11 +636,18 @@ public abstract class AbilitySO : ScriptableObject
         return true;
     }
 
+    // ============================================================
+    // USE ON TILE
+    // ============================================================
+
     public virtual bool UseAtTile(
         GameObject user,
         GridManager gridManager,
         Vector2Int targetTile)
     {
+        if (!CanUseDuringCurrentTime())
+            return false;
+
         if (user == null || gridManager == null)
             return false;
 

@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,8 +8,9 @@ public class ArrowProjectile : MonoBehaviour
     [SerializeField] private Transform spriteTransform;
 
     [Header("Rotation")]
-    [SerializeField]
-    private float rotationOffset = 90f;
+    [SerializeField] private float rotationOffset = 90f;
+    [SerializeField] private bool rotateWhileFlying = false;
+    [SerializeField] private float rotationSpeed = 360f;
 
     [Header("Piercing")]
     [SerializeField] private float collisionRadius = 0.15f;
@@ -36,7 +38,11 @@ public class ArrowProjectile : MonoBehaviour
 
         Move();
         CheckForTargets();
-        RefreshRotation();
+
+        if (rotateWhileFlying)
+            RotateWhileFlying();
+        else
+            RefreshRotation();
     }
 
     public void Initialize(
@@ -55,18 +61,12 @@ public class ArrowProjectile : MonoBehaviour
                 direction.y
             ).normalized;
 
-        this.speed =
-            Mathf.Max(0.01f, speed);
-
+        this.speed = Mathf.Max(0.01f, speed);
         this.damage = damage;
-
-        this.maxTargets =
-            Mathf.Max(1, maxTargets);
-
+        this.maxTargets = Mathf.Max(1, maxTargets);
         this.ability = ability;
 
         targetsHit = 0;
-
         hitTargets.Clear();
 
         initialized = true;
@@ -82,6 +82,20 @@ public class ArrowProjectile : MonoBehaviour
         transform.position += movement;
     }
 
+    private void RotateWhileFlying()
+    {
+        Transform target =
+            spriteTransform != null
+                ? spriteTransform
+                : transform;
+
+        target.Rotate(
+            0f,
+            0f,
+            rotationSpeed * Time.deltaTime
+        );
+    }
+
     private void CheckForTargets()
     {
         Collider2D[] hits =
@@ -95,8 +109,7 @@ public class ArrowProjectile : MonoBehaviour
             if (hit == null)
                 continue;
 
-            GameObject target =
-                hit.gameObject;
+            GameObject target = hit.gameObject;
 
             if (target == null)
                 continue;
@@ -119,10 +132,7 @@ public class ArrowProjectile : MonoBehaviour
             HealthManager health =
                 target.GetComponent<HealthManager>();
 
-            if (health == null)
-                continue;
-
-            if (health.IsDead())
+            if (health == null || health.IsDead())
                 continue;
 
             if (!CanDamage(target))
@@ -161,14 +171,10 @@ public class ArrowProjectile : MonoBehaviour
         AttackUnit targetUnit =
             target.GetComponent<AttackUnit>();
 
-        if (ownerUnit == null ||
-            targetUnit == null)
-        {
+        if (ownerUnit == null || targetUnit == null)
             return false;
-        }
 
-        return ownerUnit.GetTeam() !=
-               targetUnit.GetTeam();
+        return ownerUnit.GetTeam() != targetUnit.GetTeam();
     }
 
     private void DealDamage(GameObject target)
@@ -196,26 +202,15 @@ public class ArrowProjectile : MonoBehaviour
                 direction.x
             ) * Mathf.Rad2Deg;
 
-        // rotationOffset compensates for the
-        // direction the arrow sprite faces by default.
-        float finalAngle =
-            angle + rotationOffset;
+        float finalAngle = angle + rotationOffset;
 
         Quaternion rotation =
-            Quaternion.Euler(
-                0f,
-                0f,
-                finalAngle
-            );
+            Quaternion.Euler(0f, 0f, finalAngle);
 
         if (spriteTransform != null)
-        {
             spriteTransform.rotation = rotation;
-        }
         else
-        {
             transform.rotation = rotation;
-        }
     }
 
     private void OnDrawGizmosSelected()

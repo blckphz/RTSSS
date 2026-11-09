@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ac23e7e020365c4da72ac3352c3ce97, type: 3}
+  m_Name: bonethrowskelattack
+  m_EditorClassIdentifier: Assembly-CSharp::ArrowAttack
+  abilityName: bone throw
+  abilityIcon: {fileID: 0}
+  description: 
+  launchSFX: {fileID: 0}
+  timeRestriction: 1
+  NeedEnemy: 0
+  damage: 10
+  cooldown: 5
+  canAttackWithThisAfterMove: 0
+  usesPerTurn: 1
+  useDuration: 0.25
+  targetType: 2
+  range: 7
+  minDistance: 0
+  rangeShape: 2
+  arrowPrefab: {fileID: 3485395872008448894, guid: 4762bc949bebf974aa457acf9109384d, type: 3}
+  arrowSpeed: 12
+  maxTargets: 99
+  abilitySpawnPointName: AbilitySpawnPoint
+  targetPointName: VisualTargetPoint

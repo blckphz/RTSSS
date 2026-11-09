@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 381b258122f803748bf0fb8d171d4015, type: 3}
-  m_Name: Enemy
+  m_Name: basicskel
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSO
   characterName: Skeleton
   icon: {fileID: 21300000, guid: fb4133cde8645db47bd19b13ff0590fb, type: 3}
@@ -24,5 +24,6 @@ MonoBehaviour:
   abilities:
   - {fileID: 11400000, guid: de60d8a801431294f839064377db96d3, type: 2}
   - {fileID: 11400000, guid: ef07fb65b86de7448930e443cf24632c, type: 2}
+  - {fileID: 11400000, guid: f650461bc1e71ed43ae7b343f3067477, type: 2}
   RangedAttacker: 0
   upgrades: []
