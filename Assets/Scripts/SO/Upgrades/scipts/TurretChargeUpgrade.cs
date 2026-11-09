@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 [CreateAssetMenu(
@@ -6,12 +7,14 @@ using UnityEngine;
 )]
 public class TurretChargeUpgrade : UpgradeSO
 {
-    public void ApplyToTurret(
-        turretbehav turret
-    )
+    public void ApplyToTurret(turretbehav turret)
     {
         if (turret == null)
         {
+            Debug.LogWarning(
+                "[TurretChargeUpgrade] Cannot unlock Chain Lightning: " +
+                "turret reference is missing."
+            );
             return;
         }
 

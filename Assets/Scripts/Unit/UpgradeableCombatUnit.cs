@@ -1,477 +1,165 @@
+
 using UnityEngine;
 
-public class UpgradeableCombatUnit :
-    MonoBehaviour,
-    IUpgradeableCombatUnit
+public class UpgradeableCombatUnit : MonoBehaviour
 {
-    // ==================================================
-    // RUNTIME UPGRADE BONUSES
-    // ==================================================
-
-    [Header("Runtime Upgrade Bonuses")]
-
-    [SerializeField]
-    private int bonusHealth = 0;
-
-    [SerializeField]
-    private int bonusDamage = 0;
-
-    [SerializeField]
-    private int bonusRange = 0;
-
-
-    // ==================================================
-    // REFERENCES
-    // ==================================================
+    [Header("Runtime Ring Bonuses")]
+    [SerializeField] private int bonusHealth;
+    [SerializeField] private int bonusDamage;
+    [SerializeField] private int bonusRange;
 
     private HealthManager healthManager;
-    private AttackUnit attackUnit;
-
-
-    // ==================================================
-    // UNITY
-    // ==================================================
 
     private void Awake()
     {
-     
-
-        FindReferences();
-
+        FindHealthManager();
     }
 
-
-    // ==================================================
-    // FIND REFERENCES
-    // ==================================================
-
-    private void FindReferences()
+    private void FindHealthManager()
     {
-        // ----------------------------------------------
-        // HEALTH MANAGER
-        // ----------------------------------------------
+        healthManager = GetComponent<HealthManager>();
 
-        healthManager =
-            GetComponent<HealthManager>();
+        if (healthManager == null)
+        {
+            healthManager =
+                GetComponentInChildren<HealthManager>(true);
+        }
 
         if (healthManager == null)
         {
             healthManager =
                 GetComponentInParent<HealthManager>();
         }
-
-        if (healthManager == null)
-        {
-            healthManager =
-                GetComponentInChildren<HealthManager>();
-        }
-
-
-        // ----------------------------------------------
-        // ATTACK UNIT
-        // ----------------------------------------------
-
-        attackUnit =
-            GetComponent<AttackUnit>();
-
-        if (attackUnit == null)
-        {
-            attackUnit =
-                GetComponentInParent<AttackUnit>();
-        }
-
-        if (attackUnit == null)
-        {
-            attackUnit =
-                GetComponentInChildren<AttackUnit>();
-        }
-
-
-      
     }
 
+    // =====================================================
+    // CHECK UPGRADE
+    // =====================================================
 
-    // ==================================================
-    // FORTRESS TARGET REGISTRATION
-    // ==================================================
-
-    public void RegisterAsFortressTarget()
+    public bool CanApplyUpgrade(UpgradeSO upgrade)
     {
-        UpdateManager updateManager =
-            FindFirstObjectByType<UpdateManager>();
-
-        if (updateManager == null)
-        {
-           
-
-            return;
-        }
-
-     
-
-        updateManager.RegisterFortressTarget(this);
-    }
-
-
-    // ==================================================
-    // INTERFACE
-    // ==================================================
-
-    public bool CanApplyUpgrade(
-        UpgradeSO upgrade
-    )
-    {
-        if (upgrade == null)
-        {
+        if (!(upgrade is RingUpgrade ring))
             return false;
-        }
 
-        return upgrade is FortressUpgrade;
+        if (ring.GetTarget() != UpgradeTarget.Turret)
+            return false;
+
+        return ring.GetStat() != RingStat.ChainBounce;
     }
 
+    // =====================================================
+    // APPLY RING
+    // =====================================================
 
-    // ==================================================
-    // APPLY UPGRADE
-    // ==================================================
-
-    public void ApplyUpgrade(
-        UpgradeSO upgrade
-    )
+    public void ApplyUpgrade(UpgradeSO upgrade)
     {
-        if (upgrade == null)
-        {
-            Debug.LogWarning(
-                $"[UpgradeableCombatUnit] ApplyUpgrade received " +
-                $"NULL on {gameObject.name}",
-                this
-            );
-
-            return;
-        }
-
-        Debug.Log(
-            $"[UpgradeableCombatUnit] ApplyUpgrade on " +
-            $"{gameObject.name} | " +
-            $"Upgrade={upgrade.name} | " +
-            $"Type={upgrade.GetType().Name}",
-            this
-        );
-
         if (!CanApplyUpgrade(upgrade))
-        {
-            Debug.LogWarning(
-                $"[UpgradeableCombatUnit] Cannot apply upgrade " +
-                $"{upgrade.name} to {gameObject.name}",
-                this
-            );
-
             return;
-        }
 
-        FortressUpgrade fortressUpgrade =
-            upgrade as FortressUpgrade;
+        RingUpgrade ring = (RingUpgrade)upgrade;
+        int amount = ring.GetBonusAmount();
 
-        if (fortressUpgrade == null)
+        switch (ring.GetStat())
         {
-            Debug.LogWarning(
-                $"[UpgradeableCombatUnit] Upgrade is not a " +
-                $"FortressUpgrade on {gameObject.name}",
-                this
-            );
+            case RingStat.Health:
+                bonusHealth += amount;
 
-            return;
+                if (healthManager == null)
+                    FindHealthManager();
+
+                if (healthManager != null)
+                    healthManager.AddMaxHealth(amount);
+                else
+                    Debug.LogWarning(
+                        "[UpgradeableCombatUnit] No HealthManager found."
+                    );
+
+                break;
+
+            case RingStat.Damage:
+                bonusDamage += amount;
+                break;
+
+            case RingStat.Range:
+                bonusRange += amount;
+                break;
         }
 
         Debug.Log(
-            $"[UpgradeableCombatUnit] Fortress upgrade values | " +
-            $"HP +{fortressUpgrade.GetBonusHealth()} | " +
-            $"Damage +{fortressUpgrade.GetBonusDamage()} | " +
-            $"Range +{fortressUpgrade.GetBonusRange()}",
-            this
-        );
-
-        ApplyFortressUpgrade(
-            fortressUpgrade
+            "[UpgradeableCombatUnit] " +
+            gameObject.name +
+            " received " + ring.GetStat() +
+            " ring bonus: +" + amount
         );
     }
 
-
-    // ==================================================
-    // APPLY FORTRESS UPGRADE
-    // ==================================================
-
-    private void ApplyFortressUpgrade(
-        FortressUpgrade upgrade
-    )
-    {
-        if (upgrade == null)
-        {
-            return;
-        }
-
-
-        // ----------------------------------------------
-        // MAKE SURE REFERENCES EXIST
-        // ----------------------------------------------
-
-        if (
-            healthManager == null ||
-            attackUnit == null
-        )
-        {
-            FindReferences();
-        }
-
-
-        // ----------------------------------------------
-        // GET UPGRADE VALUES
-        // ----------------------------------------------
-
-        int healthBonus =
-            upgrade.GetBonusHealth();
-
-        int damageBonus =
-            upgrade.GetBonusDamage();
-
-        int rangeBonus =
-            upgrade.GetBonusRange();
-
-
-        // ----------------------------------------------
-        // BEFORE DEBUG
-        // ----------------------------------------------
-
-        Debug.Log(
-            $"[UpgradeableCombatUnit] BEFORE upgrade on " +
-            $"{gameObject.name} | " +
-            $"MaxHP=" +
-            $"{(healthManager != null ? healthManager.GetMaxHealth().ToString() : "NULL")} | " +
-            $"HP=" +
-            $"{(healthManager != null ? healthManager.GetHealth().ToString() : "NULL")} | " +
-            $"BonusHP={bonusHealth} | " +
-            $"BonusDamage={bonusDamage} | " +
-            $"BonusRange={bonusRange}",
-            this
-        );
-
-
-        // ----------------------------------------------
-        // HEALTH
-        // ----------------------------------------------
-
-        if (healthBonus > 0)
-        {
-            bonusHealth +=
-                healthBonus;
-
-            if (healthManager != null)
-            {
-                healthManager.AddMaxHealth(
-                    healthBonus
-                );
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"[UpgradeableCombatUnit] No HealthManager " +
-                    $"found for HP upgrade on {gameObject.name}",
-                    this
-                );
-            }
-        }
-
-
-        // ----------------------------------------------
-        // DAMAGE
-        // ----------------------------------------------
-
-        if (damageBonus > 0)
-        {
-            bonusDamage +=
-                damageBonus;
-        }
-
-
-        // ----------------------------------------------
-        // RANGE
-        // ----------------------------------------------
-
-        if (rangeBonus > 0)
-        {
-            bonusRange +=
-                rangeBonus;
-        }
-
-
-        // ----------------------------------------------
-        // AFTER DEBUG
-        // ----------------------------------------------
-
-        Debug.Log(
-            $"[UpgradeableCombatUnit] AFTER upgrade on " +
-            $"{gameObject.name} | " +
-            $"MaxHP=" +
-            $"{(healthManager != null ? healthManager.GetMaxHealth().ToString() : "NULL")} | " +
-            $"HP=" +
-            $"{(healthManager != null ? healthManager.GetHealth().ToString() : "NULL")} | " +
-            $"BonusHP={bonusHealth} | " +
-            $"BonusDamage={bonusDamage} | " +
-            $"BonusRange={bonusRange}",
-            this
-        );
-    }
-
-
-    // ==================================================
-    // EFFECTIVE HEALTH
-    // ==================================================
-
-    public int GetEffectiveHealth()
-    {
-        if (healthManager == null)
-        {
-            FindReferences();
-        }
-
-        if (healthManager != null)
-        {
-            return healthManager.GetMaxHealth();
-        }
-
-        return bonusHealth;
-    }
-
-
-    // ==================================================
+    // =====================================================
     // EFFECTIVE DAMAGE
-    // ==================================================
+    // =====================================================
 
-    public int GetEffectiveDamage(
-        AbilitySO abilitySO
-    )
+    public int GetEffectiveDamage(int baseDamage)
     {
-        if (abilitySO == null)
-        {
-            return 0;
-        }
-
-        int baseDamage =
-            abilitySO.GetDamage();
-
-        int totalDamage =
-            baseDamage +
-            bonusDamage;
-
-
-        return totalDamage;
+        return Mathf.Max(0, baseDamage + bonusDamage);
     }
 
-
-    // ==================================================
-    // EFFECTIVE RANGE
-    // ==================================================
-
-    public int GetEffectiveRange(
-        AbilitySO ability
-    )
+    public int GetEffectiveDamage(AbilitySO ability)
     {
         if (ability == null)
+            return Mathf.Max(0, bonusDamage);
+
+        return GetEffectiveDamage(ability.GetDamage());
+    }
+
+    // =====================================================
+    // EFFECTIVE RANGE
+    // =====================================================
+
+    public int GetEffectiveRange(int baseRange)
+    {
+        return Mathf.Max(1, baseRange + bonusRange);
+    }
+
+    public int GetEffectiveRange(AbilitySO ability)
+    {
+        if (ability == null)
+            return GetEffectiveRange(0);
+
+        return GetEffectiveRange(ability.GetRange());
+    }
+
+    // =====================================================
+    // GET BONUSES
+    // =====================================================
+
+    public int GetBonusHealth() => bonusHealth;
+    public int GetBonusDamage() => bonusDamage;
+    public int GetBonusRange() => bonusRange;
+
+    // =====================================================
+    // REGISTER TURRET
+    // =====================================================
+
+    public void RegisterAsRingUpgradeTarget()
+    {
+        if (UpdateManager.Instance == null)
         {
-            return Mathf.Max(
-                1,
-                bonusRange
+            Debug.LogWarning(
+                "[UpgradeableCombatUnit] UpdateManager not found."
             );
+            return;
         }
 
-        int baseRange =
-            ability.GetRange();
-
-        int totalRange =
-            Mathf.Max(
-                1,
-                baseRange + bonusRange
-            );
-
-        return totalRange;
-    }
-
-
-    // ==================================================
-    // BONUS GETTERS
-    // ==================================================
-
-    public int GetBonusHealth()
-    {
-        return bonusHealth;
-    }
-
-
-    public int GetBonusDamage()
-    {
-        return bonusDamage;
-    }
-
-
-    public int GetBonusRange()
-    {
-        return bonusRange;
-    }
-
-
-    // ==================================================
-    // CURRENT HEALTH
-    // ==================================================
-
-    public int GetCurrentHealth()
-    {
-        if (healthManager == null)
-        {
-            FindReferences();
-        }
-
-        if (healthManager == null)
-        {
-            return 0;
-        }
-
-        return healthManager.GetHealth();
-    }
-
-
-    // ==================================================
-    // MAXIMUM HEALTH
-    // ==================================================
-
-    public int GetMaximumHealth()
-    {
-        if (healthManager == null)
-        {
-            FindReferences();
-        }
-
-        if (healthManager == null)
-        {
-            return bonusHealth;
-        }
-
-        return healthManager.GetMaxHealth();
-    }
-
-
-    // ==================================================
-    // RESET UPGRADES
-    // ==================================================
-
-    public void ResetUpgrades()
-    {
-        bonusHealth = 0;
-        bonusDamage = 0;
-        bonusRange = 0;
+        UpdateManager.Instance.RegisterRingUpgradeTarget(this);
 
         Debug.Log(
-            $"[UpgradeableCombatUnit] Reset upgrades on " +
-            $"{gameObject.name}",
-            this
+            "[UpgradeableCombatUnit] Registered turret: " +
+            gameObject.name
         );
+    }
+
+    // Compatibility with the previous registration method name.
+    public void RegisterAsFortressTarget()
+    {
+        RegisterAsRingUpgradeTarget();
     }
 }

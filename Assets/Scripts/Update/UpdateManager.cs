@@ -1,64 +1,39 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using UnityEngine;
 
 public class UpdateManager : MonoBehaviour
 {
     public static UpdateManager Instance { get; private set; }
 
-
-    // =========================================================
-    // CURRENT PLAYER
-    // =========================================================
-
     [Header("Current Player")]
+    public UnitData currentUnit;
+    public CharacterSO currentCharacter;
 
-    [SerializeField]
-    private UnitData currentUnit;
-
-    [SerializeField]
-    private CharacterSO currentCharacter;
-
-
-    // =========================================================
-    // FORTRESS / TURRET
-    // =========================================================
-
-    [Header("Fortress / Turret")]
-
-    [Tooltip(
-        "The current turret/pet that receives FortressUpgrade."
-    )]
-    [SerializeField]
-    private UpgradeableCombatUnit fortressTarget;
-
-
-    // =========================================================
-    // PURCHASED UPGRADES
-    // =========================================================
+    [Header("Turret Upgrade Target")]
+    [SerializeField] private UpgradeableCombatUnit turretTarget;
 
     private readonly List<UpgradeSO> purchasedUpgrades =
         new List<UpgradeSO>();
 
+    private readonly HashSet<UpgradeSO> appliedToTurret =
+        new HashSet<UpgradeSO>();
 
-    // =========================================================
-    // FORTRESS TRACKING
-    // =========================================================
+    private readonly Dictionary<UnitData, HashSet<RingUpgrade>>
+        appliedPlayerRings =
+        new Dictionary<UnitData, HashSet<RingUpgrade>>();
 
-    private UpgradeableCombatUnit lastFortressTarget;
+    private readonly Dictionary<UnitData, HashSet<RingUpgrade>>
+        appliedChainBounce =
+        new Dictionary<UnitData, HashSet<RingUpgrade>>();
 
-    private int lastAppliedFortressUpgradeCount;
-
-
-    // =========================================================
+    // =====================================================
     // UNITY
-    // =========================================================
+    // =====================================================
 
     private void Awake()
     {
-        if (
-            Instance != null &&
-            Instance != this
-        )
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
@@ -67,664 +42,479 @@ public class UpdateManager : MonoBehaviour
         Instance = this;
     }
 
+    // =====================================================
+    // REGISTER PLAYER
+    // =====================================================
 
-    // =========================================================
-    // CURRENT CHARACTER
-    // =========================================================
-
-    public void SetCurrentCharacter(
-        CharacterSO character
-    )
+    public void SetCurrentUnit(UnitData unit)
     {
-        currentCharacter =
-            character;
+        if (unit == null)
+            return;
+
+        CharacterSO character = unit.GetCharacter();
 
         if (character == null)
-        {
             return;
-        }
+
+        if (!character.isPlayerCharacter &&
+            character.team != Team.Player)
+            return;
+
+        currentUnit = unit;
+        currentCharacter = character;
+
+        ApplyPlayerRingUpgrades();
     }
 
+    public void RefreshPlayerUpgradesAfterInitialization(UnitData unit)
+    {
+        if (unit == null)
+            return;
+
+        CharacterSO character = unit.GetCharacter();
+
+        if (character == null)
+            return;
+
+        if (!character.isPlayerCharacter &&
+            character.team != Team.Player)
+            return;
+
+        currentUnit = unit;
+        currentCharacter = character;
+
+        // HealthManager.Initialize() may reset health.
+        // Allow health rings to be reapplied after initialization.
+        if (appliedPlayerRings.TryGetValue(
+            unit,
+            out HashSet<RingUpgrade> applied))
+        {
+            foreach (UpgradeSO upgrade in purchasedUpgrades)
+            {
+                if (upgrade is RingUpgrade ring &&
+                    ring.GetTarget() == UpgradeTarget.Player &&
+                    ring.GetStat() == RingStat.Health)
+                {
+                    applied.Remove(ring);
+                }
+            }
+        }
+
+        ApplyPlayerRingUpgrades();
+    }
 
     public CharacterSO GetCurrentCharacter()
     {
         return currentCharacter;
     }
 
+    // =====================================================
+    // AVAILABLE UPGRADES
+    // =====================================================
 
-    // =========================================================
-    // CURRENT UNIT
-    // =========================================================
-
-    public void SetCurrentUnit(
-        UnitData unit
-    )
+    public List<UpgradeSO> GetCurrentCharacterUpgrades()
     {
-        if (unit == null)
-        {
-            return;
-        }
+        List<UpgradeSO> result = new List<UpgradeSO>();
 
-        CharacterSO unitCharacter =
-            unit.GetCharacter();
-
-        if (unitCharacter == null)
-        {
-            return;
-        }
-
-        if (!unitCharacter.isPlayerCharacter)
-        {
-            return;
-        }
-
-        if (currentUnit == unit)
-        {
-            return;
-        }
-
-        currentUnit =
-            unit;
-
-        currentCharacter =
-            unitCharacter;
-
-        ApplyRuntimeUpgradesToUnit(
-            unit
-        );
-    }
-
-
-    public UnitData GetCurrentUnit()
-    {
-        return currentUnit;
-    }
-
-
-    public void ClearCurrentUnit()
-    {
-        currentUnit = null;
-    }
-
-
-    // =========================================================
-    // FORTRESS TARGET REGISTRATION
-    // =========================================================
-
-    public void RegisterFortressTarget(
-        UpgradeableCombatUnit target
-    )
-    {
-        if (target == null)
-        {
-            return;
-        }
-
-        if (fortressTarget == target)
-        {
-            ApplyStoredFortressUpgrades(
-                target
-            );
-
-            return;
-        }
-
-        fortressTarget =
-            target;
-
-        lastFortressTarget =
-            target;
-
-        lastAppliedFortressUpgradeCount =
-            0;
-
-        ApplyStoredFortressUpgrades(
-            target
-        );
-    }
-
-
-    // =========================================================
-    // APPLY UPGRADE
-    // =========================================================
-
-    public void ApplyUpgrade(
-        UpgradeSO upgrade
-    )
-    {
-        if (upgrade == null)
-        {
-            return;
-        }
-
-
-        // =====================================================
-        // FORTRESS UPGRADE
-        // =====================================================
-
-        FortressUpgrade fortressUpgrade =
-            upgrade as FortressUpgrade;
-
-        if (fortressUpgrade != null)
-        {
-            purchasedUpgrades.Add(
-                upgrade
-            );
-
-            if (fortressTarget != null)
-            {
-                ApplyFortressUpgrade(
-                    fortressUpgrade
-                );
-            }
-
-            return;
-        }
-
-
-        // =====================================================
-        // TURRET CHARGE UPGRADE
-        // =====================================================
-
-        TurretChargeUpgrade turretChargeUpgrade =
-            upgrade as TurretChargeUpgrade;
-
-        if (turretChargeUpgrade != null)
-        {
-            purchasedUpgrades.Add(
-                upgrade
-            );
-
-            if (fortressTarget != null)
-            {
-                turretbehav turret =
-                    fortressTarget.GetComponent<turretbehav>();
-
-                if (turret != null)
-                {
-                    turretChargeUpgrade.ApplyToTurret(
-                        turret
-                    );
-                }
-            }
-
-            return;
-        }
-
-
-        // =====================================================
-        // STORE ALL OTHER UPGRADES
-        // =====================================================
-
-        purchasedUpgrades.Add(
-            upgrade
-        );
-
-
-        // =====================================================
-        // CHAIN BOUNCE
-        // =====================================================
-
-        ChainBounceUpgrade chainBounceUpgrade =
-            upgrade as ChainBounceUpgrade;
-
-        if (chainBounceUpgrade != null)
-        {
-            if (currentUnit != null)
-            {
-                ApplyUpgradeToUnit(
-                    upgrade,
-                    currentUnit
-                );
-            }
-
-            return;
-        }
-
-
-        // =====================================================
-        // ENGINEER MELEE TURRET HEAL
-        // =====================================================
-
-        EngineerMeleeTurretHealUpgrade
-            turretHealUpgrade =
-            upgrade as
-            EngineerMeleeTurretHealUpgrade;
-
-        if (turretHealUpgrade != null)
-        {
-            if (currentUnit != null)
-            {
-                ApplyUpgradeToUnit(
-                    upgrade,
-                    currentUnit
-                );
-            }
-
-            return;
-        }
-
-
-        // =====================================================
-        // RUSTY UPGRADES
-        // =====================================================
-
-        RustyUpgrades rustyUpgrade =
-            upgrade as RustyUpgrades;
-
-        if (rustyUpgrade != null)
-        {
-            if (currentCharacter != null)
-            {
-                rustyUpgrade.Apply(
-                    currentCharacter
-                );
-            }
-
-            return;
-        }
-    }
-
-
-    // =========================================================
-    // APPLY FORTRESS UPGRADE TO CURRENT TARGET
-    // =========================================================
-
-    private void ApplyFortressUpgrade(
-        FortressUpgrade upgrade
-    )
-    {
-        if (upgrade == null)
-        {
-            return;
-        }
-
-        if (fortressTarget == null)
-        {
-            return;
-        }
-
-        fortressTarget.ApplyUpgrade(
-            upgrade
-        );
-
-        lastFortressTarget =
-            fortressTarget;
-    }
-
-
-    // =========================================================
-    // APPLY STORED FORTRESS UPGRADES
-    // =========================================================
-
-    private void ApplyStoredFortressUpgrades(
-        UpgradeableCombatUnit target
-    )
-    {
-        if (target == null)
-        {
-            return;
-        }
-
-        if (purchasedUpgrades.Count == 0)
-        {
-            return;
-        }
-
-        if (
-            lastFortressTarget == target &&
-            lastAppliedFortressUpgradeCount >=
-            purchasedUpgrades.Count
-        )
-        {
-            return;
-        }
-
-        if (lastFortressTarget != target)
-        {
-            lastAppliedFortressUpgradeCount =
-                0;
-
-            lastFortressTarget =
-                target;
-        }
-
-
-        for (
-            int i =
-                lastAppliedFortressUpgradeCount;
-
-            i <
-            purchasedUpgrades.Count;
-
-            i++
-        )
-        {
-            UpgradeSO upgrade =
-                purchasedUpgrades[i];
-
-            if (upgrade == null)
-            {
-                continue;
-            }
-
-
-            // =================================================
-            // NORMAL FORTRESS UPGRADE
-            // =================================================
-
-            FortressUpgrade fortressUpgrade =
-                upgrade as FortressUpgrade;
-
-            if (fortressUpgrade != null)
-            {
-                target.ApplyUpgrade(
-                    fortressUpgrade
-                );
-
-                continue;
-            }
-
-
-            // =================================================
-            // TURRET CHARGE UPGRADE
-            // =================================================
-
-            TurretChargeUpgrade turretChargeUpgrade =
-                upgrade as TurretChargeUpgrade;
-
-            if (turretChargeUpgrade != null)
-            {
-                turretbehav turret =
-                    target.GetComponent<turretbehav>();
-
-                if (turret != null)
-                {
-                    turretChargeUpgrade.ApplyToTurret(
-                        turret
-                    );
-                }
-
-                continue;
-            }
-        }
-
-
-        lastAppliedFortressUpgradeCount =
-            purchasedUpgrades.Count;
-
-        lastFortressTarget =
-            target;
-    }
-
-
-    // =========================================================
-    // APPLY UPGRADE TO SPECIFIC PLAYER UNIT
-    // =========================================================
-
-    public void ApplyUpgradeToUnit(
-        UpgradeSO upgrade,
-        UnitData unit
-    )
-    {
-        if (upgrade == null)
-        {
-            return;
-        }
-
-        if (unit == null)
-        {
-            return;
-        }
-
-        CharacterSO character =
-            unit.GetCharacter();
-
-        if (character == null)
-        {
-            return;
-        }
-
-        if (!character.isPlayerCharacter)
-        {
-            return;
-        }
-
-
-        // =====================================================
-        // CHAIN BOUNCE
-        // =====================================================
-
-        ChainBounceUpgrade chainBounceUpgrade =
-            upgrade as ChainBounceUpgrade;
-
-        if (chainBounceUpgrade != null)
-        {
-            chainBounceUpgrade.ApplyToUnit(
-                unit
-            );
-
-            return;
-        }
-
-
-        // =====================================================
-        // ENGINEER MELEE TURRET HEAL
-        // =====================================================
-
-        EngineerMeleeTurretHealUpgrade
-            turretHealUpgrade =
-            upgrade as
-            EngineerMeleeTurretHealUpgrade;
-
-        if (turretHealUpgrade != null)
-        {
-            turretHealUpgrade.ApplyToUnit(
-                unit
-            );
-
-            return;
-        }
-    }
-
-
-    // =========================================================
-    // APPLY STORED PLAYER UPGRADES
-    // =========================================================
-
-    private void ApplyRuntimeUpgradesToUnit(
-        UnitData unit
-    )
-    {
-        if (unit == null)
-        {
-            return;
-        }
-
-        CharacterSO character =
-            unit.GetCharacter();
-
-        if (character == null)
-        {
-            return;
-        }
-
-        if (!character.isPlayerCharacter)
-        {
-            return;
-        }
-
-        if (purchasedUpgrades.Count == 0)
-        {
-            return;
-        }
-
-
-        for (
-            int i = 0;
-            i < purchasedUpgrades.Count;
-            i++
-        )
-        {
-            UpgradeSO upgrade =
-                purchasedUpgrades[i];
-
-            if (upgrade == null)
-            {
-                continue;
-            }
-
-
-            // Fortress upgrades do not belong
-            // on the player unit.
-
-            if (upgrade is FortressUpgrade)
-            {
-                continue;
-            }
-
-
-            // Turret charge upgrade does not belong
-            // on the player unit.
-
-            if (upgrade is TurretChargeUpgrade)
-            {
-                continue;
-            }
-
-
-            if (
-                upgrade is
-                ChainBounceUpgrade
-            )
-            {
-                ApplyUpgradeToUnit(
-                    upgrade,
-                    unit
-                );
-
-                continue;
-            }
-
-
-            if (
-                upgrade is
-                EngineerMeleeTurretHealUpgrade
-            )
-            {
-                ApplyUpgradeToUnit(
-                    upgrade,
-                    unit
-                );
-
-                continue;
-            }
-        }
-    }
-
-
-    // =========================================================
-    // NEW GAME
-    // =========================================================
-
-    public void StartNewGame()
-    {
-        purchasedUpgrades.Clear();
-
-        if (currentUnit != null)
-        {
-            currentUnit.ResetRuntimeUpgrades();
-        }
-
-        currentUnit =
-            null;
-
-        currentCharacter =
-            null;
-
-        fortressTarget =
-            null;
-
-        lastFortressTarget =
-            null;
-
-        lastAppliedFortressUpgradeCount =
-            0;
-    }
-
-
-    // =========================================================
-    // RESET ALL UPGRADES
-    // =========================================================
-
-    public void ResetAllUpgrades()
-    {
-        purchasedUpgrades.Clear();
-
-        if (currentUnit != null)
-        {
-            currentUnit.ResetRuntimeUpgrades();
-        }
-
-        fortressTarget =
-            null;
-
-        lastFortressTarget =
-            null;
-
-        lastAppliedFortressUpgradeCount =
-            0;
-    }
-
-
-    // =========================================================
-    // UPGRADE INFORMATION
-    // =========================================================
-
-    public int GetPurchasedUpgradeCount()
-    {
-        return purchasedUpgrades.Count;
-    }
-
-
-    public List<UpgradeSO> GetPurchasedUpgrades()
-    {
-        return purchasedUpgrades;
-    }
-
-
-    // =========================================================
-    // CHARACTER UPGRADE POOL
-    // =========================================================
-
-    public UpgradeSO[] GetCurrentCharacterUpgrades()
-    {
         if (currentCharacter == null)
+            return result;
+
+        UpgradeSO[] upgrades = currentCharacter.upgrades;
+
+        if (upgrades == null)
+            return result;
+
+        foreach (UpgradeSO upgrade in upgrades)
         {
-            return null;
-        }
+            if (upgrade == null)
+                continue;
 
-        int count =
-            currentCharacter.GetUpgradeCount();
+            if (purchasedUpgrades.Contains(upgrade))
+                continue;
 
-        if (count <= 0)
-        {
-            return null;
-        }
-
-        UpgradeSO[] result =
-            new UpgradeSO[count];
-
-        for (
-            int i = 0;
-            i < count;
-            i++
-        )
-        {
-            result[i] =
-                currentCharacter.GetUpgrade(i);
+            result.Add(upgrade);
         }
 
         return result;
+    }
+
+    public List<UpgradeSO> GetPurchasedUpgrades()
+    {
+        return new List<UpgradeSO>(purchasedUpgrades);
+    }
+
+    // =====================================================
+    // PURCHASE UPGRADE
+    // =====================================================
+
+    public void ApplyUpgrade(UpgradeSO upgrade)
+    {
+        if (upgrade == null)
+            return;
+
+        if (purchasedUpgrades.Contains(upgrade))
+        {
+            Debug.LogWarning(
+                "[UpgradeManager] Upgrade already purchased: " +
+                upgrade.UpgradeName
+            );
+            return;
+        }
+
+        purchasedUpgrades.Add(upgrade);
+
+        Debug.Log(
+            "[UpgradeManager] Purchased: " +
+            upgrade.UpgradeName
+        );
+
+        // RING UPGRADE
+        if (upgrade is RingUpgrade ring)
+        {
+            if (ring.GetTarget() == UpgradeTarget.Player)
+            {
+                ApplyPlayerRingUpgrade(ring);
+            }
+            else if (ring.GetTarget() == UpgradeTarget.Turret)
+            {
+                ApplyTurretRingUpgrade(ring);
+            }
+
+            return;
+        }
+
+        // TURRET CHARGE UPGRADE
+        if (upgrade is TurretChargeUpgrade chargeUpgrade)
+        {
+            ApplyTurretChargeUpgrade(chargeUpgrade);
+            return;
+        }
+
+        // OTHER UPGRADES
+        if (currentUnit != null)
+            upgrade.ApplyToUnit(currentUnit);
+
+        if (currentCharacter != null)
+            upgrade.Apply(currentCharacter);
+    }
+
+    // =====================================================
+    // PLAYER RINGS
+    // =====================================================
+
+    private void ApplyPlayerRingUpgrades()
+    {
+        if (currentUnit == null)
+            return;
+
+        foreach (UpgradeSO upgrade in purchasedUpgrades)
+        {
+            if (upgrade is RingUpgrade ring &&
+                ring.GetTarget() == UpgradeTarget.Player)
+            {
+                ApplyPlayerRingUpgrade(ring);
+            }
+        }
+    }
+
+    private void ApplyPlayerRingUpgrade(RingUpgrade ring)
+    {
+        if (ring == null || currentUnit == null)
+            return;
+
+        if (!appliedPlayerRings.ContainsKey(currentUnit))
+        {
+            appliedPlayerRings[currentUnit] =
+                new HashSet<RingUpgrade>();
+        }
+
+        if (appliedPlayerRings[currentUnit].Contains(ring))
+            return;
+
+        int amount = ring.GetBonusAmount();
+
+        switch (ring.GetStat())
+        {
+            case RingStat.Health:
+                {
+                    HealthManager healthManager =
+                        currentUnit.GetComponent<HealthManager>();
+
+                    if (healthManager == null)
+                    {
+                        healthManager =
+                            currentUnit.GetComponentInChildren<HealthManager>(
+                                true
+                            );
+                    }
+
+                    if (healthManager == null)
+                    {
+                        Debug.LogWarning(
+                            "[UpgradeManager] Player Health ring could not " +
+                            "be applied: no HealthManager found."
+                        );
+                        return;
+                    }
+
+                    healthManager.AddMaxHealth(amount);
+                    appliedPlayerRings[currentUnit].Add(ring);
+
+                    Debug.Log(
+                        "[UpgradeManager] Player Health ring applied. " +
+                        "Bonus: +" + amount
+                    );
+
+                    break;
+                }
+
+            case RingStat.ChainBounce:
+                {
+                    CharacterSO character = currentUnit.GetCharacter();
+
+                    if (character == null)
+                        return;
+
+                    ChainLightning chainLightning =
+                        character.GetAbility<ChainLightning>();
+
+                    if (chainLightning == null)
+                    {
+                        Debug.LogWarning(
+                            "[UpgradeManager] Chain Bounce ring could not " +
+                            "be applied: ChainLightning ability not found."
+                        );
+                        return;
+                    }
+
+                    if (!appliedChainBounce.ContainsKey(currentUnit))
+                    {
+                        appliedChainBounce[currentUnit] =
+                            new HashSet<RingUpgrade>();
+                    }
+
+                    if (appliedChainBounce[currentUnit].Contains(ring))
+                        return;
+
+                    currentUnit.AddBonusJumps(
+                        chainLightning,
+                        amount
+                    );
+
+                    appliedChainBounce[currentUnit].Add(ring);
+                    appliedPlayerRings[currentUnit].Add(ring);
+
+                    Debug.Log(
+                        "[UpgradeManager] Player Chain Bounce applied. " +
+                        "Additional jumps: +" + amount
+                    );
+
+                    break;
+                }
+
+            case RingStat.Damage:
+                Debug.LogWarning(
+                    "[UpgradeManager] Player Damage ring is not " +
+                    "implemented yet."
+                );
+                break;
+
+            case RingStat.Range:
+                Debug.LogWarning(
+                    "[UpgradeManager] Player Range ring is not " +
+                    "implemented yet."
+                );
+                break;
+        }
+    }
+
+    // =====================================================
+    // TURRET REGISTRATION
+    // =====================================================
+
+    public void RegisterRingUpgradeTarget(
+        UpgradeableCombatUnit target)
+    {
+        if (target == null)
+            return;
+
+        // Only clear the applied list when registering
+        // a different turret. This prevents duplicate bonuses
+        // if the same turret registers more than once.
+        if (turretTarget != target)
+        {
+            turretTarget = target;
+            appliedToTurret.Clear();
+        }
+
+        Debug.Log(
+            "[UpgradeManager] Turret registered for upgrades: " +
+            target.gameObject.name
+        );
+
+        // Apply previously purchased turret upgrades.
+        ApplyStoredTurretUpgrades();
+    }
+
+    // =====================================================
+    // APPLY STORED TURRET UPGRADES
+    // =====================================================
+
+    private void ApplyStoredTurretUpgrades()
+    {
+        if (turretTarget == null)
+            return;
+
+        foreach (UpgradeSO upgrade in purchasedUpgrades)
+        {
+            if (upgrade is RingUpgrade ring &&
+                ring.GetTarget() == UpgradeTarget.Turret)
+            {
+                ApplyTurretRingUpgrade(ring);
+            }
+            else if (upgrade is TurretChargeUpgrade chargeUpgrade)
+            {
+                ApplyTurretChargeUpgrade(chargeUpgrade);
+            }
+        }
+    }
+
+    // =====================================================
+    // TURRET RING UPGRADES
+    // =====================================================
+
+    private void ApplyTurretRingUpgrade(RingUpgrade ring)
+    {
+        if (ring == null ||
+            ring.GetTarget() != UpgradeTarget.Turret)
+            return;
+
+        if (ring.GetStat() == RingStat.ChainBounce)
+            return;
+
+        if (turretTarget == null)
+            return;
+
+        if (appliedToTurret.Contains(ring))
+            return;
+
+        if (!turretTarget.CanApplyUpgrade(ring))
+        {
+            Debug.LogWarning(
+                "[UpgradeManager] Turret rejected ring upgrade: " +
+                ring.UpgradeName
+            );
+            return;
+        }
+
+        turretTarget.ApplyUpgrade(ring);
+        appliedToTurret.Add(ring);
+
+        Debug.Log(
+            "[UpgradeManager] Turret ring applied: " +
+            ring.UpgradeName +
+            " | Stat: " + ring.GetStat() +
+            " | Bonus: +" + ring.GetBonusAmount()
+        );
+    }
+
+    // =====================================================
+    // TURRET CHAIN LIGHTNING UPGRADE
+    // =====================================================
+
+    private void ApplyTurretChargeUpgrade(
+        TurretChargeUpgrade chargeUpgrade)
+    {
+        if (chargeUpgrade == null)
+            return;
+
+        if (turretTarget == null)
+        {
+            Debug.Log(
+                "[UpgradeManager] Turret Charge purchased. " +
+                "Waiting for a turret to register."
+            );
+            return;
+        }
+
+        if (appliedToTurret.Contains(chargeUpgrade))
+            return;
+
+        turretbehav turret = FindTurretBehaviour(turretTarget);
+
+        if (turret == null)
+        {
+            Debug.LogWarning(
+                "[UpgradeManager] Could not apply Turret Charge: " +
+                "no turretbehav component found on " +
+                turretTarget.gameObject.name +
+                " or its parents/children."
+            );
+            return;
+        }
+
+        chargeUpgrade.ApplyToTurret(turret);
+        appliedToTurret.Add(chargeUpgrade);
+
+        Debug.Log(
+            "[UpgradeManager] Turret Charge applied successfully to: " +
+            turret.gameObject.name +
+            ". Chain Lightning unlocked."
+        );
+    }
+
+    private turretbehav FindTurretBehaviour(
+        UpgradeableCombatUnit target)
+    {
+        if (target == null)
+            return null;
+
+        turretbehav turret =
+            target.GetComponent<turretbehav>();
+
+        if (turret == null)
+        {
+            turret =
+                target.GetComponentInChildren<turretbehav>(true);
+        }
+
+        if (turret == null)
+        {
+            turret =
+                target.GetComponentInParent<turretbehav>();
+        }
+
+        return turret;
+    }
+
+    // =====================================================
+    // RESET
+    // =====================================================
+
+    public void ResetRuntimeUpgrades()
+    {
+        purchasedUpgrades.Clear();
+
+        appliedToTurret.Clear();
+        appliedPlayerRings.Clear();
+        appliedChainBounce.Clear();
+
+        currentUnit = null;
+        currentCharacter = null;
+        turretTarget = null;
+
+        Debug.Log("[UpgradeManager] Runtime upgrades cleared.");
+    }
+
+    public void ResetAllUpgrades()
+    {
+        ResetRuntimeUpgrades();
+    }
+
+    public void BeginNewRun()
+    {
+        Debug.Log("[UpgradeManager] Starting a new run.");
+
+        ResetRuntimeUpgrades();
     }
 }

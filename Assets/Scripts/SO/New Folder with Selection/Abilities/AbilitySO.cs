@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -100,6 +99,9 @@ public abstract class AbilitySO : ScriptableObject
     private static T FindComponent<T>(GameObject obj)
         where T : Component
     {
+        if (obj == null)
+            return null;
+
         T component = obj.GetComponent<T>();
 
         if (component == null)
@@ -223,10 +225,15 @@ public abstract class AbilitySO : ScriptableObject
 
                         int distance = Mathf.Abs(x) + Mathf.Abs(y);
 
-                        if (distance > abilityRange || distance < minimumDistance)
+                        if (distance > abilityRange ||
+                            distance < minimumDistance)
                             continue;
 
-                        AddValidTile(gridManager, tiles, origin + new Vector2Int(x, y));
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + new Vector2Int(x, y)
+                        );
                     }
                 }
                 break;
@@ -239,12 +246,20 @@ public abstract class AbilitySO : ScriptableObject
                         if (x == 0 && y == 0)
                             continue;
 
-                        int distance = Mathf.Max(Mathf.Abs(x), Mathf.Abs(y));
+                        int distance = Mathf.Max(
+                            Mathf.Abs(x),
+                            Mathf.Abs(y)
+                        );
 
-                        if (distance > abilityRange || distance < minimumDistance)
+                        if (distance > abilityRange ||
+                            distance < minimumDistance)
                             continue;
 
-                        AddValidTile(gridManager, tiles, origin + new Vector2Int(x, y));
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + new Vector2Int(x, y)
+                        );
                     }
                 }
                 break;
@@ -268,10 +283,29 @@ public abstract class AbilitySO : ScriptableObject
                     if (i < minimumDistance)
                         continue;
 
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, i));
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, i));
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, -i));
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, -i));
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(i, i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(-i, i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(i, -i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(-i, -i)
+                    );
                 }
                 break;
 
@@ -285,10 +319,30 @@ public abstract class AbilitySO : ScriptableObject
                     AddValidTile(gridManager, tiles, origin + Vector2Int.down * i);
                     AddValidTile(gridManager, tiles, origin + Vector2Int.left * i);
                     AddValidTile(gridManager, tiles, origin + Vector2Int.right * i);
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, i));
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, i));
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, -i));
-                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, -i));
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(i, i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(-i, i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(i, -i)
+                    );
+
+                    AddValidTile(
+                        gridManager,
+                        tiles,
+                        origin + new Vector2Int(-i, -i)
+                    );
                 }
                 break;
 
@@ -309,14 +363,24 @@ public abstract class AbilitySO : ScriptableObject
                         if (direction == Vector2Int.up ||
                             direction == Vector2Int.down)
                         {
-                            offset = new Vector2Int(side, direction.y * distance);
+                            offset = new Vector2Int(
+                                side,
+                                direction.y * distance
+                            );
                         }
                         else
                         {
-                            offset = new Vector2Int(direction.x * distance, side);
+                            offset = new Vector2Int(
+                                direction.x * distance,
+                                side
+                            );
                         }
 
-                        AddValidTile(gridManager, tiles, origin + offset);
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + offset
+                        );
                     }
                 }
                 break;
@@ -369,6 +433,7 @@ public abstract class AbilitySO : ScriptableObject
             return CanHitTile(gridManager, user, targetPosition);
         }
 
+        // Check every tile occupied by the target's footprint.
         Vector2Int anchor = targetUnit.GetLogicalGridPosition();
 
         CharacterSO character = targetUnit.GetCharacterData();
@@ -380,7 +445,6 @@ public abstract class AbilitySO : ScriptableObject
                 gridManager.GetUnitFootprintSize(targetUnit.gameObject)
             );
 
-        // The grid uses a centered footprint around the logical anchor.
         int minOffset = -(footprintSize / 2);
 
         for (int x = 0; x < footprintSize; x++)
@@ -423,23 +487,24 @@ public abstract class AbilitySO : ScriptableObject
                 return targetTeam == Team.Enemy;
 
             if (userTeam == Team.Enemy)
-                return targetTeam == Team.Player || targetTeam == Team.Ally;
-
-            return false;
+                return targetTeam == Team.Player ||
+                       targetTeam == Team.Ally;
         }
-
-        if (targetType == TargetType.Ally)
+        else if (targetType == TargetType.Ally)
         {
             if (userTeam == Team.Player || userTeam == Team.Ally)
-                return targetTeam == Team.Player || targetTeam == Team.Ally;
+                return targetTeam == Team.Player ||
+                       targetTeam == Team.Ally;
 
             if (userTeam == Team.Enemy)
                 return targetTeam == Team.Enemy;
-
-            return false;
+        }
+        else
+        {
+            return targetType == TargetType.Any;
         }
 
-        return targetType == TargetType.Any;
+        return false;
     }
 
     public virtual bool CanHitTile(
@@ -458,7 +523,8 @@ public abstract class AbilitySO : ScriptableObject
 
         List<Vector2Int> rangeTiles = GetRangeTiles(gridManager, user);
 
-        return rangeTiles != null && rangeTiles.Contains(targetPosition);
+        return rangeTiles != null &&
+               rangeTiles.Contains(targetPosition);
     }
 
     public virtual bool Use(GameObject user, GameObject target)

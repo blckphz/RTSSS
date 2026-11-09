@@ -23,6 +23,7 @@ MonoBehaviour:
   shape: 1
   minRadius: 0
   maxRadius: 12
+  useTide: 1
   victoryCondition: 0
   targetEnemyId: 
   roundsToSurvive: 5

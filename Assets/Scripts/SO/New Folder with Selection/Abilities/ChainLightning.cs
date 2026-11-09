@@ -38,10 +38,6 @@ public class ChainLightning : AbilitySO
     [SerializeField]
     private string abilitySpawnPointName = "AbilitySpawnPoint";
 
-    // ============================================================
-    // EFFECTIVE JUMPS
-    // ============================================================
-
     private int GetEffectiveMaxJumps(GameObject user)
     {
         int bonusJumps = 0;
@@ -62,10 +58,6 @@ public class ChainLightning : AbilitySO
 
         return Mathf.Max(1, maxJumps + bonusJumps);
     }
-
-    // ============================================================
-    // COMPONENT HELPERS
-    // ============================================================
 
     private AttackUnit GetAttackUnit(GameObject obj)
     {
@@ -103,10 +95,34 @@ public class ChainLightning : AbilitySO
         AttackUnit targetUnit,
         turretbehav turret)
     {
-        return targetUnit != null
-            && turret != null
-            && turret.IsChainLightningUnlocked()
-            && targetUnit.GetTeam() == Team.Player;
+        if (targetUnit == null)
+        {
+            Debug.LogWarning(
+                "[ChainLightning DEBUG] Target AttackUnit is NULL."
+            );
+            return false;
+        }
+
+        if (turret == null)
+        {
+            Debug.LogWarning(
+                "[ChainLightning DEBUG] turretbehav NOT FOUND on: " +
+                targetUnit.gameObject.name
+            );
+            return false;
+        }
+
+        Team team = targetUnit.GetTeam();
+        bool unlocked = turret.IsChainLightningUnlocked();
+
+        Debug.Log(
+            "[ChainLightning DEBUG] Turret check: " +
+            targetUnit.gameObject.name +
+            " | Team: " + team +
+            " | Unlocked: " + unlocked
+        );
+
+        return unlocked && team == Team.Player;
     }
 
     // ============================================================
@@ -118,34 +134,89 @@ public class ChainLightning : AbilitySO
         GameObject user,
         GameObject target)
     {
+        Debug.Log(
+            "[ChainLightning DEBUG] CanHit called."
+        );
+
         if (gridManager == null || user == null || target == null)
-            return false;
-
-        if (!CanUseAfterMovement(user))
-            return false;
-
-        AttackUnit userUnit = GetAttackUnit(user);
-        AttackUnit targetUnit = GetAttackUnit(target);
-
-        if (userUnit == null || targetUnit == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] CanHit failed: missing AttackUnit."
+                "[ChainLightning DEBUG] CanHit failed: " +
+                "GridManager, user, or target is NULL."
             );
             return false;
         }
 
-        if (userUnit == targetUnit || targetUnit.IsDead())
-            return false;
+        Debug.Log(
+            "[ChainLightning DEBUG] User: " + user.name +
+            " | Target: " + target.name
+        );
 
-        if (!CanTargetObject(userUnit.gameObject, targetUnit.gameObject))
+        if (!CanUseAfterMovement(user))
         {
-            turretbehav turret = GetTurret(targetUnit.gameObject);
+            Debug.LogWarning(
+                "[ChainLightning DEBUG] CanHit failed: movement restriction."
+            );
+            return false;
+        }
 
-            if (!IsUnlockedPlayerTurret(targetUnit, turret))
+        AttackUnit userUnit = GetAttackUnit(user);
+        AttackUnit targetUnit = GetAttackUnit(target);
+
+        Debug.Log(
+            "[ChainLightning DEBUG] UserUnit: " +
+            (userUnit != null ? userUnit.gameObject.name : "NULL") +
+            " | TargetUnit: " +
+            (targetUnit != null ? targetUnit.gameObject.name : "NULL")
+        );
+
+        if (userUnit == null || targetUnit == null)
+        {
+            Debug.LogWarning(
+                "[ChainLightning DEBUG] CanHit failed: missing AttackUnit."
+            );
+            return false;
+        }
+
+        if (userUnit == targetUnit)
+        {
+            Debug.LogWarning(
+                "[ChainLightning DEBUG] CanHit failed: target is the user."
+            );
+            return false;
+        }
+
+        if (targetUnit.IsDead())
+        {
+            Debug.LogWarning(
+                "[ChainLightning DEBUG] CanHit failed: target is dead."
+            );
+            return false;
+        }
+
+        turretbehav targetTurret = GetTurret(targetUnit.gameObject);
+
+        Debug.Log(
+            "[ChainLightning DEBUG] Target team: " +
+            targetUnit.GetTeam() +
+            " | Is turret: " + (targetTurret != null) +
+            " | Unlocked: " +
+            (targetTurret != null &&
+             targetTurret.IsChainLightningUnlocked())
+        );
+
+        bool normalTarget = CanTargetObject(
+            userUnit.gameObject,
+            targetUnit.gameObject
+        );
+
+        if (!normalTarget)
+        {
+            if (!IsUnlockedPlayerTurret(targetUnit, targetTurret))
             {
                 Debug.LogWarning(
-                    "[ChainLightning] CanHit failed: target team is invalid."
+                    "[ChainLightning DEBUG] CanHit failed: " +
+                    "target team is invalid and turret exception failed."
                 );
                 return false;
             }
@@ -176,22 +247,49 @@ public class ChainLightning : AbilitySO
                 );
 
                 if (!gridManager.IsInsideGrid(tile))
+                {
+                    Debug.Log(
+                        "[ChainLightning DEBUG] Footprint tile outside grid: " +
+                        tile
+                    );
                     continue;
+                }
 
-                if (!CanHitTile(gridManager, userUnit.gameObject, tile))
+                bool tileInRange = CanHitTile(
+                    gridManager,
+                    userUnit.gameObject,
+                    tile
+                );
+
+                Debug.Log(
+                    "[ChainLightning DEBUG] Footprint tile: " +
+                    tile + " | In range: " + tileInRange
+                );
+
+                if (!tileInRange)
                     continue;
 
                 anyTileInRange = true;
 
-                // Ignore both the caster's and target's own occupied
-                // footprint tiles. Other units still block line of sight.
-                if (!HasObjectOnLine(
+                bool blocked = HasObjectOnLine(
                     gridManager,
                     userPosition,
                     tile,
                     targetUnit.gameObject,
-                    userUnit.gameObject))
+                    userUnit.gameObject
+                );
+
+                Debug.Log(
+                    "[ChainLightning DEBUG] Line of sight to " +
+                    tile + " | Blocked: " + blocked
+                );
+
+                if (!blocked)
                 {
+                    Debug.Log(
+                        "[ChainLightning DEBUG] CanHit SUCCESS: " +
+                        targetUnit.gameObject.name
+                    );
                     return true;
                 }
             }
@@ -200,13 +298,15 @@ public class ChainLightning : AbilitySO
         if (!anyTileInRange)
         {
             Debug.LogWarning(
-                "[ChainLightning] CanHit failed: no footprint tile is in range."
+                "[ChainLightning DEBUG] CanHit failed: " +
+                "no footprint tile is in range."
             );
         }
         else
         {
             Debug.LogWarning(
-                "[ChainLightning] CanHit failed: line of sight is blocked."
+                "[ChainLightning DEBUG] CanHit failed: " +
+                "line of sight is blocked."
             );
         }
 
@@ -219,10 +319,12 @@ public class ChainLightning : AbilitySO
 
     public override bool Use(GameObject user, GameObject target)
     {
+        Debug.Log("[ChainLightning DEBUG] Use called.");
+
         if (user == null || target == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: user or target is null."
+                "[ChainLightning DEBUG] Use failed: user or target is NULL."
             );
             return false;
         }
@@ -230,7 +332,7 @@ public class ChainLightning : AbilitySO
         if (!CanUseAfterMovement(user))
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: movement restriction."
+                "[ChainLightning DEBUG] Use failed: movement restriction."
             );
             return false;
         }
@@ -241,7 +343,7 @@ public class ChainLightning : AbilitySO
         if (userUnit == null || targetUnit == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: missing AttackUnit."
+                "[ChainLightning DEBUG] Use failed: missing AttackUnit."
             );
             return false;
         }
@@ -249,7 +351,7 @@ public class ChainLightning : AbilitySO
         if (targetUnit.IsDead())
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: target is dead."
+                "[ChainLightning DEBUG] Use failed: target is dead."
             );
             return false;
         }
@@ -259,7 +361,7 @@ public class ChainLightning : AbilitySO
         if (turret != null && !turret.IsChainLightningUnlocked())
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: turret is locked."
+                "[ChainLightning DEBUG] Use failed: turret is locked."
             );
             return false;
         }
@@ -269,18 +371,19 @@ public class ChainLightning : AbilitySO
             if (!IsUnlockedPlayerTurret(targetUnit, turret))
             {
                 Debug.LogWarning(
-                    "[ChainLightning] Use failed: target team is invalid."
+                    "[ChainLightning DEBUG] Use failed: target team invalid."
                 );
                 return false;
             }
         }
 
-        GridManager gridManager = FindFirstObjectByType<GridManager>();
+        GridManager gridManager =
+            FindFirstObjectByType<GridManager>();
 
         if (gridManager == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: GridManager not found."
+                "[ChainLightning DEBUG] Use failed: GridManager not found."
             );
             return false;
         }
@@ -288,21 +391,21 @@ public class ChainLightning : AbilitySO
         if (projectilePrefab == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: projectile prefab is not assigned."
+                "[ChainLightning DEBUG] Use failed: projectile prefab missing."
             );
             return false;
         }
 
-        // Validate the actual target footprint, not just its anchor.
         if (!CanHit(gridManager, userUnit.gameObject, targetUnit.gameObject))
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: initial target failed CanHit."
+                "[ChainLightning DEBUG] Use failed: initial target failed CanHit."
             );
             return false;
         }
 
-        int effectiveMaxJumps = GetEffectiveMaxJumps(userUnit.gameObject);
+        int effectiveMaxJumps =
+            GetEffectiveMaxJumps(userUnit.gameObject);
 
         List<GameObject> chain = GetChainPreview(
             userUnit.gameObject,
@@ -314,12 +417,18 @@ public class ChainLightning : AbilitySO
         if (chain == null || chain.Count == 0)
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: no valid chain targets."
+                "[ChainLightning DEBUG] Use failed: no valid chain targets."
             );
             return false;
         }
 
-        Transform spawnPoint = FindAbilitySpawnPoint(userUnit.gameObject);
+        Debug.Log(
+            "[ChainLightning DEBUG] Chain created. Target count: " +
+            chain.Count
+        );
+
+        Transform spawnPoint =
+            FindAbilitySpawnPoint(userUnit.gameObject);
 
         Vector3 spawnPosition = spawnPoint != null
             ? spawnPoint.position
@@ -334,7 +443,7 @@ public class ChainLightning : AbilitySO
         if (projectile == null)
         {
             Debug.LogWarning(
-                "[ChainLightning] Use failed: projectile instantiation failed."
+                "[ChainLightning DEBUG] Projectile instantiation failed."
             );
             return false;
         }
@@ -345,7 +454,7 @@ public class ChainLightning : AbilitySO
         if (projectileComponent == null)
         {
             Debug.LogError(
-                "[ChainLightning] Projectile prefab is missing " +
+                "[ChainLightning DEBUG] Projectile prefab is missing " +
                 "ChainLightningProjectile. Destroying spawned projectile."
             );
 
@@ -366,6 +475,10 @@ public class ChainLightning : AbilitySO
             stunPercentage,
             stunDuration,
             turretCharges
+        );
+
+        Debug.Log(
+            "[ChainLightning DEBUG] Projectile initialized successfully."
         );
 
         return true;
@@ -409,7 +522,8 @@ public class ChainLightning : AbilitySO
         if (user == null)
             return null;
 
-        Transform spawnPoint = user.transform.Find(abilitySpawnPointName);
+        Transform spawnPoint =
+            user.transform.Find(abilitySpawnPointName);
 
         if (spawnPoint != null)
             return spawnPoint;
@@ -471,7 +585,13 @@ public class ChainLightning : AbilitySO
                 : IsValidChainTarget(user, currentTarget, hitTargets);
 
             if (!validTarget)
+            {
+                Debug.LogWarning(
+                    "[ChainLightning DEBUG] Chain stopped: invalid target " +
+                    currentTarget.name
+                );
                 break;
+            }
 
             turretbehav turret = GetTurret(currentTarget);
 
@@ -481,6 +601,12 @@ public class ChainLightning : AbilitySO
                     break;
 
                 chain.Add(currentTarget);
+
+                Debug.Log(
+                    "[ChainLightning DEBUG] Turret added to chain: " +
+                    currentTarget.name
+                );
+
                 break;
             }
 
@@ -538,13 +664,17 @@ public class ChainLightning : AbilitySO
         if (!validTarget)
             validTarget = IsUnlockedPlayerTurret(targetUnit, turret);
 
+        Debug.Log(
+            "[ChainLightning DEBUG] Initial target validation: " +
+            target.name + " | Valid: " + validTarget
+        );
+
         if (!validTarget)
             return false;
 
         Vector2Int userTile = userUnit.GetLogicalGridPosition();
         Vector2Int targetTile = targetUnit.GetLogicalGridPosition();
 
-        // Ignore the caster and target's own occupied footprint tiles.
         return !HasObjectOnLine(
             gridManager,
             userTile,
@@ -578,7 +708,14 @@ public class ChainLightning : AbilitySO
 
         if (turret != null)
         {
-            return turret.IsChainLightningUnlocked();
+            bool unlocked = turret.IsChainLightningUnlocked();
+
+            Debug.Log(
+                "[ChainLightning DEBUG] Chain turret validation: " +
+                target.name + " | Unlocked: " + unlocked
+            );
+
+            return unlocked;
         }
 
         AttackUnit userUnit = GetAttackUnit(user);
@@ -666,7 +803,6 @@ public class ChainLightning : AbilitySO
                 continue;
             }
 
-            // Ignore both units' footprints during this jump's LOS test.
             if (HasObjectOnLine(
                 gridManager,
                 currentTile,
@@ -738,11 +874,9 @@ public class ChainLightning : AbilitySO
 
         while (true)
         {
-            // The destination tile is not an obstruction.
             if (x0 == x1 && y0 == y1)
                 break;
 
-            // The starting tile is not an obstruction either.
             if (!(x0 == start.x && y0 == start.y))
             {
                 Vector2Int tile = new Vector2Int(x0, y0);

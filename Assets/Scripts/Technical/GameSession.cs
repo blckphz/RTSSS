@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 public class GameSession : MonoBehaviour
@@ -29,33 +30,20 @@ public class GameSession : MonoBehaviour
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // CHECK FOR EXISTING SESSION
-        // --------------------------------------------------------
-
-        if (
-            Instance != null &&
-            Instance != this
-        )
+        // Check for an existing session.
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
-
             return;
         }
 
-
-        // --------------------------------------------------------
-        // SET INSTANCE
-        // --------------------------------------------------------
-
+        // Set singleton instance.
         Instance = this;
 
-
-        // --------------------------------------------------------
-        // KEEP BETWEEN SCENES
-        // --------------------------------------------------------
-
+        // Keep session between scenes.
         DontDestroyOnLoad(gameObject);
+
+        Debug.Log("[GameSession] Initialized.");
     }
 
 
@@ -63,17 +51,26 @@ public class GameSession : MonoBehaviour
     // SET SELECTED SQUAD
     // ============================================================
 
-    public void SetSelectedSquad(
-        SquadSO squad
-    )
+    public void SetSelectedSquad(SquadSO squad)
     {
         if (squad == null)
         {
+            Debug.LogWarning(
+                "[GameSession] Cannot start run. Selected squad is null."
+            );
+
             return;
         }
 
-        SelectedSquad =
-            squad;
+        SelectedSquad = squad;
+
+        // Every new squad selection marks a new run as pending.
+        NewRunPending = true;
+
+        Debug.Log(
+            "[GameSession] New run marked as pending. Squad: " +
+            squad.name
+        );
     }
 
 
@@ -93,28 +90,21 @@ public class GameSession : MonoBehaviour
 
     public void StartNewRun()
     {
-        // --------------------------------------------------------
-        // MARK NEW RUN AS PENDING
-        // --------------------------------------------------------
+        if (SelectedSquad == null)
+        {
+            Debug.LogWarning(
+                "[GameSession] Cannot start new run. No squad selected."
+            );
+
+            return;
+        }
 
         NewRunPending = true;
 
-
-        // --------------------------------------------------------
-        // LOAD GAMEPLAY SCENE
-        // --------------------------------------------------------
-        // 
-        // KEEP YOUR EXISTING SCENE-LOADING CODE HERE.
-        // 
-        // Example:
-        // 
-        // SceneManager.LoadScene("Gameplay"); 
-        // 
-        // OR:
-        // 
-        // Your existing transition manager call.
-        // 
-        // --------------------------------------------------------
+        Debug.Log(
+            "[GameSession] Starting new run with squad: " +
+            SelectedSquad.name
+        );
     }
 
 
@@ -124,10 +114,10 @@ public class GameSession : MonoBehaviour
 
     public void StartingUpgradesComplete()
     {
-        // --------------------------------------------------------
-        // CLEAR NEW RUN FLAG
-        // --------------------------------------------------------
-
         NewRunPending = false;
+
+        Debug.Log(
+            "[GameSession] Starting upgrades completed."
+        );
     }
 }

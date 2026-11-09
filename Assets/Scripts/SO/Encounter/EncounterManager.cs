@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -29,6 +30,7 @@ public class EncounterManager : MonoBehaviour
     [SerializeField] private musicManager musicManager;
     [SerializeField] private DayNightManager dayNightManager;
     [SerializeField] private GridShapeManager gridShapeManager;
+    [SerializeField] private WaterManager waterManager;
 
     [Header("Current Encounter")]
     [SerializeField] private EncounterDefinition currentEncounter;
@@ -40,7 +42,7 @@ public class EncounterManager : MonoBehaviour
 
     [Header("Tide Grid Settings")]
     [Min(1)]
-    [SerializeField] private int tideGridStep = 1;
+    [SerializeField] private int tideGridStep = 2;
 
     private bool tideGridInitialized;
     private int originalGridWidth;
@@ -67,6 +69,10 @@ public class EncounterManager : MonoBehaviour
         currentEncounter != null
             ? Mathf.Max(1, currentEncounter.roundsToSurvive)
             : 1;
+
+    // ========================================================
+    // INITIALIZATION
+    // ========================================================
 
     private void Awake()
     {
@@ -114,11 +120,14 @@ public class EncounterManager : MonoBehaviour
 
         if (gridShapeManager == null)
             gridShapeManager = FindFirstObjectByType<GridShapeManager>();
+
+        if (waterManager == null)
+            waterManager = FindFirstObjectByType<WaterManager>();
     }
 
-    // =========================================================
+    // ========================================================
     // ENCOUNTER START
-    // =========================================================
+    // ========================================================
 
     public void StartEncounter()
     {
@@ -163,6 +172,8 @@ public class EncounterManager : MonoBehaviour
         SetEncounterState(EncounterState.CreatingGrid);
 
         SetupGrid();
+
+        // Initialize tide only for encounters that use it.
         InitializeTideGridForEncounter();
 
         if (gridSpawnDelay > 0f)
@@ -178,9 +189,9 @@ public class EncounterManager : MonoBehaviour
         SetEncounterState(EncounterState.Preparing);
     }
 
-    // =========================================================
+    // ========================================================
     // ENVIRONMENT
-    // =========================================================
+    // ========================================================
 
     private void SetupEncounterEnvironment()
     {
@@ -191,22 +202,42 @@ public class EncounterManager : MonoBehaviour
             dayNightManager.SetDayNight(currentEncounter.dayNight);
 
         if (biomesManager != null &&
-            !string.IsNullOrWhiteSpace(currentEncounter.biomeGameObjectName))
+            !string.IsNullOrWhiteSpace(
+                currentEncounter.biomeGameObjectName))
         {
-            biomesManager.SetBiome(currentEncounter.biomeGameObjectName);
+            biomesManager.SetBiome(
+                currentEncounter.biomeGameObjectName);
         }
 
-        if (musicManager != null && currentEncounter.music != null)
+        if (musicManager != null &&
+            currentEncounter.music != null)
+        {
             musicManager.PlayMusic(currentEncounter.music);
+        }
     }
 
-    // =========================================================
+    // ========================================================
     // TIDE GRID
-    // =========================================================
+    // ========================================================
 
     public void InitializeTideGridForEncounter()
     {
         tideGridInitialized = false;
+
+        // Always reset tide direction and counter for a new encounter.
+        if (waterManager == null)
+            waterManager = FindFirstObjectByType<WaterManager>();
+
+        if (waterManager != null)
+            waterManager.ResetTide();
+
+        // This encounter does not use tides.
+        if (currentEncounter == null ||
+            !currentEncounter.useTide)
+        {
+            return;
+        }
+
         InitializeTideGridSize();
     }
 
@@ -219,6 +250,9 @@ public class EncounterManager : MonoBehaviour
             return;
 
         if (currentEncounter == null)
+            return;
+
+        if (!currentEncounter.useTide)
             return;
 
         originalGridWidth = gridManager.GetWidth();
@@ -235,10 +269,18 @@ public class EncounterManager : MonoBehaviour
         int currentWidth = gridManager.GetWidth();
         int currentHeight = gridManager.GetHeight();
 
-        int newWidth = Mathf.Max(1, currentWidth - tideGridStep);
-        int newHeight = Mathf.Max(1, currentHeight - tideGridStep);
+        int newWidth = Mathf.Max(
+            1,
+            currentWidth - tideGridStep
+        );
 
-        if (newWidth == currentWidth && newHeight == currentHeight)
+        int newHeight = Mathf.Max(
+            1,
+            currentHeight - tideGridStep
+        );
+
+        if (newWidth == currentWidth &&
+            newHeight == currentHeight)
             return;
 
         ApplyTideGridSize(newWidth, newHeight);
@@ -262,7 +304,8 @@ public class EncounterManager : MonoBehaviour
             currentHeight + tideGridStep
         );
 
-        if (newWidth == currentWidth && newHeight == currentHeight)
+        if (newWidth == currentWidth &&
+            newHeight == currentHeight)
             return;
 
         ApplyTideGridSize(newWidth, newHeight);
@@ -276,6 +319,11 @@ public class EncounterManager : MonoBehaviour
         if (currentEncounter == null)
             return false;
 
+        // Critical restriction:
+        // Only encounters with Use Tide enabled can resize the grid.
+        if (!currentEncounter.useTide)
+            return false;
+
         if (tideGridStep < 1)
             return false;
 
@@ -286,7 +334,9 @@ public class EncounterManager : MonoBehaviour
 
     private void ApplyTideGridSize(int width, int height)
     {
-        if (gridManager == null || currentEncounter == null)
+        if (gridManager == null ||
+            currentEncounter == null ||
+            !currentEncounter.useTide)
             return;
 
         gridManager.SetGridShape(
@@ -304,7 +354,8 @@ public class EncounterManager : MonoBehaviour
     private void RefreshGridHighlights()
     {
         if (gridShapeManager == null)
-            gridShapeManager = FindFirstObjectByType<GridShapeManager>();
+            gridShapeManager =
+                FindFirstObjectByType<GridShapeManager>();
 
         if (gridShapeManager != null)
             gridShapeManager.RefreshGrid();
@@ -312,7 +363,9 @@ public class EncounterManager : MonoBehaviour
 
     public void ResetTideGrid()
     {
-        if (gridManager == null || currentEncounter == null)
+        if (gridManager == null ||
+            currentEncounter == null ||
+            !currentEncounter.useTide)
             return;
 
         if (!tideGridInitialized)
@@ -321,21 +374,27 @@ public class EncounterManager : MonoBehaviour
         if (!tideGridInitialized)
             return;
 
-        ApplyTideGridSize(originalGridWidth, originalGridHeight);
+        ApplyTideGridSize(
+            originalGridWidth,
+            originalGridHeight
+        );
     }
 
     public bool IsGridShrunkByTide()
     {
-        if (gridManager == null || !tideGridInitialized)
+        if (gridManager == null ||
+            !tideGridInitialized ||
+            currentEncounter == null ||
+            !currentEncounter.useTide)
             return false;
 
         return gridManager.GetWidth() < originalGridWidth ||
                gridManager.GetHeight() < originalGridHeight;
     }
 
-    // =========================================================
+    // ========================================================
     // SURVIVAL WAVE SPAWNING
-    // =========================================================
+    // ========================================================
 
     public void SpawnNextRoundEnemies()
     {
@@ -349,9 +408,9 @@ public class EncounterManager : MonoBehaviour
         encounterSpawner.SpawnWave(currentEncounter, true);
     }
 
-    // =========================================================
+    // ========================================================
     // NEXT ROUND
-    // =========================================================
+    // ========================================================
 
     public void NextRound()
     {
@@ -422,9 +481,9 @@ public class EncounterManager : MonoBehaviour
         roundManager.StartRound();
     }
 
-    // =========================================================
+    // ========================================================
     // UNIT DEATH
-    // =========================================================
+    // ========================================================
 
     public void HandleUnitKilled(
         HealthManager killedUnit,
@@ -445,19 +504,23 @@ public class EncounterManager : MonoBehaviour
         {
             if (!string.IsNullOrWhiteSpace(encounterUnitId) &&
                 encounterUnitId == TargetEnemyId)
+            {
                 EncounterVictory();
+            }
 
             return;
         }
 
         if (condition == VictoryCondition.DefeatAllEnemies &&
             !HasLivingEnemies())
+        {
             EncounterVictory();
+        }
     }
 
-    // =========================================================
+    // ========================================================
     // HEALTH
-    // =========================================================
+    // ========================================================
 
     private void HandleHealthChanged(HealthManager healthManager)
     {
@@ -477,8 +540,11 @@ public class EncounterManager : MonoBehaviour
             UsesSurvival())
             return;
 
-        if (CurrentVictoryCondition == VictoryCondition.DefeatAllEnemies)
+        if (CurrentVictoryCondition ==
+            VictoryCondition.DefeatAllEnemies)
+        {
             CheckVictoryConditions();
+        }
     }
 
     private void CheckPlayerDefeat()
@@ -487,9 +553,9 @@ public class EncounterManager : MonoBehaviour
             EncounterDefeat();
     }
 
-    // =========================================================
+    // ========================================================
     // VICTORY
-    // =========================================================
+    // ========================================================
 
     public bool CheckVictoryConditions()
     {
@@ -501,19 +567,23 @@ public class EncounterManager : MonoBehaviour
         switch (CurrentVictoryCondition)
         {
             case VictoryCondition.DefeatAllEnemies:
+
                 if (!HasLivingEnemies())
                 {
                     EncounterVictory();
                     return true;
                 }
+
                 break;
 
             case VictoryCondition.DefeatSpecificEnemy:
+
                 if (IsTargetEnemyDead())
                 {
                     EncounterVictory();
                     return true;
                 }
+
                 break;
         }
 
@@ -545,23 +615,27 @@ public class EncounterManager : MonoBehaviour
         SetEncounterState(EncounterState.Preparing);
     }
 
-    // =========================================================
+    // ========================================================
     // LIVING UNITS
-    // =========================================================
+    // ========================================================
 
     private bool HasLivingPlayer()
     {
         AttackUnit[] units = FindObjectsByType<AttackUnit>(
-            FindObjectsSortMode.None);
+            FindObjectsSortMode.None
+        );
 
         foreach (AttackUnit unit in units)
         {
-            if (unit == null || unit.GetTeam() != Team.Player)
+            if (unit == null ||
+                unit.GetTeam() != Team.Player)
                 continue;
 
             if (unit.TryGetComponent(out HealthManager health) &&
                 health.IsAlive())
+            {
                 return true;
+            }
         }
 
         return false;
@@ -570,16 +644,20 @@ public class EncounterManager : MonoBehaviour
     private bool HasLivingEnemies()
     {
         AttackUnit[] units = FindObjectsByType<AttackUnit>(
-            FindObjectsSortMode.None);
+            FindObjectsSortMode.None
+        );
 
         foreach (AttackUnit unit in units)
         {
-            if (unit == null || unit.GetTeam() != Team.Enemy)
+            if (unit == null ||
+                unit.GetTeam() != Team.Enemy)
                 continue;
 
             if (unit.TryGetComponent(out HealthManager health) &&
                 health.IsAlive())
+            {
                 return true;
+            }
         }
 
         return false;
@@ -587,7 +665,8 @@ public class EncounterManager : MonoBehaviour
 
     private bool IsTargetEnemyDead()
     {
-        if (CurrentVictoryCondition != VictoryCondition.DefeatSpecificEnemy)
+        if (CurrentVictoryCondition !=
+            VictoryCondition.DefeatSpecificEnemy)
             return false;
 
         string targetId = TargetEnemyId;
@@ -596,16 +675,19 @@ public class EncounterManager : MonoBehaviour
             return false;
 
         AttackUnit[] units = FindObjectsByType<AttackUnit>(
-            FindObjectsSortMode.None);
+            FindObjectsSortMode.None
+        );
 
         bool targetFound = false;
 
         foreach (AttackUnit unit in units)
         {
-            if (unit == null || unit.GetTeam() != Team.Enemy)
+            if (unit == null ||
+                unit.GetTeam() != Team.Enemy)
                 continue;
 
-            if (!unit.TryGetComponent(out EncounterUnit encounterUnit))
+            if (!unit.TryGetComponent(
+                out EncounterUnit encounterUnit))
                 continue;
 
             if (!encounterUnit.HasEncounterUnitId(targetId))
@@ -615,15 +697,17 @@ public class EncounterManager : MonoBehaviour
 
             if (unit.TryGetComponent(out HealthManager health) &&
                 health.IsAlive())
+            {
                 return false;
+            }
         }
 
         return targetFound;
     }
 
-    // =========================================================
+    // ========================================================
     // VICTORY / DEFEAT
-    // =========================================================
+    // ========================================================
 
     public void EncounterVictory()
     {
@@ -686,9 +770,9 @@ public class EncounterManager : MonoBehaviour
             gameStateManager.EncounterDefeat();
     }
 
-    // =========================================================
+    // ========================================================
     // VALIDATION
-    // =========================================================
+    // ========================================================
 
     private bool ValidateEncounterDefinition()
     {
@@ -698,13 +782,17 @@ public class EncounterManager : MonoBehaviour
         switch (currentEncounter.victoryCondition)
         {
             case VictoryCondition.SurviveRounds:
+
                 return currentEncounter.roundsToSurvive > 0;
 
             case VictoryCondition.DefeatSpecificEnemy:
+
                 return !string.IsNullOrWhiteSpace(
-                    currentEncounter.targetEnemyId);
+                    currentEncounter.targetEnemyId
+                );
 
             default:
+
                 return true;
         }
     }
@@ -716,13 +804,14 @@ public class EncounterManager : MonoBehaviour
                roundManager != null;
     }
 
-    // =========================================================
+    // ========================================================
     // GRID
-    // =========================================================
+    // ========================================================
 
     private void SetupGrid()
     {
-        if (gridManager == null || currentEncounter == null)
+        if (gridManager == null ||
+            currentEncounter == null)
             return;
 
         gridManager.SetGridShape(
@@ -737,14 +826,15 @@ public class EncounterManager : MonoBehaviour
         RefreshGridHighlights();
     }
 
-    // =========================================================
+    // ========================================================
     // CLEANUP
-    // =========================================================
+    // ========================================================
 
     private void ClearPreviousEncounter()
     {
         AttackUnit[] units = FindObjectsByType<AttackUnit>(
-            FindObjectsSortMode.None);
+            FindObjectsSortMode.None
+        );
 
         foreach (AttackUnit unit in units)
         {
@@ -764,13 +854,14 @@ public class EncounterManager : MonoBehaviour
             combatManager.ClearEnemyTurnLocks();
     }
 
-    // =========================================================
+    // ========================================================
     // HELPERS
-    // =========================================================
+    // ========================================================
 
     private bool UsesSurvival()
     {
-        return CurrentVictoryCondition == VictoryCondition.SurviveRounds;
+        return CurrentVictoryCondition ==
+               VictoryCondition.SurviveRounds;
     }
 
     private void SetEncounterState(EncounterState state)
@@ -787,6 +878,9 @@ public class EncounterManager : MonoBehaviour
             return;
 
         currentEncounter = encounter;
+
+        // Invalidate previous tide-grid data.
+        tideGridInitialized = false;
     }
 
     public bool IsEncounterRunning()

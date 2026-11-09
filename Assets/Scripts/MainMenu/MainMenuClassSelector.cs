@@ -10,14 +10,12 @@ public class MainMenuClassSelector : MonoBehaviour
     [Header("Selected Squad")]
     public SquadSO selectedSquad;
 
-
     // ============================================================
     // UI
     // ============================================================
 
     [Header("UI")]
     public GameObject squadSelectionCanvas;
-
 
     // ============================================================
     // SCENE
@@ -26,7 +24,6 @@ public class MainMenuClassSelector : MonoBehaviour
     [Header("Scene")]
     [SerializeField]
     private string gameSceneName = "GameScene";
-
 
     // ============================================================
     // PLAY BUTTON
@@ -40,28 +37,23 @@ public class MainMenuClassSelector : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // SQUAD SELECTION
     // ============================================================
 
-    public void OnClassIconClicked(
-        SquadSO clickedSquad)
+    public void OnClassIconClicked(SquadSO clickedSquad)
     {
         if (clickedSquad == null)
         {
             Debug.LogWarning(
-                "[MainMenuClassSelector] " +
-                "Clicked squad is null."
+                "[MainMenuClassSelector] Clicked squad is null."
             );
 
             return;
         }
 
-
         selectedSquad = clickedSquad;
     }
-
 
     // ============================================================
     // START GAME
@@ -72,40 +64,52 @@ public class MainMenuClassSelector : MonoBehaviour
         if (selectedSquad == null)
         {
             Debug.LogWarning(
-                "[MainMenuClassSelector] " +
-                "No squad selected!"
+                "[MainMenuClassSelector] No squad selected!"
             );
 
             return;
         }
-
 
         if (GameSession.Instance == null)
         {
             Debug.LogError(
-                "[MainMenuClassSelector] " +
-                "GameSession does not exist!"
+                "[MainMenuClassSelector] GameSession does not exist!"
             );
 
             return;
         }
 
+        // --------------------------------------------------------
+        // RESET PREVIOUS RUN UPGRADES
+        // --------------------------------------------------------
+
+        if (UpdateManager.Instance != null)
+        {
+            UpdateManager.Instance.BeginNewRun();
+        }
+        else
+        {
+            Debug.Log(
+                "[MainMenuClassSelector] No persistent UpdateManager found. " +
+                "A new UpdateManager should initialize in the game scene."
+            );
+        }
 
         // --------------------------------------------------------
         // SAVE SELECTED SQUAD
         // --------------------------------------------------------
 
-        GameSession.Instance.SetSelectedSquad(
-            selectedSquad
-        );
+        GameSession.Instance.SetSelectedSquad(selectedSquad);
 
+        Debug.Log(
+            "[MainMenuClassSelector] Starting new run with squad: " +
+            selectedSquad.name
+        );
 
         // --------------------------------------------------------
         // LOAD GAME SCENE
         // --------------------------------------------------------
 
-        SceneManager.LoadScene(
-            gameSceneName
-        );
+        SceneManager.LoadScene(gameSceneName);
     }
 }

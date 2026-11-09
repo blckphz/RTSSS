@@ -29,8 +29,6 @@ public class BossLobsterBrain : MonoBehaviour
     [SerializeField, Range(0f, 100f)]
     private float waterHealingPercentPerRound = 5f;
 
-    [Header("Debug")]
-    [SerializeField] private bool enableBossDebug = true;
 
     private Vector2Int spawnTile;
     private bool spawnTileCached;
@@ -41,24 +39,17 @@ public class BossLobsterBrain : MonoBehaviour
 
     private Coroutine retreatCoroutine;
 
-    private void BossDebug(string message)
-    {
-        if (enableBossDebug)
-            Debug.Log("[BossLobsterBrain] " + message, this);
-    }
 
     private void Awake()
     {
         CacheReferences();
 
-        BossDebug("Awake. References cached.");
     }
 
     private void OnEnable()
     {
         HealthManager.OnHealthChanged += HandleHealthChanged;
 
-        BossDebug("Enabled. Listening for health changes.");
     }
 
     private void OnDisable()
@@ -73,7 +64,6 @@ public class BossLobsterBrain : MonoBehaviour
 
         retreatRoutineRunning = false;
 
-        BossDebug("Disabled. Retreat coroutine stopped.");
     }
 
     private void Start()
@@ -84,11 +74,6 @@ public class BossLobsterBrain : MonoBehaviour
         RefreshWaterStatus();
         CheckCurrentHealth();
 
-        BossDebug(
-            "Start complete. Retreating: " + retreating +
-            " | Spawn tile cached: " + spawnTileCached +
-            " | Spawn tile: " + spawnTile
-        );
     }
 
     // ==================================================
@@ -119,7 +104,6 @@ public class BossLobsterBrain : MonoBehaviour
 
         if (moveBrain == null)
         {
-            BossDebug("Cannot cache spawn tile: UnitMoveBrain missing.");
             return;
         }
 
@@ -128,11 +112,6 @@ public class BossLobsterBrain : MonoBehaviour
             spawnTile = initialTile;
             spawnTileCached = true;
 
-            BossDebug("Spawn tile cached: " + spawnTile);
-        }
-        else
-        {
-            BossDebug("Failed to cache spawn tile: current tile unavailable.");
         }
     }
 
@@ -154,11 +133,6 @@ public class BossLobsterBrain : MonoBehaviour
         if (changedHealth.gameObject != gameObject)
             return;
 
-        BossDebug(
-            "Health changed. Current HP: " +
-            changedHealth.GetHealth() +
-            " / " + changedHealth.GetMaxHealth()
-        );
 
         CheckHealthForRetreat(changedHealth);
     }
@@ -176,28 +150,16 @@ public class BossLobsterBrain : MonoBehaviour
         if (currentHealth == null || lowHealthRetreatTriggered)
             return;
 
-        if (!currentHealth.IsAlive())
-        {
-            BossDebug("Health check: boss is dead.");
-            return;
-        }
 
         int currentHP = currentHealth.GetHealth();
         int maxHP = Mathf.Max(1, currentHealth.GetMaxHealth());
 
         float healthFraction = (float)currentHP / maxHP;
 
-        BossDebug(
-            "Health check: " + currentHP +
-            " / " + maxHP +
-            " = " + (healthFraction * 100f).ToString("F1") + "%"
-        );
-
         if (healthFraction <= retreatHealthThreshold)
         {
             lowHealthRetreatTriggered = true;
 
-            BossDebug("Low health threshold reached. Starting retreat.");
 
             BeginRetreat();
         }
@@ -306,35 +268,9 @@ public class BossLobsterBrain : MonoBehaviour
         CacheReferences();
         CacheSpawnTile();
 
-        BossDebug(
-            "BeginRetreat called. " +
-            "MoveBrain: " + (moveBrain != null) +
-            " | Spawn tile cached: " + spawnTileCached +
-            " | Spawn tile: " + spawnTile +
-            " | Already retreating: " + retreating
-        );
-
-        if (moveBrain == null)
-        {
-            BossDebug("RETREAT FAILED: UnitMoveBrain missing.");
-            return;
-        }
-
-        if (!spawnTileCached)
-        {
-            BossDebug("RETREAT FAILED: Spawn tile was not cached.");
-            return;
-        }
-
-        if (retreating)
-        {
-            BossDebug("Retreat already active.");
-            return;
-        }
 
         retreating = true;
 
-        BossDebug("RETREAT STARTED.");
     }
 
     public void EndRetreat()
@@ -349,7 +285,6 @@ public class BossLobsterBrain : MonoBehaviour
 
         retreatRoutineRunning = false;
 
-        BossDebug("RETREAT ENDED.");
     }
 
     // ==================================================
@@ -358,56 +293,23 @@ public class BossLobsterBrain : MonoBehaviour
 
     public IEnumerator TryRetreat()
     {
-        BossDebug(
-            "TryRetreat called. Retreating: " + retreating +
-            " | Routine running: " + retreatRoutineRunning
-        );
-
-        if (retreatRoutineRunning || !retreating)
-        {
-            BossDebug("TryRetreat stopped: already running or not retreating.");
-            yield break;
-        }
+       
 
         CacheReferences();
         CacheSpawnTile();
 
-        if (moveBrain == null || !spawnTileCached)
-        {
-            BossDebug("TryRetreat stopped: missing MoveBrain or spawn tile.");
-            yield break;
-        }
-
+     
         GridManager gridManager = moveBrain.GetGridManager();
 
         UnitMoveBrainManager pathManager =
             UnitMoveBrainManager.Instance;
 
-        if (gridManager == null)
-        {
-            BossDebug("TryRetreat stopped: GridManager missing.");
-            yield break;
-        }
+      
 
-        if (pathManager == null)
-        {
-            BossDebug("TryRetreat stopped: UnitMoveBrainManager missing.");
-            yield break;
-        }
-
-        if (!gridManager.IsInsideGrid(spawnTile))
-        {
-            BossDebug(
-                "TryRetreat stopped: spawn tile outside grid: " +
-                spawnTile
-            );
-
-            yield break;
-        }
+     
 
         retreatRoutineRunning = true;
 
-        BossDebug("Retreat movement routine started.");
 
         try
         {
@@ -415,7 +317,6 @@ public class BossLobsterBrain : MonoBehaviour
             {
                 if (moveBrain == null)
                 {
-                    BossDebug("Retreat stopped: MoveBrain destroyed.");
                     yield break;
                 }
 
@@ -434,25 +335,17 @@ public class BossLobsterBrain : MonoBehaviour
                     moveBrain.CanWalkDiagonally()
                 );
 
-                BossDebug(
-                    "Retreat position: " + currentTile +
-                    " | Destination: " + spawnTile +
-                    " | Distance: " + distance +
-                    " | Steps remaining: " + moveBrain.GetStepsRemaining()
-                );
 
                 if (distance <= retreatArrivalDistance)
                 {
                     retreating = false;
 
-                    BossDebug("Reached retreat destination. Retreat ended.");
 
                     yield break;
                 }
 
                 if (moveBrain.GetStepsRemaining() <= 0)
                 {
-                    BossDebug("Retreat paused: no movement steps remaining.");
                     yield break;
                 }
 
@@ -467,33 +360,16 @@ public class BossLobsterBrain : MonoBehaviour
                     gameObject
                 );
 
-                if (!pathFound || path == null || path.Count < 2)
-                {
-                    BossDebug(
-                        "Retreat stopped: no valid path to spawn tile."
-                    );
-
-                    yield break;
-                }
+            
 
                 Vector2Int nextTile = path[1];
 
-                BossDebug(
-                    "Retreat path found. Next tile: " + nextTile
-                );
+               
 
                 bool moveStarted =
                     moveBrain.TryMoveTo(nextTile);
 
-                if (!moveStarted)
-                {
-                    BossDebug(
-                        "Retreat stopped: TryMoveTo failed for " +
-                        nextTile
-                    );
-
-                    yield break;
-                }
+       
 
                 while (moveBrain != null && moveBrain.IsMoving())
                     yield return null;
@@ -504,18 +380,8 @@ public class BossLobsterBrain : MonoBehaviour
                 Vector2Int newTile =
                     moveBrain.GetCurrentTile();
 
-                if (newTile == currentTile)
-                {
-                    BossDebug(
-                        "Retreat stopped: movement finished but tile did not change."
-                    );
+           
 
-                    yield break;
-                }
-
-                BossDebug(
-                    "Retreat movement successful. New tile: " + newTile
-                );
 
                 RefreshWaterStatus();
 
@@ -527,10 +393,7 @@ public class BossLobsterBrain : MonoBehaviour
             retreatRoutineRunning = false;
             retreatCoroutine = null;
 
-            BossDebug(
-                "Retreat movement routine finished. " +
-                "Retreating state: " + retreating
-            );
+          
         }
     }
 }

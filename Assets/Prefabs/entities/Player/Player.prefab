@@ -65,6 +65,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3350255872931640762
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -110,6 +111,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: fb4133cde8645db47bd19b13ff0590fb, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -119,8 +121,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &2305230657848179651
 GameObject:
   m_ObjectHideFlags: 0
@@ -169,6 +171,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3672663564048431240
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -214,6 +217,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -223,8 +227,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 1
+  m_BlendShapeWeights: []
 --- !u!114 &7781654838360763359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -245,7 +249,7 @@ MonoBehaviour:
   healthText: {fileID: 8607058236224498895}
   healthTextPopScale: 1.25
   healthTextPopDuration: 0.12
-  healthBarShakeAmount: 0.5
+  healthBarShakeAmount: 0
   healthBarShakeDuration: 0.12
   spriteRenderer: {fileID: 0}
   flashIntensity: 1
@@ -417,7 +421,10 @@ MonoBehaviour:
   tilePin: {fileID: 0}
   animationController: {fileID: 0}
   moveDuration: 0.25
-  moveActionsPerTurn: 1
+  facingDirection: {x: 0, y: 1}
+  defaultKnockbackDistance: 1
+  knockbackStepDuration: 0.08
+  knockbackArcHeight: 0.5
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1
@@ -452,13 +459,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.ShadowCaster2D
   m_ShadowGroup: 0
   m_Priority: 0
-  m_ComponentVersion: 5
+  m_ComponentVersion: 6
   m_HasRenderer: 1
   m_UseRendererSilhouette: 1
   m_CastsShadows: 1
   m_SelfShadows: 0
   m_AlphaCutoff: 0.1
-  m_ApplyToSortingLayers: 00000000
+  m_ApplyToSortingLayers: 00000000i
   m_ShapePath:
   - {x: -0.19775438, y: 0.009361762, z: 0}
   - {x: -0.19463374, y: 0.10841451, z: 0}
@@ -471,25 +478,106 @@ MonoBehaviour:
     rid: -2
   m_ShadowCastingSource: 1
   m_ShadowMesh:
-    m_Mesh: {fileID: 0}
-    m_LocalBounds:
-      m_Center: {x: -0.031205922, y: 0.058888108, z: 0}
-      m_Extent: {x: 0.16654846, y: 0.0526469, z: 0}
-    m_EdgeProcessing: 1
-    m_TrimEdge: 0.1
-    m_FlipX: 0
-    m_FlipY: 0
-    m_InitialTrim: 0
+    rid: 5210037150994924150
   m_CastingOption: 1
-  m_PreviousTrimEdge: 0.1
+  m_PreviousTrimEdge: 0
   m_PreviousEdgeProcessing: 1
   m_PreviousShadowCastingSource: 1
   m_PreviousShadowShape2DSource: {fileID: 3672663564048431240}
+  m_PreviousShadowShape2DProviderHash: 0
+  m_SelectionSources:
+    rid: 5210037150994924151
   references:
     version: 2
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 5210037150994924150
+      type: {class: ShadowMesh2D, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Vertices:
+        - position: {x: -0.19775438, y: 0.009361762, z: 0}
+          tangent: {x: -1, y: 0, z: -0.19463374, w: 0.10841451}
+        - position: {x: -0.19463374, y: 0.10841451, z: 0}
+          tangent: {x: -1, y: 0, z: 0.132222, w: 0.11153501}
+        - position: {x: 0.132222, y: 0.11153501, z: 0}
+          tangent: {x: -1, y: 0, z: 0.13534254, w: 0.006241208}
+        - position: {x: 0.13534254, y: 0.006241208, z: 0}
+          tangent: {x: -1, y: 0, z: -0.19775438, w: 0.009361762}
+        - position: {x: 0.13534254, y: 0.006241208, z: 0}
+          tangent: {x: 0, y: 0, z: -0.19775438, w: 0.009361762}
+        - position: {x: -0.19775438, y: 0.009361762, z: 0}
+          tangent: {x: 0, y: 0, z: 0.13534254, w: 0.006241208}
+        - position: {x: 0.13534254, y: 0.006241208, z: 0}
+          tangent: {x: 1, y: 0, z: 0.132222, w: 0.11153501}
+        - position: {x: 0.13534254, y: 0.006241208, z: 0}
+          tangent: {x: 3, y: 0, z: -0.19463374, w: 0.10841451}
+        - position: {x: -0.19775438, y: 0.009361762, z: 0}
+          tangent: {x: 0, y: 0, z: -0.19463374, w: 0.10841451}
+        - position: {x: -0.19463374, y: 0.10841451, z: 0}
+          tangent: {x: 0, y: 0, z: -0.19775438, w: 0.009361762}
+        - position: {x: -0.19775438, y: 0.009361762, z: 0}
+          tangent: {x: 1, y: 0, z: 0.13534254, w: 0.006241208}
+        - position: {x: -0.19775438, y: 0.009361762, z: 0}
+          tangent: {x: 3, y: 0, z: 0.132222, w: 0.11153501}
+        - position: {x: -0.19463374, y: 0.10841451, z: 0}
+          tangent: {x: 0, y: 0, z: 0.132222, w: 0.11153501}
+        - position: {x: 0.132222, y: 0.11153501, z: 0}
+          tangent: {x: 0, y: 0, z: -0.19463374, w: 0.10841451}
+        - position: {x: -0.19463374, y: 0.10841451, z: 0}
+          tangent: {x: 1, y: 0, z: -0.19775438, w: 0.009361762}
+        - position: {x: -0.19463374, y: 0.10841451, z: 0}
+          tangent: {x: 3, y: 0, z: 0.13534254, w: 0.006241208}
+        - position: {x: 0.132222, y: 0.11153501, z: 0}
+          tangent: {x: 0, y: 0, z: 0.13534254, w: 0.006241208}
+        - position: {x: 0.13534254, y: 0.006241208, z: 0}
+          tangent: {x: 0, y: 0, z: 0.132222, w: 0.11153501}
+        - position: {x: 0.132222, y: 0.11153501, z: 0}
+          tangent: {x: 1, y: 0, z: -0.19463374, w: 0.10841451}
+        - position: {x: 0.132222, y: 0.11153501, z: 0}
+          tangent: {x: 3, y: 0, z: -0.19775438, w: 0.009361762}
+        m_Indices: 030000000400000005000000050000000000000003000000000000000800000009000000090000000100000000000000010000000c0000000d0000000d0000000200000001000000020000001000000011000000110000000300000002000000030000000600000007000000000000000a0000000b000000010000000e0000000f000000020000001200000013000000i
+        m_IsTransformable: 1
+        m_LocalBounds:
+          m_Center: {x: -0.031205922, y: 0.058888108, z: 0}
+          m_Extent: {x: 0.16654846, y: 0.0526469, z: 0}
+        m_EdgeProcessing: 1
+        m_TrimEdge: 0
+        m_FlipX: 0
+        m_FlipY: 0
+        m_InitialTrim: 0
+    - rid: 5210037150994924151
+      type: {class: Shadow2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_SelectedHashCode: 1
+        m_SelectedSource:
+          rid: -2
+        m_Provider2DCache:
+          rid: 5210037150994924152
+    - rid: 5210037150994924152
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.ShadowShape2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache:
+        - m_Key:
+            m_TypeName: ShadowShape2DProvider_Collider2D
+            m_Component: {fileID: 6280651182369518804}
+            m_UsesComponent: 1
+          m_Value:
+            m_Provider:
+              rid: 5210037150994924153
+        - m_Key:
+            m_TypeName: ShadowShape2DProvider_SpriteRenderer
+            m_Component: {fileID: 3672663564048431240}
+            m_UsesComponent: 1
+          m_Value:
+            m_Provider:
+              rid: 5210037150994924154
+    - rid: 5210037150994924153
+      type: {class: ShadowShape2DProvider_Collider2D, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data: 
+    - rid: 5210037150994924154
+      type: {class: ShadowShape2DProvider_SpriteRenderer, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data: 
 --- !u!114 &899678385597234880
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -628,6 +716,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &1908650109932274173
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -673,6 +762,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -1
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_FlipX: 0
@@ -682,8 +772,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &6794380485252849613
 GameObject:
   m_ObjectHideFlags: 0
@@ -787,6 +877,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -798,7 +889,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -880,6 +971,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0

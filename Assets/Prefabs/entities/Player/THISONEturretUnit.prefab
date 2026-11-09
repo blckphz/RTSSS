@@ -270,7 +270,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
   team: 0
-  isPlayerCharacter: 0
+  isPlayerCharacter: 1
   maxHealth: 100
   health: 0
   healthBarFill: {fileID: 5467391273723526788}
@@ -450,6 +450,9 @@ MonoBehaviour:
   animationController: {fileID: 0}
   moveDuration: 0.25
   facingDirection: {x: 0, y: 1}
+  defaultKnockbackDistance: 1
+  knockbackStepDuration: 0.08
+  knockbackArcHeight: 0.5
   attackRange: 1
   preferLowHealthEnemies: 1
   preferCloserEnemies: 1

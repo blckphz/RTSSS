@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 // ============================================================
 // VICTORY CONDITION
 // ============================================================
@@ -15,7 +14,6 @@ public enum VictoryCondition
     DefeatSpecificEnemy
 }
 
-
 // ============================================================
 // DAY / NIGHT
 // ============================================================
@@ -25,7 +23,6 @@ public enum DayNight
     Day,
     Night
 }
-
 
 // ============================================================
 // ENCOUNTER DEFINITION
@@ -37,68 +34,23 @@ public enum DayNight
 )]
 public class EncounterDefinition : ScriptableObject
 {
-    // ============================================================
-    // ENCOUNTER
-    // ============================================================
-
     [Header("Encounter")]
     public string encounterName = "New Encounter";
 
     [TextArea(2, 5)]
     public string description;
 
-
-    // ============================================================
-    // MAP NODE ICON
-    // ============================================================
-
     [Header("Map Node")]
-    [Tooltip(
-        "The Sprite used for this encounter on the level map. " +
-        "Leave empty to use the default icon from LevelMapManager."
-    )]
     public Sprite mapNodeIcon;
 
-
-    // ============================================================
-    // BIOME
-    // ============================================================
-
     [Header("Biome")]
-    [Tooltip(
-        "Name of the GameObject under the Biome Root that should " +
-        "be enabled when this encounter starts. " +
-        "Example: Grass or Dirt."
-    )]
     public string biomeGameObjectName;
 
-
-    // ============================================================
-    // DAY / NIGHT
-    // ============================================================
-
     [Header("Day / Night")]
-    [Tooltip(
-        "Determines whether this encounter uses the Day or Night " +
-        "Global Light 2D settings."
-    )]
     public DayNight dayNight = DayNight.Day;
 
-
-    // ============================================================
-    // MUSIC
-    // ============================================================
-
     [Header("Music")]
-    [Tooltip(
-        "Music that will play when this encounter starts."
-    )]
     public AudioClip music;
-
-
-    // ============================================================
-    // GRID
-    // ============================================================
 
     [Header("Grid")]
     [Min(1)]
@@ -109,11 +61,6 @@ public class EncounterDefinition : ScriptableObject
 
     public GridShapeType shape = GridShapeType.Box;
 
-
-    // ============================================================
-    // DONUT
-    // ============================================================
-
     [Header("Donut Settings")]
     [Min(0)]
     public int minRadius = 2;
@@ -121,89 +68,45 @@ public class EncounterDefinition : ScriptableObject
     [Min(1)]
     public int maxRadius = 5;
 
+    // ========================================================
+    // TIDE SETTINGS
+    // ========================================================
 
-    // ============================================================
+    [Header("Tide Settings")]
+    [Tooltip("Enable tide movement and grid shrinking for this encounter.")]
+    public bool useTide = false;
+
+    // ========================================================
     // MISSION
-    // ============================================================
+    // ========================================================
 
     [Header("Mission")]
     public VictoryCondition victoryCondition =
         VictoryCondition.DefeatAllEnemies;
 
-
-    // ============================================================
-    // SPECIFIC TARGET
-    // ============================================================
-
     [Header("Specific Target")]
-    [Tooltip(
-        "EncounterUnit ID that must be killed when using " +
-        "DefeatSpecificEnemy."
-    )]
     public string targetEnemyId;
-
-
-    // ============================================================
-    // SURVIVAL
-    // ============================================================
 
     [Header("Survival")]
     [Min(1)]
     public int roundsToSurvive = 5;
 
-
-    // ============================================================
-    // OBSTACLES
-    // ============================================================
-
     [Header("Obstacle Spawn")]
-    [Tooltip(
-        "Obstacles are spawned once when the encounter begins. " +
-        "They remain in the grid for the entire encounter."
-    )]
     public List<ObstacleSpawnData> obstacles =
         new List<ObstacleSpawnData>();
 
-
-    // ============================================================
-    // BUSHES
-    // ============================================================
-
     [Header("Bush Spawn")]
-    [Tooltip(
-        "Bushes are spawned once when the encounter begins. " +
-        "They use the same spawn data as obstacles, but are " +
-        "placed farther apart."
-    )]
     public List<ObstacleSpawnData> bushes =
         new List<ObstacleSpawnData>();
 
-
-    // ============================================================
-    // ENEMIES
-    // ============================================================
-
     [Header("Enemy Spawn")]
-    [Tooltip(
-        "Regular enemies spawn using the existing enemy spawn logic."
-    )]
     public List<EnemySpawnData> enemies =
         new List<EnemySpawnData>();
 
-
-    // ============================================================
-    // BOSSES
-    // ============================================================
-
     [Header("Boss Spawn")]
-    [Tooltip(
-        "Bosses are spawned at the centre of the grid. " +
-        "The grid spawning script must implement this placement."
-    )]
     public List<EnemySpawnData> bosses =
         new List<EnemySpawnData>();
 }
-
 
 // ============================================================
 // OBSTACLE SPAWN DATA
@@ -212,29 +115,13 @@ public class EncounterDefinition : ScriptableObject
 [Serializable]
 public class ObstacleSpawnData
 {
-    // ============================================================
-    // PREFAB
-    // ============================================================
-
     [Header("Prefab")]
-    [Tooltip(
-        "Prefab that will be spawned as an obstacle or bush."
-    )]
     public GameObject prefab;
-
-
-    // ============================================================
-    // AMOUNT
-    // ============================================================
 
     [Header("Amount")]
     [Min(1)]
-    [Tooltip(
-        "Number of this obstacle or bush type to spawn."
-    )]
     public int amount = 1;
 }
-
 
 // ============================================================
 // ENEMY SPAWN DATA
@@ -243,34 +130,12 @@ public class ObstacleSpawnData
 [Serializable]
 public class EnemySpawnData
 {
-    // ============================================================
-    // PREFAB
-    // ============================================================
-
     [Header("Prefab")]
     public GameObject prefab;
 
-
-    // ============================================================
-    // CHARACTER DATA
-    // ============================================================
-
     [Header("Character")]
-    [Tooltip(
-        "CharacterSO containing the stats, abilities, team, " +
-        "movement, upgrades, and other data for this enemy."
-    )]
     public CharacterSO character;
 
-
-    // ============================================================
-    // ENCOUNTER ID
-    // ============================================================
-
     [Header("Encounter ID")]
-    [Tooltip(
-        "Unique ID for this specific encounter unit. " +
-        "Example: boss_01"
-    )]
     public string enemyId;
 }

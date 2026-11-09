@@ -1,5 +1,4 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -97,12 +96,22 @@ public class UIManager : MonoBehaviour
             if (clickedTrigger != null &&
                 IsPlayerControlledUnit(clickedTrigger.gameObject))
             {
+                // Chain Lightning may explicitly target an unlocked
+                // player turret. Let ChainLightning.CanHit validate it.
+                if (selectedAbility is ChainLightning)
+                {
+                    TryUseSelectedAbility(mousePosition, clickedTrigger);
+                    return;
+                }
+
+                // Preserve existing healing behaviour.
                 if (selectedAbility is HealAbilitySO)
                 {
                     TryUseSelectedAbility(mousePosition, clickedTrigger);
                     return;
                 }
 
+                // Other friendly clicks continue to select the unit.
                 SelectObject(clickedTrigger);
                 return;
             }
@@ -353,23 +362,30 @@ public class UIManager : MonoBehaviour
                 targetUnit = targetObject.GetComponentInParent<AttackUnit>();
 
             if (targetUnit == null)
-                return false;
-
-            // Check the entire footprint, not only the anchor tile.
-            List<Vector2Int> rangeTiles =
-                ability.GetRangeTiles(gridManager, selectedObject);
-
-            if (rangeTiles == null ||
-                !IsAnyTargetFootprintTileInRange(
-                    gridManager,
-                    targetUnit.gameObject,
-                    rangeTiles))
             {
                 Debug.LogWarning(
-                    $"[UIManager] {ability.GetAbilityName()}: " +
-                    $"target '{targetUnit.name}' has no footprint tile in range."
+                    $"[UIManager] Ability target '{targetObject.name}' " +
+                    "has no AttackUnit."
                 );
+
                 return false;
+            }
+
+            // Chain Lightning handles its own target exception,
+            // footprint range, and line-of-sight checks.
+            if (ability is not ChainLightning)
+            {
+                List<Vector2Int> rangeTiles =
+                    ability.GetRangeTiles(gridManager, selectedObject);
+
+                if (rangeTiles == null ||
+                    !IsAnyTargetFootprintTileInRange(
+                        gridManager,
+                        targetUnit.gameObject,
+                        rangeTiles))
+                {
+                    return false;
+                }
             }
 
             if (!ability.CanHit(
@@ -378,9 +394,10 @@ public class UIManager : MonoBehaviour
                     targetUnit.gameObject))
             {
                 Debug.LogWarning(
-                    $"[UIManager] {ability.GetAbilityName()}: " +
-                    $"CanHit rejected '{targetUnit.name}'."
+                    $"[UIManager] {ability.GetAbilityName()} rejected " +
+                    $"target '{targetUnit.name}' (team: {targetUnit.GetTeam()})."
                 );
+
                 return false;
             }
 
@@ -529,21 +546,16 @@ public class UIManager : MonoBehaviour
             gridManager == null)
             return false;
 
-        if (!ability.CanHit(
-                gridManager,
-                attackUnit.gameObject,
-                targetObject))
-            return false;
-
+        // AttackUnit.Attack performs its own CanHit validation.
         bool used = attackUnit.Attack(targetObject, ability);
 
         if (!used)
         {
             Debug.LogWarning(
-                $"[UIManager] AttackUnit.Attack returned false for " +
-                $"ability '{ability.GetAbilityName()}' and target " +
-                $"'{targetObject.name}'."
+                $"[UIManager] AttackUnit rejected {ability.GetAbilityName()} " +
+                $"on '{targetObject.name}'."
             );
+
             return false;
         }
 

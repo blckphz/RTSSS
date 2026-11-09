@@ -9,11 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ac602cce3d8148640bb8ea4770b13108, type: 3}
-  m_Name: Steel and Blood turret
-  m_EditorClassIdentifier: Assembly-CSharp::FortressUpgrade
-  UpgradeName: 
+  m_Script: {fileID: 11500000, guid: be18dae1e14640f46adbb79f97e84ad8, type: 3}
+  m_Name: PlayerHP
+  m_EditorClassIdentifier: Assembly-CSharp::RingUpgrade
+  UpgradeName: PlayerHP
   Description: 
-  bonusHealth: 20
-  bonusDamage: 10
-  bonusRange: 1
+  Artifact: 
+  target: 0
+  stat: 3
+  bonusAmount: 1

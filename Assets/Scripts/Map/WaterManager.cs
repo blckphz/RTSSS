@@ -9,13 +9,8 @@ public class WaterManager : MonoBehaviour
     [SerializeField] private Tilemap waterTilemap;
     [SerializeField] private TileBase waterTile;
     [SerializeField] private EncounterManager encounterManager;
-    [SerializeField] private GridShapeManager gridShapeManager;
     [SerializeField] private GridManager gridManager;
     [SerializeField] private BossLobsterBrain bossLobster;
-
-    [Header("Grid Size Changes")]
-    [SerializeField, Min(0)] private int widthChange = 1;
-    [SerializeField, Min(0)] private int heightChange = 1;
 
     [Header("Tide Limits")]
     [SerializeField, Min(0)] private int maxShrinkCount = 3;
@@ -23,18 +18,11 @@ public class WaterManager : MonoBehaviour
     [Header("Tide")]
     [SerializeField] private bool tideAdvancing = true;
 
-    private int shrinkCount = 0;
+    private int shrinkCount;
 
     private void Awake()
     {
-        if (gridManager == null)
-            gridManager = FindFirstObjectByType<GridManager>();
-
-        if (gridShapeManager == null)
-            gridShapeManager = FindFirstObjectByType<GridShapeManager>();
-
-        if (bossLobster == null)
-            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+        FindReferences();
     }
 
     private void Start()
@@ -42,53 +30,72 @@ public class WaterManager : MonoBehaviour
         UpdateBossWaterStatus();
     }
 
+    // ========================================================
+    // REFERENCES
+    // ========================================================
+
+    private void FindReferences()
+    {
+        if (encounterManager == null)
+            encounterManager = FindFirstObjectByType<EncounterManager>();
+
+        if (gridManager == null)
+            gridManager = FindFirstObjectByType<GridManager>();
+
+        if (bossLobster == null)
+            bossLobster = FindFirstObjectByType<BossLobsterBrain>();
+    }
+
+    // ========================================================
+    // TIDE VALIDATION
+    // ========================================================
+
+    private bool CanUseTide()
+    {
+        if (encounterManager == null)
+            FindReferences();
+
+        if (encounterManager == null)
+            return false;
+
+        EncounterDefinition encounter =
+            encounterManager.CurrentEncounter;
+
+        return encounter != null && encounter.useTide;
+    }
+
+    // ========================================================
+    // ADVANCE TIDE
+    // ========================================================
+
     public void AdvanceTide()
     {
+        if (!CanUseTide())
+            return;
+
         if (tideAdvancing)
         {
-            // Tide comes in: remove water from the edges.
+            // Water retreats.
             RetreatWater();
 
-            // Shrink one cell from every edge.
-            if (gridShapeManager != null)
-            {
-                gridShapeManager.ResizeGridRelative(
-                    -widthChange * 2,
-                    -heightChange * 2
-                );
-            }
+            // Grid resizing happens in EncounterManager.
+            encounterManager.TideComesIn();
 
             shrinkCount++;
 
-            if (encounterManager != null)
-                encounterManager.TideComesIn();
-
-            // Reverse tide after reaching maximum shrink.
             if (shrinkCount >= maxShrinkCount)
-            {
                 tideAdvancing = false;
-            }
         }
         else
         {
-            // Tide goes out: restore water at the edges.
+            // Water expands.
             ExpandWater();
 
-            // Expand one cell on every edge.
-            if (gridShapeManager != null)
-            {
-                gridShapeManager.ResizeGridRelative(
-                    widthChange * 2,
-                    heightChange * 2
-                );
-            }
+            // Grid resizing happens in EncounterManager.
+            encounterManager.TideGoesOut();
 
             shrinkCount--;
 
-            if (encounterManager != null)
-                encounterManager.TideGoesOut();
-
-            // Reverse tide once the original size is restored.
             if (shrinkCount <= 0)
             {
                 shrinkCount = 0;
@@ -99,6 +106,22 @@ public class WaterManager : MonoBehaviour
         UpdateBossWaterStatus();
     }
 
+    // ========================================================
+    // RESET TIDE
+    // ========================================================
+
+    public void ResetTide()
+    {
+        shrinkCount = 0;
+        tideAdvancing = true;
+
+        UpdateBossWaterStatus();
+    }
+
+    // ========================================================
+    // BOSS WATER STATUS
+    // ========================================================
+
     public void UpdateBossWaterStatus()
     {
         if (bossLobster == null)
@@ -107,6 +130,10 @@ public class WaterManager : MonoBehaviour
         if (bossLobster != null)
             bossLobster.RefreshWaterStatus();
     }
+
+    // ========================================================
+    // WATER CHECKS
+    // ========================================================
 
     public bool IsGridPositionOnWater(Vector2Int gridPosition)
     {
@@ -122,14 +149,7 @@ public class WaterManager : MonoBehaviour
         Vector3 worldPosition =
             gridManager.GridToWorldPosition(gridPosition);
 
-        Vector3Int cellPosition =
-            waterTilemap.WorldToCell(worldPosition);
-
-        TileBase tile =
-            waterTilemap.GetTile(cellPosition);
-
-        return tile != null &&
-               (waterTile == null || tile == waterTile);
+        return IsPositionOnWater(worldPosition);
     }
 
     public bool IsPositionOnWater(Vector3 worldPosition)
@@ -146,6 +166,10 @@ public class WaterManager : MonoBehaviour
         return tile != null &&
                (waterTile == null || tile == waterTile);
     }
+
+    // ========================================================
+    // EXPAND WATER
+    // ========================================================
 
     private void ExpandWater()
     {
@@ -176,6 +200,10 @@ public class WaterManager : MonoBehaviour
             waterTilemap.SetTile(position, waterTile);
         }
     }
+
+    // ========================================================
+    // RETREAT WATER
+    // ========================================================
 
     private void RetreatWater()
     {
@@ -208,6 +236,10 @@ public class WaterManager : MonoBehaviour
         }
     }
 
+    // ========================================================
+    // WATER POSITIONS
+    // ========================================================
+
     private List<Vector3Int> GetWaterPositions()
     {
         List<Vector3Int> positions =
@@ -231,6 +263,10 @@ public class WaterManager : MonoBehaviour
 
         return positions;
     }
+
+    // ========================================================
+    // DIRECTIONS
+    // ========================================================
 
     private Vector3Int[] GetDirections()
     {
