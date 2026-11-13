@@ -16,13 +16,15 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: 
   launchSFX: {fileID: 0}
+  abilitySlot: 0
+  timeRestriction: 0
   NeedEnemy: 0
   damage: 30
   cooldown: 0
   canAttackWithThisAfterMove: 1
   usesPerTurn: 1
   useDuration: 0
-  targetType: 2
+  targetType: 3
   range: 2
   minDistance: 0
   rangeShape: 1
@@ -30,4 +32,4 @@ MonoBehaviour:
   projectileSpeed: 8
   explosionPrefab: {fileID: 2004172624130830715, guid: a5b780eea8e76804c9bf4cdf4862f345, type: 3}
   explosionDelay: 0
-  explosionRadius: 1
+  explosionRadius: 2

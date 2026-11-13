@@ -78,10 +78,6 @@ public class UpdateManager : MonoBehaviour
         currentUnit = unit;
         currentCharacter = character;
 
-        Debug.Log(
-            "[UpgradeManager] Player registered: " +
-            unit.gameObject.name
-        );
 
         // Apply upgrades purchased before the player spawned.
         ApplyStoredUnitUpgrades();
@@ -155,10 +151,6 @@ public class UpdateManager : MonoBehaviour
 
         ApplyPlayerRingUpgrades();
 
-        Debug.Log(
-            "[UpgradeManager] Player upgrade refresh complete: " +
-            unit.gameObject.name
-        );
     }
 
     public CharacterSO GetCurrentCharacter()
@@ -224,30 +216,7 @@ public class UpdateManager : MonoBehaviour
 
         purchasedUpgrades.Add(upgrade);
 
-        Debug.Log(
-            "[UpgradeManager] Purchased: " +
-            upgrade.UpgradeName
-        );
-
-        Debug.Log(
-            "[UpgradeManager] Upgrade runtime type: " +
-            upgrade.GetType().Name
-        );
-
-        Debug.Log(
-            "[UpgradeManager] Current UnitData: " +
-            (currentUnit != null
-                ? currentUnit.name
-                : "NULL")
-        );
-
-        Debug.Log(
-            "[UpgradeManager] Current Character: " +
-            (currentCharacter != null
-                ? currentCharacter.name
-                : "NULL")
-        );
-
+    
         // =============================================
         // RING UPGRADE
         // =============================================
@@ -363,11 +332,6 @@ public class UpdateManager : MonoBehaviour
     {
         if (currentUnit == null)
             return;
-
-        Debug.Log(
-            "[UpgradeManager] Checking stored upgrades for: " +
-            currentUnit.gameObject.name
-        );
 
         foreach (UpgradeSO upgrade in purchasedUpgrades)
         {
@@ -695,11 +659,6 @@ public class UpdateManager : MonoBehaviour
             turretTarget = target;
             appliedToTurret.Clear();
         }
-
-        Debug.Log(
-            "[UpgradeManager] Turret registered for upgrades: " +
-            target.gameObject.name
-        );
 
         ApplyStoredTurretUpgrades();
     }

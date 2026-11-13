@@ -654,6 +654,8 @@ GameObject:
   - component: {fileID: 1337686667312643732}
   - component: {fileID: 3757097759789295042}
   - component: {fileID: 1416479480613281104}
+  - component: {fileID: 4304808084841487472}
+  - component: {fileID: 2633479459309499528}
   m_Layer: 0
   m_Name: barrel
   m_TagString: Untagged
@@ -754,5 +756,70 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
   fixedRotation: {x: 0, y: 0, z: 0}
-  lockRotationEveryFrame: 1
+  lockRotationEveryFrame: 0
   unitId: 
+--- !u!114 &4304808084841487472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7012824583319412241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 958c6e53865aa8040930da3ffd13a872, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthManager
+  team: 3
+  isPlayerCharacter: 0
+  maxHealth: 0
+  health: 0
+  healthBarFill: {fileID: 0}
+  healthText: {fileID: 0}
+  healthTextPopScale: 1.25
+  healthTextPopDuration: 0.12
+  healthBarShakeAmount: 0.5
+  healthBarShakeDuration: 0.12
+  spriteRenderer: {fileID: 0}
+  flashIntensity: 1
+  flashDuration: 0.15
+  enableDamageScreenShake: 0
+  damageScreenShakeMagnitude: 1
+  damageScreenShakeDuration: 0.15
+  enableDamageSound: 0
+  enableHealSound: 0
+  damageNumberPrefab: {fileID: 5742265421823657814, guid: e332337082ba6ce4c9f2c18e3fa4330d, type: 3}
+  damageNumberParent: {fileID: 0}
+  damageNumberOffset: {x: 0, y: 1, z: 0}
+  healNumberPrefab: {fileID: 0}
+  healNumberParent: {fileID: 0}
+  healNumberOffset: {x: 0, y: 1, z: 0}
+  queueDamageFlashes: 1
+  minimumFlashInterval: 0.03
+--- !u!114 &2633479459309499528
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7012824583319412241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fce4ece8eca951c4da0c20b80bfe4a9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  characterData: {fileID: 0}
+  unitData: {fileID: 0}
+  abilities: []
+  healthManager: {fileID: 0}
+  animationController: {fileID: 0}
+  upgradeableCombatUnit: {fileID: 0}
+  dayNightManager: {fileID: 0}
+  useDirectionalEnemyAttackAnimation: 1
+  attackAnimatorLayerName: attackLayer
+  dayNightType: 1
+  dayDamageBonus: 0
+  nightDamageBonus: 10
+  dayMoveRangeBonus: -1
+  nightMoveRangeBonus: 1
+  logicalGridPosition: {x: 0, y: 0}

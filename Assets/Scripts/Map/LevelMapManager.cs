@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,8 +11,7 @@ public class LevelNode
     public int Column;
     public EncounterDefinition Encounter;
 
-    public List<LevelNode> NextNodes =
-        new List<LevelNode>();
+    public List<LevelNode> NextNodes = new List<LevelNode>();
 
     public bool IsCompleted;
     public bool IsUnlocked;
@@ -37,30 +37,21 @@ public class LevelNode
 public class LevelMapManager : MonoBehaviour
 {
     [Header("Map Parents")]
-    [SerializeField]
-    private Transform iconParent;
-
-    [SerializeField]
-    private Transform lineParent;
+    [SerializeField] private Transform iconParent;
+    [SerializeField] private Transform lineParent;
 
     [Header("Map Canvas")]
-    [SerializeField]
-    private GameObject mapCanvas;
+    [SerializeField] private GameObject mapCanvas;
 
     [Header("Prefabs")]
-    [SerializeField]
-    private GameObject iconPrefab;
-
-    [SerializeField]
-    private GameObject linePrefab;
+    [SerializeField] private GameObject iconPrefab;
+    [SerializeField] private GameObject linePrefab;
 
     [Header("Default Node Icon")]
-    [SerializeField]
-    private Sprite defaultNodeIcon;
+    [SerializeField] private Sprite defaultNodeIcon;
 
     [Header("Start")]
-    [SerializeField]
-    private EncounterDefinition startEncounter;
+    [SerializeField] private EncounterDefinition startEncounter;
 
     [Header("Normal Encounters")]
     [SerializeField]
@@ -73,69 +64,43 @@ public class LevelMapManager : MonoBehaviour
         new List<EncounterDefinition>();
 
     [Header("Boss")]
-    [SerializeField]
-    private EncounterDefinition bossEncounter;
+    [SerializeField] private EncounterDefinition bossEncounter;
 
     [Header("Encounter Selection")]
     [Range(0f, 1f)]
-    [SerializeField]
-    private float eliteChance = 0.2f;
+    [SerializeField] private float eliteChance = 0.2f;
 
-    [SerializeField]
-    private bool allowEncounterRepeats = true;
+    [SerializeField] private bool allowEncounterRepeats = true;
 
     [Header("Map Settings")]
-    [SerializeField]
-    private int rows = 8;
-
-    [SerializeField]
-    private int minNodesPerRow = 2;
-
-    [SerializeField]
-    private int maxNodesPerRow = 4;
-
-    [SerializeField]
-    private float maxRandomOffset = 0.4f;
-
-    [SerializeField]
-    private float spawnHeightOffset = 0f;
+    [SerializeField] private int rows = 8;
+    [SerializeField] private int minNodesPerRow = 2;
+    [SerializeField] private int maxNodesPerRow = 4;
+    [SerializeField] private float maxRandomOffset = 0.4f;
+    [SerializeField] private float spawnHeightOffset = 0f;
 
     [Header("2D World Spacing")]
-    [SerializeField]
-    private float horizontalSpacing = 2.5f;
-
-    [SerializeField]
-    private float verticalSpacing = 2.0f;
-
-    [SerializeField]
-    private float spawnWidthOffset = 0f;
+    [SerializeField] private float horizontalSpacing = 2.5f;
+    [SerializeField] private float verticalSpacing = 2.0f;
+    [SerializeField] private float spawnWidthOffset = 0f;
 
     [Header("Image Connection Settings")]
-    [SerializeField]
-    private float lineWidth = 0.08f;
-
-    [SerializeField]
-    private float lineEndPadding = 0.15f;
-
-    [SerializeField]
-    private bool centerLine = true;
+    [SerializeField] private float lineWidth = 0.08f;
+    [SerializeField] private float lineEndPadding = 0.15f;
+    [SerializeField] private bool centerLine = true;
 
     [Header("Icon Sorting")]
-    [SerializeField]
-    private string iconSortingLayerName = "Default";
-
-    [SerializeField]
-    private int lockedIconSortingOrder = 1;
-
-    [SerializeField]
-    private int unlockedIconSortingOrder = 2;
-
-    [SerializeField]
-    private int completedIconSortingOrder = 1;
+    [SerializeField] private string iconSortingLayerName = "Default";
+    [SerializeField] private int lockedIconSortingOrder = 1;
+    [SerializeField] private int unlockedIconSortingOrder = 2;
+    [SerializeField] private int completedIconSortingOrder = 1;
 
     [Header("Map Visibility")]
-    [SerializeField]
-    private bool hideMapDuringEncounter = true;
+    [SerializeField] private bool hideMapDuringEncounter = true;
+
+    [Header("Upgrade Rewards")]
+    [SerializeField] private UpgradeChoiceUI upgradeChoiceUI;
+    [SerializeField] private VictoryManager victoryManager;
 
     private List<List<LevelNode>> mapNodes =
         new List<List<LevelNode>>();
@@ -158,14 +123,12 @@ public class LevelMapManager : MonoBehaviour
 
     private void OnEnable()
     {
-        EncounterManager.OnEncounterVictory +=
-            HandleEncounterVictory;
+        EncounterManager.OnEncounterVictory += HandleEncounterVictory;
     }
 
     private void OnDisable()
     {
-        EncounterManager.OnEncounterVictory -=
-            HandleEncounterVictory;
+        EncounterManager.OnEncounterVictory -= HandleEncounterVictory;
     }
 
     // ============================================================
@@ -196,66 +159,33 @@ public class LevelMapManager : MonoBehaviour
 
         if (iconPrefab == null)
         {
-            Debug.LogError(
-                "[LevelMapManager] Icon Prefab is missing!",
-                this
-            );
-
+            Debug.LogError("[LevelMapManager] Icon Prefab is missing!", this);
             valid = false;
         }
 
         if (linePrefab == null)
         {
-            Debug.LogError(
-                "[LevelMapManager] Line Prefab is missing!",
-                this
-            );
-
+            Debug.LogError("[LevelMapManager] Line Prefab is missing!", this);
             valid = false;
         }
 
         if (iconParent == null)
         {
-            Debug.LogError(
-                "[LevelMapManager] Icon Parent is missing!",
-                this
-            );
-
+            Debug.LogError("[LevelMapManager] Icon Parent is missing!", this);
             valid = false;
         }
 
         if (lineParent == null)
         {
-            Debug.LogError(
-                "[LevelMapManager] Line Parent is missing!",
-                this
-            );
-
+            Debug.LogError("[LevelMapManager] Line Parent is missing!", this);
             valid = false;
         }
 
         rows = Mathf.Max(2, rows);
-
-        minNodesPerRow =
-            Mathf.Max(1, minNodesPerRow);
-
-        maxNodesPerRow =
-            Mathf.Max(
-                minNodesPerRow,
-                maxNodesPerRow
-            );
-
-        lineWidth =
-            Mathf.Max(
-                0.001f,
-                lineWidth
-            );
-
-        lineEndPadding =
-            Mathf.Max(
-                0f,
-                lineEndPadding
-            );
+        minNodesPerRow = Mathf.Max(1, minNodesPerRow);
+        maxNodesPerRow = Mathf.Max(minNodesPerRow, maxNodesPerRow);
+        lineWidth = Mathf.Max(0.001f, lineWidth);
+        lineEndPadding = Mathf.Max(0f, lineEndPadding);
 
         return valid;
     }
@@ -263,13 +193,11 @@ public class LevelMapManager : MonoBehaviour
     private void SpawnNodes()
     {
         Vector2 baseOrigin =
-            transform.position +
-            Vector3.up * spawnHeightOffset;
+            transform.position + Vector3.up * spawnHeightOffset;
 
         for (int row = 0; row < rows; row++)
         {
-            List<LevelNode> currentRow =
-                new List<LevelNode>();
+            List<LevelNode> currentRow = new List<LevelNode>();
 
             int countInRow;
 
@@ -279,29 +207,21 @@ public class LevelMapManager : MonoBehaviour
             }
             else
             {
-                countInRow =
-                    Random.Range(
-                        minNodesPerRow,
-                        maxNodesPerRow + 1
-                    );
+                countInRow = Random.Range(
+                    minNodesPerRow,
+                    maxNodesPerRow + 1
+                );
             }
 
-            for (
-                int column = 0;
-                column < countInRow;
-                column++)
+            for (int column = 0; column < countInRow; column++)
             {
                 float x =
-                    (column -
-                    (countInRow - 1) / 2f) *
+                    (column - (countInRow - 1) / 2f) *
                     horizontalSpacing;
 
-                // Moves the entire row/map horizontally.
                 x += spawnWidthOffset;
 
-                float y =
-                    row *
-                    verticalSpacing;
+                float y = row * verticalSpacing;
 
                 if (row > 0 && row < rows - 1)
                 {
@@ -316,61 +236,39 @@ public class LevelMapManager : MonoBehaviour
                     );
                 }
 
-                Vector2 position =
-                    baseOrigin +
-                    new Vector2(x, y);
+                Vector2 position = baseOrigin + new Vector2(x, y);
 
                 EncounterDefinition encounter =
-                    GetEncounterForNode(
-                        row,
-                        column
-                    );
+                    GetEncounterForNode(row, column);
 
-                GameObject icon =
-                    Instantiate(
-                        iconPrefab,
-                        position,
-                        Quaternion.identity,
-                        iconParent
-                    );
-
-                icon.name =
-                    GetNodeName(
-                        row,
-                        column,
-                        encounter
-                    );
-
-                SetNodeIconSprite(
-                    icon,
-                    encounter
+                GameObject icon = Instantiate(
+                    iconPrefab,
+                    position,
+                    Quaternion.identity,
+                    iconParent
                 );
+
+                icon.name = GetNodeName(row, column, encounter);
+
+                SetNodeIconSprite(icon, encounter);
 
                 IconBehav iconBehaviour =
                     icon.GetComponent<IconBehav>();
 
                 if (iconBehaviour == null)
-                {
-                    iconBehaviour =
-                        icon.AddComponent<IconBehav>();
-                }
+                    iconBehaviour = icon.AddComponent<IconBehav>();
 
                 iconBehaviour.SetMapManager(this);
                 iconBehaviour.SetEncounter(encounter);
+                iconBehaviour.SetNodeState(false, false);
 
-                iconBehaviour.SetNodeState(
-                    false,
-                    false
+                LevelNode node = new LevelNode(
+                    icon.transform,
+                    position,
+                    row,
+                    column,
+                    encounter
                 );
-
-                LevelNode node =
-                    new LevelNode(
-                        icon.transform,
-                        position,
-                        row,
-                        column,
-                        encounter
-                    );
 
                 currentRow.Add(node);
             }
@@ -386,35 +284,21 @@ public class LevelMapManager : MonoBehaviour
         if (iconObject == null)
             return;
 
-        Image image =
-            iconObject.GetComponent<Image>();
+        Image image = iconObject.GetComponent<Image>();
 
         if (image == null)
-        {
-            image =
-                iconObject.GetComponentInChildren<Image>();
-        }
+            image = iconObject.GetComponentInChildren<Image>();
 
         if (image == null)
             return;
 
-        Sprite spriteToUse =
-            defaultNodeIcon;
+        Sprite spriteToUse = defaultNodeIcon;
 
-        if (
-            encounter != null &&
-            encounter.mapNodeIcon != null
-        )
-        {
-            spriteToUse =
-                encounter.mapNodeIcon;
-        }
+        if (encounter != null && encounter.mapNodeIcon != null)
+            spriteToUse = encounter.mapNodeIcon;
 
         if (spriteToUse != null)
-        {
-            image.sprite =
-                spriteToUse;
-        }
+            image.sprite = spriteToUse;
     }
 
     // ============================================================
@@ -431,36 +315,19 @@ public class LevelMapManager : MonoBehaviour
         if (row == rows - 1)
             return bossEncounter;
 
-        bool chooseElite =
-            Random.value < eliteChance;
+        bool chooseElite = Random.value < eliteChance;
 
-        if (
-            chooseElite &&
-            eliteEncounters != null &&
+        if (chooseElite && eliteEncounters != null &&
             eliteEncounters.Count > 0)
         {
-            return GetRandomEncounter(
-                eliteEncounters
-            );
+            return GetRandomEncounter(eliteEncounters);
         }
 
-        if (
-            normalEncounters != null &&
-            normalEncounters.Count > 0)
-        {
-            return GetRandomEncounter(
-                normalEncounters
-            );
-        }
+        if (normalEncounters != null && normalEncounters.Count > 0)
+            return GetRandomEncounter(normalEncounters);
 
-        if (
-            eliteEncounters != null &&
-            eliteEncounters.Count > 0)
-        {
-            return GetRandomEncounter(
-                eliteEncounters
-            );
-        }
+        if (eliteEncounters != null && eliteEncounters.Count > 0)
+            return GetRandomEncounter(eliteEncounters);
 
         return null;
     }
@@ -468,74 +335,41 @@ public class LevelMapManager : MonoBehaviour
     private EncounterDefinition GetRandomEncounter(
         List<EncounterDefinition> pool)
     {
-        if (
-            pool == null ||
-            pool.Count == 0)
-        {
+        if (pool == null || pool.Count == 0)
             return null;
-        }
 
         if (allowEncounterRepeats)
         {
-            return pool[
-                Random.Range(
-                    0,
-                    pool.Count
-                )
-            ];
+            return pool[Random.Range(0, pool.Count)];
         }
 
         List<EncounterDefinition> unused =
             new List<EncounterDefinition>();
 
-        foreach (
-            EncounterDefinition candidate
-            in pool)
+        foreach (EncounterDefinition candidate in pool)
         {
             if (candidate == null)
                 continue;
 
             if (!IsEncounterAlreadyUsed(candidate))
-            {
                 unused.Add(candidate);
-            }
         }
 
         if (unused.Count > 0)
-        {
-            return unused[
-                Random.Range(
-                    0,
-                    unused.Count
-                )
-            ];
-        }
+            return unused[Random.Range(0, unused.Count)];
 
-        return pool[
-            Random.Range(
-                0,
-                pool.Count
-            )
-        ];
+        return pool[Random.Range(0, pool.Count)];
     }
 
     private bool IsEncounterAlreadyUsed(
         EncounterDefinition encounter)
     {
-        foreach (
-            List<LevelNode> row
-            in mapNodes)
+        foreach (List<LevelNode> row in mapNodes)
         {
-            foreach (
-                LevelNode node
-                in row)
+            foreach (LevelNode node in row)
             {
-                if (
-                    node != null &&
-                    node.Encounter == encounter)
-                {
+                if (node != null && node.Encounter == encounter)
                     return true;
-                }
             }
         }
 
@@ -549,12 +383,10 @@ public class LevelMapManager : MonoBehaviour
     {
         if (encounter == null)
         {
-            return
-                $"LevelNode_Row{row}_Column{column}_NO_ENCOUNTER";
+            return $"LevelNode_Row{row}_Column{column}_NO_ENCOUNTER";
         }
 
-        return
-            $"LevelNode_Row{row}_Column{column}_{encounter.encounterName}";
+        return $"LevelNode_Row{row}_Column{column}_{encounter.encounterName}";
     }
 
     // ============================================================
@@ -566,129 +398,73 @@ public class LevelMapManager : MonoBehaviour
         if (mapNodes.Count < 2)
             return;
 
-        for (
-            int row = 0;
-            row < mapNodes.Count - 1;
-            row++)
+        for (int row = 0; row < mapNodes.Count - 1; row++)
         {
-            List<LevelNode> current =
-                mapNodes[row];
+            List<LevelNode> current = mapNodes[row];
+            List<LevelNode> next = mapNodes[row + 1];
 
-            List<LevelNode> next =
-                mapNodes[row + 1];
-
-            for (
-                int i = 0;
-                i < current.Count;
-                i++)
+            for (int i = 0; i < current.Count; i++)
             {
-                LevelNode node =
-                    current[i];
+                LevelNode node = current[i];
 
                 float ratio =
-                    (float)i /
-                    Mathf.Max(
-                        1,
-                        current.Count - 1
-                    );
+                    (float)i / Mathf.Max(1, current.Count - 1);
 
-                int targetIndex =
-                    Mathf.RoundToInt(
-                        ratio *
-                        (next.Count - 1)
-                    );
-
-                targetIndex =
-                    Mathf.Clamp(
-                        targetIndex,
-                        0,
-                        next.Count - 1
-                    );
-
-                AddConnection(
-                    node,
-                    next[targetIndex]
+                int targetIndex = Mathf.RoundToInt(
+                    ratio * (next.Count - 1)
                 );
+
+                targetIndex = Mathf.Clamp(
+                    targetIndex,
+                    0,
+                    next.Count - 1
+                );
+
+                AddConnection(node, next[targetIndex]);
             }
         }
 
-        for (
-            int row = 0;
-            row < mapNodes.Count - 1;
-            row++)
+        for (int row = 0; row < mapNodes.Count - 1; row++)
         {
-            List<LevelNode> current =
-                mapNodes[row];
+            List<LevelNode> current = mapNodes[row];
+            List<LevelNode> next = mapNodes[row + 1];
 
-            List<LevelNode> next =
-                mapNodes[row + 1];
-
-            for (
-                int i = 0;
-                i < current.Count;
-                i++)
+            for (int i = 0; i < current.Count; i++)
             {
-                LevelNode node =
-                    current[i];
+                LevelNode node = current[i];
 
                 if (Random.value > 0.5f)
                     continue;
 
-                int mainTarget =
-                    GetPrimaryTargetIndex(
-                        i,
-                        current.Count,
-                        next.Count
-                    );
+                int mainTarget = GetPrimaryTargetIndex(
+                    i,
+                    current.Count,
+                    next.Count
+                );
 
-                int direction =
-                    Random.value > 0.5f
-                        ? 1
-                        : -1;
+                int direction = Random.value > 0.5f ? 1 : -1;
+                int extraIndex = mainTarget + direction;
 
-                int extraIndex =
-                    mainTarget + direction;
+                if (extraIndex < 0 || extraIndex >= next.Count)
+                    extraIndex = mainTarget - direction;
 
-                if (
-                    extraIndex < 0 ||
-                    extraIndex >= next.Count)
-                {
-                    extraIndex =
-                        mainTarget - direction;
-                }
-
-                if (
-                    extraIndex < 0 ||
-                    extraIndex >= next.Count)
-                {
+                if (extraIndex < 0 || extraIndex >= next.Count)
                     continue;
-                }
 
-                LevelNode extraTarget =
-                    next[extraIndex];
+                LevelNode extraTarget = next[extraIndex];
 
-                if (
-                    node.NextNodes.Contains(
-                        extraTarget))
-                {
+                if (node.NextNodes.Contains(extraTarget))
                     continue;
-                }
 
-                bool causesCross =
-                    false;
+                bool causesCross = false;
 
                 if (i > 0)
                 {
-                    LevelNode previous =
-                        current[i - 1];
+                    LevelNode previous = current[i - 1];
 
-                    foreach (
-                        LevelNode previousTarget
-                        in previous.NextNodes)
+                    foreach (LevelNode previousTarget in previous.NextNodes)
                     {
-                        if (
-                            previousTarget.Column >
-                            extraTarget.Column)
+                        if (previousTarget.Column > extraTarget.Column)
                         {
                             causesCross = true;
                             break;
@@ -697,51 +473,24 @@ public class LevelMapManager : MonoBehaviour
                 }
 
                 if (!causesCross)
-                {
-                    AddConnection(
-                        node,
-                        extraTarget
-                    );
-                }
+                    AddConnection(node, extraTarget);
             }
         }
 
-        for (
-            int row = 0;
-            row < mapNodes.Count - 1;
-            row++)
+        for (int row = 0; row < mapNodes.Count - 1; row++)
         {
-            List<LevelNode> current =
-                mapNodes[row];
+            List<LevelNode> current = mapNodes[row];
+            List<LevelNode> next = mapNodes[row + 1];
 
-            List<LevelNode> next =
-                mapNodes[row + 1];
-
-            foreach (
-                LevelNode nextNode
-                in next)
+            foreach (LevelNode nextNode in next)
             {
-                if (
-                    HasIncomingConnection(
-                        nextNode,
-                        current))
-                {
+                if (HasIncomingConnection(nextNode, current))
                     continue;
-                }
 
-                LevelNode closest =
-                    GetClosestNode(
-                        nextNode,
-                        current
-                    );
+                LevelNode closest = GetClosestNode(nextNode, current);
 
                 if (closest != null)
-                {
-                    AddConnection(
-                        closest,
-                        nextNode
-                    );
-                }
+                    AddConnection(closest, nextNode);
             }
         }
     }
@@ -752,52 +501,32 @@ public class LevelMapManager : MonoBehaviour
         int nextCount)
     {
         float ratio =
-            (float)currentIndex /
-            Mathf.Max(
-                1,
-                currentCount - 1
-            );
+            (float)currentIndex / Mathf.Max(1, currentCount - 1);
 
-        int targetIndex =
-            Mathf.RoundToInt(
-                ratio *
-                (nextCount - 1)
-            );
-
-        return Mathf.Clamp(
-            targetIndex,
-            0,
-            nextCount - 1
+        int targetIndex = Mathf.RoundToInt(
+            ratio * (nextCount - 1)
         );
+
+        return Mathf.Clamp(targetIndex, 0, nextCount - 1);
     }
 
-    private void AddConnection(
-        LevelNode from,
-        LevelNode to)
+    private void AddConnection(LevelNode from, LevelNode to)
     {
         if (from == null || to == null)
             return;
 
-        if (from.NextNodes.Contains(to))
-            return;
-
-        from.NextNodes.Add(to);
+        if (!from.NextNodes.Contains(to))
+            from.NextNodes.Add(to);
     }
 
     private bool HasIncomingConnection(
         LevelNode target,
         List<LevelNode> previousRow)
     {
-        foreach (
-            LevelNode node
-            in previousRow)
+        foreach (LevelNode node in previousRow)
         {
-            if (
-                node.NextNodes.Contains(
-                    target))
-            {
+            if (node.NextNodes.Contains(target))
                 return true;
-            }
         }
 
         return false;
@@ -812,29 +541,18 @@ public class LevelMapManager : MonoBehaviour
         foreach (Image line in linePool)
         {
             if (line != null)
-            {
                 line.gameObject.SetActive(false);
-            }
         }
 
         int lineIndex = 0;
 
-        foreach (
-            List<LevelNode> row
-            in mapNodes)
+        foreach (List<LevelNode> row in mapNodes)
         {
-            foreach (
-                LevelNode node
-                in row)
+            foreach (LevelNode node in row)
             {
-                foreach (
-                    LevelNode nextNode
-                    in node.NextNodes)
+                foreach (LevelNode nextNode in node.NextNodes)
                 {
-                    Image line =
-                        GetOrCreateLine(
-                            lineIndex++
-                        );
+                    Image line = GetOrCreateLine(lineIndex++);
 
                     if (line == null)
                         continue;
@@ -859,17 +577,13 @@ public class LevelMapManager : MonoBehaviour
         if (line == null)
             return;
 
-        RectTransform rect =
-            line.rectTransform;
+        RectTransform rect = line.rectTransform;
 
         if (rect == null)
             return;
 
-        Vector2 direction =
-            end - start;
-
-        float distance =
-            direction.magnitude;
+        Vector2 direction = end - start;
+        float distance = direction.magnitude;
 
         if (distance <= 0.001f)
         {
@@ -877,24 +591,16 @@ public class LevelMapManager : MonoBehaviour
             return;
         }
 
-        Vector2 normalizedDirection =
-            direction.normalized;
+        Vector2 normalizedDirection = direction.normalized;
 
         Vector2 paddedStart =
-            start +
-            normalizedDirection *
-            lineEndPadding;
+            start + normalizedDirection * lineEndPadding;
 
         Vector2 paddedEnd =
-            end -
-            normalizedDirection *
-            lineEndPadding;
+            end - normalizedDirection * lineEndPadding;
 
-        Vector2 finalDirection =
-            paddedEnd - paddedStart;
-
-        float finalDistance =
-            finalDirection.magnitude;
+        Vector2 finalDirection = paddedEnd - paddedStart;
+        float finalDistance = finalDirection.magnitude;
 
         if (finalDistance <= 0.001f)
         {
@@ -902,67 +608,39 @@ public class LevelMapManager : MonoBehaviour
             return;
         }
 
-        Vector2 finalPosition;
+        Vector2 finalPosition = centerLine
+            ? (paddedStart + paddedEnd) * 0.5f
+            : paddedStart;
 
-        if (centerLine)
-        {
-            finalPosition =
-                (paddedStart + paddedEnd) *
-                0.5f;
-        }
-        else
-        {
-            finalPosition =
-                paddedStart;
-        }
+        rect.position = new Vector3(
+            finalPosition.x,
+            finalPosition.y,
+            rect.position.z
+        );
 
-        rect.position =
-            new Vector3(
-                finalPosition.x,
-                finalPosition.y,
-                rect.position.z
-            );
+        rect.sizeDelta = new Vector2(finalDistance, lineWidth);
 
-        rect.sizeDelta =
-            new Vector2(
-                finalDistance,
-                lineWidth
-            );
+        float angle = Mathf.Atan2(
+            finalDirection.y,
+            finalDirection.x
+        ) * Mathf.Rad2Deg;
 
-        float angle =
-            Mathf.Atan2(
-                finalDirection.y,
-                finalDirection.x
-            ) *
-            Mathf.Rad2Deg;
-
-        rect.rotation =
-            Quaternion.Euler(
-                0f,
-                0f,
-                angle
-            );
+        rect.rotation = Quaternion.Euler(0f, 0f, angle);
 
         line.gameObject.SetActive(true);
     }
 
-    private Image GetOrCreateLine(
-        int index)
+    private Image GetOrCreateLine(int index)
     {
         if (index < linePool.Count)
             return linePool[index];
 
-        GameObject obj =
-            Instantiate(
-                linePrefab,
-                lineParent
-            );
+        GameObject obj = Instantiate(linePrefab, lineParent);
 
         if (obj == null)
             return null;
 
-        Image image =
-            obj.GetComponent<Image>();
+        Image image = obj.GetComponent<Image>();
 
         if (image == null)
         {
@@ -971,7 +649,6 @@ public class LevelMapManager : MonoBehaviour
         }
 
         image.raycastTarget = false;
-
         linePool.Add(image);
 
         return image;
@@ -983,30 +660,18 @@ public class LevelMapManager : MonoBehaviour
 
     private void UnlockStartNode()
     {
-        if (
-            mapNodes.Count == 0 ||
-            mapNodes[0].Count == 0)
-        {
+        if (mapNodes.Count == 0 || mapNodes[0].Count == 0)
             return;
-        }
 
-        LevelNode startNode =
-            mapNodes[0][0];
-
-        UnlockNode(startNode);
+        UnlockNode(mapNodes[0][0]);
     }
 
-    private void UnlockNode(
-        LevelNode node)
+    private void UnlockNode(LevelNode node)
     {
-        if (node == null)
-            return;
-
-        if (node.IsCompleted)
+        if (node == null || node.IsCompleted)
             return;
 
         node.IsUnlocked = true;
-
         UpdateIconState(node);
     }
 
@@ -1014,14 +679,12 @@ public class LevelMapManager : MonoBehaviour
     // SELECT CURRENT NODE
     // ============================================================
 
-    public void SetCurrentNode(
-        IconBehav icon)
+    public void SetCurrentNode(IconBehav icon)
     {
         if (icon == null)
             return;
 
-        LevelNode node =
-            FindNode(icon.transform);
+        LevelNode node = FindNode(icon.transform);
 
         if (node == null)
         {
@@ -1029,27 +692,15 @@ public class LevelMapManager : MonoBehaviour
                 "[LevelMapManager] Could not find clicked IconBehav in map nodes.",
                 this
             );
-
             return;
         }
 
-        if (!node.IsUnlocked)
+        if (!node.IsUnlocked || node.IsCompleted)
         {
             Debug.LogWarning(
-                "[LevelMapManager] Tried to select a locked node.",
+                "[LevelMapManager] Tried to select a locked or completed node.",
                 this
             );
-
-            return;
-        }
-
-        if (node.IsCompleted)
-        {
-            Debug.LogWarning(
-                "[LevelMapManager] Tried to select a completed node.",
-                this
-            );
-
             return;
         }
 
@@ -1059,12 +710,10 @@ public class LevelMapManager : MonoBehaviour
                 "[LevelMapManager] Selected node has no encounter.",
                 this
             );
-
             return;
         }
 
         SelectRoute(node);
-
         currentNode = node;
     }
 
@@ -1072,37 +721,24 @@ public class LevelMapManager : MonoBehaviour
     // ROUTE SELECTION
     // ============================================================
 
-    private void SelectRoute(
-        LevelNode selectedNode)
+    private void SelectRoute(LevelNode selectedNode)
     {
         if (selectedNode == null)
             return;
 
-        foreach (
-            List<LevelNode> row
-            in mapNodes)
+        foreach (List<LevelNode> row in mapNodes)
         {
-            foreach (
-                LevelNode node
-                in row)
+            foreach (LevelNode node in row)
             {
-                if (node == null)
-                    continue;
-
-                if (node == selectedNode)
-                    continue;
-
-                if (node.IsCompleted)
+                if (node == null || node == selectedNode || node.IsCompleted)
                     continue;
 
                 node.IsUnlocked = false;
-
                 UpdateIconState(node);
             }
         }
 
         selectedNode.IsUnlocked = true;
-
         UpdateIconState(selectedNode);
     }
 
@@ -1110,54 +746,35 @@ public class LevelMapManager : MonoBehaviour
     // OLD DIRECT CLICK METHOD
     // ============================================================
 
-    public void HandleNodeClicked(
-        IconBehav icon)
+    public void HandleNodeClicked(IconBehav icon)
     {
         if (icon == null)
             return;
 
-        LevelNode node =
-            FindNode(icon.transform);
+        LevelNode node = FindNode(icon.transform);
 
-        if (node == null)
-            return;
-
-        if (!node.IsUnlocked)
-            return;
-
-        if (node.IsCompleted)
-            return;
-
-        if (node.Encounter == null)
+        if (node == null || !node.IsUnlocked ||
+            node.IsCompleted || node.Encounter == null)
             return;
 
         EncounterManager encounterManager =
             FindFirstObjectByType<EncounterManager>();
 
-        if (encounterManager == null)
-            return;
-
-        if (encounterManager.IsEncounterRunning())
+        if (encounterManager == null || encounterManager.IsEncounterRunning())
             return;
 
         SelectRoute(node);
-
         currentNode = node;
 
         if (hideMapDuringEncounter)
-        {
             HideMap();
-        }
 
-        encounterManager.SetCurrentEncounter(
-            node.Encounter
-        );
-
+        encounterManager.SetCurrentEncounter(node.Encounter);
         encounterManager.StartEncounter();
     }
 
     // ============================================================
-    // VICTORY
+    // VICTORY AND REWARDS
     // ============================================================
 
     private void HandleEncounterVictory(
@@ -1169,7 +786,6 @@ public class LevelMapManager : MonoBehaviour
                 "[LevelMapManager] Victory received, but currentNode is NULL!",
                 this
             );
-
             return;
         }
 
@@ -1178,16 +794,49 @@ public class LevelMapManager : MonoBehaviour
             this
         );
 
+        // Determine reward type before clearing currentNode.
+        bool isBoss =
+            currentNode.Encounter == bossEncounter ||
+            completedEncounter == bossEncounter;
+
         CompleteCurrentNode();
 
-        // IMPORTANT:
-        // Do NOT show the map here.
-        //
-        // The Victory Canvas must remain visible until
-        // the player presses Continue.
-        //
-        // VictoryManager.ContinueButton() is responsible
-        // for returning to the map.
+        if (upgradeChoiceUI == null)
+            upgradeChoiceUI = FindFirstObjectByType<UpgradeChoiceUI>();
+
+        if (victoryManager == null)
+            victoryManager = FindFirstObjectByType<VictoryManager>();
+
+        if (victoryManager != null)
+            victoryManager.SetContinueButtonInteractable(false);
+
+        if (upgradeChoiceUI == null)
+        {
+            Debug.LogError(
+                "[LevelMapManager] UpgradeChoiceUI reference is missing!",
+                this
+            );
+
+            return;
+        }
+
+        if (isBoss)
+        {
+            upgradeChoiceUI.ShowArtifactChoices(OnRewardSelected);
+        }
+        else
+        {
+            upgradeChoiceUI.ShowRingChoices(OnRewardSelected);
+        }
+    }
+
+    private void OnRewardSelected()
+    {
+        if (victoryManager == null)
+            victoryManager = FindFirstObjectByType<VictoryManager>();
+
+        if (victoryManager != null)
+            victoryManager.SetContinueButtonInteractable(true);
     }
 
     private void CompleteCurrentNode()
@@ -1195,29 +844,21 @@ public class LevelMapManager : MonoBehaviour
         if (currentNode == null)
             return;
 
-        LevelNode completedNode =
-            currentNode;
+        LevelNode completedNode = currentNode;
 
         completedNode.IsCompleted = true;
         completedNode.IsUnlocked = false;
 
-        UpdateIconState(
-            completedNode
-        );
+        UpdateIconState(completedNode);
 
         Debug.Log(
             $"[LevelMapManager] Completed node: Row {completedNode.Row}, Column {completedNode.Column}",
             this
         );
 
-        foreach (
-            LevelNode nextNode
-            in completedNode.NextNodes)
+        foreach (LevelNode nextNode in completedNode.NextNodes)
         {
-            if (nextNode == null)
-                continue;
-
-            if (nextNode.IsCompleted)
+            if (nextNode == null || nextNode.IsCompleted)
                 continue;
 
             UnlockNode(nextNode);
@@ -1244,14 +885,10 @@ public class LevelMapManager : MonoBehaviour
         }
 
         if (iconParent != null)
-        {
             iconParent.gameObject.SetActive(false);
-        }
 
         if (lineParent != null)
-        {
             lineParent.gameObject.SetActive(false);
-        }
     }
 
     public void ShowMap()
@@ -1263,14 +900,10 @@ public class LevelMapManager : MonoBehaviour
         }
 
         if (iconParent != null)
-        {
             iconParent.gameObject.SetActive(true);
-        }
 
         if (lineParent != null)
-        {
             lineParent.gameObject.SetActive(true);
-        }
     }
 
     public void ToggleMap()
@@ -1288,10 +921,7 @@ public class LevelMapManager : MonoBehaviour
         bool currentlyVisible = true;
 
         if (iconParent != null)
-        {
-            currentlyVisible =
-                iconParent.gameObject.activeSelf;
-        }
+            currentlyVisible = iconParent.gameObject.activeSelf;
 
         if (currentlyVisible)
             HideMap();
@@ -1303,26 +933,17 @@ public class LevelMapManager : MonoBehaviour
     // FIND NODE
     // ============================================================
 
-    private LevelNode FindNode(
-        Transform target)
+    private LevelNode FindNode(Transform target)
     {
         if (target == null)
             return null;
 
-        foreach (
-            List<LevelNode> row
-            in mapNodes)
+        foreach (List<LevelNode> row in mapNodes)
         {
-            foreach (
-                LevelNode node
-                in row)
+            foreach (LevelNode node in row)
             {
-                if (
-                    node != null &&
-                    node.Transform == target)
-                {
+                if (node != null && node.Transform == target)
                     return node;
-                }
             }
         }
 
@@ -1333,18 +954,12 @@ public class LevelMapManager : MonoBehaviour
     // UPDATE ICON
     // ============================================================
 
-    private void UpdateIconState(
-        LevelNode node)
+    private void UpdateIconState(LevelNode node)
     {
-        if (
-            node == null ||
-            node.Transform == null)
-        {
+        if (node == null || node.Transform == null)
             return;
-        }
 
-        IconBehav icon =
-            node.Transform.GetComponent<IconBehav>();
+        IconBehav icon = node.Transform.GetComponent<IconBehav>();
 
         if (icon != null)
         {
@@ -1359,42 +974,25 @@ public class LevelMapManager : MonoBehaviour
 
         if (sprite != null)
         {
-            sprite.sortingLayerName =
-                iconSortingLayerName;
+            sprite.sortingLayerName = iconSortingLayerName;
 
             if (node.IsCompleted)
-            {
-                sprite.sortingOrder =
-                    completedIconSortingOrder;
-            }
+                sprite.sortingOrder = completedIconSortingOrder;
             else if (node.IsUnlocked)
-            {
-                sprite.sortingOrder =
-                    unlockedIconSortingOrder;
-            }
+                sprite.sortingOrder = unlockedIconSortingOrder;
             else
-            {
-                sprite.sortingOrder =
-                    lockedIconSortingOrder;
-            }
+                sprite.sortingOrder = lockedIconSortingOrder;
         }
 
-        Image image =
-            node.Transform.GetComponent<Image>();
+        Image image = node.Transform.GetComponent<Image>();
 
         if (image == null)
-        {
-            image =
-                node.Transform.GetComponentInChildren<Image>();
-        }
+            image = node.Transform.GetComponentInChildren<Image>();
 
-        if (
-            image != null &&
-            node.Encounter != null &&
+        if (image != null && node.Encounter != null &&
             node.Encounter.mapNodeIcon != null)
         {
-            image.sprite =
-                node.Encounter.mapNodeIcon;
+            image.sprite = node.Encounter.mapNodeIcon;
         }
     }
 
@@ -1407,22 +1005,17 @@ public class LevelMapManager : MonoBehaviour
         List<LevelNode> pool)
     {
         LevelNode closest = null;
+        float minDistance = float.MaxValue;
 
-        float minDistance =
-            float.MaxValue;
-
-        foreach (
-            LevelNode candidate
-            in pool)
+        foreach (LevelNode candidate in pool)
         {
             if (candidate == null)
                 continue;
 
-            float distance =
-                Vector2.Distance(
-                    target.Position,
-                    candidate.Position
-                );
+            float distance = Vector2.Distance(
+                target.Position,
+                candidate.Position
+            );
 
             if (distance < minDistance)
             {
@@ -1442,38 +1035,23 @@ public class LevelMapManager : MonoBehaviour
     {
         if (iconParent != null)
         {
-            for (
-                int i =
-                    iconParent.childCount - 1;
-                i >= 0;
-                i--)
+            for (int i = iconParent.childCount - 1; i >= 0; i--)
             {
-                Transform child =
-                    iconParent.GetChild(i);
+                Transform child = iconParent.GetChild(i);
 
                 if (child != null)
-                {
-                    Destroy(
-                        child.gameObject
-                    );
-                }
+                    Destroy(child.gameObject);
             }
         }
 
-        foreach (
-            Image line
-            in linePool)
+        foreach (Image line in linePool)
         {
             if (line != null)
-            {
                 line.gameObject.SetActive(false);
-            }
         }
 
         mapNodes.Clear();
-
         currentNode = null;
-
         mapGenerated = false;
     }
 
@@ -1496,23 +1074,13 @@ public class LevelMapManager : MonoBehaviour
         return mapGenerated;
     }
 
-    public bool IsNodeUnlocked(
-        int row,
-        int column)
+    public bool IsNodeUnlocked(int row, int column)
     {
-        if (
-            row < 0 ||
-            row >= mapNodes.Count)
-        {
+        if (row < 0 || row >= mapNodes.Count)
             return false;
-        }
 
-        if (
-            column < 0 ||
-            column >= mapNodes[row].Count)
-        {
+        if (column < 0 || column >= mapNodes[row].Count)
             return false;
-        }
 
         return mapNodes[row][column].IsUnlocked;
     }
@@ -1520,9 +1088,7 @@ public class LevelMapManager : MonoBehaviour
     public bool IsMapVisible()
     {
         if (mapCanvas != null)
-        {
             return mapCanvas.activeSelf;
-        }
 
         if (iconParent == null)
             return false;

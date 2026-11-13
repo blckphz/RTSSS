@@ -36,6 +36,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &7679504251272579831
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -81,6 +82,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -90,8 +92,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!114 &2578988999605946092
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107,11 +109,18 @@ MonoBehaviour:
   radius: 3
   damage: 30
   explosionShape: 0
-  totalDamageFalloff: 8.2
+  totalDamageFalloff: 35.2
   allowFriendlyFire: 1
+  applyKnockback: 1
+  maxKnockbackDistance: 3
+  minKnockbackDistance: 1
+  knockbackStepDuration: 0.08
+  knockbackPlayerWithoutDamage: 1
+  playerTag: Player
   explodeOnStart: 1
   destroyAfterExplosion: 1
   destroyDelay: 0.1
+  explosionDelay: 0
   animateTiles: 1
   flashExplosion: 1
 --- !u!95 &2464778251068503343

@@ -20,6 +20,8 @@ MonoBehaviour:
   maxHealth: 1
   moveRange: 0
   canwalkdiagonally: 0
-  abilities: []
+  enemyFootprintSize: 1
+  abilities:
+  - {fileID: 11400000, guid: 348b8b892a9a91d49b2ae790e6fc0587, type: 2}
   RangedAttacker: 1
   upgrades: []

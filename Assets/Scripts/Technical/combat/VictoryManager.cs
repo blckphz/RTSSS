@@ -1,202 +1,137 @@
-﻿using UnityEngine;
+﻿
+using UnityEngine;
 using UnityEngine.UI;
 
 public class VictoryManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField]
-    private GameStateManager gameStateManager;
-
-    [SerializeField]
-    private transitionGameManager transitionManager;
-
-    [SerializeField]
-    private musicManager musicManager;
+    [SerializeField] private GameStateManager gameStateManager;
+    [SerializeField] private transitionGameManager transitionManager;
+    [SerializeField] private musicManager musicManager;
 
     [Header("UI")]
-    [SerializeField]
-    private GameObject victoryCanvas;
+    [SerializeField] private GameObject victoryCanvas;
+    [SerializeField] private Button continueButton;
 
-    [SerializeField]
-    private Button continueButton;
+    private bool rewardPending;
 
     private void Awake()
     {
         if (gameStateManager == null)
-        {
-            gameStateManager =
-                FindAnyObjectByType<GameStateManager>();
-        }
+            gameStateManager = FindFirstObjectByType<GameStateManager>();
 
         if (transitionManager == null)
-        {
-            transitionManager =
-                FindAnyObjectByType<transitionGameManager>();
-        }
+            transitionManager = FindFirstObjectByType<transitionGameManager>();
 
         if (musicManager == null)
-        {
-            musicManager =
-                FindAnyObjectByType<musicManager>();
-        }
+            musicManager = FindFirstObjectByType<musicManager>();
 
-        if (victoryCanvas == null)
-        {
-            Debug.LogError(
-                "[VictoryManager] Victory Canvas is not assigned!",
-                this
-            );
-        }
-        else
-        {
+        if (victoryCanvas != null)
             victoryCanvas.SetActive(false);
-        }
+
+        rewardPending = false;
 
         if (continueButton != null)
-        {
             continueButton.interactable = true;
-        }
     }
 
     private void OnEnable()
     {
         if (gameStateManager == null)
-        {
-            gameStateManager =
-                FindAnyObjectByType<GameStateManager>();
-        }
+            gameStateManager = FindFirstObjectByType<GameStateManager>();
 
         if (gameStateManager != null)
-        {
-            gameStateManager.OnGameStateChanged +=
-                HandleGameStateChanged;
-
-        }
-        else
-        {
-            Debug.LogError(
-                "[VictoryManager] Could not find GameStateManager.",
-                this
-            );
-        }
+            gameStateManager.OnGameStateChanged += HandleGameStateChanged;
     }
 
     private void OnDisable()
     {
         if (gameStateManager != null)
-        {
-            gameStateManager.OnGameStateChanged -=
-                HandleGameStateChanged;
-
-        }
+            gameStateManager.OnGameStateChanged -= HandleGameStateChanged;
     }
 
-    private void HandleGameStateChanged(
-        GameStateManager.GameState newState
-    )
+    private void HandleGameStateChanged(GameStateManager.GameState newState)
     {
-       
-
-        if (
-            newState ==
-            GameStateManager.GameState.Victory
-        )
-        {
-            Debug.Log(
-                "[VictoryManager] Victory state reached.",
-                this
-            );
-
+        if (newState == GameStateManager.GameState.Victory)
             ShowVictoryCanvas();
-
-            return;
-        }
-
-        HideVictoryCanvas();
+        else
+            HideVictoryCanvas();
     }
 
     private void ShowVictoryCanvas()
     {
         if (victoryCanvas == null)
         {
-            Debug.LogError(
-                "[VictoryManager] Cannot show Victory Canvas. " +
-                "Reference is missing.",
-                this
-            );
-
+            Debug.LogError("[VictoryManager] Victory Canvas is not assigned!");
             return;
         }
 
-        // Continue is immediately available.
-        if (continueButton != null)
-        {
-            continueButton.interactable = true;
-        }
-
         victoryCanvas.SetActive(true);
-
+        UpdateContinueButton();
     }
 
     private void HideVictoryCanvas()
     {
-        if (victoryCanvas == null)
-        {
-            return;
-        }
-
-        if (!victoryCanvas.activeSelf)
-        {
-            return;
-        }
-
-        victoryCanvas.SetActive(false);
-
-    
+        if (victoryCanvas != null)
+            victoryCanvas.SetActive(false);
     }
 
-    public void ContinueButton()
+    public void SetContinueButtonInteractable(bool interactable)
     {
-        HideVictoryCanvas();
+        rewardPending = !interactable;
+        UpdateContinueButton();
+    }
 
-        if (gameStateManager != null)
-        {
-            gameStateManager.SetGameState(
-                GameStateManager.GameState.Map
-            );
-        }
-        else
-        {
-            Debug.LogError(
-                "[VictoryManager] GameStateManager not found!",
-                this
-            );
-        }
+    private void UpdateContinueButton()
+    {
+        if (continueButton == null)
+            return;
 
-        if (musicManager != null)
+        continueButton.interactable = !rewardPending;
+    }
+
+    private void ResetNextRoundButton()
+    {
+        NextRoundButtonManager nextRoundButton =
+            FindFirstObjectByType<NextRoundButtonManager>();
+
+        if (nextRoundButton != null)
         {
-            musicManager.PlayMapMusic();
+            nextRoundButton.ResetNextRoundButton();
         }
         else
         {
             Debug.LogWarning(
-                "[VictoryManager] MusicManager not found. " +
-                "Map music will not play.",
-                this
+                "[VictoryManager] NextRoundButtonManager not found."
             );
+        }
+    }
+
+    public void ContinueButton()
+    {
+        if (rewardPending)
+        {
+            Debug.LogWarning(
+                "[VictoryManager] Cannot continue while reward is pending."
+            );
+            return;
         }
 
+        if (continueButton != null && !continueButton.interactable)
+            return;
+
+        HideVictoryCanvas();
+
+        // Reset the Next Round button for the next level.
+        ResetNextRoundButton();
+
+        if (gameStateManager != null)
+            gameStateManager.SetGameState(GameStateManager.GameState.Map);
+
+        if (musicManager != null)
+            musicManager.PlayMapMusic();
+
         if (transitionManager != null)
-        {
             transitionManager.TransitionToMap();
-        }
-        else
-        {
-            Debug.LogError(
-                "[VictoryManager] " +
-                "transitionGameManager not found!",
-                this
-            );
-        }
     }
 }

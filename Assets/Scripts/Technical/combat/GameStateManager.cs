@@ -1,3 +1,4 @@
+
 using System;
 using UnityEngine;
 
@@ -19,30 +20,20 @@ public class GameStateManager : MonoBehaviour
         GameOver
     }
 
-
     // ============================================================
     // REFERENCES
     // ============================================================
 
     [Header("References")]
-
-    [SerializeField]
-    private EncounterManager encounterManager;
-
-    [SerializeField]
-    private UpgradeChoiceUI upgradeChoiceUI;
-
+    [SerializeField] private EncounterManager encounterManager;
+    [SerializeField] private UpgradeChoiceUI upgradeChoiceUI;
 
     // ============================================================
     // INITIAL STATE
     // ============================================================
 
     [Header("Initial State")]
-
-    [SerializeField]
-    private GameState startingState =
-        GameState.MainMenu;
-
+    [SerializeField] private GameState startingState = GameState.MainMenu;
 
     // ============================================================
     // INTERNAL STATE
@@ -50,22 +41,17 @@ public class GameStateManager : MonoBehaviour
 
     private GameState currentState;
 
-
     // ============================================================
     // PUBLIC STATE
     // ============================================================
 
-    public GameState CurrentState =>
-        currentState;
-
+    public GameState CurrentState => currentState;
 
     // ============================================================
     // EVENTS
     // ============================================================
 
-    public event Action<GameState>
-        OnGameStateChanged;
-
+    public event Action<GameState> OnGameStateChanged;
 
     // ============================================================
     // AWAKE
@@ -74,21 +60,13 @@ public class GameStateManager : MonoBehaviour
     private void Awake()
     {
         if (encounterManager == null)
-        {
-            encounterManager =
-                FindFirstObjectByType<EncounterManager>();
-        }
+            encounterManager = FindFirstObjectByType<EncounterManager>();
 
         if (upgradeChoiceUI == null)
-        {
-            upgradeChoiceUI =
-                FindFirstObjectByType<UpgradeChoiceUI>();
-        }
+            upgradeChoiceUI = FindFirstObjectByType<UpgradeChoiceUI>();
 
-        currentState =
-            startingState;
+        currentState = startingState;
     }
-
 
     // ============================================================
     // START
@@ -96,37 +74,26 @@ public class GameStateManager : MonoBehaviour
 
     private void Start()
     {
-        if (
-            GameSession.Instance != null &&
-            GameSession.Instance.NewRunPending
-        )
+        if (GameSession.Instance != null &&
+            GameSession.Instance.NewRunPending)
         {
             ShowStartingUpgrades();
         }
     }
 
-
     // ============================================================
     // SET GAME STATE
     // ============================================================
 
-    public void SetGameState(
-        GameState newState
-    )
+    public void SetGameState(GameState newState)
     {
         if (currentState == newState)
-        {
             return;
-        }
 
-        currentState =
-            newState;
+        currentState = newState;
 
-        OnGameStateChanged?.Invoke(
-            currentState
-        );
+        OnGameStateChanged?.Invoke(currentState);
     }
-
 
     // ============================================================
     // STARTING UPGRADES
@@ -135,13 +102,14 @@ public class GameStateManager : MonoBehaviour
     private void ShowStartingUpgrades()
     {
         if (upgradeChoiceUI == null)
-        {
-            upgradeChoiceUI =
-                FindFirstObjectByType<UpgradeChoiceUI>();
-        }
+            upgradeChoiceUI = FindFirstObjectByType<UpgradeChoiceUI>();
 
         if (upgradeChoiceUI == null)
         {
+            Debug.LogError(
+                "[GameStateManager] UpgradeChoiceUI could not be found.",
+                this
+            );
             return;
         }
 
@@ -150,7 +118,6 @@ public class GameStateManager : MonoBehaviour
         );
     }
 
-
     // ============================================================
     // STARTING UPGRADE SELECTED
     // ============================================================
@@ -158,15 +125,10 @@ public class GameStateManager : MonoBehaviour
     private void OnStartingUpgradeSelected()
     {
         if (GameSession.Instance != null)
-        {
             GameSession.Instance.StartingUpgradesComplete();
-        }
 
-        SetGameState(
-            GameState.Map
-        );
+        SetGameState(GameState.Map);
     }
-
 
     // ============================================================
     // ENTER MAP
@@ -174,11 +136,8 @@ public class GameStateManager : MonoBehaviour
 
     public void EnterMap()
     {
-        SetGameState(
-            GameState.Map
-        );
+        SetGameState(GameState.Map);
     }
-
 
     // ============================================================
     // START COMBAT
@@ -187,33 +146,29 @@ public class GameStateManager : MonoBehaviour
     public void StartCombat()
     {
         if (encounterManager == null)
-        {
-            encounterManager =
-                FindFirstObjectByType<EncounterManager>();
-        }
+            encounterManager = FindFirstObjectByType<EncounterManager>();
 
         if (encounterManager == null)
         {
+            Debug.LogError(
+                "[GameStateManager] EncounterManager could not be found.",
+                this
+            );
             return;
         }
 
-        if (
-            currentState != GameState.MainMenu &&
+        if (currentState != GameState.MainMenu &&
             currentState != GameState.Map &&
             currentState != GameState.Victory &&
-            currentState != GameState.Defeat
-        )
+            currentState != GameState.Defeat)
         {
             return;
         }
 
-        SetGameState(
-            GameState.PreparingEncounter
-        );
+        SetGameState(GameState.PreparingEncounter);
 
         encounterManager.StartEncounter();
     }
-
 
     // ============================================================
     // ENCOUNTER STARTED
@@ -221,11 +176,8 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterStarted()
     {
-        SetGameState(
-            GameState.Combat
-        );
+        SetGameState(GameState.Combat);
     }
-
 
     // ============================================================
     // ENCOUNTER VICTORY
@@ -233,11 +185,8 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterVictory()
     {
-        SetGameState(
-            GameState.Victory
-        );
+        SetGameState(GameState.Victory);
     }
-
 
     // ============================================================
     // ENCOUNTER DEFEAT
@@ -245,11 +194,8 @@ public class GameStateManager : MonoBehaviour
 
     public void EncounterDefeat()
     {
-        SetGameState(
-            GameState.Defeat
-        );
+        SetGameState(GameState.Defeat);
     }
-
 
     // ============================================================
     // REWARDS
@@ -257,11 +203,8 @@ public class GameStateManager : MonoBehaviour
 
     public void OpenRewards()
     {
-        SetGameState(
-            GameState.Rewards
-        );
+        SetGameState(GameState.Rewards);
     }
-
 
     // ============================================================
     // GAME OVER
@@ -269,8 +212,6 @@ public class GameStateManager : MonoBehaviour
 
     public void GameOver()
     {
-        SetGameState(
-            GameState.GameOver
-        );
+        SetGameState(GameState.GameOver);
     }
 }

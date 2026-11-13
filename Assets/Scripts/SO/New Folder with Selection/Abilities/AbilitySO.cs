@@ -19,6 +19,7 @@ public abstract class AbilitySO : ScriptableObject
     {
         Enemy,
         Ally,
+        Player,
         Any
     }
 
@@ -29,7 +30,6 @@ public abstract class AbilitySO : ScriptableObject
         NightOnly
     }
 
-    // Each ability must be assigned its matching slot in the Inspector.
     public enum AbilitySlot
     {
         Ability1,
@@ -60,18 +60,10 @@ public abstract class AbilitySO : ScriptableObject
 
     [Header("Combat")]
     [SerializeField] private int damage = 10;
-
-    [SerializeField, Min(0)]
-    private int cooldown = 0;
-
-    [SerializeField]
-    private bool canAttackWithThisAfterMove = false;
-
-    [SerializeField, Min(0)]
-    private int usesPerTurn = 1;
-
-    [SerializeField, Min(0f)]
-    private float useDuration = 0.25f;
+    [SerializeField, Min(0)] private int cooldown = 0;
+    [SerializeField] private bool canAttackWithThisAfterMove = false;
+    [SerializeField, Min(0)] private int usesPerTurn = 1;
+    [SerializeField, Min(0f)] private float useDuration = 0.25f;
 
     [Header("Targeting")]
     [SerializeField] private TargetType targetType = TargetType.Enemy;
@@ -149,15 +141,11 @@ public abstract class AbilitySO : ScriptableObject
         if (user == null)
             return damage;
 
-        // AttackUnit handles the normal damage bonuses and the
-        // ability-specific ring bonus. Delegate to it so bonuses
-        // are not applied twice.
         AttackUnit attackUnit = FindComponent<AttackUnit>(user);
 
         if (attackUnit != null)
             return Mathf.Max(0, attackUnit.GetEffectiveDamage(this));
 
-        // Fallback for objects that do not have an AttackUnit.
         UpgradeableCombatUnit upgradeable =
             FindComponent<UpgradeableCombatUnit>(user);
 
@@ -219,10 +207,7 @@ public abstract class AbilitySO : ScriptableObject
                 return 0;
         }
 
-        return UpdateManager.Instance.GetPlayerRingBonus(
-            user,
-            ringStat
-        );
+        return UpdateManager.Instance.GetPlayerRingBonus(user, ringStat);
     }
 
     private static T FindComponent<T>(GameObject obj)
@@ -302,8 +287,7 @@ public abstract class AbilitySO : ScriptableObject
         Vector2Int mouseTile =
             gridManager.WorldToGridPosition(mouseWorldPosition);
 
-        Vector2Int userTile =
-            GetUserGridPosition(gridManager, user);
+        Vector2Int userTile = GetUserGridPosition(gridManager, user);
 
         Vector2Int difference = mouseTile - userTile;
 
@@ -337,6 +321,34 @@ public abstract class AbilitySO : ScriptableObject
     }
 
     // ============================================================
+    // TEAM VALIDATION
+    // ============================================================
+
+    private bool IsEnemyTeam(Team userTeam, Team targetTeam)
+    {
+        if (userTeam == Team.Player || userTeam == Team.Ally)
+            return targetTeam == Team.Enemy;
+
+        if (userTeam == Team.Enemy)
+            return targetTeam == Team.Player ||
+                   targetTeam == Team.Ally;
+
+        return false;
+    }
+
+    private bool IsAllyTeam(Team userTeam, Team targetTeam)
+    {
+        if (userTeam == Team.Player || userTeam == Team.Ally)
+            return targetTeam == Team.Player ||
+                   targetTeam == Team.Ally;
+
+        if (userTeam == Team.Enemy)
+            return targetTeam == Team.Enemy;
+
+        return false;
+    }
+
+    // ============================================================
     // RANGE TILES
     // ============================================================
 
@@ -366,15 +378,10 @@ public abstract class AbilitySO : ScriptableObject
 
                         int distance = Mathf.Abs(x) + Mathf.Abs(y);
 
-                        if (distance > abilityRange ||
-                            distance < minimumDistance)
+                        if (distance > abilityRange || distance < minimumDistance)
                             continue;
 
-                        AddValidTile(
-                            gridManager,
-                            tiles,
-                            origin + new Vector2Int(x, y)
-                        );
+                        AddValidTile(gridManager, tiles, origin + new Vector2Int(x, y));
                     }
                 }
                 break;
@@ -387,20 +394,12 @@ public abstract class AbilitySO : ScriptableObject
                         if (x == 0 && y == 0)
                             continue;
 
-                        int distance = Mathf.Max(
-                            Mathf.Abs(x),
-                            Mathf.Abs(y)
-                        );
+                        int distance = Mathf.Max(Mathf.Abs(x), Mathf.Abs(y));
 
-                        if (distance > abilityRange ||
-                            distance < minimumDistance)
+                        if (distance > abilityRange || distance < minimumDistance)
                             continue;
 
-                        AddValidTile(
-                            gridManager,
-                            tiles,
-                            origin + new Vector2Int(x, y)
-                        );
+                        AddValidTile(gridManager, tiles, origin + new Vector2Int(x, y));
                     }
                 }
                 break;
@@ -424,29 +423,10 @@ public abstract class AbilitySO : ScriptableObject
                     if (i < minimumDistance)
                         continue;
 
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(i, i)
-                    );
-
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(-i, i)
-                    );
-
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(i, -i)
-                    );
-
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(-i, -i)
-                    );
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, i));
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, i));
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, -i));
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, -i));
                 }
                 break;
 
@@ -461,29 +441,10 @@ public abstract class AbilitySO : ScriptableObject
                     AddValidTile(gridManager, tiles, origin + Vector2Int.left * i);
                     AddValidTile(gridManager, tiles, origin + Vector2Int.right * i);
 
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(i, i)
-                    );
-
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(-i, i)
-                    );
-
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(i, -i)
-                    );
-
-                    AddValidTile(
-                        gridManager,
-                        tiles,
-                        origin + new Vector2Int(-i, -i)
-                    );
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, i));
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, i));
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(i, -i));
+                    AddValidTile(gridManager, tiles, origin + new Vector2Int(-i, -i));
                 }
                 break;
 
@@ -501,27 +462,12 @@ public abstract class AbilitySO : ScriptableObject
                     {
                         Vector2Int offset;
 
-                        if (direction == Vector2Int.up ||
-                            direction == Vector2Int.down)
-                        {
-                            offset = new Vector2Int(
-                                side,
-                                direction.y * distance
-                            );
-                        }
+                        if (direction == Vector2Int.up || direction == Vector2Int.down)
+                            offset = new Vector2Int(side, direction.y * distance);
                         else
-                        {
-                            offset = new Vector2Int(
-                                direction.x * distance,
-                                side
-                            );
-                        }
+                            offset = new Vector2Int(direction.x * distance, side);
 
-                        AddValidTile(
-                            gridManager,
-                            tiles,
-                            origin + offset
-                        );
+                        AddValidTile(gridManager, tiles, origin + offset);
                     }
                 }
                 break;
@@ -591,10 +537,7 @@ public abstract class AbilitySO : ScriptableObject
 
         int footprintSize = character != null
             ? Mathf.Max(1, character.GetFootprintSize())
-            : Mathf.Max(
-                1,
-                gridManager.GetUnitFootprintSize(targetUnit.gameObject)
-            );
+            : Mathf.Max(1, gridManager.GetUnitFootprintSize(targetUnit.gameObject));
 
         int minOffset = -(footprintSize / 2);
 
@@ -636,30 +579,23 @@ public abstract class AbilitySO : ScriptableObject
         Team userTeam = userUnit.GetTeam();
         Team targetTeam = targetUnit.GetTeam();
 
-        if (targetType == TargetType.Enemy)
+        switch (targetType)
         {
-            if (userTeam == Team.Player || userTeam == Team.Ally)
-                return targetTeam == Team.Enemy;
+            case TargetType.Enemy:
+                return IsEnemyTeam(userTeam, targetTeam);
 
-            if (userTeam == Team.Enemy)
-                return targetTeam == Team.Player ||
-                       targetTeam == Team.Ally;
-        }
-        else if (targetType == TargetType.Ally)
-        {
-            if (userTeam == Team.Player || userTeam == Team.Ally)
-                return targetTeam == Team.Player ||
-                       targetTeam == Team.Ally;
+            case TargetType.Ally:
+                return IsAllyTeam(userTeam, targetTeam);
 
-            if (userTeam == Team.Enemy)
-                return targetTeam == Team.Enemy;
-        }
-        else
-        {
-            return targetType == TargetType.Any;
-        }
+            case TargetType.Player:
+                return targetTeam == Team.Player;
 
-        return false;
+            case TargetType.Any:
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     // ============================================================
@@ -685,8 +621,7 @@ public abstract class AbilitySO : ScriptableObject
 
         List<Vector2Int> rangeTiles = GetRangeTiles(gridManager, user);
 
-        return rangeTiles != null &&
-               rangeTiles.Contains(targetPosition);
+        return rangeTiles != null && rangeTiles.Contains(targetPosition);
     }
 
     // ============================================================

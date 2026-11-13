@@ -116,8 +116,5 @@ public class GameSession : MonoBehaviour
     {
         NewRunPending = false;
 
-        Debug.Log(
-            "[GameSession] Starting upgrades completed."
-        );
     }
 }

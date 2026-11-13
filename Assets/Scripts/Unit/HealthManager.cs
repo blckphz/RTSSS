@@ -109,10 +109,6 @@ public class HealthManager : MonoBehaviour
         SetupHealthUI();
         UpdateHealthUI();
 
-        Debug.Log(
-            "[HealthManager] Awake: " + gameObject.name +
-            " | Health: " + health + " / " + maxHealth
-        );
     }
 
     private void OnEnable()
@@ -235,11 +231,6 @@ public class HealthManager : MonoBehaviour
 
         NotifyHealthChanged();
 
-        Debug.Log(
-            "[HealthManager] Initialized: " + gameObject.name +
-            " | " + health + " / " + maxHealth +
-            " | Player: " + isPlayerCharacter
-        );
     }
 
     // =========================================================

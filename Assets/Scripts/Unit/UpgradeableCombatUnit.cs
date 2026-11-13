@@ -150,11 +150,6 @@ public class UpgradeableCombatUnit : MonoBehaviour
         }
 
         UpdateManager.Instance.RegisterRingUpgradeTarget(this);
-
-        Debug.Log(
-            "[UpgradeableCombatUnit] Registered turret: " +
-            gameObject.name
-        );
     }
 
     // Compatibility with the previous registration method name.

@@ -137,7 +137,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0.07, y: 0.67}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5769102051532523084
@@ -290,13 +290,15 @@ MonoBehaviour:
   isHealNumber: 0
   damageColor: {r: 1, g: 0, b: 0, a: 1}
   healColor: {r: 0, g: 1, b: 0, a: 1}
-  popScale: 1.6
   popDuration: 0.3
+  popOvershoot: 1.22
+  squashAmount: 0.04
+  popRotation: 4
   pauseDuration: 1
-  upwardForce: 3
-  sidewaysForce: 1
-  minHorizontalForce: -1
-  maxHorizontalForce: 1
+  damageRiseDistance: 0.85
+  damageSidewaysDistance: 0.35
+  floatWobbleDistance: 0.035
+  floatWobbleCycles: 1.25
   healHorizontalDistance: 0.25
   healHorizontalSpeed: 3
   healVerticalSpeed: 1.5
