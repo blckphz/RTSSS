@@ -1011,22 +1011,33 @@ public class AttackUnit : MonoBehaviour
         return maxRange;
     }
 
+    // ============================================================
+    // EFFECTIVE DAMAGE
+    // ============================================================
+
     public int GetEffectiveDamage(AbilitySO abilitySO)
     {
         if (abilitySO == null)
             return 0;
 
+        // Start with the ability's base damage.
         int damage = abilitySO.GetDamage();
 
+        // Add the unit's general damage upgrade.
         UpgradeableCombatUnit upgradeable =
             GetUpgradeableCombatUnit();
 
         if (upgradeable != null)
             damage += upgradeable.GetBonusDamage();
 
+        // Add the existing day/night damage bonus.
         damage += GetDayNightDamageBonus();
 
-        return damage;
+        // Add only the ring bonus assigned to this ability's slot.
+        // AbilitySO maps its slot to the matching RingStat.
+        damage += abilitySO.GetAbilityDamageRingBonus(gameObject);
+
+        return Mathf.Max(0, damage);
     }
 
     public int GetEffectiveRange(AbilitySO abilitySO)

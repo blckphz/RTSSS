@@ -28,7 +28,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ef07fb65b86de7448930e443cf24632c, type: 2}
   RangedAttacker: 0
   upgrades:
-  - {fileID: 11400000, guid: 136939df6333c6e4baef25e7ace241d3, type: 2}
-  - {fileID: 11400000, guid: f5c82a2e3302404478ab2094bda72683, type: 2}
   - {fileID: 11400000, guid: f138b88c8a0317647934d8a8a9e31bf2, type: 2}
+  - {fileID: 11400000, guid: f5c82a2e3302404478ab2094bda72683, type: 2}
+  - {fileID: 11400000, guid: 136939df6333c6e4baef25e7ace241d3, type: 2}
   - {fileID: 11400000, guid: e1079012b6b26844b98cbf6bf902a0d7, type: 2}
+  - {fileID: 11400000, guid: 129e07311c38d17438692b744df354f0, type: 2}
+  - {fileID: 11400000, guid: a9270057f9b355b45840754f75b73f73, type: 2}
+  - {fileID: 11400000, guid: b83bd08bef2b5624386582135f484a5d, type: 2}
+  - {fileID: 11400000, guid: d6b8fb7f3479fe4498742d3706ec7ca1, type: 2}

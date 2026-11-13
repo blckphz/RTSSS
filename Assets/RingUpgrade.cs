@@ -12,7 +12,12 @@ public enum RingStat
     Health,
     Damage,
     Range,
-    ChainBounce
+    ChainBounce,
+    ExplosionSize,
+    Ability1Damage,
+    Ability2Damage,
+    Ability3Damage,
+    Ability4Damage
 }
 
 [CreateAssetMenu(

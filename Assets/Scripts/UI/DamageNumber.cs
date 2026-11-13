@@ -1,3 +1,4 @@
+
 using TMPro;
 using UnityEngine;
 
@@ -9,8 +10,7 @@ public class DamageNumber : MonoBehaviour
     // ==================================================
 
     [Header("References")]
-    [SerializeField]
-    private TextMeshProUGUI damageText;
+    [SerializeField] private TextMeshProUGUI damageText;
 
 
     // ==================================================
@@ -18,12 +18,7 @@ public class DamageNumber : MonoBehaviour
     // ==================================================
 
     [Header("Number Type")]
-    [Tooltip(
-        "OFF = Damage Number\n" +
-        "ON = Heal Number"
-    )]
-    [SerializeField]
-    private bool isHealNumber = false;
+    [SerializeField] private bool isHealNumber = false;
 
 
     // ==================================================
@@ -31,68 +26,70 @@ public class DamageNumber : MonoBehaviour
     // ==================================================
 
     [Header("Colors")]
-    [SerializeField]
-    private Color damageColor = Color.red;
-
-    [SerializeField]
-    private Color healColor = Color.green;
+    [SerializeField] private Color damageColor = Color.red;
+    [SerializeField] private Color healColor = Color.green;
 
 
     // ==================================================
-    // DAMAGE MOVEMENT
+    // JUICY POP
     // ==================================================
 
-    [Header("Damage Movement")]
-    [SerializeField]
-    private float upwardForce = 3f;
+    [Header("Juicy Pop")]
+    [Tooltip("How long the entrance animation takes.")]
+    [SerializeField] private float popDuration = 0.24f;
 
-    [SerializeField]
-    private float sidewaysForce = 1f;
+    [Tooltip("Maximum scale reached during the pop.")]
+    [SerializeField] private float popOvershoot = 1.22f;
 
+    [Tooltip("Subtle squash and stretch intensity.")]
+    [Range(0f, 0.2f)]
+    [SerializeField] private float squashAmount = 0.04f;
 
-    // ==================================================
-    // RANDOM DAMAGE TRAJECTORY
-    // ==================================================
-
-    [Header("Random Damage Trajectory")]
-    [SerializeField]
-    private float minHorizontalForce = -1f;
-
-    [SerializeField]
-    private float maxHorizontalForce = 1f;
+    [Tooltip("Small random rotation that smoothly settles.")]
+    [SerializeField] private float popRotation = 4f;
 
 
     // ==================================================
-    // HEAL MOVEMENT
+    // PAUSE
     // ==================================================
 
-    [Header("Heal Movement")]
-    [Tooltip(
-        "How far the heal number moves left and right."
-    )]
-    [SerializeField]
-    private float healHorizontalDistance = 0.25f;
-
-    [Tooltip(
-        "How quickly the heal number moves left and right."
-    )]
-    [SerializeField]
-    private float healHorizontalSpeed = 3f;
-
-    [Tooltip(
-        "How quickly the heal number moves upward."
-    )]
-    [SerializeField]
-    private float healVerticalSpeed = 1.5f;
+    [Header("Pause")]
+    [SerializeField] private float pauseDuration = 1f;
 
 
     // ==================================================
-    // LIFETIME
+    // DAMAGE FLOAT
     // ==================================================
 
-    [Header("Lifetime")]
-    [SerializeField]
-    private float duration = 0.8f;
+    [Header("Damage Float")]
+    [SerializeField] private float damageRiseDistance = 0.85f;
+
+    [SerializeField] private float damageSidewaysDistance = 0.35f;
+
+    [Tooltip("Subtle floating movement.")]
+    [SerializeField] private float floatWobbleDistance = 0.035f;
+
+    [SerializeField] private float floatWobbleCycles = 1.25f;
+
+
+    // ==================================================
+    // HEAL FLOAT
+    // ==================================================
+
+    [Header("Heal Float")]
+    [SerializeField] private float healHorizontalDistance = 0.25f;
+
+    [SerializeField] private float healHorizontalSpeed = 3f;
+
+    [SerializeField] private float healVerticalSpeed = 1.5f;
+
+
+    // ==================================================
+    // MOVEMENT TIMING
+    // ==================================================
+
+    [Header("Movement Timing")]
+    [SerializeField] private float movementDuration = 0.85f;
 
 
     // ==================================================
@@ -103,10 +100,8 @@ public class DamageNumber : MonoBehaviour
     [SerializeField]
     private AnimationCurve fadeCurve =
         AnimationCurve.EaseInOut(
-            0f,
-            1f,
-            1f,
-            0f
+            0f, 1f,
+            1f, 0f
         );
 
 
@@ -117,10 +112,18 @@ public class DamageNumber : MonoBehaviour
     private Rigidbody2D rb;
 
     private float timer;
+    private float movementTimer;
 
-    private Vector3 healStartPosition;
-
+    private float randomHorizontal;
+    private float randomRotation;
     private float healPingPongOffset;
+
+    private Vector3 startPosition;
+    private Vector3 originalScale;
+
+    private Quaternion originalRotation;
+
+    private bool movementStarted;
 
 
     // ==================================================
@@ -129,15 +132,26 @@ public class DamageNumber : MonoBehaviour
 
     private void Awake()
     {
-        rb =
-            GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
 
-        // Prevent physics from rotating
-        // the number.
         rb.freezeRotation = true;
-
-        // Disable gravity.
         rb.gravityScale = 0f;
+        rb.bodyType = RigidbodyType2D.Kinematic;
+
+        if (damageText == null)
+        {
+            damageText =
+                GetComponentInChildren<TextMeshProUGUI>();
+        }
+
+        if (damageText != null)
+        {
+            originalScale =
+                damageText.transform.localScale;
+
+            originalRotation =
+                damageText.transform.localRotation;
+        }
     }
 
 
@@ -145,116 +159,62 @@ public class DamageNumber : MonoBehaviour
     // SETUP
     // ==================================================
 
-    public void Setup(
-        int amount)
+    public void Setup(int amount)
     {
         if (damageText == null)
         {
             damageText =
-                GetComponentInChildren<
-                    TextMeshProUGUI
-                >();
+                GetComponentInChildren<TextMeshProUGUI>();
         }
 
         if (damageText != null)
         {
-            // ==================================================
-            // HEAL NUMBER
-            // ==================================================
+            damageText.text = isHealNumber
+                ? "+" + amount
+                : "-" + amount;
 
-            if (isHealNumber)
-            {
-                damageText.text =
-                    "+" +
-                    amount;
+            damageText.color = isHealNumber
+                ? healColor
+                : damageColor;
 
-                damageText.color =
-                    healColor;
-            }
-
-            // ==================================================
-            // DAMAGE NUMBER
-            // ==================================================
-
-            else
-            {
-                damageText.text =
-                    "-" +
-                    amount;
-
-                damageText.color =
-                    damageColor;
-            }
-
-            Color color =
-                damageText.color;
-
+            Color color = damageText.color;
             color.a = 1f;
+            damageText.color = color;
 
-            damageText.color =
-                color;
+            originalScale =
+                damageText.transform.localScale;
+
+            originalRotation =
+                damageText.transform.localRotation;
+
+            // Start invisible in scale.
+            damageText.transform.localScale =
+                Vector3.zero;
+
+            randomRotation =
+                Random.Range(-popRotation, popRotation);
+
+            damageText.transform.localRotation =
+                originalRotation *
+                Quaternion.Euler(0f, 0f, randomRotation);
         }
 
         timer = 0f;
+        movementTimer = 0f;
 
-        // Stop previous movement.
-        rb.linearVelocity =
-            Vector2.zero;
+        movementStarted = false;
 
-        rb.angularVelocity =
-            0f;
+        startPosition = transform.position;
 
+        randomHorizontal =
+            Random.Range(-1f, 1f);
 
-        // ==================================================
-        // HEAL MOVEMENT
-        // ==================================================
+        healPingPongOffset =
+            Random.Range(0f, Mathf.PI * 2f);
 
-        if (isHealNumber)
-        {
-            healStartPosition =
-                transform.position;
-
-            healPingPongOffset =
-                UnityEngine.Random.Range(
-                    0f,
-                    Mathf.PI * 2f
-                );
-
-            // Heal movement is handled manually.
-            rb.bodyType =
-                RigidbodyType2D.Kinematic;
-
-            rb.linearVelocity =
-                Vector2.zero;
-
-            return;
-        }
-
-
-        // ==================================================
-        // DAMAGE MOVEMENT
-        // ==================================================
-
-        rb.bodyType =
-            RigidbodyType2D.Dynamic;
-
-        float randomHorizontal =
-            UnityEngine.Random.Range(
-                minHorizontalForce,
-                maxHorizontalForce
-            );
-
-        Vector2 force =
-            new Vector2(
-                randomHorizontal *
-                sidewaysForce,
-                upwardForce
-            );
-
-        rb.AddForce(
-            force,
-            ForceMode2D.Impulse
-        );
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
     }
 
 
@@ -264,45 +224,124 @@ public class DamageNumber : MonoBehaviour
 
     private void Update()
     {
-        timer +=
-            Time.deltaTime;
+        timer += Time.deltaTime;
 
-        float t =
-            duration <= 0f
-                ? 1f
-                : Mathf.Clamp01(
-                    timer /
-                    duration
+
+        // ==================================================
+        // JUICY POP
+        // ==================================================
+
+        if (timer < popDuration)
+        {
+            AnimatePop();
+            return;
+        }
+
+        // Ensure the final pop state is exact.
+        if (damageText != null)
+        {
+            damageText.transform.localScale =
+                originalScale;
+
+            damageText.transform.localRotation =
+                originalRotation;
+        }
+
+
+        // ==================================================
+        // STATIONARY PAUSE
+        // ==================================================
+
+        if (timer < popDuration + pauseDuration)
+        {
+            transform.position = startPosition;
+            return;
+        }
+
+
+        // ==================================================
+        // START FLOATING
+        // ==================================================
+
+        if (!movementStarted)
+        {
+            movementStarted = true;
+            movementTimer = 0f;
+        }
+
+        movementTimer += Time.deltaTime;
+
+        float t = movementDuration <= 0f
+            ? 1f
+            : Mathf.Clamp01(
+                movementTimer / movementDuration
+            );
+
+        // Smooth deceleration.
+        float easedT = EaseOutCubic(t);
+
+
+        // ==================================================
+        // DAMAGE MOVEMENT
+        // ==================================================
+
+        if (!isHealNumber)
+        {
+            float horizontal =
+                randomHorizontal *
+                damageSidewaysDistance *
+                easedT;
+
+            float wobble =
+                Mathf.Sin(
+                    t * Mathf.PI * 2f * floatWobbleCycles
+                ) *
+                floatWobbleDistance *
+                (1f - t);
+
+            float vertical =
+                damageRiseDistance * easedT;
+
+            transform.position =
+                startPosition +
+                new Vector3(
+                    horizontal + wobble,
+                    vertical,
+                    0f
                 );
+        }
 
 
         // ==================================================
         // HEAL MOVEMENT
         // ==================================================
 
-        if (isHealNumber)
+        else
         {
-            // Move straight upward.
-            float verticalMovement =
-                healVerticalSpeed *
-                timer;
+            float elapsed =
+                movementTimer;
 
-            // Gentle left/right ping-pong.
-            float horizontalMovement =
+            float vertical =
+                healVerticalSpeed * elapsed;
+
+            float currentWave =
                 Mathf.Sin(
-                    (
-                        timer *
-                        healHorizontalSpeed
-                    ) +
-                    healPingPongOffset
-                ) *
+                    healPingPongOffset +
+                    elapsed * healHorizontalSpeed
+                );
+
+            float startingWave =
+                Mathf.Sin(healPingPongOffset);
+
+            float horizontal =
+                (currentWave - startingWave) *
                 healHorizontalDistance;
 
             transform.position =
-                healStartPosition +
+                startPosition +
                 new Vector3(
-                    horizontalMovement,
-                    verticalMovement,
+                    horizontal,
+                    vertical,
                     0f
                 );
         }
@@ -314,16 +353,11 @@ public class DamageNumber : MonoBehaviour
 
         if (damageText != null)
         {
-            Color color =
-                damageText.color;
+            Color color = damageText.color;
 
-            color.a =
-                fadeCurve.Evaluate(
-                    t
-                );
+            color.a = fadeCurve.Evaluate(t);
 
-            damageText.color =
-                color;
+            damageText.color = color;
         }
 
 
@@ -333,9 +367,96 @@ public class DamageNumber : MonoBehaviour
 
         if (t >= 1f)
         {
-            Destroy(
-                gameObject
+            Destroy(gameObject);
+        }
+    }
+
+
+    // ==================================================
+    // POP ANIMATION
+    // ==================================================
+
+    private void AnimatePop()
+    {
+        if (damageText == null)
+            return;
+
+        float t = popDuration <= 0f
+            ? 1f
+            : Mathf.Clamp01(timer / popDuration);
+
+        float scale;
+
+        // First phase: quickly grow beyond normal size.
+        if (t < 0.68f)
+        {
+            float phase = t / 0.68f;
+
+            float eased = EaseOutCubic(phase);
+
+            scale = Mathf.Lerp(
+                0f,
+                popOvershoot,
+                eased
             );
         }
+
+        // Second phase: smoothly settle to normal size.
+        else
+        {
+            float phase =
+                (t - 0.68f) / 0.32f;
+
+            float eased = Mathf.SmoothStep(
+                0f,
+                1f,
+                phase
+            );
+
+            scale = Mathf.Lerp(
+                popOvershoot,
+                1f,
+                eased
+            );
+        }
+
+        // Gentle squash and stretch.
+        float squash =
+            Mathf.Sin(t * Mathf.PI) *
+            squashAmount;
+
+        float scaleX =
+            scale * (1f - squash);
+
+        float scaleY =
+            scale * (1f + squash);
+
+        damageText.transform.localScale =
+            Vector3.Scale(
+                originalScale,
+                new Vector3(scaleX, scaleY, 1f)
+            );
+
+        // Smoothly remove the initial rotation.
+        float rotationAmount =
+            1f - EaseOutCubic(t);
+
+        damageText.transform.localRotation =
+            originalRotation *
+            Quaternion.Euler(
+                0f,
+                0f,
+                randomRotation * rotationAmount
+            );
+    }
+
+
+    // ==================================================
+    // EASING
+    // ==================================================
+
+    private float EaseOutCubic(float t)
+    {
+        return 1f - Mathf.Pow(1f - t, 3f);
     }
 }

@@ -29,6 +29,15 @@ public abstract class AbilitySO : ScriptableObject
         NightOnly
     }
 
+    // Each ability must be assigned its matching slot in the Inspector.
+    public enum AbilitySlot
+    {
+        Ability1,
+        Ability2,
+        Ability3,
+        Ability4
+    }
+
     [Header("Ability")]
     [SerializeField] private string abilityName;
     [SerializeField] private Sprite abilityIcon;
@@ -37,6 +46,9 @@ public abstract class AbilitySO : ScriptableObject
     [SerializeField] private string description;
 
     public AudioClip launchSFX;
+
+    [Header("Ability Damage Ring")]
+    [SerializeField] private AbilitySlot abilitySlot = AbilitySlot.Ability1;
 
     [Header("Day / Night Restriction")]
     [SerializeField]
@@ -83,6 +95,11 @@ public abstract class AbilitySO : ScriptableObject
     public bool CanAttackWithThisAfterMove() => canAttackWithThisAfterMove;
     public bool NeedsEnemy() => NeedEnemy;
 
+    public AbilitySlot GetAbilitySlot()
+    {
+        return abilitySlot;
+    }
+
     public AbilityTimeRestriction GetTimeRestriction()
     {
         return timeRestriction;
@@ -94,7 +111,6 @@ public abstract class AbilitySO : ScriptableObject
 
     public bool CanUseDuringCurrentTime()
     {
-        // No restriction means the ability is always available.
         if (timeRestriction == AbilityTimeRestriction.AnyTime)
             return true;
 
@@ -133,12 +149,25 @@ public abstract class AbilitySO : ScriptableObject
         if (user == null)
             return damage;
 
+        // AttackUnit handles the normal damage bonuses and the
+        // ability-specific ring bonus. Delegate to it so bonuses
+        // are not applied twice.
+        AttackUnit attackUnit = FindComponent<AttackUnit>(user);
+
+        if (attackUnit != null)
+            return Mathf.Max(0, attackUnit.GetEffectiveDamage(this));
+
+        // Fallback for objects that do not have an AttackUnit.
         UpgradeableCombatUnit upgradeable =
             FindComponent<UpgradeableCombatUnit>(user);
 
-        return upgradeable == null
-            ? damage
-            : upgradeable.GetEffectiveDamage(this);
+        int effectiveDamage = upgradeable != null
+            ? upgradeable.GetEffectiveDamage(this)
+            : damage;
+
+        effectiveDamage += GetAbilityDamageRingBonus(user);
+
+        return Mathf.Max(0, effectiveDamage);
     }
 
     public virtual int GetEffectiveRange(GameObject user)
@@ -152,6 +181,48 @@ public abstract class AbilitySO : ScriptableObject
         return upgradeable == null
             ? Mathf.Max(1, range)
             : upgradeable.GetEffectiveRange(this);
+    }
+
+    // ============================================================
+    // ABILITY-SPECIFIC DAMAGE RING
+    // ============================================================
+
+    public int GetAbilityDamageRingBonus(GameObject user)
+    {
+        if (user == null)
+            return 0;
+
+        if (UpdateManager.Instance == null)
+            return 0;
+
+        RingStat ringStat;
+
+        switch (abilitySlot)
+        {
+            case AbilitySlot.Ability1:
+                ringStat = RingStat.Ability1Damage;
+                break;
+
+            case AbilitySlot.Ability2:
+                ringStat = RingStat.Ability2Damage;
+                break;
+
+            case AbilitySlot.Ability3:
+                ringStat = RingStat.Ability3Damage;
+                break;
+
+            case AbilitySlot.Ability4:
+                ringStat = RingStat.Ability4Damage;
+                break;
+
+            default:
+                return 0;
+        }
+
+        return UpdateManager.Instance.GetPlayerRingBonus(
+            user,
+            ringStat
+        );
     }
 
     private static T FindComponent<T>(GameObject obj)

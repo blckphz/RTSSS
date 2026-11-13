@@ -42,13 +42,19 @@ public class UpgradeChoiceUI : MonoBehaviour
         if (upgradeButtons == null ||
             upgradeButtons.Length != CHOICE_COUNT)
         {
-            Debug.LogError("[UpgradeChoiceUI] Exactly 3 buttons are required.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] Exactly 3 buttons are required.",
+                this
+            );
         }
 
         if (upgradeTexts == null ||
             upgradeTexts.Length != CHOICE_COUNT)
         {
-            Debug.LogError("[UpgradeChoiceUI] Exactly 3 text references are required.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] Exactly 3 text references are required.",
+                this
+            );
         }
 
         if (upgradeButtons != null)
@@ -59,7 +65,10 @@ public class UpgradeChoiceUI : MonoBehaviour
 
                 if (upgradeButtons[i] == null)
                 {
-                    Debug.LogWarning("[UpgradeChoiceUI] Button " + i + " is NULL.", this);
+                    Debug.LogWarning(
+                        "[UpgradeChoiceUI] Button " + i + " is NULL.",
+                        this
+                    );
                     continue;
                 }
 
@@ -69,48 +78,52 @@ public class UpgradeChoiceUI : MonoBehaviour
                     () => SelectUpgrade(index)
                 );
 
-                Debug.Log("[UpgradeChoiceUI] Connected button " + i, this);
+                Debug.Log(
+                    "[UpgradeChoiceUI] Connected button " + i,
+                    this
+                );
             }
         }
 
         if (upgradeCanvas != null)
         {
             upgradeCanvas.SetActive(false);
-            Debug.Log("[UpgradeChoiceUI] Upgrade canvas hidden on Awake.", this);
+
+            Debug.Log(
+                "[UpgradeChoiceUI] Upgrade canvas hidden on Awake.",
+                this
+            );
         }
         else
         {
-            Debug.LogError("[UpgradeChoiceUI] Upgrade Canvas is NULL.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] Upgrade Canvas is NULL.",
+                this
+            );
         }
 
         Debug.Log("[UpgradeChoiceUI] Awake completed.", this);
     }
 
-    // ============================================================
-    // STARTING CHOICE
-    // ============================================================
-
     public void ShowStartingUpgradeChoice(Action onSelected = null)
     {
-        Debug.Log("[UpgradeChoiceUI] Starting upgrade choice requested.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Starting upgrade choice requested.",
+            this
+        );
 
         ShowChoices(onSelected);
     }
-
-    // ============================================================
-    // VICTORY CHOICE
-    // ============================================================
 
     public void ShowUpgradeChoices(Action onSelected = null)
     {
-        Debug.Log("[UpgradeChoiceUI] Victory upgrade choice requested.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Victory upgrade choice requested.",
+            this
+        );
 
         ShowChoices(onSelected);
     }
-
-    // ============================================================
-    // SHOW CHOICES
-    // ============================================================
 
     private void ShowChoices(Action onSelected)
     {
@@ -123,7 +136,11 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (updateManager == null)
         {
-            Debug.LogError("[UpgradeChoiceUI] UpdateManager not found.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] UpdateManager not found.",
+                this
+            );
+
             CompleteSelection();
             return;
         }
@@ -132,12 +149,19 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (character == null)
         {
-            Debug.LogWarning("[UpgradeChoiceUI] Current character is NULL.", this);
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] Current character is NULL.",
+                this
+            );
+
             CompleteSelection();
             return;
         }
 
-        Debug.Log("[UpgradeChoiceUI] Current character: " + character.name, this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Current character: " + character.name,
+            this
+        );
 
         List<UpgradeSO> availableUpgrades =
             updateManager.GetCurrentCharacterUpgrades();
@@ -148,7 +172,8 @@ public class UpgradeChoiceUI : MonoBehaviour
             this
         );
 
-        if (availableUpgrades == null || availableUpgrades.Count == 0)
+        if (availableUpgrades == null ||
+            availableUpgrades.Count == 0)
         {
             Debug.LogWarning(
                 "[UpgradeChoiceUI] No available upgrades to display.",
@@ -170,13 +195,12 @@ public class UpgradeChoiceUI : MonoBehaviour
         Debug.Log("[UpgradeChoiceUI] ShowChoices completed.", this);
     }
 
-    // ============================================================
-    // CLEAR CHOICES
-    // ============================================================
-
     private void ClearCurrentChoices()
     {
-        Debug.Log("[UpgradeChoiceUI] Clearing previous choices.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Clearing previous choices.",
+            this
+        );
 
         if (currentChoices == null)
             currentChoices = new UpgradeSO[CHOICE_COUNT];
@@ -185,26 +209,99 @@ public class UpgradeChoiceUI : MonoBehaviour
             currentChoices[i] = null;
     }
 
-    // ============================================================
-    // GENERATE CHOICES
-    // ============================================================
-
     private void GenerateChoices(List<UpgradeSO> availableUpgrades)
     {
-        Debug.Log("[UpgradeChoiceUI] Generating random choices.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Generating random choices.",
+            this
+        );
 
-        List<UpgradeSO> shuffled = new List<UpgradeSO>();
+        List<UpgradeSO> normalPool = new List<UpgradeSO>();
+        List<UpgradeSO> artifactPool = new List<UpgradeSO>();
 
+        // Separate upgrades into the two pools.
         foreach (UpgradeSO upgrade in availableUpgrades)
         {
             if (upgrade == null)
             {
-                Debug.LogWarning("[UpgradeChoiceUI] Null upgrade skipped.", this);
+                Debug.LogWarning(
+                    "[UpgradeChoiceUI] Null upgrade skipped.",
+                    this
+                );
+
                 continue;
             }
 
-            shuffled.Add(upgrade);
+            if (upgrade.GetRarity() == UpgradeSO.Rarity.Artifact)
+            {
+                artifactPool.Add(upgrade);
+            }
+            else
+            {
+                // Normal and Epic upgrades share this pool.
+                normalPool.Add(upgrade);
+            }
         }
+
+        Debug.Log(
+            "[UpgradeChoiceUI] Normal/Epic pool size: " +
+            normalPool.Count,
+            this
+        );
+
+        Debug.Log(
+            "[UpgradeChoiceUI] Artifact pool size: " +
+            artifactPool.Count,
+            this
+        );
+
+        // Select one pool. Never combine the two pools.
+        List<UpgradeSO> selectedPool = null;
+        string selectedPoolName = "";
+
+        if (normalPool.Count == 0 && artifactPool.Count == 0)
+        {
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] Both upgrade pools are empty.",
+                this
+            );
+
+            return;
+        }
+        else if (normalPool.Count == 0)
+        {
+            selectedPool = artifactPool;
+            selectedPoolName = "Artifact";
+        }
+        else if (artifactPool.Count == 0)
+        {
+            selectedPool = normalPool;
+            selectedPoolName = "Normal/Epic";
+        }
+        else
+        {
+            bool chooseArtifact = UnityEngine.Random.Range(0, 2) == 0;
+
+            if (chooseArtifact)
+            {
+                selectedPool = artifactPool;
+                selectedPoolName = "Artifact";
+            }
+            else
+            {
+                selectedPool = normalPool;
+                selectedPoolName = "Normal/Epic";
+            }
+        }
+
+        Debug.Log(
+            "[UpgradeChoiceUI] Selected upgrade pool: " +
+            selectedPoolName,
+            this
+        );
+
+        // Shuffle only the selected pool.
+        List<UpgradeSO> shuffled = new List<UpgradeSO>(selectedPool);
 
         for (int i = shuffled.Count - 1; i > 0; i--)
         {
@@ -215,6 +312,8 @@ public class UpgradeChoiceUI : MonoBehaviour
             shuffled[randomIndex] = temp;
         }
 
+        // Show at most three choices.
+        // Do not fill missing choices from the other pool.
         int count = Mathf.Min(CHOICE_COUNT, shuffled.Count);
 
         for (int i = 0; i < count; i++)
@@ -223,28 +322,33 @@ public class UpgradeChoiceUI : MonoBehaviour
 
             Debug.Log(
                 "[UpgradeChoiceUI] Choice " + (i + 1) +
-                ": " + currentChoices[i].UpgradeName,
+                ": " + currentChoices[i].UpgradeName +
+                " (" + currentChoices[i].GetRarity() + ")",
                 this
             );
         }
 
         Debug.Log(
-            "[UpgradeChoiceUI] Generated " + count + " choices.",
+            "[UpgradeChoiceUI] Generated " + count +
+            " choices from the " + selectedPoolName + " pool.",
             this
         );
     }
 
-    // ============================================================
-    // SETUP BUTTONS
-    // ============================================================
-
     private void SetupButtons()
     {
-        Debug.Log("[UpgradeChoiceUI] Setting up buttons.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Setting up buttons.",
+            this
+        );
 
         if (upgradeButtons == null)
         {
-            Debug.LogError("[UpgradeChoiceUI] Button array is NULL.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] Button array is NULL.",
+                this
+            );
+
             return;
         }
 
@@ -254,7 +358,11 @@ public class UpgradeChoiceUI : MonoBehaviour
 
             if (button == null)
             {
-                Debug.LogWarning("[UpgradeChoiceUI] Button " + i + " is NULL.", this);
+                Debug.LogWarning(
+                    "[UpgradeChoiceUI] Button " + i + " is NULL.",
+                    this
+                );
+
                 continue;
             }
 
@@ -264,7 +372,10 @@ public class UpgradeChoiceUI : MonoBehaviour
             {
                 button.gameObject.SetActive(false);
 
-                Debug.Log("[UpgradeChoiceUI] Hiding empty button " + i, this);
+                Debug.Log(
+                    "[UpgradeChoiceUI] Hiding empty button " + i,
+                    this
+                );
 
                 if (upgradeTexts != null &&
                     i < upgradeTexts.Length &&
@@ -301,36 +412,42 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
     }
 
-    // ============================================================
-    // SHOW CANVAS
-    // ============================================================
-
     private void ShowUpgradeCanvas()
     {
         if (upgradeCanvas == null)
         {
-            Debug.LogError("[UpgradeChoiceUI] Cannot show canvas: reference is NULL.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] Cannot show canvas: reference is NULL.",
+                this
+            );
+
             return;
         }
 
         upgradeCanvas.SetActive(true);
 
-        Debug.Log("[UpgradeChoiceUI] Upgrade canvas activated.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Upgrade canvas activated.",
+            this
+        );
     }
-
-    // ============================================================
-    // SELECT UPGRADE
-    // ============================================================
 
     private void SelectUpgrade(int index)
     {
-        Debug.Log("[UpgradeChoiceUI] Button clicked: " + index, this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Button clicked: " + index,
+            this
+        );
 
         if (currentChoices == null ||
             index < 0 ||
             index >= currentChoices.Length)
         {
-            Debug.LogWarning("[UpgradeChoiceUI] Invalid choice index.", this);
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] Invalid choice index.",
+                this
+            );
+
             return;
         }
 
@@ -338,13 +455,21 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (selectedUpgrade == null)
         {
-            Debug.LogWarning("[UpgradeChoiceUI] Selected upgrade is NULL.", this);
+            Debug.LogWarning(
+                "[UpgradeChoiceUI] Selected upgrade is NULL.",
+                this
+            );
+
             return;
         }
 
         if (updateManager == null)
         {
-            Debug.LogError("[UpgradeChoiceUI] UpdateManager is NULL.", this);
+            Debug.LogError(
+                "[UpgradeChoiceUI] UpdateManager is NULL.",
+                this
+            );
+
             return;
         }
 
@@ -359,13 +484,12 @@ public class UpgradeChoiceUI : MonoBehaviour
         CompleteSelection();
     }
 
-    // ============================================================
-    // COMPLETE SELECTION
-    // ============================================================
-
     private void CompleteSelection()
     {
-        Debug.Log("[UpgradeChoiceUI] Completing selection.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] Completing selection.",
+            this
+        );
 
         if (upgradeCanvas != null)
             upgradeCanvas.SetActive(false);
@@ -375,22 +499,28 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (callback != null)
         {
-            Debug.Log("[UpgradeChoiceUI] Executing selection callback.", this);
+            Debug.Log(
+                "[UpgradeChoiceUI] Executing selection callback.",
+                this
+            );
+
             callback();
         }
         else
         {
-            Debug.Log("[UpgradeChoiceUI] No selection callback assigned.", this);
+            Debug.Log(
+                "[UpgradeChoiceUI] No selection callback assigned.",
+                this
+            );
         }
     }
 
-    // ============================================================
-    // HIDE CHOICES
-    // ============================================================
-
     public void HideUpgradeChoices()
     {
-        Debug.Log("[UpgradeChoiceUI] HideUpgradeChoices called.", this);
+        Debug.Log(
+            "[UpgradeChoiceUI] HideUpgradeChoices called.",
+            this
+        );
 
         onUpgradeSelected = null;
 

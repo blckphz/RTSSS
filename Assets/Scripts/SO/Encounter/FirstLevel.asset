@@ -23,6 +23,7 @@ MonoBehaviour:
   shape: 0
   minRadius: 2
   maxRadius: 5
+  useTide: 0
   victoryCondition: 1
   targetEnemyId: penis
   roundsToSurvive: 3
@@ -30,6 +31,8 @@ MonoBehaviour:
   - prefab: {fileID: 4842063353313913221, guid: b26b256594154f549aeaaa4b94016709, type: 3}
     amount: 1
   - prefab: {fileID: 4842063353313913221, guid: b26b256594154f549aeaaa4b94016709, type: 3}
+    amount: 1
+  - prefab: {fileID: 7012824583319412241, guid: 0d518d99f84dc2945b8ffe366559e0e4, type: 3}
     amount: 1
   bushes: []
   enemies:
@@ -39,7 +42,16 @@ MonoBehaviour:
   - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
     enemyId: penis
-  - prefab: {fileID: 6677648231893425325, guid: 8b6293c2b54aca843b6c095e4e59877f, type: 3}
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+    enemyId: penis
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+    enemyId: penis
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
+    character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
+    enemyId: penis
+  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
     character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
     enemyId: penis
   bosses: []

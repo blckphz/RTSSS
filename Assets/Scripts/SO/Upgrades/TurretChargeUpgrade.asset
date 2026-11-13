@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TurretChargeUpgrade
   UpgradeName: Tesla Coil
   Description: Charges your turret
+  rarity: 2

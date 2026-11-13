@@ -16,6 +16,15 @@ public class UpdateManager : MonoBehaviour
     private readonly List<UpgradeSO> purchasedUpgrades =
         new List<UpgradeSO>();
 
+    // Tracks upgrades already applied to the player UnitData.
+    private readonly Dictionary<UnitData, HashSet<UpgradeSO>>
+        appliedToUnits =
+        new Dictionary<UnitData, HashSet<UpgradeSO>>();
+
+    // Tracks upgrades already applied to CharacterSO.
+    private readonly HashSet<UpgradeSO> appliedToCharacters =
+        new HashSet<UpgradeSO>();
+
     private readonly HashSet<UpgradeSO> appliedToTurret =
         new HashSet<UpgradeSO>();
 
@@ -42,6 +51,12 @@ public class UpdateManager : MonoBehaviour
         Instance = this;
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
     // =====================================================
     // REGISTER PLAYER
     // =====================================================
@@ -63,18 +78,43 @@ public class UpdateManager : MonoBehaviour
         currentUnit = unit;
         currentCharacter = character;
 
+        Debug.Log(
+            "[UpgradeManager] Player registered: " +
+            unit.gameObject.name
+        );
+
+        // Apply upgrades purchased before the player spawned.
+        ApplyStoredUnitUpgrades();
+
+        // Apply player ring upgrades.
         ApplyPlayerRingUpgrades();
     }
 
-    public void RefreshPlayerUpgradesAfterInitialization(UnitData unit)
+    // =====================================================
+    // REFRESH PLAYER AFTER INITIALIZATION
+    // =====================================================
+
+    public void RefreshPlayerUpgradesAfterInitialization(
+        UnitData unit)
     {
         if (unit == null)
+        {
+            Debug.LogError(
+                "[UpgradeManager] Cannot refresh upgrades: UnitData is NULL."
+            );
             return;
+        }
 
         CharacterSO character = unit.GetCharacter();
 
         if (character == null)
+        {
+            Debug.LogError(
+                "[UpgradeManager] Cannot refresh upgrades: " +
+                "CharacterSO is NULL."
+            );
             return;
+        }
 
         if (!character.isPlayerCharacter &&
             character.team != Team.Player)
@@ -83,8 +123,21 @@ public class UpdateManager : MonoBehaviour
         currentUnit = unit;
         currentCharacter = character;
 
+        Debug.Log(
+            "[UpgradeManager] Refreshing upgrades for player: " +
+            unit.gameObject.name
+        );
+
+        // Apply upgrades that were purchased before spawning.
+        ApplyStoredUnitUpgrades();
+
+        // Apply CharacterSO upgrades that were purchased
+        // before currentCharacter was registered.
+        ApplyStoredCharacterUpgrades();
+
         // HealthManager.Initialize() may reset health.
-        // Allow health rings to be reapplied after initialization.
+        // Remove previously applied health rings so they
+        // can be applied again after initialization.
         if (appliedPlayerRings.TryGetValue(
             unit,
             out HashSet<RingUpgrade> applied))
@@ -101,6 +154,11 @@ public class UpdateManager : MonoBehaviour
         }
 
         ApplyPlayerRingUpgrades();
+
+        Debug.Log(
+            "[UpgradeManager] Player upgrade refresh complete: " +
+            unit.gameObject.name
+        );
     }
 
     public CharacterSO GetCurrentCharacter()
@@ -114,12 +172,14 @@ public class UpdateManager : MonoBehaviour
 
     public List<UpgradeSO> GetCurrentCharacterUpgrades()
     {
-        List<UpgradeSO> result = new List<UpgradeSO>();
+        List<UpgradeSO> result =
+            new List<UpgradeSO>();
 
         if (currentCharacter == null)
             return result;
 
-        UpgradeSO[] upgrades = currentCharacter.upgrades;
+        UpgradeSO[] upgrades =
+            currentCharacter.upgrades;
 
         if (upgrades == null)
             return result;
@@ -158,6 +218,7 @@ public class UpdateManager : MonoBehaviour
                 "[UpgradeManager] Upgrade already purchased: " +
                 upgrade.UpgradeName
             );
+
             return;
         }
 
@@ -168,7 +229,29 @@ public class UpdateManager : MonoBehaviour
             upgrade.UpgradeName
         );
 
+        Debug.Log(
+            "[UpgradeManager] Upgrade runtime type: " +
+            upgrade.GetType().Name
+        );
+
+        Debug.Log(
+            "[UpgradeManager] Current UnitData: " +
+            (currentUnit != null
+                ? currentUnit.name
+                : "NULL")
+        );
+
+        Debug.Log(
+            "[UpgradeManager] Current Character: " +
+            (currentCharacter != null
+                ? currentCharacter.name
+                : "NULL")
+        );
+
+        // =============================================
         // RING UPGRADE
+        // =============================================
+
         if (upgrade is RingUpgrade ring)
         {
             if (ring.GetTarget() == UpgradeTarget.Player)
@@ -183,19 +266,177 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
+        // =============================================
         // TURRET CHARGE UPGRADE
+        // =============================================
+
         if (upgrade is TurretChargeUpgrade chargeUpgrade)
         {
             ApplyTurretChargeUpgrade(chargeUpgrade);
             return;
         }
 
-        // OTHER UPGRADES
+        // =============================================
+        // OTHER UNIT UPGRADES
+        // =============================================
+
         if (currentUnit != null)
-            upgrade.ApplyToUnit(currentUnit);
+        {
+            ApplyUnitUpgrade(upgrade, currentUnit);
+        }
+        else
+        {
+            Debug.Log(
+                "[UpgradeManager] UnitData not registered yet. " +
+                upgrade.UpgradeName +
+                " will be applied when the player spawns."
+            );
+        }
+
+        // =============================================
+        // CHARACTER DATA UPGRADE
+        // =============================================
 
         if (currentCharacter != null)
-            upgrade.Apply(currentCharacter);
+        {
+            ApplyCharacterUpgrade(upgrade, currentCharacter);
+        }
+        else
+        {
+            Debug.Log(
+                "[UpgradeManager] Character not registered yet. " +
+                upgrade.UpgradeName +
+                " will be applied when the player spawns."
+            );
+        }
+    }
+
+    // =====================================================
+    // APPLY UPGRADE TO UNITDATA
+    // =====================================================
+
+    private void ApplyUnitUpgrade(
+        UpgradeSO upgrade,
+        UnitData unit)
+    {
+        if (upgrade == null || unit == null)
+            return;
+
+        if (!appliedToUnits.ContainsKey(unit))
+        {
+            appliedToUnits[unit] =
+                new HashSet<UpgradeSO>();
+        }
+
+        if (appliedToUnits[unit].Contains(upgrade))
+        {
+            Debug.Log(
+                "[UpgradeManager] Upgrade already applied to unit: " +
+                upgrade.UpgradeName
+            );
+
+            return;
+        }
+
+        Debug.Log(
+            "[UpgradeManager] Applying upgrade to UnitData: " +
+            unit.gameObject.name
+        );
+
+        upgrade.ApplyToUnit(unit);
+
+        appliedToUnits[unit].Add(upgrade);
+
+        Debug.Log(
+            "[UpgradeManager] Applied " +
+            upgrade.UpgradeName +
+            " to " +
+            unit.gameObject.name
+        );
+    }
+
+    // =====================================================
+    // APPLY STORED UNIT UPGRADES
+    // =====================================================
+
+    private void ApplyStoredUnitUpgrades()
+    {
+        if (currentUnit == null)
+            return;
+
+        Debug.Log(
+            "[UpgradeManager] Checking stored upgrades for: " +
+            currentUnit.gameObject.name
+        );
+
+        foreach (UpgradeSO upgrade in purchasedUpgrades)
+        {
+            if (upgrade == null)
+                continue;
+
+            // Ring upgrades use their own application system.
+            if (upgrade is RingUpgrade)
+                continue;
+
+            // Turret upgrades use their own application system.
+            if (upgrade is TurretChargeUpgrade)
+                continue;
+
+            ApplyUnitUpgrade(upgrade, currentUnit);
+        }
+    }
+
+    // =====================================================
+    // APPLY UPGRADE TO CHARACTER
+    // =====================================================
+
+    private void ApplyCharacterUpgrade(
+        UpgradeSO upgrade,
+        CharacterSO character)
+    {
+        if (upgrade == null || character == null)
+            return;
+
+        if (appliedToCharacters.Contains(upgrade))
+            return;
+
+        upgrade.Apply(character);
+
+        appliedToCharacters.Add(upgrade);
+
+        Debug.Log(
+            "[UpgradeManager] Applied " +
+            upgrade.UpgradeName +
+            " to CharacterSO: " +
+            character.name
+        );
+    }
+
+    // =====================================================
+    // APPLY STORED CHARACTER UPGRADES
+    // =====================================================
+
+    private void ApplyStoredCharacterUpgrades()
+    {
+        if (currentCharacter == null)
+            return;
+
+        foreach (UpgradeSO upgrade in purchasedUpgrades)
+        {
+            if (upgrade == null)
+                continue;
+
+            if (upgrade is RingUpgrade)
+                continue;
+
+            if (upgrade is TurretChargeUpgrade)
+                continue;
+
+            ApplyCharacterUpgrade(
+                upgrade,
+                currentCharacter
+            );
+        }
     }
 
     // =====================================================
@@ -235,6 +476,10 @@ public class UpdateManager : MonoBehaviour
 
         switch (ring.GetStat())
         {
+            // =============================================
+            // HEALTH
+            // =============================================
+
             case RingStat.Health:
                 {
                     HealthManager healthManager =
@@ -254,10 +499,12 @@ public class UpdateManager : MonoBehaviour
                             "[UpgradeManager] Player Health ring could not " +
                             "be applied: no HealthManager found."
                         );
+
                         return;
                     }
 
                     healthManager.AddMaxHealth(amount);
+
                     appliedPlayerRings[currentUnit].Add(ring);
 
                     Debug.Log(
@@ -268,9 +515,14 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
+            // =============================================
+            // CHAIN BOUNCE
+            // =============================================
+
             case RingStat.ChainBounce:
                 {
-                    CharacterSO character = currentUnit.GetCharacter();
+                    CharacterSO character =
+                        currentUnit.GetCharacter();
 
                     if (character == null)
                         return;
@@ -284,6 +536,7 @@ public class UpdateManager : MonoBehaviour
                             "[UpgradeManager] Chain Bounce ring could not " +
                             "be applied: ChainLightning ability not found."
                         );
+
                         return;
                     }
 
@@ -302,6 +555,7 @@ public class UpdateManager : MonoBehaviour
                     );
 
                     appliedChainBounce[currentUnit].Add(ring);
+
                     appliedPlayerRings[currentUnit].Add(ring);
 
                     Debug.Log(
@@ -312,20 +566,118 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
+            // =============================================
+            // EXPLOSION SIZE
+            // =============================================
+
+            case RingStat.ExplosionSize:
+                {
+                    appliedPlayerRings[currentUnit].Add(ring);
+
+                    Debug.Log(
+                        "[UpgradeManager] Player Explosion Size ring applied. " +
+                        "Bonus: +" + amount
+                    );
+
+                    break;
+                }
+
+            // =============================================
+            // ABILITY DAMAGE RINGS
+            // =============================================
+
+            case RingStat.Ability1Damage:
+            case RingStat.Ability2Damage:
+            case RingStat.Ability3Damage:
+            case RingStat.Ability4Damage:
+                {
+                    appliedPlayerRings[currentUnit].Add(ring);
+
+                    Debug.Log(
+                        "[UpgradeManager] Player Ability Damage ring applied. " +
+                        "Stat: " + ring.GetStat() +
+                        " | Bonus: +" + amount
+                    );
+
+                    break;
+                }
+
+            // =============================================
+            // GENERAL DAMAGE
+            // =============================================
+
             case RingStat.Damage:
-                Debug.LogWarning(
-                    "[UpgradeManager] Player Damage ring is not " +
-                    "implemented yet."
-                );
-                break;
+                {
+                    Debug.LogWarning(
+                        "[UpgradeManager] Player Damage ring is not " +
+                        "implemented yet."
+                    );
+
+                    break;
+                }
+
+            // =============================================
+            // RANGE
+            // =============================================
 
             case RingStat.Range:
-                Debug.LogWarning(
-                    "[UpgradeManager] Player Range ring is not " +
-                    "implemented yet."
-                );
-                break;
+                {
+                    Debug.LogWarning(
+                        "[UpgradeManager] Player Range ring is not " +
+                        "implemented yet."
+                    );
+
+                    break;
+                }
         }
+    }
+
+    // =====================================================
+    // GET PLAYER RING BONUS
+    // =====================================================
+
+    public int GetPlayerRingBonus(
+        GameObject user,
+        RingStat stat)
+    {
+        if (user == null || currentUnit == null)
+            return 0;
+
+        UnitData userUnit =
+            user.GetComponent<UnitData>();
+
+        if (userUnit == null)
+        {
+            userUnit =
+                user.GetComponentInParent<UnitData>();
+        }
+
+        if (userUnit == null)
+        {
+            userUnit =
+                user.GetComponentInChildren<UnitData>(true);
+        }
+
+        if (userUnit != currentUnit)
+            return 0;
+
+        int totalBonus = 0;
+
+        foreach (UpgradeSO upgrade in purchasedUpgrades)
+        {
+            if (!(upgrade is RingUpgrade ring))
+                continue;
+
+            if (ring.GetTarget() != UpgradeTarget.Player)
+                continue;
+
+            if (ring.GetStat() != stat)
+                continue;
+
+            totalBonus += ring.GetBonusAmount();
+        }
+
+        return totalBonus;
     }
 
     // =====================================================
@@ -338,9 +690,6 @@ public class UpdateManager : MonoBehaviour
         if (target == null)
             return;
 
-        // Only clear the applied list when registering
-        // a different turret. This prevents duplicate bonuses
-        // if the same turret registers more than once.
         if (turretTarget != target)
         {
             turretTarget = target;
@@ -352,7 +701,6 @@ public class UpdateManager : MonoBehaviour
             target.gameObject.name
         );
 
-        // Apply previously purchased turret upgrades.
         ApplyStoredTurretUpgrades();
     }
 
@@ -404,10 +752,12 @@ public class UpdateManager : MonoBehaviour
                 "[UpgradeManager] Turret rejected ring upgrade: " +
                 ring.UpgradeName
             );
+
             return;
         }
 
         turretTarget.ApplyUpgrade(ring);
+
         appliedToTurret.Add(ring);
 
         Debug.Log(
@@ -434,13 +784,15 @@ public class UpdateManager : MonoBehaviour
                 "[UpgradeManager] Turret Charge purchased. " +
                 "Waiting for a turret to register."
             );
+
             return;
         }
 
         if (appliedToTurret.Contains(chargeUpgrade))
             return;
 
-        turretbehav turret = FindTurretBehaviour(turretTarget);
+        turretbehav turret =
+            FindTurretBehaviour(turretTarget);
 
         if (turret == null)
         {
@@ -450,10 +802,12 @@ public class UpdateManager : MonoBehaviour
                 turretTarget.gameObject.name +
                 " or its parents/children."
             );
+
             return;
         }
 
         chargeUpgrade.ApplyToTurret(turret);
+
         appliedToTurret.Add(chargeUpgrade);
 
         Debug.Log(
@@ -495,7 +849,11 @@ public class UpdateManager : MonoBehaviour
     {
         purchasedUpgrades.Clear();
 
+        appliedToUnits.Clear();
+        appliedToCharacters.Clear();
+
         appliedToTurret.Clear();
+
         appliedPlayerRings.Clear();
         appliedChainBounce.Clear();
 
@@ -503,7 +861,9 @@ public class UpdateManager : MonoBehaviour
         currentCharacter = null;
         turretTarget = null;
 
-        Debug.Log("[UpgradeManager] Runtime upgrades cleared.");
+        Debug.Log(
+            "[UpgradeManager] Runtime upgrades cleared."
+        );
     }
 
     public void ResetAllUpgrades()
@@ -513,7 +873,9 @@ public class UpdateManager : MonoBehaviour
 
     public void BeginNewRun()
     {
-        Debug.Log("[UpgradeManager] Starting a new run.");
+        Debug.Log(
+            "[UpgradeManager] Starting a new run."
+        );
 
         ResetRuntimeUpgrades();
     }

@@ -18,6 +18,8 @@ MonoBehaviour:
 
 '
   launchSFX: {fileID: 0}
+  abilitySlot: 1
+  timeRestriction: 0
   NeedEnemy: 0
   damage: 15
   cooldown: 4

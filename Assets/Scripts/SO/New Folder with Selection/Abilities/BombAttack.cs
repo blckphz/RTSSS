@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,16 +9,13 @@ using UnityEngine;
 public class BombAttack : AbilitySO
 {
     [Header("Bomb Projectile")]
-
     [SerializeField]
     private GameObject bombPrefab;
 
     [SerializeField, Min(0.01f)]
     private float projectileSpeed = 8f;
 
-
     [Header("Explosion")]
-
     [SerializeField]
     private GameObject explosionPrefab;
 
@@ -26,7 +24,6 @@ public class BombAttack : AbilitySO
 
     [SerializeField, Min(0)]
     private int explosionRadius = 1;
-
 
     // ============================================================
     // GETTERS
@@ -57,6 +54,34 @@ public class BombAttack : AbilitySO
         return explosionRadius;
     }
 
+    // ============================================================
+    // EFFECTIVE EXPLOSION RADIUS
+    // ============================================================
+
+    public int GetEffectiveExplosionRadius(GameObject user)
+    {
+        int bonus = 0;
+
+        if (UpdateManager.Instance != null)
+        {
+            bonus = UpdateManager.Instance.GetPlayerRingBonus(
+                user,
+                RingStat.ExplosionSize
+            );
+        }
+
+        int effectiveRadius = explosionRadius + bonus;
+
+        Debug.Log(
+            $"[BombAttack] Explosion Radius | " +
+            $"Base={explosionRadius} | " +
+            $"RingBonus={bonus} | " +
+            $"Effective={effectiveRadius}",
+            user
+        );
+
+        return Mathf.Max(0, effectiveRadius);
+    }
 
     // ============================================================
     // EXPLOSION TILES
@@ -67,53 +92,32 @@ public class BombAttack : AbilitySO
         Vector2Int centerPosition
     )
     {
-        List<Vector2Int> tiles =
-            new List<Vector2Int>();
+        List<Vector2Int> tiles = new List<Vector2Int>();
 
         if (gridManager == null)
-        {
             return tiles;
-        }
 
-        for (
-            int x = -explosionRadius;
-            x <= explosionRadius;
-            x++
-        )
+        int radius = explosionRadius;
+
+        for (int x = -radius; x <= radius; x++)
         {
-            for (
-                int y = -explosionRadius;
-                y <= explosionRadius;
-                y++
-            )
+            for (int y = -radius; y <= radius; y++)
             {
-                int distance =
-                    Mathf.Abs(x) +
-                    Mathf.Abs(y);
+                int distance = Mathf.Abs(x) + Mathf.Abs(y);
 
-                if (distance > explosionRadius)
-                {
+                if (distance > radius)
                     continue;
-                }
 
                 Vector2Int position =
-                    centerPosition +
-                    new Vector2Int(x, y);
+                    centerPosition + new Vector2Int(x, y);
 
-                if (
-                    gridManager.IsInsideGrid(
-                        position
-                    )
-                )
-                {
+                if (gridManager.IsInsideGrid(position))
                     tiles.Add(position);
-                }
             }
         }
 
         return tiles;
     }
-
 
     // ============================================================
     // USE AT TILE
@@ -127,177 +131,109 @@ public class BombAttack : AbilitySO
     {
         if (user == null)
         {
-            Debug.LogWarning(
-                "[BombAttack] User is NULL."
-            );
-
+            Debug.LogWarning("[BombAttack] User is NULL.");
             return false;
         }
 
         if (gridManager == null)
         {
-            Debug.LogWarning(
-                "[BombAttack] GridManager is NULL."
-            );
-
+            Debug.LogWarning("[BombAttack] GridManager is NULL.");
             return false;
         }
 
         if (bombPrefab == null)
         {
-            Debug.LogError(
-                "[BombAttack] bombPrefab is NULL."
-            );
-
+            Debug.LogError("[BombAttack] bombPrefab is NULL.");
             return false;
         }
 
         if (explosionPrefab == null)
         {
-            Debug.LogError(
-                "[BombAttack] explosionPrefab is NULL."
-            );
-
+            Debug.LogError("[BombAttack] explosionPrefab is NULL.");
             return false;
         }
 
-        if (
-            !CanHitTile(
-                gridManager,
-                user,
-                targetTile
-            )
-        )
-        {
+        if (!CanHitTile(gridManager, user, targetTile))
             return false;
-        }
 
-
-        // --------------------------------------------------------
-        // FIND SPAWN POINT
-        // --------------------------------------------------------
+        // SPAWN POINT
 
         Transform spawnPoint =
-            user.transform.Find(
-                "AbilitySpawnPoint"
-            );
+            user.transform.Find("AbilitySpawnPoint");
 
+        Vector3 spawnPosition =
+            spawnPoint != null
+                ? spawnPoint.position
+                : user.transform.position;
 
-        Vector3 spawnPosition;
-
-        if (spawnPoint != null)
-        {
-            spawnPosition =
-                spawnPoint.position;
-        }
-        else
-        {
-            spawnPosition =
-                user.transform.position;
-        }
-
-
-        // --------------------------------------------------------
         // TARGET POSITION
-        // --------------------------------------------------------
 
         Vector3 targetPosition =
-            gridManager.GridToWorldPosition(
-                targetTile
-            );
+            gridManager.GridToWorldPosition(targetTile);
 
-        targetPosition.z =
-            spawnPosition.z;
+        targetPosition.z = spawnPosition.z;
 
+        // DAMAGE
 
-        // --------------------------------------------------------
-        // CALCULATE EFFECTIVE DAMAGE
-        // --------------------------------------------------------
-
-        int effectiveDamage =
-            GetEffectiveDamage(
-                user
-            );
-
-
-        int baseDamage =
-            GetDamage();
-
-
-        int bonusDamage =
-            effectiveDamage -
-            baseDamage;
-
+        int effectiveDamage = GetEffectiveDamage(user);
+        int baseDamage = GetDamage();
 
         Debug.Log(
             $"[BombAttack] FIRING | " +
             $"User={user.name} | " +
             $"BaseDamage={baseDamage} | " +
-            $"BonusDamage={bonusDamage} | " +
             $"EffectiveDamage={effectiveDamage}",
             user
         );
 
+        // EXPLOSION SIZE RING BONUS
 
-        // --------------------------------------------------------
+        int effectiveRadius =
+            GetEffectiveExplosionRadius(user);
+
         // CREATE BOMB
-        // --------------------------------------------------------
 
-        GameObject bomb =
-            Instantiate(
-                bombPrefab,
-                spawnPosition,
-                Quaternion.identity
-            );
-
+        GameObject bomb = Instantiate(
+            bombPrefab,
+            spawnPosition,
+            Quaternion.identity
+        );
 
         if (bomb == null)
-        {
             return false;
-        }
 
-
-        // --------------------------------------------------------
         // GET PROJECTILE
-        // --------------------------------------------------------
 
         BombProjectile projectile =
             bomb.GetComponent<BombProjectile>();
-
 
         if (projectile == null)
         {
             Debug.LogError(
                 $"[BombAttack] Bomb prefab '{bombPrefab.name}' " +
-                $"does not contain BombProjectile.",
+                "does not contain BombProjectile.",
                 bomb
             );
 
             Destroy(bomb);
-
             return false;
         }
 
-
-        // --------------------------------------------------------
         // INITIALIZE PROJECTILE
-        // --------------------------------------------------------
 
         projectile.Initialize(
             user,
             targetPosition,
             gridManager,
             explosionPrefab,
-            explosionRadius,
+            effectiveRadius,
             explosionDelay,
             projectileSpeed,
             effectiveDamage
         );
 
-
         return true;
     }
-
 
     // ============================================================
     // USE ON TARGET
@@ -308,18 +244,11 @@ public class BombAttack : AbilitySO
         GameObject target
     )
     {
-        if (
-            user == null ||
-            target == null
-        )
-        {
+        if (user == null || target == null)
             return false;
-        }
-
 
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
-
 
         if (gridManager == null)
         {
@@ -330,18 +259,15 @@ public class BombAttack : AbilitySO
             return false;
         }
 
-
         Vector2Int targetTile =
             gridManager.WorldToGridPosition(
                 target.transform.position
             );
 
-
-        return
-            UseAtTile(
-                user,
-                gridManager,
-                targetTile
-            );
+        return UseAtTile(
+            user,
+            gridManager,
+            targetTile
+        );
     }
 }

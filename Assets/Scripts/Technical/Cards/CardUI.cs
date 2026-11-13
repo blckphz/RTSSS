@@ -536,10 +536,7 @@ public class CardUI :
         healthManager.Initialize(character);
         attackUnit.Initialize(character);
 
-        // IMPORTANT:
-        // AttackUnit.Awake() may register the player before
-        // HealthManager.Initialize() resets its health.
-        // Refresh upgrades now, after both components initialize.
+        // REGISTER PLAYER AND APPLY PURCHASED UPGRADES
 
         if (character.isPlayerCharacter ||
             character.team == Team.Player)

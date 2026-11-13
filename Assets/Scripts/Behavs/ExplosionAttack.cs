@@ -43,6 +43,7 @@ public class ExplosionAttack : MonoBehaviour
 
     private GameObject owner;
     private bool exploded;
+    private bool explosionScheduled;
 
     private GridManager gridManager;
     private GridHighlightManager highlightManager;
@@ -59,7 +60,7 @@ public class ExplosionAttack : MonoBehaviour
     {
         FindManagers();
 
-        if (explodeOnStart && !exploded)
+        if (explodeOnStart && !exploded && !explosionScheduled)
             ScheduleExplosion();
     }
 
@@ -68,7 +69,7 @@ public class ExplosionAttack : MonoBehaviour
         owner = explosionOwner;
         FindManagers();
 
-        if (explodeOnStart && !exploded)
+        if (explodeOnStart && !exploded && !explosionScheduled)
             ScheduleExplosion();
     }
 
@@ -132,13 +133,64 @@ public class ExplosionAttack : MonoBehaviour
         knockbackPlayerWithoutDamage = enabled;
     }
 
+    // ============================================================
+    // UPGRADE CHECK
+    // ============================================================
+
+    private bool IsKnockbackUnlocked()
+    {
+        if (!applyKnockback || owner == null)
+            return false;
+
+        UnitData unitData = owner.GetComponent<UnitData>();
+
+        if (unitData == null)
+            unitData = owner.GetComponentInParent<UnitData>();
+
+        if (unitData == null)
+            unitData = owner.GetComponentInChildren<UnitData>();
+
+        if (unitData == null)
+        {
+            Debug.LogWarning(
+                "[ExplosionAttack] Cannot check knockback upgrade: " +
+                "owner has no UnitData component.",
+                owner
+            );
+
+            return false;
+        }
+
+        bool unlocked = unitData.HasExplosionKnockbackUpgrade();
+
+        Debug.Log(
+            $"[ExplosionAttack] Knockback upgrade unlocked: {unlocked}",
+            owner
+        );
+
+        return unlocked;
+    }
+
+    // ============================================================
+    // SCHEDULE EXPLOSION
+    // ============================================================
+
     private void ScheduleExplosion()
     {
+        if (explosionScheduled || exploded)
+            return;
+
+        explosionScheduled = true;
+
         if (explosionDelay > 0f)
             Invoke(nameof(Explode), explosionDelay);
         else
             Explode();
     }
+
+    // ============================================================
+    // FIND MANAGERS
+    // ============================================================
 
     private void FindManagers()
     {
@@ -152,12 +204,18 @@ public class ExplosionAttack : MonoBehaviour
             Debug.LogError("[ExplosionAttack] No GridManager found.", this);
     }
 
+    // ============================================================
+    // EXPLODE
+    // ============================================================
+
     public void Explode()
     {
         if (exploded)
             return;
 
         exploded = true;
+        explosionScheduled = false;
+
         FindManagers();
 
         if (gridManager == null)
@@ -179,12 +237,14 @@ public class ExplosionAttack : MonoBehaviour
             ? ownerHealth.GetTeam()
             : (Team)(-1);
 
+        // Knockback is enabled only if the owner has the upgrade.
+        bool knockbackUnlocked = IsKnockbackUnlocked();
+
         if (flashExplosion)
             PlayExplosionFlash();
 
-        // Handle the player separately from grid occupancy.
-        // This also works when GetUnitAt() doesn't return the player.
-        if (applyKnockback && knockbackPlayerWithoutDamage)
+        // Player knockback is handled separately.
+        if (knockbackUnlocked)
             KnockbackPlayer(center);
 
         for (int x = -radius; x <= radius; x++)
@@ -209,7 +269,8 @@ public class ExplosionAttack : MonoBehaviour
                     hasOwnerTeam,
                     ownerTeam,
                     tileDamage,
-                    center
+                    center,
+                    knockbackUnlocked
                 );
 
                 if (animateTiles && highlightManager != null)
@@ -220,6 +281,10 @@ public class ExplosionAttack : MonoBehaviour
         if (destroyAfterExplosion)
             Destroy(gameObject, destroyDelay);
     }
+
+    // ============================================================
+    // PLAYER KNOCKBACK
+    // ============================================================
 
     private void KnockbackPlayer(Vector2Int explosionCenter)
     {
@@ -240,14 +305,14 @@ public class ExplosionAttack : MonoBehaviour
 
             GameObject player = health.gameObject;
 
-            if (player == owner)
-                continue;
-
             Vector2Int playerTile =
-                gridManager.WorldToGridPosition(player.transform.position);
+                gridManager.WorldToGridPosition(
+                    player.transform.position
+                );
 
             int dx = playerTile.x - explosionCenter.x;
             int dy = playerTile.y - explosionCenter.y;
+
             int tileDistance = Mathf.Abs(dx) + Mathf.Abs(dy);
 
             if (!IsInsideExplosionShape(dx, dy, tileDistance))
@@ -261,26 +326,22 @@ public class ExplosionAttack : MonoBehaviour
 
             if (moveBrain == null)
             {
-                Debug.LogWarning(
-                    "[ExplosionAttack] Player has no UnitMoveBrain.",
-                    player
-                );
-                continue;
+                moveBrain = player.GetComponentInParent<UnitMoveBrain>();
             }
+
+            if (moveBrain == null)
+            {
+                moveBrain = player.GetComponentInChildren<UnitMoveBrain>();
+            }
+
+            if (moveBrain == null)
+                continue;
 
             int knockbackDistance =
                 CalculateKnockbackDistance(tileDistance);
 
             if (knockbackDistance <= 0)
                 continue;
-
-            Debug.Log(
-                $"[ExplosionAttack] Player knockback requested. " +
-                $"Center={explosionCenter}, " +
-                $"PlayerTile={playerTile}, " +
-                $"Distance={knockbackDistance}",
-                player
-            );
 
             moveBrain.ApplyKnockback(
                 explosionCenter,
@@ -289,6 +350,10 @@ public class ExplosionAttack : MonoBehaviour
             );
         }
     }
+
+    // ============================================================
+    // EXPLOSION SHAPE
+    // ============================================================
 
     private bool IsInsideExplosionShape(
         int x,
@@ -325,6 +390,10 @@ public class ExplosionAttack : MonoBehaviour
         }
     }
 
+    // ============================================================
+    // DAMAGE FALLOFF
+    // ============================================================
+
     private int CalculateDamageAtDistance(int distance)
     {
         if (radius <= 0)
@@ -340,6 +409,10 @@ public class ExplosionAttack : MonoBehaviour
             damage * Mathf.Clamp01(multiplier)
         );
     }
+
+    // ============================================================
+    // KNOCKBACK DISTANCE
+    // ============================================================
 
     private int CalculateKnockbackDistance(int distanceFromCenter)
     {
@@ -358,23 +431,28 @@ public class ExplosionAttack : MonoBehaviour
         );
     }
 
+    // ============================================================
+    // ATTACK TILE
+    // ============================================================
+
     private void AttackTile(
         Vector2Int position,
         bool hasOwnerTeam,
         Team ownerTeam,
         int tileDamage,
-        Vector2Int explosionCenter)
+        Vector2Int explosionCenter,
+        bool knockbackUnlocked)
     {
         GameObject target = gridManager.GetUnitAt(position);
 
-        if (target == null || target == owner)
+        if (target == null)
             return;
 
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
         bool isPlayer =
-            target.tag == playerTag ||
+            target.CompareTag(playerTag) ||
             (targetHealth != null &&
              targetHealth.IsPlayerCharacter());
 
@@ -384,8 +462,6 @@ public class ExplosionAttack : MonoBehaviour
         if (!isPlayer && targetHealth == null)
             return;
 
-        // The player was already handled independently above.
-        // Never apply explosion damage when this option is enabled.
         if (isPlayer && knockbackPlayerWithoutDamage)
             return;
 
@@ -405,10 +481,19 @@ public class ExplosionAttack : MonoBehaviour
         int knockbackDistance =
             CalculateKnockbackDistance(distanceFromCenter);
 
-        if (applyKnockback && knockbackDistance > 0)
+        // Non-player knockback is also upgrade-gated.
+        if (knockbackUnlocked &&
+            !isPlayer &&
+            knockbackDistance > 0)
         {
             UnitMoveBrain moveBrain =
                 target.GetComponent<UnitMoveBrain>();
+
+            if (moveBrain == null)
+                moveBrain = target.GetComponentInParent<UnitMoveBrain>();
+
+            if (moveBrain == null)
+                moveBrain = target.GetComponentInChildren<UnitMoveBrain>();
 
             if (moveBrain != null)
             {
@@ -418,18 +503,15 @@ public class ExplosionAttack : MonoBehaviour
                     knockbackStepDuration
                 );
             }
-            else
-            {
-                Debug.LogWarning(
-                    $"[ExplosionAttack] {target.name} has no UnitMoveBrain.",
-                    target
-                );
-            }
         }
 
         if (targetHealth != null && tileDamage > 0)
             targetHealth.TakeDamage(tileDamage);
     }
+
+    // ============================================================
+    // VISUALS
+    // ============================================================
 
     private void PlayExplosionFlash()
     {
@@ -443,17 +525,29 @@ public class ExplosionAttack : MonoBehaviour
         }
     }
 
+    // ============================================================
+    // ANIMATION EVENT
+    // ============================================================
+
     public void AnimationEvent_DisableExplosion()
     {
         if (destroyAfterExplosion)
             Destroy(gameObject, destroyDelay);
     }
 
+    // ============================================================
+    // DESTROY
+    // ============================================================
+
     private void DestroyExplosion()
     {
         if (destroyAfterExplosion)
             Destroy(gameObject, destroyDelay);
     }
+
+    // ============================================================
+    // GETTERS
+    // ============================================================
 
     public int GetRadius() => radius;
     public int GetDamage() => damage;

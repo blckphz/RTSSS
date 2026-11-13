@@ -9,7 +9,20 @@ public abstract class UpgradeSO : ScriptableObject
     [TextArea]
     public string Description;
 
-    public string Artifact;
+    public enum Rarity
+    {
+        Normal,
+        Epic,
+        Artifact
+    }
+
+    [Header("Upgrade Category")]
+    [SerializeField] private Rarity rarity = Rarity.Normal;
+
+    public Rarity GetRarity()
+    {
+        return rarity;
+    }
 
     public virtual void Apply(CharacterSO character)
     {

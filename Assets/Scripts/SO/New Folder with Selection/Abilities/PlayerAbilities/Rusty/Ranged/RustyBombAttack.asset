@@ -16,6 +16,8 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: Explodes in a Radius
   launchSFX: {fileID: 0}
+  abilitySlot: 2
+  timeRestriction: 0
   NeedEnemy: 0
   damage: 30
   cooldown: 4

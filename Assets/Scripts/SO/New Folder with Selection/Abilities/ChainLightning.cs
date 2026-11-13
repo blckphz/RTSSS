@@ -38,7 +38,13 @@ public class ChainLightning : AbilitySO
     [SerializeField]
     private string abilitySpawnPointName = "AbilitySpawnPoint";
 
-    private int GetEffectiveMaxJumps(GameObject user)
+    // ============================================================
+    // EFFECTIVE MAX JUMPS
+    // ============================================================
+
+    // PUBLIC so CanvasInfoManager can display the Ring bonus.
+
+    public int GetEffectiveMaxJumps(GameObject user)
     {
         int bonusJumps = 0;
 

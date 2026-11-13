@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -238,8 +239,6 @@ public class CanvasInfoManager : MonoBehaviour
 
     private void CheckWaterDisplay()
     {
-     
-
         if (UIManager.CurrentSelection == null)
         {
             lastWaterState = false;
@@ -281,7 +280,7 @@ public class CanvasInfoManager : MonoBehaviour
             return;
         }
 
-        bool currentWaterState =! lobster.IsOnWater();
+        bool currentWaterState = !lobster.IsOnWater();
 
         if (!hasWaterState || currentWaterState != lastWaterState)
         {
@@ -327,7 +326,6 @@ public class CanvasInfoManager : MonoBehaviour
 
         textBuilder.AppendLine();
 
-        // The status_water link makes this text hoverable.
         textBuilder.AppendLine(
             $"<link=\"status_water\">" +
             $"<color=#{colorHex}><u><b>{waterStatusText}</b></u></color>" +
@@ -344,10 +342,7 @@ public class CanvasInfoManager : MonoBehaviour
         System.Action<InputAction.CallbackContext> callback,
         string debugName)
     {
-        if (actionReference == null)
-            return;
-
-        if (actionReference.action == null)
+        if (actionReference == null || actionReference.action == null)
             return;
 
         actionReference.action.performed += callback;
@@ -359,13 +354,8 @@ public class CanvasInfoManager : MonoBehaviour
         System.Action<InputAction.CallbackContext> callback,
         string debugName)
     {
-        if (
-            actionReference == null ||
-            actionReference.action == null
-        )
-        {
+        if (actionReference == null || actionReference.action == null)
             return;
-        }
 
         actionReference.action.performed -= callback;
         actionReference.action.Disable();
@@ -377,56 +367,47 @@ public class CanvasInfoManager : MonoBehaviour
 
     private void OnAbility1(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(0);
+        if (context.performed) SelectAbility(0);
     }
 
     private void OnAbility2(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(1);
+        if (context.performed) SelectAbility(1);
     }
 
     private void OnAbility3(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(2);
+        if (context.performed) SelectAbility(2);
     }
 
     private void OnAbility4(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(3);
+        if (context.performed) SelectAbility(3);
     }
 
     private void OnAbility5(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(4);
+        if (context.performed) SelectAbility(4);
     }
 
     private void OnAbility6(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(5);
+        if (context.performed) SelectAbility(5);
     }
 
     private void OnAbility7(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(6);
+        if (context.performed) SelectAbility(6);
     }
 
     private void OnAbility8(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(7);
+        if (context.performed) SelectAbility(7);
     }
 
     private void OnAbility9(InputAction.CallbackContext context)
     {
-        if (!context.performed) return;
-        SelectAbility(8);
+        if (context.performed) SelectAbility(8);
     }
 
     // ============================================================
@@ -843,12 +824,54 @@ public class CanvasInfoManager : MonoBehaviour
                     );
                 }
 
-                if (ability is BombAttack bombAttack)
+                // =============================================
+                // CHAIN LIGHTNING BOUNCES - INCLUDES RING BONUS
+                // =============================================
+
+                if (ability is ChainLightning chainLightning)
                 {
+                    int effectiveBounces =
+                        chainLightning.GetEffectiveMaxJumps(
+                            activeUnit != null
+                                ? activeUnit.gameObject
+                                : null
+                        );
+
                     textBuilder.AppendLine(
-                        $"Blast Radius: {bombAttack.GetExplosionRadius()}"
+                        $"Bounces: {effectiveBounces}"
                     );
                 }
+
+                // =============================================
+                // BOMB EXPLOSION RADIUS - INCLUDES RING BONUS
+                // =============================================
+
+                else if (ability is BombAttack bombAttack)
+                {
+                    int effectiveRadius =
+                        bombAttack.GetExplosionRadius();
+
+                    if (
+                        activeUnit != null &&
+                        UpdateManager.Instance != null
+                    )
+                    {
+                        effectiveRadius +=
+                            UpdateManager.Instance.GetPlayerRingBonus(
+                                activeUnit.gameObject,
+                                RingStat.ExplosionSize
+                            );
+                    }
+
+                    textBuilder.AppendLine(
+                        $"Blast Radius: {effectiveRadius}"
+                    );
+                }
+
+                // =============================================
+                // ARROW PENETRATION
+                // =============================================
+
                 else if (ability is ArrowAttack arrowAttack)
                 {
                     int penetration = arrowAttack.GetMaxTargets();
@@ -1570,7 +1593,6 @@ public class CanvasInfoManager : MonoBehaviour
         if (tooltipManager == null)
             return;
 
-        // Water is a standalone status link: status_water.
         if (statusData.Equals("water", StringComparison.OrdinalIgnoreCase))
         {
             tooltipManager.ShowStatusTooltip("water");
