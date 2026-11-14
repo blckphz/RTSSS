@@ -21,9 +21,9 @@ public class ExplosionAttack : MonoBehaviour
 
     [Header("Knockback")]
     [SerializeField] private bool applyKnockback = true;
-    [SerializeField, Min(0)] private int maxKnockbackDistance = 3;
-    [SerializeField, Min(0)] private int minKnockbackDistance = 1;
-    [SerializeField, Min(0f)] private float knockbackStepDuration = 0.08f;
+
+    [SerializeField, Min(0f)]
+    private float knockbackStepDuration = 0.08f;
 
     [Header("Player Knockback")]
     [SerializeField] private bool knockbackPlayerWithoutDamage = true;
@@ -111,16 +111,6 @@ public class ExplosionAttack : MonoBehaviour
     public void SetApplyKnockback(bool enabled)
     {
         applyKnockback = enabled;
-    }
-
-    public void SetMaxKnockbackDistance(int distance)
-    {
-        maxKnockbackDistance = Mathf.Max(0, distance);
-    }
-
-    public void SetMinKnockbackDistance(int distance)
-    {
-        minKnockbackDistance = Mathf.Max(0, distance);
     }
 
     public void SetKnockbackStepDuration(float duration)
@@ -237,7 +227,7 @@ public class ExplosionAttack : MonoBehaviour
             ? ownerHealth.GetTeam()
             : (Team)(-1);
 
-        // Knockback is enabled only if the owner has the upgrade.
+        // Knockback requires the owner's upgrade.
         bool knockbackUnlocked = IsKnockbackUnlocked();
 
         if (flashExplosion)
@@ -325,14 +315,10 @@ public class ExplosionAttack : MonoBehaviour
                 player.GetComponent<UnitMoveBrain>();
 
             if (moveBrain == null)
-            {
                 moveBrain = player.GetComponentInParent<UnitMoveBrain>();
-            }
 
             if (moveBrain == null)
-            {
                 moveBrain = player.GetComponentInChildren<UnitMoveBrain>();
-            }
 
             if (moveBrain == null)
                 continue;
@@ -411,24 +397,31 @@ public class ExplosionAttack : MonoBehaviour
     }
 
     // ============================================================
-    // KNOCKBACK DISTANCE
+    // DYNAMIC KNOCKBACK DISTANCE
     // ============================================================
 
     private int CalculateKnockbackDistance(int distanceFromCenter)
     {
         if (radius <= 0)
-            return maxKnockbackDistance;
+            return 1;
+
+        if (distanceFromCenter > radius)
+            return 0;
 
         float normalizedDistance =
             Mathf.Clamp01((float)distanceFromCenter / radius);
 
-        return Mathf.RoundToInt(
+        // Center = full explosion radius.
+        // Edge = 1 tile.
+        int knockbackDistance = Mathf.RoundToInt(
             Mathf.Lerp(
-                maxKnockbackDistance,
-                minKnockbackDistance,
+                radius,
+                1f,
                 normalizedDistance
             )
         );
+
+        return Mathf.Max(1, knockbackDistance);
     }
 
     // ============================================================
@@ -481,7 +474,7 @@ public class ExplosionAttack : MonoBehaviour
         int knockbackDistance =
             CalculateKnockbackDistance(distanceFromCenter);
 
-        // Non-player knockback is also upgrade-gated.
+        // Enemy knockback requires the upgrade.
         if (knockbackUnlocked &&
             !isPlayer &&
             knockbackDistance > 0)

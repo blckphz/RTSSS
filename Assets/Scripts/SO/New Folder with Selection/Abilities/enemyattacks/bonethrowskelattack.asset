@@ -24,9 +24,9 @@ MonoBehaviour:
   canAttackWithThisAfterMove: 0
   usesPerTurn: 1
   useDuration: 0.25
-  targetType: 2
+  targetType: 3
   range: 7
-  minDistance: 2
+  minDistance: 3
   rangeShape: 2
   arrowPrefab: {fileID: 3485395872008448894, guid: 4762bc949bebf974aa457acf9109384d, type: 3}
   arrowSpeed: 12

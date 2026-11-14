@@ -121768,7 +121768,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1239}
+  m_AnchoredPosition: {x: -1242, y: 1179.1234}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -127732,8 +127732,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.00000071801423
-  m_Size: 0.5947754
+  m_Value: 0
+  m_Size: 0.5947784
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -196031,11 +196031,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9fd62db0b39e40b4da573b59ec9044bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  hoverObject: {fileID: 0}
   buttonTransform: {fileID: 917579147}
-  popScale: 1.25
-  popDuration: 0.25
-  pulseScale: 1.08
-  pulseDuration: 0.6
+  canvasGroup: {fileID: 467808214}
+  fadeSpeed: 10
+  activationStartScale: 0.7
+  activationOvershoot: 1.15
+  activationSettleScale: 0.95
+  activationDuration: 0.4
+  activationRotation: 8
+  hoverStartScale: 0.85
+  hoverGrowDuration: 0.25
+  idlePulseScale: 1.015
+  idlePulseSpeed: 1.8
+  hoverPulseScale: 1.04
+  hoverPulseSpeed: 2.5
+  entryPunchScale: 1.08
+  punchDuration: 0.15
+  leftSprite: {fileID: 2067287563}
+  rightSprite: {fileID: 1193298081}
+  moveX: 20
+  moveY: 15
+  moveSpeed: 8
+  overshootMultiplier: 1.35
+  secondSpriteDelay: 0.15
+  idleLiftAmount: 4
+  idleLiftDuration: 0.25
+  idleLiftInterval: 0.5
+  idleSideAmount: 3
+  idleSecondSpriteDelay: 0.1
+  hoverAudioSource: {fileID: 0}
+  pressAudioSource: {fileID: 0}
   hoverScale: 1.1
   hoverDuration: 0.15
 --- !u!1 &1548366168

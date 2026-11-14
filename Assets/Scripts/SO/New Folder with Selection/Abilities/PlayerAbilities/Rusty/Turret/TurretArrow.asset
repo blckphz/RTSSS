@@ -24,7 +24,7 @@ MonoBehaviour:
   canAttackWithThisAfterMove: 1
   usesPerTurn: 2
   useDuration: 0.25
-  targetType: 3
+  targetType: 4
   range: 5
   minDistance: 0
   rangeShape: 2

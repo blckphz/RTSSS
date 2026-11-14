@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 public class UnitTilePin : MonoBehaviour
@@ -10,6 +11,18 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private GridManager gridManager;
 
+    // ==================================================
+    // WALKABILITY
+    // ==================================================
+
+    [Header("Tile Walkability")]
+    [SerializeField]
+    private bool isWalkable = false;
+
+    public bool IsWalkable
+    {
+        get { return isWalkable; }
+    }
 
     // ==================================================
     // ROTATION
@@ -22,7 +35,6 @@ public class UnitTilePin : MonoBehaviour
     [SerializeField]
     private bool lockRotationEveryFrame = true;
 
-
     // ==================================================
     // UNIQUE UNIT ID
     // ==================================================
@@ -33,14 +45,13 @@ public class UnitTilePin : MonoBehaviour
 
     private static int nextUnitId = 1;
 
-
     // ==================================================
     // TILE STATE
     // ==================================================
 
     private Vector2Int logicalTile;
     private bool hasTile;
-
+    private bool tileWasExplicitlyAssigned;
 
     // ==================================================
     // UNITY
@@ -49,56 +60,55 @@ public class UnitTilePin : MonoBehaviour
     private void Awake()
     {
         GenerateUniqueId();
-
         FindGridManager();
-
         ForceRotation();
     }
-
 
     private void Start()
     {
         FindGridManager();
 
-        RegisterCurrentTile();
+        if (tileWasExplicitlyAssigned && hasTile)
+        {
+            PinToTile();
+        }
+        else
+        {
+            RegisterCurrentTile();
+        }
 
         ForceRotation();
     }
 
-
     private void LateUpdate()
     {
-        // ==================================================
-        // BOARD ROTATION
-        // ==================================================
-
         BoardViewController board =
             BoardViewController.Instance;
 
-        if (
-            board != null &&
-            board.IsRotating()
-        )
+        if (board != null && board.IsRotating())
         {
             if (lockRotationEveryFrame)
-            {
                 ForceRotation();
-            }
 
             return;
         }
 
-
-        // ==================================================
-        // KEEP ROTATION FIXED
-        // ==================================================
-
         if (lockRotationEveryFrame)
-        {
             ForceRotation();
-        }
     }
 
+    private void OnDestroy()
+    {
+        if (gridManager == null)
+            return;
+
+        // Release reserved spawn position when a bush
+        // or another walkable obstacle is destroyed.
+        if (isWalkable && hasTile)
+        {
+            gridManager.UnregisterWalkableObstacle(logicalTile);
+        }
+    }
 
     // ==================================================
     // UNIQUE ID
@@ -107,23 +117,17 @@ public class UnitTilePin : MonoBehaviour
     private void GenerateUniqueId()
     {
         if (!string.IsNullOrEmpty(unitId))
-        {
             return;
-        }
 
-        unitId =
-            "UNIT_" +
-            nextUnitId.ToString("D4");
+        unitId = "UNIT_" + nextUnitId.ToString("D4");
 
         nextUnitId++;
     }
-
 
     public string GetUnitId()
     {
         return unitId;
     }
-
 
     // ==================================================
     // FIND GRID MANAGER
@@ -132,14 +136,10 @@ public class UnitTilePin : MonoBehaviour
     private void FindGridManager()
     {
         if (gridManager != null)
-        {
             return;
-        }
 
-        gridManager =
-            FindFirstObjectByType<GridManager>();
+        gridManager = FindFirstObjectByType<GridManager>();
     }
-
 
     // ==================================================
     // REGISTER CURRENT TILE
@@ -148,84 +148,58 @@ public class UnitTilePin : MonoBehaviour
     public void RegisterCurrentTile()
     {
         if (gridManager == null)
-        {
             FindGridManager();
-        }
 
         if (gridManager == null)
-        {
             return;
-        }
 
         Vector2Int calculatedTile =
-            gridManager.WorldToGridPosition(
-                transform.position
-            );
+            gridManager.WorldToGridPosition(transform.position);
 
-        if (!gridManager.IsInsideGrid(
-                calculatedTile))
-        {
+        if (!gridManager.IsInsideGrid(calculatedTile))
             return;
-        }
 
-        logicalTile =
-            calculatedTile;
+        logicalTile = calculatedTile;
 
         hasTile = true;
+        tileWasExplicitlyAssigned = false;
 
-        // Initial placement only.
         PinToTile();
     }
-
 
     // ==================================================
     // SET TILE
     // ==================================================
 
-    public void SetTile(
-        Vector2Int tile
-    )
+    public void SetTile(Vector2Int tile)
     {
         if (gridManager == null)
-        {
             FindGridManager();
-        }
 
         if (gridManager == null)
-        {
             return;
-        }
 
         if (!gridManager.IsInsideGrid(tile))
-        {
             return;
-        }
 
-        logicalTile =
-            tile;
+        logicalTile = tile;
 
-        hasTile =
-            true;
+        hasTile = true;
+        tileWasExplicitlyAssigned = true;
 
-        // This is now called explicitly
-        // after movement has finished.
         PinToTile();
 
         ForceRotation();
     }
 
-
     // ==================================================
     // UPDATE TILE AFTER MOVEMENT
     // ==================================================
 
-    public void UpdateTileAfterMovement(
-        Vector2Int newTile
-    )
+    public void UpdateTileAfterMovement(Vector2Int newTile)
     {
         SetTile(newTile);
     }
-
 
     // ==================================================
     // PIN TO TILE
@@ -234,40 +208,22 @@ public class UnitTilePin : MonoBehaviour
     public void PinToTile()
     {
         if (gridManager == null)
-        {
             FindGridManager();
-        }
 
-        if (gridManager == null)
-        {
+        if (gridManager == null || !hasTile)
             return;
-        }
-
-        if (!hasTile)
-        {
-            return;
-        }
 
         BoardViewController board =
             BoardViewController.Instance;
 
-        if (
-            board != null &&
-            board.IsRotating()
-        )
-        {
+        if (board != null && board.IsRotating())
             return;
-        }
 
         Vector3 targetPosition =
-            gridManager.GridToWorldPosition(
-                logicalTile
-            );
+            gridManager.GridToWorldPosition(logicalTile);
 
-        transform.position =
-            targetPosition;
+        transform.position = targetPosition;
     }
-
 
     // ==================================================
     // FORCE ROTATION
@@ -276,22 +232,15 @@ public class UnitTilePin : MonoBehaviour
     public void ForceRotation()
     {
         Quaternion targetRotation =
-            Quaternion.Euler(
-                fixedRotation
-            );
+            Quaternion.Euler(fixedRotation);
 
-        if (
-            Quaternion.Angle(
-                transform.rotation,
-                targetRotation
-            ) > 0.01f
-        )
+        if (Quaternion.Angle(
+            transform.rotation,
+            targetRotation) > 0.01f)
         {
-            transform.rotation =
-                targetRotation;
+            transform.rotation = targetRotation;
         }
     }
-
 
     // ==================================================
     // GET TILE
@@ -302,16 +251,10 @@ public class UnitTilePin : MonoBehaviour
         return logicalTile;
     }
 
-
-    // ==================================================
-    // GET GRID POSITION
-    // ==================================================
-
     public Vector2Int GetGridPosition()
     {
         return logicalTile;
     }
-
 
     // ==================================================
     // HAS TILE
@@ -322,7 +265,6 @@ public class UnitTilePin : MonoBehaviour
         return hasTile;
     }
 
-
     // ==================================================
     // GET GRID MANAGER
     // ==================================================
@@ -332,21 +274,15 @@ public class UnitTilePin : MonoBehaviour
         return gridManager;
     }
 
-
     // ==================================================
     // SET FIXED ROTATION
     // ==================================================
 
-    public void SetFixedRotation(
-        Vector3 rotation
-    )
+    public void SetFixedRotation(Vector3 rotation)
     {
-        fixedRotation =
-            rotation;
-
+        fixedRotation = rotation;
         ForceRotation();
     }
-
 
     // ==================================================
     // GET FIXED ROTATION
@@ -357,7 +293,6 @@ public class UnitTilePin : MonoBehaviour
         return fixedRotation;
     }
 
-
     // ==================================================
     // REFRESH TILE FROM WORLD
     // ==================================================
@@ -365,29 +300,29 @@ public class UnitTilePin : MonoBehaviour
     public void RefreshTileFromWorldPosition()
     {
         if (gridManager == null)
-        {
             FindGridManager();
-        }
 
         if (gridManager == null)
-        {
             return;
-        }
 
         Vector2Int calculatedTile =
-            gridManager.WorldToGridPosition(
-                transform.position
-            );
+            gridManager.WorldToGridPosition(transform.position);
 
-        if (!gridManager.IsInsideGrid(
-                calculatedTile))
-        {
+        if (!gridManager.IsInsideGrid(calculatedTile))
             return;
-        }
 
-        logicalTile =
-            calculatedTile;
+        logicalTile = calculatedTile;
 
         hasTile = true;
+        tileWasExplicitlyAssigned = false;
+    }
+
+    // ==================================================
+    // SET WALKABILITY
+    // ==================================================
+
+    public void SetWalkable(bool value)
+    {
+        isWalkable = value;
     }
 }

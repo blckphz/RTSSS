@@ -17,12 +17,44 @@ public class ArrowAttack : AbilitySO
     private string abilitySpawnPointName = "AbilitySpawnPoint";
 
     [Header("Target Point")]
-    [Tooltip(
-        "Name of the child transform used as the visual point. " +
-        "Used only if grid-based direction cannot be calculated."
-    )]
     [SerializeField]
     private string targetPointName = "VisualTargetPoint";
+
+    // ============================================================
+    // BARREL TARGETING
+    // ============================================================
+
+    public override bool CanTargetObject(
+        GameObject user,
+        GameObject target)
+    {
+        if (user == null || target == null)
+            return false;
+
+        ExplosiveBarrel barrel =
+            target.GetComponent<ExplosiveBarrel>();
+
+        if (barrel == null)
+            barrel = target.GetComponentInParent<ExplosiveBarrel>();
+
+        if (barrel != null)
+        {
+            // Only allow barrels when this ability targets Neutral.
+            if (GetTargetType() != TargetType.Neutral &&
+                GetTargetType() != TargetType.Any)
+            {
+                return false;
+            }
+
+            return FindAttackUnit(user) != null;
+        }
+
+        return base.CanTargetObject(user, target);
+    }
+
+    // ============================================================
+    // USE
+    // ============================================================
 
     public override bool Use(GameObject user, GameObject target)
     {
@@ -41,30 +73,34 @@ public class ArrowAttack : AbilitySO
         if (!CanUseAfterMovement(user))
             return false;
 
-        // Find the actual target unit, even when a child collider
-        // or visual object was clicked.
+        if (!CanTargetObject(user, target))
+            return false;
+
         AttackUnit targetUnit = FindAttackUnit(target);
 
-        if (targetUnit == null)
+        ExplosiveBarrel barrel =
+            target.GetComponent<ExplosiveBarrel>();
+
+        if (barrel == null)
+            barrel = target.GetComponentInParent<ExplosiveBarrel>();
+
+        // Reject targets that are neither units nor barrels.
+        if (targetUnit == null && barrel == null)
         {
             Debug.LogWarning(
-                $"[ArrowAttack] No AttackUnit found for target: {target.name}",
+                $"[ArrowAttack] Target has no AttackUnit or ExplosiveBarrel: {target.name}",
                 target
             );
             return false;
         }
 
-        if (targetUnit.IsDead())
+        // Reject dead units.
+        if (targetUnit != null && targetUnit.IsDead())
             return false;
 
-        GameObject targetObject = targetUnit.gameObject;
-
-        if (!CanTargetObject(user, targetObject))
-            return false;
-
-        // --------------------------------------------------------
-        // SPAWN POINT
-        // --------------------------------------------------------
+        GameObject targetObject = targetUnit != null
+            ? targetUnit.gameObject
+            : barrel.gameObject;
 
         Transform spawnPoint = FindAbilitySpawnPoint(user);
 
@@ -72,15 +108,24 @@ public class ArrowAttack : AbilitySO
             ? spawnPoint.position
             : user.transform.position;
 
-        // --------------------------------------------------------
-        // DIRECTION
-        // --------------------------------------------------------
+        Vector2 direction;
 
-        Vector2 direction = GetFootprintAttackDirection(
-            user,
-            targetUnit,
-            spawnPosition
-        );
+        if (targetUnit != null)
+        {
+            direction = GetFootprintAttackDirection(
+                user,
+                targetUnit,
+                spawnPosition
+            );
+        }
+        else
+        {
+            direction = GetFallbackDirection(
+                user,
+                targetObject,
+                spawnPosition
+            );
+        }
 
         if (direction.sqrMagnitude <= 0.0001f)
         {
@@ -93,26 +138,12 @@ public class ArrowAttack : AbilitySO
 
         direction.Normalize();
 
-        // --------------------------------------------------------
-        // TURRET
-        // --------------------------------------------------------
-
         turretbehav turret = FindTurretBehaviour(user);
-
-        // --------------------------------------------------------
-        // DAMAGE
-        // --------------------------------------------------------
 
         int effectiveDamage = GetEffectiveDamage(user);
 
         if (turret != null)
-        {
             effectiveDamage += turret.GetChainLightningDamageBonus();
-        }
-
-        // --------------------------------------------------------
-        // MAX TARGETS
-        // --------------------------------------------------------
 
         int effectiveMaxTargets = maxTargets;
 
@@ -121,10 +152,6 @@ public class ArrowAttack : AbilitySO
             effectiveMaxTargets +=
                 turret.GetChainLightningMaxTargetsBonus();
         }
-
-        // --------------------------------------------------------
-        // SPAWN PROJECTILE
-        // --------------------------------------------------------
 
         GameObject projectile = Instantiate(
             arrowPrefab,
@@ -149,8 +176,6 @@ public class ArrowAttack : AbilitySO
             return false;
         }
 
-   
-
         arrow.Initialize(
             user,
             direction,
@@ -164,7 +189,7 @@ public class ArrowAttack : AbilitySO
     }
 
     // ============================================================
-    // CALCULATE DIRECTION USING THE TARGET FOOTPRINT
+    // CALCULATE DIRECTION USING TARGET FOOTPRINT
     // ============================================================
 
     private Vector2 GetFootprintAttackDirection(
@@ -177,7 +202,6 @@ public class ArrowAttack : AbilitySO
 
         AttackUnit userUnit = FindAttackUnit(user);
 
-        // If grid data is unavailable, use the visual target point.
         if (gridManager == null ||
             userUnit == null ||
             targetUnit == null)
@@ -192,7 +216,6 @@ public class ArrowAttack : AbilitySO
         Vector2Int userGrid = userUnit.GetLogicalGridPosition();
         Vector2Int targetGrid = targetUnit.GetLogicalGridPosition();
 
-        // Get the target's footprint size.
         CharacterSO character = targetUnit.GetCharacterData();
 
         int footprintSize = character != null
@@ -202,7 +225,6 @@ public class ArrowAttack : AbilitySO
                 gridManager.GetUnitFootprintSize(targetUnit.gameObject)
             );
 
-        // Match the centered footprint convention in AbilitySO.
         int minOffset = -(footprintSize / 2);
 
         int minX = targetGrid.x + minOffset;
@@ -220,22 +242,18 @@ public class ArrowAttack : AbilitySO
 
         if (userWithinX && !userWithinY)
         {
-            // User is above or below the target footprint.
             gridDirection = userGrid.y > maxY
                 ? Vector2Int.down
                 : Vector2Int.up;
         }
         else if (userWithinY && !userWithinX)
         {
-            // User is left or right of the target footprint.
             gridDirection = userGrid.x > maxX
                 ? Vector2Int.left
                 : Vector2Int.right;
         }
         else
         {
-            // User is diagonally positioned relative to the footprint.
-            // Choose the direction corresponding to the nearest side.
             int gapX = userGrid.x < minX
                 ? minX - userGrid.x
                 : userGrid.x > maxX
@@ -262,7 +280,6 @@ public class ArrowAttack : AbilitySO
             }
             else
             {
-                // Equal separation: use the dominant anchor difference.
                 Vector2Int difference = targetGrid - userGrid;
 
                 if (Mathf.Abs(difference.x) > Mathf.Abs(difference.y))
@@ -280,8 +297,6 @@ public class ArrowAttack : AbilitySO
             }
         }
 
-        // Convert the grid direction into world space.
-        // This supports a rotated board.
         Vector3 worldStart =
             gridManager.GridToWorldPosition(userGrid);
 

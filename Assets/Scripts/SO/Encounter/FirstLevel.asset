@@ -28,8 +28,6 @@ MonoBehaviour:
   targetEnemyId: penis
   roundsToSurvive: 1
   obstacles:
-  - prefab: {fileID: 7012824583319412241, guid: 0d518d99f84dc2945b8ffe366559e0e4, type: 3}
-    amount: 1
   - prefab: {fileID: 4842063353313913221, guid: b26b256594154f549aeaaa4b94016709, type: 3}
     amount: 1
   bushes: []

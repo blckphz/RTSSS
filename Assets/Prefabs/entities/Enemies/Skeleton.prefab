@@ -118,7 +118,7 @@ Transform:
   m_GameObject: {fileID: 1406073567740770021}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.757, z: 0}
+  m_LocalPosition: {x: 0, y: 0.66, z: 0}
   m_LocalScale: {x: 0.46947718, y: 0.46947718, z: 0.46947718}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -719,6 +719,7 @@ MonoBehaviour:
   dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 1
   attackAnimatorLayerName: attackLayer
+  playerLocked: 0
   dayNightType: 1
   dayDamageBonus: 0
   nightDamageBonus: 10
@@ -797,7 +798,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.005378425, y: 0.23417076}
+  m_Offset: {x: -0.010126978, y: 0.21042798}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -807,7 +808,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.66474605, y: 0.42762947}
+  m_Size: {x: 0.35134143, y: 0.3611497}
   m_EdgeRadius: 0
 --- !u!50 &3148016133544427552
 Rigidbody2D:
@@ -889,6 +890,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
+  isWalkable: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
   unitId: 

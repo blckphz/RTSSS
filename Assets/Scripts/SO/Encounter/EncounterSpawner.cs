@@ -1,71 +1,40 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EncounterSpawner : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField]
-    private GridManager gridManager;
-
-    [SerializeField]
-    private EncounterManager encounterManager;
-
-    [SerializeField]
-    private CombatManager combatManager;
+    [SerializeField] private GridManager gridManager;
+    [SerializeField] private EncounterManager encounterManager;
+    [SerializeField] private CombatManager combatManager;
 
     [Header("Survival")]
-    [SerializeField]
-    private int currentWave = 0;
+    [SerializeField] private int currentWave = 0;
 
     [Header("Bushes")]
-    [SerializeField]
-    [Min(1)]
-    private int minimumBushSpacing = 3;
-
-    [SerializeField]
-    [Min(1)]
-    private int bushSpawnAttempts = 50;
-
-
-    // =========================================================
-    // INTERNAL BUSH POSITIONS
-    // =========================================================
+    [SerializeField, Min(1)] private int minimumBushSpacing = 3;
+    [SerializeField, Min(1)] private int bushSpawnAttempts = 50;
 
     private readonly List<Vector2Int> spawnedBushPositions =
         new List<Vector2Int>();
-
-
-    // =========================================================
-    // REFERENCES
-    // =========================================================
 
     private void Awake()
     {
         FindReferences();
     }
 
-
     private void FindReferences()
     {
         if (gridManager == null)
-        {
-            gridManager =
-                FindFirstObjectByType<GridManager>();
-        }
+            gridManager = FindFirstObjectByType<GridManager>();
 
         if (encounterManager == null)
-        {
-            encounterManager =
-                FindFirstObjectByType<EncounterManager>();
-        }
+            encounterManager = FindFirstObjectByType<EncounterManager>();
 
         if (combatManager == null)
-        {
-            combatManager =
-                FindFirstObjectByType<CombatManager>();
-        }
+            combatManager = FindFirstObjectByType<CombatManager>();
     }
-
 
     // =========================================================
     // WAVES
@@ -76,88 +45,35 @@ public class EncounterSpawner : MonoBehaviour
         currentWave = 0;
     }
 
-
     public int GetCurrentWave()
     {
         return currentWave;
     }
 
-
     // =========================================================
     // INITIAL ENCOUNTER
     // =========================================================
 
-    public void SpawnEncounter(
-        EncounterDefinition encounter
-    )
+    public void SpawnEncounter(EncounterDefinition encounter)
     {
         if (encounter == null)
-        {
             return;
-        }
 
         FindReferences();
 
         if (gridManager == null)
-        {
             return;
-        }
 
         ResetWaves();
-
         spawnedBushPositions.Clear();
 
-        // -----------------------------------------------------
-        // BOSSES
-        // -----------------------------------------------------
-        // Spawn bosses first so obstacles, bushes, and regular
-        // enemies cannot occupy the centre cell beforehand.
-        // -----------------------------------------------------
+        SpawnBosses(encounter, false);
+        SpawnObstacles(encounter);
+        SpawnBushes(encounter);
 
-        SpawnBosses(
-            encounter,
-            false
-        );
-
-        // -----------------------------------------------------
-        // NORMAL OBSTACLES
-        // -----------------------------------------------------
-
-        SpawnObstacles(
-            encounter
-        );
-
-        // -----------------------------------------------------
-        // BUSHES
-        // -----------------------------------------------------
-        //
-        // Bushes are spawned separately so they can use their
-        // own spacing rules.
-        //
-        // They are still non-blocking just like BushBehav
-        // objects previously were.
-        // -----------------------------------------------------
-
-        SpawnBushes(
-            encounter
-        );
-
-        /*
-         * =====================================================
-         * IMPORTANT
-         * =====================================================
-         *
-         * Initial Wave 1 is NOT locked.
-         *
-         * These enemies are present from the beginning of the
-         * encounter and therefore CAN act during Round 1.
-         */
-        SpawnWave(
-            encounter,
-            false
-        );
+        // Initial wave enemies can act during Round 1.
+        SpawnWave(encounter, false);
     }
-
 
     // =========================================================
     // BOSS SPAWNING
@@ -165,39 +81,24 @@ public class EncounterSpawner : MonoBehaviour
 
     private int SpawnBosses(
         EncounterDefinition encounter,
-        bool lockForCurrentRound
-    )
+        bool lockForCurrentRound)
     {
-        if (
-            encounter == null ||
+        if (encounter == null ||
             encounter.bosses == null ||
-            gridManager == null
-        )
+            gridManager == null)
         {
             return 0;
         }
 
-        // GridManager uses logical coordinates centred at (0, 0).
         Vector2Int centre = Vector2Int.zero;
-
         int spawnedCount = 0;
 
-        for (
-            int bossIndex = 0;
-            bossIndex < encounter.bosses.Count;
-            bossIndex++
-        )
+        for (int i = 0; i < encounter.bosses.Count; i++)
         {
-            EnemySpawnData bossData =
-                encounter.bosses[bossIndex];
+            EnemySpawnData bossData = encounter.bosses[i];
 
-            if (
-                bossData == null ||
-                bossData.prefab == null
-            )
-            {
+            if (bossData == null || bossData.prefab == null)
                 continue;
-            }
 
             bool spawned = SpawnUnitAtPosition(
                 bossData.prefab,
@@ -215,9 +116,7 @@ public class EncounterSpawner : MonoBehaviour
             {
                 Debug.LogWarning(
                     $"Could not spawn boss '{bossData.enemyId}' " +
-                    $"at grid centre {centre}. The centre cell may " +
-                    "be unavailable, or another boss may already " +
-                    "occupy it.",
+                    $"at grid centre {centre}. The centre may be occupied.",
                     this
                 );
             }
@@ -226,32 +125,21 @@ public class EncounterSpawner : MonoBehaviour
         return spawnedCount;
     }
 
-
     // =========================================================
     // SPAWN WAVE
     // =========================================================
 
     public int SpawnWave(
         EncounterDefinition encounter,
-        bool lockForCurrentRound = false
-    )
+        bool lockForCurrentRound = false)
     {
-        if (encounter == null)
-        {
+        if (encounter == null || encounter.enemies == null)
             return 0;
-        }
-
-        if (encounter.enemies == null)
-        {
-            return 0;
-        }
 
         FindReferences();
 
         if (gridManager == null)
-        {
             return 0;
-        }
 
         gridManager.CleanupDeadUnits();
 
@@ -259,168 +147,86 @@ public class EncounterSpawner : MonoBehaviour
 
         int spawnedCount = 0;
 
-        for (
-            int enemyIndex = 0;
-            enemyIndex < encounter.enemies.Count;
-            enemyIndex++
-        )
+        for (int i = 0; i < encounter.enemies.Count; i++)
         {
-            EnemySpawnData enemyData =
-                encounter.enemies[
-                    enemyIndex
-                ];
+            EnemySpawnData enemyData = encounter.enemies[i];
 
-            if (enemyData == null)
-            {
+            if (enemyData == null || enemyData.prefab == null)
                 continue;
-            }
 
-            if (enemyData.prefab == null)
-            {
-                continue;
-            }
-
-            bool spawned =
-                SpawnRandomUnit(
-                    enemyData.prefab,
-                    enemyData.character,
-                    enemyData.enemyId,
-                    lockForCurrentRound
-                );
+            bool spawned = SpawnRandomUnit(
+                enemyData.prefab,
+                enemyData.character,
+                enemyData.enemyId,
+                lockForCurrentRound
+            );
 
             if (spawned)
-            {
                 spawnedCount++;
-            }
         }
 
         return spawnedCount;
     }
 
-
     // =========================================================
     // OBSTACLES
     // =========================================================
 
-    public void SpawnObstacles(
-        EncounterDefinition encounter
-    )
+    public void SpawnObstacles(EncounterDefinition encounter)
     {
-        if (encounter == null)
-        {
+        if (encounter == null || encounter.obstacles == null)
             return;
-        }
 
-        if (encounter.obstacles == null)
+        for (int i = 0; i < encounter.obstacles.Count; i++)
         {
-            return;
-        }
+            ObstacleSpawnData obstacleData = encounter.obstacles[i];
 
-        for (
-            int obstacleIndex = 0;
-            obstacleIndex < encounter.obstacles.Count;
-            obstacleIndex++
-        )
-        {
-            ObstacleSpawnData obstacleData =
-                encounter.obstacles[
-                    obstacleIndex
-                ];
-
-            if (obstacleData == null)
-            {
+            if (obstacleData == null || obstacleData.prefab == null)
                 continue;
-            }
 
-            if (obstacleData.prefab == null)
-            {
-                continue;
-            }
+            int amount = Mathf.Max(1, obstacleData.amount);
 
-            int amount =
-                Mathf.Max(
-                    1,
-                    obstacleData.amount
-                );
-
-            for (
-                int instanceIndex = 0;
-                instanceIndex < amount;
-                instanceIndex++
-            )
+            for (int j = 0; j < amount; j++)
             {
                 SpawnRandomObstacle(
                     obstacleData.prefab,
-                    obstacleIndex,
-                    instanceIndex
+                    i,
+                    j
                 );
             }
         }
     }
-
 
     // =========================================================
     // BUSHES
     // =========================================================
 
-    public void SpawnBushes(
-        EncounterDefinition encounter
-    )
+    public void SpawnBushes(EncounterDefinition encounter)
     {
-        if (encounter == null)
-        {
+        if (encounter == null || encounter.bushes == null)
             return;
-        }
-
-        if (encounter.bushes == null)
-        {
-            return;
-        }
 
         spawnedBushPositions.Clear();
 
-        for (
-            int bushIndex = 0;
-            bushIndex < encounter.bushes.Count;
-            bushIndex++
-        )
+        for (int i = 0; i < encounter.bushes.Count; i++)
         {
-            ObstacleSpawnData bushData =
-                encounter.bushes[
-                    bushIndex
-                ];
+            ObstacleSpawnData bushData = encounter.bushes[i];
 
-            if (bushData == null)
-            {
+            if (bushData == null || bushData.prefab == null)
                 continue;
-            }
 
-            if (bushData.prefab == null)
-            {
-                continue;
-            }
+            int amount = Mathf.Max(1, bushData.amount);
 
-            int amount =
-                Mathf.Max(
-                    1,
-                    bushData.amount
-                );
-
-            for (
-                int instanceIndex = 0;
-                instanceIndex < amount;
-                instanceIndex++
-            )
+            for (int j = 0; j < amount; j++)
             {
                 SpawnRandomBush(
                     bushData.prefab,
-                    bushIndex,
-                    instanceIndex
+                    i,
+                    j
                 );
             }
         }
     }
-
 
     // =========================================================
     // SPAWN RANDOM OBSTACLE
@@ -429,115 +235,53 @@ public class EncounterSpawner : MonoBehaviour
     private void SpawnRandomObstacle(
         GameObject prefab,
         int obstacleIndex,
-        int instanceIndex
-    )
+        int instanceIndex)
     {
-        if (prefab == null)
-        {
+        if (prefab == null || gridManager == null)
             return;
-        }
 
-        if (gridManager == null)
-        {
+        if (!gridManager.TryGetRandomFreeCell(out Vector2Int position))
             return;
-        }
 
-        if (
-            !gridManager.TryGetRandomFreeCell(
-                out Vector2Int position
-            )
-        )
-        {
-            return;
-        }
-
-        GameObject obstacle =
-            Instantiate(
-                prefab
-            );
+        GameObject obstacle = Instantiate(prefab);
 
         if (obstacle == null)
-        {
             return;
-        }
 
         obstacle.name =
             $"Obstacle_{obstacleIndex}_{instanceIndex}";
-
-
-        // -----------------------------------------------------
-        // TILE PIN
-        // -----------------------------------------------------
 
         UnitTilePin tilePin =
             obstacle.GetComponent<UnitTilePin>();
 
         if (tilePin == null)
-        {
-            tilePin =
-                obstacle.AddComponent<UnitTilePin>();
-        }
+            tilePin = obstacle.AddComponent<UnitTilePin>();
 
-        tilePin.SetTile(
-            position
-        );
-
-
-        // -----------------------------------------------------
-        // POSITION
-        // -----------------------------------------------------
+        tilePin.SetTile(position);
 
         obstacle.transform.position =
-            gridManager.GridToWorldPosition(
-                position
-            );
+            gridManager.GridToWorldPosition(position);
 
-
-        // -----------------------------------------------------
-        // BUSH COMPATIBILITY
-        // -----------------------------------------------------
-        //
-        // This is intentionally retained so old encounter
-        // definitions that still have a BushBehav prefab inside
-        // "obstacles" continue to work.
-        // -----------------------------------------------------
-
-        BushBehav bush =
-            obstacle.GetComponent<BushBehav>();
+        // Legacy BushBehav prefabs are also treated as walkable.
+        BushBehav bush = obstacle.GetComponent<BushBehav>();
 
         if (bush != null)
-        {
-            gridManager.RegisterWalkableObstacle(
-                position
-            );
+            tilePin.SetWalkable(true);
 
+        // Walkable obstacles reserve their tile but do not occupy
+        // the blocking unit grid.
+        if (tilePin.IsWalkable)
+        {
+            gridManager.RegisterWalkableObstacle(position);
             return;
         }
 
-
-        // -----------------------------------------------------
-        // NORMAL OBSTACLE
-        // -----------------------------------------------------
-        //
-        // Normal obstacles ARE blocking.
-        // -----------------------------------------------------
-
-        bool placed =
-            gridManager.PlaceUnit(
-                obstacle,
-                position
-            );
+        // Non-walkable obstacles block movement and spawning.
+        bool placed = gridManager.PlaceUnit(obstacle, position);
 
         if (!placed)
-        {
-            Destroy(
-                obstacle
-            );
-
-            return;
-        }
+            Destroy(obstacle);
     }
-
 
     // =========================================================
     // SPAWN RANDOM BUSH
@@ -546,145 +290,59 @@ public class EncounterSpawner : MonoBehaviour
     private void SpawnRandomBush(
         GameObject prefab,
         int bushIndex,
-        int instanceIndex
-    )
+        int instanceIndex)
     {
-        if (prefab == null)
-        {
+        if (prefab == null || gridManager == null)
             return;
-        }
 
-        if (gridManager == null)
-        {
+        if (!TryGetRandomBushPosition(out Vector2Int position))
             return;
-        }
 
-        if (
-            !TryGetRandomBushPosition(
-                out Vector2Int position
-            )
-        )
-        {
-            return;
-        }
-
-        GameObject bush =
-            Instantiate(
-                prefab
-            );
+        GameObject bush = Instantiate(prefab);
 
         if (bush == null)
-        {
             return;
-        }
 
-        bush.name =
-            $"Bush_{bushIndex}_{instanceIndex}";
-
-
-        // -----------------------------------------------------
-        // TILE PIN
-        // -----------------------------------------------------
+        bush.name = $"Bush_{bushIndex}_{instanceIndex}";
 
         UnitTilePin tilePin =
             bush.GetComponent<UnitTilePin>();
 
         if (tilePin == null)
-        {
-            tilePin =
-                bush.AddComponent<UnitTilePin>();
-        }
+            tilePin = bush.AddComponent<UnitTilePin>();
 
-        tilePin.SetTile(
-            position
-        );
-
-
-        // -----------------------------------------------------
-        // POSITION
-        // -----------------------------------------------------
+        // Bushes are always walkable.
+        tilePin.SetWalkable(true);
+        tilePin.SetTile(position);
 
         bush.transform.position =
-            gridManager.GridToWorldPosition(
-                position
-            );
+            gridManager.GridToWorldPosition(position);
 
+        // Reserve the tile for spawning, but allow movement onto it.
+        gridManager.RegisterWalkableObstacle(position);
 
-        // -----------------------------------------------------
-        // BUSH
-        // -----------------------------------------------------
-        //
-        // Bushes are NON-BLOCKING.
-        //
-        // The player can move onto their tile.
-        //
-        // The tile is still registered so another spawned
-        // object does not occupy the exact same cell.
-        // -----------------------------------------------------
-
-        gridManager.RegisterWalkableObstacle(
-            position
-        );
-
-
-        // -----------------------------------------------------
-        // REMEMBER POSITION
-        // -----------------------------------------------------
-
-        spawnedBushPositions.Add(
-            position
-        );
+        spawnedBushPositions.Add(position);
     }
-
 
     // =========================================================
     // RANDOM BUSH POSITION
     // =========================================================
-    //
-    // Bushes must be farther apart from OTHER BUSHES.
-    //
-    // They can still spawn normally relative to obstacles and
-    // other grid occupants because TryGetRandomFreeCell()
-    // handles normal grid occupancy.
-    // =========================================================
 
-    private bool TryGetRandomBushPosition(
-        out Vector2Int position
-    )
+    private bool TryGetRandomBushPosition(out Vector2Int position)
     {
         position = default;
 
         if (gridManager == null)
-        {
             return false;
-        }
 
-        int attempts =
-            Mathf.Max(
-                1,
-                bushSpawnAttempts
-            );
+        int attempts = Mathf.Max(1, bushSpawnAttempts);
 
-        for (
-            int attempt = 0;
-            attempt < attempts;
-            attempt++
-        )
+        for (int i = 0; i < attempts; i++)
         {
-            if (
-                !gridManager.TryGetRandomFreeCell(
-                    out Vector2Int candidate
-                )
-            )
-            {
+            if (!gridManager.TryGetRandomFreeCell(out Vector2Int candidate))
                 return false;
-            }
 
-            if (
-                IsFarEnoughFromOtherBushes(
-                    candidate
-                )
-            )
+            if (IsFarEnoughFromOtherBushes(candidate))
             {
                 position = candidate;
                 return true;
@@ -694,63 +352,35 @@ public class EncounterSpawner : MonoBehaviour
         return false;
     }
 
-
     // =========================================================
     // BUSH SPACING
     // =========================================================
 
-    private bool IsFarEnoughFromOtherBushes(
-        Vector2Int candidate
-    )
+    private bool IsFarEnoughFromOtherBushes(Vector2Int candidate)
     {
         if (spawnedBushPositions.Count == 0)
-        {
             return true;
-        }
 
-        float minimumDistance =
-            Mathf.Max(
-                1,
-                minimumBushSpacing
-            );
-
+        float minimumDistance = Mathf.Max(1, minimumBushSpacing);
         float minimumDistanceSquared =
-            minimumDistance *
-            minimumDistance;
+            minimumDistance * minimumDistance;
 
-        for (
-            int i = 0;
-            i < spawnedBushPositions.Count;
-            i++
-        )
+        for (int i = 0; i < spawnedBushPositions.Count; i++)
         {
-            Vector2Int bushPosition =
-                spawnedBushPositions[i];
+            Vector2Int bushPosition = spawnedBushPositions[i];
 
-            int deltaX =
-                candidate.x -
-                bushPosition.x;
-
-            int deltaY =
-                candidate.y -
-                bushPosition.y;
+            int deltaX = candidate.x - bushPosition.x;
+            int deltaY = candidate.y - bushPosition.y;
 
             float distanceSquared =
-                (deltaX * deltaX) +
-                (deltaY * deltaY);
+                deltaX * deltaX + deltaY * deltaY;
 
-            if (
-                distanceSquared <
-                minimumDistanceSquared
-            )
-            {
+            if (distanceSquared < minimumDistanceSquared)
                 return false;
-            }
         }
 
         return true;
     }
-
 
     // =========================================================
     // ENEMY SPAWNING
@@ -760,22 +390,13 @@ public class EncounterSpawner : MonoBehaviour
         GameObject prefab,
         CharacterSO character,
         string enemyId,
-        bool lockForCurrentRound
-    )
+        bool lockForCurrentRound)
     {
         if (prefab == null || gridManager == null)
-        {
             return false;
-        }
 
-        if (
-            !gridManager.TryGetRandomFreeCell(
-                out Vector2Int position
-            )
-        )
-        {
+        if (!gridManager.TryGetRandomFreeCell(out Vector2Int position))
             return false;
-        }
 
         return SpawnUnitAtPosition(
             prefab,
@@ -786,9 +407,8 @@ public class EncounterSpawner : MonoBehaviour
         );
     }
 
-
     // =========================================================
-    // SPAWN UNIT AT A SPECIFIC GRID POSITION
+    // SPAWN UNIT AT SPECIFIC GRID POSITION
     // =========================================================
 
     private bool SpawnUnitAtPosition(
@@ -796,18 +416,13 @@ public class EncounterSpawner : MonoBehaviour
         CharacterSO character,
         string enemyId,
         bool lockForCurrentRound,
-        Vector2Int position
-    )
+        Vector2Int position)
     {
         if (prefab == null || gridManager == null)
-        {
             return false;
-        }
 
-        if (
-            encounterManager != null &&
-            encounterManager.IsFinished()
-        )
+        if (encounterManager != null &&
+            encounterManager.IsFinished())
         {
             return false;
         }
@@ -815,45 +430,26 @@ public class EncounterSpawner : MonoBehaviour
         GameObject unit = Instantiate(prefab);
 
         if (unit == null)
-        {
             return false;
-        }
 
-        unit.name =
-            string.IsNullOrWhiteSpace(enemyId)
-                ? "EncounterEnemy"
-                : enemyId + "_Enemy";
-
-        // -----------------------------------------------------
-        // UNIT DATA
-        // -----------------------------------------------------
+        unit.name = string.IsNullOrWhiteSpace(enemyId)
+            ? "EncounterEnemy"
+            : enemyId + "_Enemy";
 
         UnitData unitData = unit.GetComponent<UnitData>();
 
         if (unitData == null)
-        {
             unitData = unit.AddComponent<UnitData>();
-        }
 
         unitData.Initialize(character);
-
-        // -----------------------------------------------------
-        // ENCOUNTER UNIT
-        // -----------------------------------------------------
 
         EncounterUnit encounterUnit =
             unit.GetComponent<EncounterUnit>();
 
         if (encounterUnit == null)
-        {
             encounterUnit = unit.AddComponent<EncounterUnit>();
-        }
 
         encounterUnit.SetEncounterUnitId(enemyId);
-
-        // -----------------------------------------------------
-        // GRID PLACEMENT
-        // -----------------------------------------------------
 
         bool placed = gridManager.PlaceUnit(unit, position);
 
@@ -863,19 +459,7 @@ public class EncounterSpawner : MonoBehaviour
             return false;
         }
 
-        // -----------------------------------------------------
-        // WAVE TURN LOCK
-        // -----------------------------------------------------
-
-        /*
-         * Initial encounter wave passes false, so units can act
-         * during Round 1. Later waves may pass true to lock the
-         * spawned enemy for the current round.
-         */
-        if (
-            lockForCurrentRound &&
-            combatManager != null
-        )
+        if (lockForCurrentRound && combatManager != null)
         {
             AttackUnit attackUnit =
                 unit.GetComponent<AttackUnit>();

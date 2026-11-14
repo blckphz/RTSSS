@@ -525,6 +525,7 @@ MonoBehaviour:
   dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 1
   attackAnimatorLayerName: attackLayer
+  playerLocked: 0
   dayNightType: 1
   dayDamageBonus: 0
   nightDamageBonus: 10
@@ -603,7 +604,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.00537844, y: 0.5615489}
+  m_Offset: {x: -0.008390695, y: 0.19103862}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.06}
@@ -613,7 +614,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.66474605, y: 1.0823857}
+  m_Size: {x: 0.35749358, y: 0.34136513}
   m_EdgeRadius: 0
 --- !u!50 &8158226207677872456
 Rigidbody2D:
@@ -695,6 +696,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
+  isWalkable: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
   unitId: 

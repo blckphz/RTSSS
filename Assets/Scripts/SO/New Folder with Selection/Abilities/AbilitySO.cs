@@ -18,8 +18,8 @@ public abstract class AbilitySO : ScriptableObject
     public enum TargetType
     {
         Enemy,
-        Ally,
         Player,
+        Neutral,
         Any
     }
 
@@ -55,7 +55,6 @@ public abstract class AbilitySO : ScriptableObject
     private AbilityTimeRestriction timeRestriction =
         AbilityTimeRestriction.AnyTime;
 
-    [Tooltip("If TRUE, this ability requires an enemy/object target. If FALSE, it can be used directly on a tile.")]
     public bool NeedEnemy;
 
     [Header("Combat")]
@@ -348,6 +347,11 @@ public abstract class AbilitySO : ScriptableObject
         return false;
     }
 
+    private bool IsNeutralTeam(Team targetTeam)
+    {
+        return targetTeam == Team.Neutral;
+    }
+
     // ============================================================
     // RANGE TILES
     // ============================================================
@@ -584,11 +588,12 @@ public abstract class AbilitySO : ScriptableObject
             case TargetType.Enemy:
                 return IsEnemyTeam(userTeam, targetTeam);
 
-            case TargetType.Ally:
-                return IsAllyTeam(userTeam, targetTeam);
 
             case TargetType.Player:
                 return targetTeam == Team.Player;
+
+            case TargetType.Neutral:
+                return IsNeutralTeam(targetTeam);
 
             case TargetType.Any:
                 return true;

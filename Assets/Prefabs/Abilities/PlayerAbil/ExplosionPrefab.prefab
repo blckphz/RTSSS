@@ -109,10 +109,10 @@ MonoBehaviour:
   radius: 3
   damage: 30
   explosionShape: 0
-  totalDamageFalloff: 35.2
+  totalDamageFalloff: 29.1
   allowFriendlyFire: 1
   applyKnockback: 1
-  maxKnockbackDistance: 3
+  maxKnockbackDistance: 7
   minKnockbackDistance: 1
   knockbackStepDuration: 0.08
   knockbackPlayerWithoutDamage: 1

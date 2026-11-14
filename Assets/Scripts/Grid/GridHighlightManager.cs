@@ -919,8 +919,6 @@ public class GridHighlightManager : MonoBehaviour
                 case AbilitySO.TargetType.Enemy:
                     return IsEnemyTeam(userTeam, targetTeam);
 
-                case AbilitySO.TargetType.Ally:
-                    return IsAllyTeam(userTeam, targetTeam);
 
                 case AbilitySO.TargetType.Player:
                     return targetTeam == Team.Player;

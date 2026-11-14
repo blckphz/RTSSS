@@ -712,12 +712,18 @@ public class CanvasJuiceManager : MonoBehaviour
             DisableFreeCamera();
 
             if (HasSelectedAbility())
+            {
                 MoveCameraToAbilityPosition();
+            }
+            else
+            {
+                MoveCameraToNormalPosition();
+            }
 
             return;
         }
 
-        EnableFreeCamera();
+        MoveCameraToNormalPosition();
     }
 
     // =========================================================
