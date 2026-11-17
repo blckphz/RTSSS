@@ -119,11 +119,6 @@ public class UpdateManager : MonoBehaviour
         currentUnit = unit;
         currentCharacter = character;
 
-        Debug.Log(
-            "[UpgradeManager] Refreshing upgrades for player: " +
-            unit.gameObject.name
-        );
-
         // Apply upgrades that were purchased before spawning.
         ApplyStoredUnitUpgrades();
 

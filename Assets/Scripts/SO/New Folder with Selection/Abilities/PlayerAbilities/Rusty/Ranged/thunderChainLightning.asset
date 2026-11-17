@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8221a0c82b621b546b894d41f8251e26, type: 3}
-  m_Name: ChainLightning
+  m_Name: thunderChainLightning
   m_EditorClassIdentifier: Assembly-CSharp::ChainLightning
   abilityName: Chain LIghtning
   abilityIcon: {fileID: 21300000, guid: eb0767ddd397d154b8b6b07f4a4ef1ba, type: 3}
@@ -26,7 +26,7 @@ MonoBehaviour:
   canAttackWithThisAfterMove: 1
   usesPerTurn: 1
   useDuration: 0.25
-  targetType: 0
+  targetType: 3
   range: 5
   minDistance: 0
   rangeShape: 0

@@ -111,24 +111,58 @@ public class RoundManager : MonoBehaviour
 
     public void StartRound()
     {
+        Debug.Log("[RoundManager] Next Round button pressed.");
+
         if (roundRunning)
+        {
+            Debug.Log("[RoundManager] StartRound blocked: round already running.");
             return;
+        }
 
         if (currentState != RoundState.Setup)
+        {
+            Debug.Log("[RoundManager] StartRound blocked: not in Setup state.");
             return;
+        }
 
         if (!IsPlayerOnField())
+        {
+            Debug.Log("[RoundManager] StartRound blocked: no living player.");
             return;
+        }
 
         if (encounterManager != null &&
             encounterManager.IsFinished())
         {
+            Debug.Log("[RoundManager] StartRound blocked: encounter finished.");
             return;
+        }
+
+        // Immediately suppress and clear movement range.
+        if (gridHighlightManager != null)
+        {
+            gridHighlightManager.DisableMovementRangeImmediately(
+                "Next Round button pressed"
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[RoundManager] GridHighlightManager reference is missing."
+            );
         }
 
         roundRunning = true;
 
-        EnablePlayerTurnInteraction();
+        Debug.Log("[RoundManager] Round started. Preparing units.");
+
+        // Do not re-enable movement highlights here.
+        // They remain suppressed until the player/ally phase begins.
+        CombatUtility.SetPlayerInputLocked(false);
+
+        if (lineWalkPreview != null)
+            lineWalkPreview.SetPlayerWalkPreviewDisabled(false);
+
         RefreshCachedUnits();
         ResetAllUnitMovement();
         UpdateAllUnitCooldowns();
@@ -142,19 +176,31 @@ public class RoundManager : MonoBehaviour
 
     private IEnumerator RunRoundPipeline()
     {
+        Debug.Log("[RoundManager] Running round pipeline.");
+
         if (gridManager != null)
             gridManager.CleanupDeadUnits();
 
         EnsureEnemiesExist();
 
         SetRoundState(RoundState.PlayerAndAllyTurn);
-        EnablePlayerTurnInteraction();
 
         if (canvasInfoManager != null)
             canvasInfoManager.RefreshCurrentSelection();
 
+        // Restore movement highlighting for the new player turn.
+        if (gridHighlightManager != null)
+        {
+            gridHighlightManager.EnableMovementRangeHighlights(
+                "Player and Ally turn started"
+            );
+        }
+
+        EnablePlayerTurnInteraction();
+
         yield return StartCoroutine(
-            ExecutePlayerAndAllyTurn());
+            ExecutePlayerAndAllyTurn()
+        );
 
         if (encounterManager != null &&
             encounterManager.IsFinished())
@@ -302,15 +348,6 @@ public class RoundManager : MonoBehaviour
 
             if (isRetreatingBoss)
             {
-                // ======================================
-                // RETREATING LOBSTER TURN
-                // ======================================
-
-                // Use abilities BEFORE retreat movement.
-                // EggAbil can therefore detect that the
-                // lobster is retreating and target tiles
-                // toward its pond.
-
                 UnitAttackBrain attackBrain =
                     enemy.GetComponent<UnitAttackBrain>();
 
@@ -325,7 +362,6 @@ public class RoundManager : MonoBehaviour
                         .UseAllAvailableAbilitiesCoroutine();
                 }
 
-                // Check that the encounter is still active.
                 if (encounterManager != null &&
                     encounterManager.IsFinished())
                 {
@@ -333,7 +369,6 @@ public class RoundManager : MonoBehaviour
                     yield break;
                 }
 
-                // Move toward the pond after using abilities.
                 if (!enemy.IsDead() &&
                     bossBrain != null &&
                     bossBrain.IsRetreating())
@@ -349,10 +384,6 @@ public class RoundManager : MonoBehaviour
             }
             else
             {
-                // ======================================
-                // NORMAL ENEMY TURN
-                // ======================================
-
                 yield return StartCoroutine(
                     CombatUtility.ExecuteEnemyTurn(
                         enemy,
@@ -426,32 +457,28 @@ public class RoundManager : MonoBehaviour
 
     private void DisablePlayerTurnInteraction()
     {
+        Debug.Log("[RoundManager] Disabling player interaction.");
+
         CombatUtility.SetPlayerInputLocked(true);
 
         if (gridHighlightManager != null)
-        {
             gridHighlightManager.SetPlayerHighlightsDisabled(true);
-        }
 
         if (lineWalkPreview != null)
-        {
             lineWalkPreview.SetPlayerWalkPreviewDisabled(true);
-        }
     }
 
     private void EnablePlayerTurnInteraction()
     {
+        Debug.Log("[RoundManager] Enabling player interaction.");
+
         CombatUtility.SetPlayerInputLocked(false);
 
         if (gridHighlightManager != null)
-        {
             gridHighlightManager.SetPlayerHighlightsDisabled(false);
-        }
 
         if (lineWalkPreview != null)
-        {
             lineWalkPreview.SetPlayerWalkPreviewDisabled(false);
-        }
     }
 
     // ==================================================
@@ -463,9 +490,7 @@ public class RoundManager : MonoBehaviour
         EnablePlayerTurnInteraction();
 
         if (canvasJuiceManager != null)
-        {
             canvasJuiceManager.MoveCameraToNormalPosition();
-        }
 
         if (encounterManager != null)
         {
@@ -479,15 +504,8 @@ public class RoundManager : MonoBehaviour
             }
         }
 
-        // ==================================================
-        // BOSS LOBSTER WATER HEALING
-        // ==================================================
-
         if (bossLobster == null)
-        {
-            bossLobster =
-                FindAnyObjectByType<BossLobsterBrain>();
-        }
+            bossLobster = FindAnyObjectByType<BossLobsterBrain>();
 
         if (bossLobster != null)
         {
@@ -533,9 +551,7 @@ public class RoundManager : MonoBehaviour
             lineWalkPreview.ClearPreview();
 
         if (canvasJuiceManager != null)
-        {
             canvasJuiceManager.MoveCameraToNormalPosition();
-        }
 
         OnRoundChanged?.Invoke(currentRound);
         OnRoundStateChanged?.Invoke(currentState);

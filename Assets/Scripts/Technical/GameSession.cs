@@ -43,7 +43,6 @@ public class GameSession : MonoBehaviour
         // Keep session between scenes.
         DontDestroyOnLoad(gameObject);
 
-        Debug.Log("[GameSession] Initialized.");
     }
 
 

@@ -50,6 +50,7 @@ public class GridHighlightManager : MonoBehaviour
     private float explosionPulseDuration = 0.12f;
 
     private bool playerHighlightsDisabled;
+    private bool suppressMovementHighlight;
 
     private readonly Dictionary<Vector2Int, GridHighlightVisuals> tileVisuals =
         new Dictionary<Vector2Int, GridHighlightVisuals>(256);
@@ -72,6 +73,9 @@ public class GridHighlightManager : MonoBehaviour
     private readonly List<Vector2Int> tempCellList =
         new List<Vector2Int>(64);
 
+    private readonly HashSet<Vector2Int> newMovementCells =
+        new HashSet<Vector2Int>();
+
     private readonly Dictionary<Transform, Vector3> targetOriginalScales =
         new Dictionary<Transform, Vector3>(16);
 
@@ -89,7 +93,6 @@ public class GridHighlightManager : MonoBehaviour
 
     private AbilitySO currentAbility;
 
-    private bool suppressMovementHighlight;
     private bool currentAbilityIsHeal;
 
     private Vector2Int lastShotgunDirection;
@@ -142,7 +145,14 @@ public class GridHighlightManager : MonoBehaviour
 
     public void SetPlayerHighlightsDisabled(bool disabled)
     {
+        if (playerHighlightsDisabled == disabled)
+            return;
+
         playerHighlightsDisabled = disabled;
+
+        Debug.Log(
+            $"[GridHighlightManager] Player highlights disabled: {disabled}"
+        );
 
         if (disabled)
             ClearPlayerHighlights();
@@ -175,6 +185,8 @@ public class GridHighlightManager : MonoBehaviour
 
     private void ClearPlayerHighlights()
     {
+        Debug.Log("[GridHighlightManager] Clearing player highlights.");
+
         ClearMovementRange();
         ClearAbilityRange();
         ClearPlacementTile();
@@ -355,6 +367,9 @@ public class GridHighlightManager : MonoBehaviour
         if (brain == null)
             return;
 
+        if (suppressMovementHighlight)
+            return;
+
         if (playerHighlightsDisabled && IsPlayerUnit(user))
             return;
 
@@ -365,33 +380,75 @@ public class GridHighlightManager : MonoBehaviour
         List<Vector2Int> cells,
         GameObject user = null)
     {
+        if (suppressMovementHighlight)
+        {
+            Debug.Log(
+                "[GridHighlightManager] Ignored movement range update: suppressed."
+            );
+            return;
+        }
+
         if (playerHighlightsDisabled && IsPlayerUnit(user))
         {
             ClearMovementRange();
             return;
         }
 
-        ClearMovementRange();
         SetCurrentRangeUser(user);
 
-        if (cells == null || cells.Count == 0)
-            return;
+        tempCellList.Clear();
+        tempCellList.AddRange(movementCells);
 
-        for (int i = 0; i < cells.Count; i++)
+        newMovementCells.Clear();
+
+        if (cells != null)
         {
-            Vector2Int position = cells[i];
+            for (int i = 0; i < cells.Count; i++)
+            {
+                Vector2Int position = cells[i];
 
-            if (gridManager != null && gridManager.IsInsideGrid(position))
-                movementCells.Add(position);
+                if (gridManager != null &&
+                    gridManager.IsInsideGrid(position))
+                {
+                    newMovementCells.Add(position);
+                }
+            }
         }
 
-        RefreshCells(movementCells);
+        // Remove cells that are no longer reachable.
+        for (int i = 0; i < tempCellList.Count; i++)
+        {
+            Vector2Int oldPosition = tempCellList[i];
+
+            if (!newMovementCells.Contains(oldPosition))
+            {
+                movementCells.Remove(oldPosition);
+                RefreshTile(oldPosition);
+            }
+        }
+
+        // Add newly reachable cells.
+        foreach (Vector2Int position in newMovementCells)
+        {
+            if (!movementCells.Contains(position))
+            {
+                movementCells.Add(position);
+                RefreshTile(position);
+            }
+        }
+
+        tempCellList.Clear();
+        newMovementCells.Clear();
     }
 
     public void ClearMovementRange()
     {
         if (movementCells.Count == 0)
             return;
+
+        Debug.Log(
+            $"[GridHighlightManager] Clearing {movementCells.Count} movement cells."
+        );
 
         tempCellList.Clear();
         tempCellList.AddRange(movementCells);
@@ -418,12 +475,43 @@ public class GridHighlightManager : MonoBehaviour
     // MOVEMENT SUPPRESSION
     // ============================================================
 
+    public void DisableMovementRangeImmediately(string reason)
+    {
+        Debug.Log(
+            $"[GridHighlightManager] Disabling movement range immediately. Reason: {reason}"
+        );
+
+        suppressMovementHighlight = true;
+
+        ClearMovementRange();
+
+        Debug.Log(
+            $"[GridHighlightManager] Movement range disabled. Remaining cells: {movementCells.Count}"
+        );
+    }
+
+    public void EnableMovementRangeHighlights(string reason)
+    {
+        Debug.Log(
+            $"[GridHighlightManager] Re-enabling movement range. Reason: {reason}"
+        );
+
+        suppressMovementHighlight = false;
+
+        RefreshCells(movementCells);
+    }
+
     public void SetMovementHighlightSuppressed(bool suppressed)
     {
         if (suppressMovementHighlight == suppressed)
             return;
 
         suppressMovementHighlight = suppressed;
+
+        Debug.Log(
+            $"[GridHighlightManager] Movement highlight suppression: {suppressed}"
+        );
+
         RefreshCells(movementCells);
     }
 
@@ -918,7 +1006,6 @@ public class GridHighlightManager : MonoBehaviour
             {
                 case AbilitySO.TargetType.Enemy:
                     return IsEnemyTeam(userTeam, targetTeam);
-
 
                 case AbilitySO.TargetType.Player:
                     return targetTeam == Team.Player;
