@@ -32,8 +32,7 @@ MonoBehaviour:
   hitEffectOffset: {x: 0, y: 0, z: 0}
   attackStartPrefab: {fileID: 8258134237854485465, guid: 0aaf66061ad5a6a459ee155d35960db8, type: 3}
   attackStartOffset: {x: 0, y: 0, z: 0}
-  attackStartDuration: 2
-  abilitySpawnPointName: AbilitySpawnPoint
+  attackStartDuration: 1
   meleeForwardOffset: 0
   rotationOffset: 90
   upRotation: 180
@@ -44,3 +43,5 @@ MonoBehaviour:
   debugHitbox: 1
   debugTargetValidation: 1
   debugDamage: 1
+  debugAbilitySpawnPoint: 1
+  debugAllSpawnPoints: 1

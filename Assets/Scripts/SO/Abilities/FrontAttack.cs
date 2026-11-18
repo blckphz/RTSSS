@@ -1,7 +1,6 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [CreateAssetMenu(fileName = "FrontAttack", menuName = "Combat/Abilities/FrontAttack")]
 public class FrontAttack : AbilitySO
@@ -22,9 +21,7 @@ public class FrontAttack : AbilitySO
     [SerializeField] private float rotationOffset = 90f;
 
     [Header("Melee Effect Rotation")]
-    [Tooltip("Rotation of the attack effect when facing UP.")]
     [SerializeField] private float upRotation = 0f;
-
     [SerializeField] private float rightRotation = -90f;
     [SerializeField] private float downRotation = 180f;
     [SerializeField] private float leftRotation = 90f;
@@ -35,6 +32,10 @@ public class FrontAttack : AbilitySO
     [SerializeField] private bool debugTargetValidation = true;
     [SerializeField] private bool debugDamage = true;
 
+    [Header("Ability Spawn Point Debug")]
+    [SerializeField] private bool debugAbilitySpawnPoint = true;
+    [SerializeField] private bool debugAllSpawnPoints = true;
+
     // ==================================================
     // DEBUG
     // ==================================================
@@ -43,6 +44,29 @@ public class FrontAttack : AbilitySO
     {
         if (enableAttackDebug)
             Debug.Log($"[FrontAttack] {message}");
+    }
+
+    private void SpawnDebug(string message)
+    {
+        if (debugAbilitySpawnPoint)
+            Debug.Log($"[FrontAttack SPAWN] {message}");
+    }
+
+    private string GetHierarchyPath(Transform target)
+    {
+        if (target == null)
+            return "NULL";
+
+        string path = target.name;
+        Transform parent = target.parent;
+
+        while (parent != null)
+        {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+
+        return path;
     }
 
     // ==================================================
@@ -186,6 +210,54 @@ public class FrontAttack : AbilitySO
         return upRotation;
     }
 
+    // ==================================================
+    // GRID DIRECTION TO WORLD DIRECTION
+    // ==================================================
+
+    private Vector2Int ConvertDirectionToWorldDirection(
+        Vector2Int direction)
+    {
+        if (direction == Vector2Int.zero)
+            return Vector2Int.zero;
+
+        BoardViewController board =
+            BoardViewController.Instance;
+
+        if (board == null)
+            return direction;
+
+        float boardRotation =
+            board.GetCurrentRotation();
+
+        Vector3 logicalDirection = new Vector3(
+            direction.x,
+            direction.y,
+            0f
+        );
+
+        Vector3 worldDirection =
+            Quaternion.AngleAxis(
+                boardRotation,
+                Vector3.forward
+            ) * logicalDirection;
+
+        if (Mathf.Abs(worldDirection.y) >=
+            Mathf.Abs(worldDirection.x))
+        {
+            return worldDirection.y >= 0f
+                ? Vector2Int.up
+                : Vector2Int.down;
+        }
+
+        return worldDirection.x >= 0f
+            ? Vector2Int.right
+            : Vector2Int.left;
+    }
+
+    // ==================================================
+    // GET ATTACK DIRECTION
+    // ==================================================
+
     private Vector2Int GetDirectionToTarget(
         GridManager grid,
         GameObject user,
@@ -231,24 +303,57 @@ public class FrontAttack : AbilitySO
 
     public void PlayAttackStart(GameObject user, GameObject target)
     {
+        SpawnDebug("========== ATTACK START ==========");
+
+        if (user == null)
+        {
+            SpawnDebug("ERROR: Original caster argument is NULL.");
+            return;
+        }
+
         GameObject userRoot = GetUnitRoot(user);
         GameObject targetRoot = GetUnitRoot(target);
 
         if (userRoot == null)
+        {
+            SpawnDebug("ERROR: Unit root is NULL.");
             return;
+        }
 
         GridManager grid =
             Object.FindFirstObjectByType<GridManager>();
 
-        Vector2Int direction =
+        // Direction on the logical grid.
+        Vector2Int gridDirection =
             GetDirectionToTarget(grid, userRoot, targetRoot);
 
-        if (direction == Vector2Int.zero)
-            direction = GetFacingDirection(userRoot);
+        if (gridDirection == Vector2Int.zero)
+            gridDirection = GetFacingDirection(userRoot);
 
-        RotateTowardsDirection(userRoot, direction);
+        // Direction as it appears in the rotated world.
+        Vector2Int worldDirection =
+            ConvertDirectionToWorldDirection(gridDirection);
 
-        PlayAttackStartEffect(userRoot, direction);
+        if (worldDirection == Vector2Int.zero)
+            worldDirection = Vector2Int.up;
+
+        int boardRotation =
+            BoardViewController.Instance != null
+                ? BoardViewController.Instance.GetCurrentRotation()
+                : 0;
+
+        SpawnDebug(
+            $"Caster: {userRoot.name}\n" +
+            $"Grid direction: {gridDirection}\n" +
+            $"World direction: {worldDirection}\n" +
+            $"Board rotation: {boardRotation}"
+        );
+
+        RotateTowardsDirection(userRoot, worldDirection);
+
+        PlayAttackStartEffect(userRoot, worldDirection);
+
+        SpawnDebug("========== ATTACK START COMPLETE ==========");
     }
 
     private void RotateTowardsDirection(
@@ -272,7 +377,75 @@ public class FrontAttack : AbilitySO
         spriteTransform.rotation =
             Quaternion.Euler(0f, 0f, angle + rotationOffset);
 
-        DebugLog($"Rotating {user.name} towards {direction}");
+        DebugLog(
+            $"Rotating {user.name} towards world direction {direction}"
+        );
+    }
+
+    // ==================================================
+    // ABILITY SPAWN POINT
+    // ==================================================
+
+    private Transform FindAbilitySpawnPoint(GameObject user)
+    {
+        if (user == null)
+        {
+            SpawnDebug("ERROR: Cannot search. Caster is NULL.");
+            return null;
+        }
+
+        Transform[] children =
+            user.GetComponentsInChildren<Transform>(true);
+
+        Transform found = null;
+        int count = 0;
+
+        foreach (Transform child in children)
+        {
+            if (child.name != "AbilitySpawnPoint")
+                continue;
+
+            count++;
+
+            if (debugAbilitySpawnPoint && debugAllSpawnPoints)
+            {
+                Debug.Log(
+                    $"[FrontAttack SPAWN] FOUND #{count}\n" +
+                    $"Name: {child.name}\n" +
+                    $"Hierarchy: {GetHierarchyPath(child)}\n" +
+                    $"World Position: {child.position}\n" +
+                    $"Local Position: {child.localPosition}\n" +
+                    $"Rotation: {child.eulerAngles}\n" +
+                    $"Parent: {(child.parent != null ? child.parent.name : "NONE")}\n" +
+                    $"Active: {child.gameObject.activeInHierarchy}",
+                    child.gameObject
+                );
+            }
+
+            if (found == null)
+                found = child;
+        }
+
+        if (found == null)
+        {
+            Debug.LogWarning(
+                $"[FrontAttack SPAWN] NO AbilitySpawnPoint FOUND!\n" +
+                $"Caster: {user.name}\n" +
+                $"Hierarchy searched: {GetHierarchyPath(user.transform)}",
+                user
+            );
+
+            return null;
+        }
+
+        SpawnDebug(
+            $"SELECTED SPAWN POINT\n" +
+            $"Hierarchy: {GetHierarchyPath(found)}\n" +
+            $"World position: {found.position}\n" +
+            $"Local position: {found.localPosition}"
+        );
+
+        return found;
     }
 
     // ==================================================
@@ -418,6 +591,7 @@ public class FrontAttack : AbilitySO
 
         int range = GetRuntimeRange(user);
 
+        // Keep this direction in grid space for hitbox calculations.
         Vector2Int direction =
             GetDirectionToTarget(gridManager, user, target);
 
@@ -642,16 +816,82 @@ public class FrontAttack : AbilitySO
 
     private void PlayAttackStartEffect(
         GameObject user,
-        Vector2Int direction)
+        Vector2Int worldDirection)
     {
-        if (attackStartPrefab == null || user == null)
+        if (attackStartPrefab == null)
+        {
+            SpawnDebug("ERROR: attackStartPrefab is not assigned!");
             return;
+        }
 
-        Vector3 position =
-            user.transform.position + attackStartOffset;
+        if (user == null)
+        {
+            SpawnDebug("ERROR: Caster is NULL!");
+            return;
+        }
 
-        float rotation =
-            GetMeleeRotation(direction);
+        Transform spawnPoint = FindAbilitySpawnPoint(user);
+
+        Vector3 position = user.transform.position;
+
+        if (spawnPoint != null)
+        {
+            // Preserve the spawn point's distance from the caster,
+            // but place the effect along the actual world attack direction.
+            float forwardDistance =
+                Vector3.Distance(
+                    user.transform.position,
+                    spawnPoint.position
+                );
+
+            Vector3 directionVector = new Vector3(
+                worldDirection.x,
+                worldDirection.y,
+                0f
+            );
+
+            if (directionVector.sqrMagnitude > 0.001f)
+            {
+                directionVector.Normalize();
+
+                position =
+                    user.transform.position +
+                    directionVector * forwardDistance;
+            }
+            else
+            {
+                position = spawnPoint.position;
+            }
+
+            SpawnDebug(
+                $"CORRECTED SPAWN POSITION\n" +
+                $"Original spawn point: {spawnPoint.position}\n" +
+                $"Caster position: {user.transform.position}\n" +
+                $"Forward distance: {forwardDistance}\n" +
+                $"World direction: {worldDirection}\n" +
+                $"Corrected position: {position}"
+            );
+        }
+        else
+        {
+            SpawnDebug(
+                $"WARNING: No AbilitySpawnPoint found. " +
+                $"Using caster position: {position}"
+            );
+        }
+
+        position += attackStartOffset;
+
+        float rotation = GetMeleeRotation(worldDirection);
+
+        SpawnDebug(
+            $"FINAL EFFECT SPAWN DATA\n" +
+            $"Caster: {user.name}\n" +
+            $"World direction: {worldDirection}\n" +
+            $"Rotation: {rotation}\n" +
+            $"Offset: {attackStartOffset}\n" +
+            $"Final Position: {position}"
+        );
 
         GameObject effect = Object.Instantiate(
             attackStartPrefab,
@@ -660,7 +900,15 @@ public class FrontAttack : AbilitySO
         );
 
         if (effect != null)
+        {
+            SpawnDebug(
+                $"EFFECT SUCCESSFULLY CREATED\n" +
+                $"Effect: {effect.name}\n" +
+                $"Actual Position: {effect.transform.position}"
+            );
+
             Object.Destroy(effect, attackStartDuration);
+        }
     }
 
     // ==================================================
@@ -684,6 +932,7 @@ public class FrontAttack : AbilitySO
             return false;
         }
 
+        // Logical direction stays in grid space.
         Vector2Int attackDirection =
             GetDirectionToTarget(gridManager, userRoot, targetRoot);
 
@@ -735,8 +984,6 @@ public class FrontAttack : AbilitySO
                 candidates.Add(unitRoot);
         }
 
-        // Explicitly include the selected target.
-        // This is important for turrets that do not have AttackUnit.
         if (targetRoot != null)
         {
             List<Vector2Int> selectedTargetTiles =
@@ -776,7 +1023,13 @@ public class FrontAttack : AbilitySO
         }
 
         if (hitSomething && targetRoot != null)
-            PlayHitEffect(targetRoot, attackDirection);
+        {
+            // Convert only the visual hit-effect direction.
+            Vector2Int worldDirection =
+                ConvertDirectionToWorldDirection(attackDirection);
+
+            PlayHitEffect(targetRoot, worldDirection);
+        }
 
         DebugLog(
             $"Attack finished. Candidates: {candidates.Count}, " +

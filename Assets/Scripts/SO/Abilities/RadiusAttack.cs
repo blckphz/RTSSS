@@ -22,6 +22,10 @@ public class RadiusAttack : AbilitySO
     [Tooltip("Sprite faces downward by default.")]
     [SerializeField] private float rotationOffset = 90f;
 
+    // ==================================================
+    // UNIT HELPERS
+    // ==================================================
+
     private GameObject GetUnitRoot(GameObject obj)
     {
         if (obj == null)
@@ -55,6 +59,42 @@ public class RadiusAttack : AbilitySO
     }
 
     // ==================================================
+    // GRID DIRECTION TO WORLD DIRECTION
+    // ==================================================
+
+    private Vector2 ConvertDirectionToWorldDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude < 0.001f)
+            return Vector2.zero;
+
+        BoardViewController board =
+            BoardViewController.Instance;
+
+        if (board == null)
+            return direction.normalized;
+
+        float boardRotation =
+            board.GetCurrentRotation();
+
+        Vector3 logicalDirection = new Vector3(
+            direction.x,
+            direction.y,
+            0f
+        );
+
+        Vector3 worldDirection =
+            Quaternion.AngleAxis(
+                boardRotation,
+                Vector3.forward
+            ) * logicalDirection;
+
+        return new Vector2(
+            worldDirection.x,
+            worldDirection.y
+        ).normalized;
+    }
+
+    // ==================================================
     // ATTACK START
     // ==================================================
 
@@ -77,14 +117,51 @@ public class RadiusAttack : AbilitySO
         if (user == null || target == null)
             return;
 
-        Vector2 direction =
+        // Find the target direction in world space.
+        Vector2 worldDirection =
             target.transform.position - user.transform.position;
 
-        if (direction.sqrMagnitude < 0.001f)
+        if (worldDirection.sqrMagnitude < 0.001f)
+            return;
+
+        // Convert the world direction back to logical grid direction.
+        // This prevents applying board rotation twice.
+        BoardViewController board =
+            BoardViewController.Instance;
+
+        if (board != null)
+        {
+            float boardRotation =
+                board.GetCurrentRotation();
+
+            Vector3 logicalDirection =
+                Quaternion.AngleAxis(
+                    -boardRotation,
+                    Vector3.forward
+                ) * new Vector3(
+                    worldDirection.x,
+                    worldDirection.y,
+                    0f
+                );
+
+            worldDirection = new Vector2(
+                logicalDirection.x,
+                logicalDirection.y
+            );
+        }
+
+        // Convert the logical direction into the correct visual direction.
+        Vector2 visualDirection =
+            ConvertDirectionToWorldDirection(worldDirection);
+
+        if (visualDirection.sqrMagnitude < 0.001f)
             return;
 
         float angle =
-            Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            Mathf.Atan2(
+                visualDirection.y,
+                visualDirection.x
+            ) * Mathf.Rad2Deg;
 
         Transform spriteTransform = user.transform;
 
@@ -96,11 +173,18 @@ public class RadiusAttack : AbilitySO
 
         // Sprite faces DOWN by default.
         spriteTransform.rotation =
-            Quaternion.Euler(0f, 0f, angle + rotationOffset);
+            Quaternion.Euler(
+                0f,
+                0f,
+                angle + rotationOffset
+            );
 
         Debug.Log(
             $"[RadiusAttack] Rotating {user.name} toward {target.name}. " +
-            $"Direction: {direction}, Angle: {angle + rotationOffset}"
+            $"Visual direction: {visualDirection}, " +
+            $"Angle: {angle + rotationOffset}, " +
+            $"Board rotation: " +
+            (board != null ? board.GetCurrentRotation() : 0)
         );
     }
 

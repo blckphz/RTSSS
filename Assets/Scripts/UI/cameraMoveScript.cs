@@ -59,22 +59,7 @@ public class cameraMoveScript : MonoBehaviour
                 this
             );
         }
-        else
-        {
-            Debug.Log(
-                $"[CameraDebug] Cinemachine Camera: {cinemachineCamera.name}",
-                cinemachineCamera
-            );
-
-            if (cinemachineCamera.Follow != cameraTarget)
-            {
-                Debug.LogWarning(
-                    "[CameraDebug] Cinemachine Follow target differs " +
-                    "from this script's cameraTarget. Check both references.",
-                    cinemachineCamera
-                );
-            }
-        }
+      
     }
 
     private void Update()
@@ -123,23 +108,6 @@ public class cameraMoveScript : MonoBehaviour
         if (!enableDebugLogs)
             return;
 
-        if (cameraTarget == null)
-        {
-            Debug.LogWarning(
-                $"[CameraDebug] {reason}: target is NULL.",
-                this
-            );
-            return;
-        }
-
-        Debug.Log(
-            $"[CameraDebug] {reason}\n" +
-            $"Target name: {cameraTarget.name}\n" +
-            $"Target position: {cameraTarget.position}\n" +
-            $"Free mode: {freeMode}\n" +
-            $"Frame: {Time.frameCount}",
-            cameraTarget
-        );
     }
 
     private void HandleEdgeScrolling()
