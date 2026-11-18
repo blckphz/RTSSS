@@ -56,7 +56,6 @@ public class AttackUnit : MonoBehaviour
 
     private bool animationEventFired;
     private bool attackInProgress;
-
     private bool waitingForEggLanding;
 
     public enum DayNightType
@@ -96,14 +95,10 @@ public class AttackUnit : MonoBehaviour
             Vector2Int initialTile;
 
             if (unitTilePin != null && unitTilePin.HasTile())
-            {
                 initialTile = unitTilePin.GetTile();
-            }
             else
-            {
                 initialTile =
                     cachedGridManager.WorldToGridPosition(transform.position);
-            }
 
             logicalGridPosition = initialTile;
             hasLogicalGridPosition = true;
@@ -424,6 +419,27 @@ public class AttackUnit : MonoBehaviour
     }
 
     // ============================================================
+    // ABILITY ATTACK START VISUALS
+    // ============================================================
+
+    private void PlayAbilityAttackStart(
+        AbilitySO ability,
+        GameObject target)
+    {
+        if (ability == null)
+            return;
+
+        if (ability is FrontAttack frontAttack)
+        {
+            frontAttack.PlayAttackStart(gameObject, target);
+        }
+        else if (ability is RadiusAttack radiusAttack)
+        {
+            radiusAttack.PlayAttackStart(gameObject, target);
+        }
+    }
+
+    // ============================================================
     // ATTACK
     // ============================================================
 
@@ -444,7 +460,8 @@ public class AttackUnit : MonoBehaviour
         if (!IsAbilityReady(selectedAbility))
             return false;
 
-        if (!IsValidTarget(target))
+        // UPDATED: validate using the selected ability.
+        if (!IsValidTarget(target, selectedAbility))
             return false;
 
         EnsureGridManager();
@@ -461,7 +478,8 @@ public class AttackUnit : MonoBehaviour
         {
             attackInProgress = true;
 
-            bool usedSuccessfully = selectedAbility.Use(gameObject, target);
+            bool usedSuccessfully =
+                selectedAbility.Use(gameObject, target);
 
             if (!usedSuccessfully)
             {
@@ -491,16 +509,26 @@ public class AttackUnit : MonoBehaviour
         if (useDirectionalEnemyAttackAnimation)
         {
             if (animationController != null)
+            {
+                PlayAbilityAttackStart(selectedAbility, target);
                 PlayEnemyAttackAnimation(target);
+            }
             else
+            {
                 ClearPendingAttack();
+            }
         }
         else
         {
             if (attackAnimation != null)
+            {
+                PlayAbilityAttackStart(selectedAbility, target);
                 attackAnimation.PlayAttackAnimation();
+            }
             else
+            {
                 ClearPendingAttack();
+            }
         }
 
         return attackInProgress;
@@ -551,7 +579,6 @@ public class AttackUnit : MonoBehaviour
             return false;
         }
 
-        // Player-locked units cannot attack empty tiles.
         if (playerLocked)
         {
             bool containsPlayer = false;
@@ -619,6 +646,8 @@ public class AttackUnit : MonoBehaviour
         if (useDirectionalEnemyAttackAnimation &&
             animationController != null)
         {
+            PlayAbilityAttackStart(selectedAbility, null);
+
             Vector2Int attackerTile = ResolveUnitTile(gameObject);
 
             animationController.PlayEnemyAttack(
@@ -627,6 +656,7 @@ public class AttackUnit : MonoBehaviour
         }
         else if (attackAnimation != null)
         {
+            PlayAbilityAttackStart(selectedAbility, null);
             attackAnimation.PlayAttackAnimation();
         }
         else
@@ -680,7 +710,8 @@ public class AttackUnit : MonoBehaviour
 
         if (target != null)
         {
-            if (!IsValidTarget(target))
+            // UPDATED: use the ability-aware validation here too.
+            if (!IsValidTarget(target, ability))
             {
                 ClearPendingAttack();
                 return;
@@ -694,7 +725,6 @@ public class AttackUnit : MonoBehaviour
 
             if (cachedGridManager != null)
             {
-                // Revalidate player lock when the animation event fires.
                 if (playerLocked)
                 {
                     bool containsPlayer = false;
@@ -948,10 +978,17 @@ public class AttackUnit : MonoBehaviour
     }
 
     // ============================================================
-    // VALID TARGET - PLAYER LOCKED
+    // VALID TARGET - UPDATED FOR FRIENDLY TURRET HEALING
     // ============================================================
 
     public bool IsValidTarget(GameObject target)
+    {
+        return IsValidTarget(target, null);
+    }
+
+    private bool IsValidTarget(
+        GameObject target,
+        AbilitySO selectedAbility)
     {
         if (target == null || target == gameObject)
             return false;
@@ -962,23 +999,59 @@ public class AttackUnit : MonoBehaviour
         HealthManager targetHealth =
             target.GetComponent<HealthManager>();
 
+        if (targetHealth == null)
+            targetHealth = target.GetComponentInParent<HealthManager>();
+
+        if (targetHealth == null)
+            targetHealth = target.GetComponentInChildren<HealthManager>();
+
         if (targetHealth == null || targetHealth.IsDead())
             return false;
 
+        Team attackerTeam = healthManager.GetTeam();
         Team targetTeam = targetHealth.GetTeam();
 
-        // Player-locked units can ONLY target players.
+        // Preserve the existing player-lock restriction.
         if (playerLocked && targetTeam != Team.Player)
             return false;
 
-        // Enemy units can target explosive barrels,
-        // even if the barrel has the same team.
-        ExplosiveBarrel barrel =
-            target.GetComponent<ExplosiveBarrel>();
+        // Friendly turret exception for upgraded FrontAttack.
+        if (selectedAbility is FrontAttack)
+        {
+            turretbehav turret =
+                target.GetComponent<turretbehav>();
 
+            if (turret == null)
+                turret = target.GetComponentInParent<turretbehav>();
 
-        // Normal targeting rules.
-        return targetTeam != healthManager.GetTeam();
+            if (turret == null)
+                turret = target.GetComponentInChildren<turretbehav>();
+
+            if (turret != null && targetTeam == attackerTeam)
+            {
+                FindUnitData();
+
+                if (unitData != null &&
+                    unitData.HasMeleeTurretHealUpgrade())
+                {
+                    Debug.Log(
+                        $"[AttackUnit] Friendly turret target accepted: {target.name}"
+                    );
+
+                    return true;
+                }
+
+                Debug.Log(
+                    "[AttackUnit] Friendly turret rejected: " +
+                    "Melee turret healing upgrade is missing."
+                );
+
+                return false;
+            }
+        }
+
+        // All other friendly targets remain invalid.
+        return targetTeam != attackerTeam;
     }
 
     // ============================================================

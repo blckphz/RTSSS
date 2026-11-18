@@ -236,7 +236,6 @@ public class EscManager : MonoBehaviour
         }
 
 
-        Debug.Log("[EscManager] Game Resumed.");
     }
 
 

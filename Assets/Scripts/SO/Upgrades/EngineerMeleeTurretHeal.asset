@@ -15,4 +15,4 @@ MonoBehaviour:
   UpgradeName: enginer
   Description: 
   rarity: 2
-  bonusHealAmount: 5
+  bonusHealAmount: 10

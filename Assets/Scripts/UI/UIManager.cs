@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
-
     public static HoverInfoTrigger CurrentSelection { get; private set; }
 
     [Header("Click Raycast")]
@@ -18,6 +18,9 @@ public class UIManager : MonoBehaviour
 
     [Header("Chain Lightning")]
     [SerializeField] private GridChainHighlight gridChainHighlight;
+
+    [Header("Debug")]
+    [SerializeField] private bool debugTurretHealing = true;
 
     private CanvasInfoManager canvasInfoManager;
 
@@ -46,6 +49,12 @@ public class UIManager : MonoBehaviour
         CheckMouseClick();
         UpdateChainLightningPreview();
         UpdateAbilityPreview();
+    }
+
+    private void LogTurret(string message)
+    {
+        if (debugTurretHealing)
+            Debug.Log("[Turret Healing UI] " + message);
     }
 
     private void CheckRightClick()
@@ -89,29 +98,46 @@ public class UIManager : MonoBehaviour
 
         if (HasSelectedAbility())
         {
-            AbilitySO selectedAbility = canvasInfoManager != null
-                ? canvasInfoManager.GetSelectedAbility()
-                : null;
+            AbilitySO selectedAbility =
+                canvasInfoManager != null
+                    ? canvasInfoManager.GetSelectedAbility()
+                    : null;
 
             if (clickedTrigger != null &&
                 IsPlayerControlledUnit(clickedTrigger.gameObject))
             {
-                // Chain Lightning may explicitly target an unlocked
-                // player turret. Let ChainLightning.CanHit validate it.
+                if (selectedAbility is FrontAttack)
+                {
+                    LogTurret(
+                        "Friendly target clicked with FrontAttack. " +
+                        "Attempting turret healing."
+                    );
+
+                    if (!TryUseFriendlyTurretHeal(
+                            clickedTrigger.gameObject,
+                            selectedAbility))
+                    {
+                        LogTurret(
+                            "Friendly turret attack was rejected. " +
+                            "The target was not selected."
+                        );
+                    }
+
+                    return;
+                }
+
                 if (selectedAbility is ChainLightning)
                 {
                     TryUseSelectedAbility(mousePosition, clickedTrigger);
                     return;
                 }
 
-                // Preserve existing healing behaviour.
                 if (selectedAbility is HealAbilitySO)
                 {
                     TryUseSelectedAbility(mousePosition, clickedTrigger);
                     return;
                 }
 
-                // Other friendly clicks continue to select the unit.
                 SelectObject(clickedTrigger);
                 return;
             }
@@ -133,6 +159,141 @@ public class UIManager : MonoBehaviour
         }
 
         ClearSelection();
+    }
+
+    private bool TryUseFriendlyTurretHeal(
+        GameObject targetObject,
+        AbilitySO ability)
+    {
+        if (targetObject == null || ability == null)
+            return false;
+
+        if (CurrentSelection == null)
+        {
+            LogTurret("No Engineer is selected.");
+            return false;
+        }
+
+        AttackUnit attackUnit = CurrentSelection.GetAttackUnit();
+
+        if (attackUnit == null)
+        {
+            LogTurret("Selected unit has no AttackUnit.");
+            return false;
+        }
+
+        if (attackUnit.GetTeam() != Team.Player &&
+            attackUnit.GetTeam() != Team.Ally)
+        {
+            LogTurret("Selected attacker is not player-controlled.");
+            return false;
+        }
+
+        UnitData unitData = attackUnit.GetUnitData();
+
+        if (unitData == null)
+        {
+            LogTurret("Selected attacker has no UnitData.");
+            return false;
+        }
+
+        if (!unitData.HasMeleeTurretHealUpgrade())
+        {
+            LogTurret("Engineer does not have the turret healing upgrade.");
+            return false;
+        }
+
+        turretbehav turret = FindTurret(targetObject);
+
+        if (turret == null)
+        {
+            LogTurret("Clicked friendly target has no turretbehav.");
+            return false;
+        }
+
+        HealthManager turretHealth = FindHealthManager(targetObject);
+
+        if (turretHealth == null)
+        {
+            LogTurret("Turret has no HealthManager.");
+            return false;
+        }
+
+        if (turretHealth.IsDead())
+        {
+            LogTurret("Turret is dead.");
+            return false;
+        }
+
+        if (turretHealth.GetTeam() != attackUnit.GetTeam())
+        {
+            LogTurret("Turret is not on the Engineer's team.");
+            return false;
+        }
+
+        if (!attackUnit.IsAbilityReady(ability))
+        {
+            LogTurret("FrontAttack is not ready.");
+            return false;
+        }
+
+        LogTurret(
+            $"Calling Attack() from {attackUnit.name} " +
+            $"on friendly turret {targetObject.name}."
+        );
+
+        bool used = attackUnit.PlayerAttack(targetObject, ability);
+
+        if (!used)
+        {
+            LogTurret(
+                "AttackUnit rejected the turret attack. " +
+                "Check IsValidTarget() and FrontAttack.CanHit()."
+            );
+
+            return false;
+        }
+
+        LogTurret(
+            $"Attack accepted. Attacker: {attackUnit.name}, " +
+            $"target: {targetObject.name}."
+        );
+
+        ClearSelectedAbility(false);
+
+        return true;
+    }
+
+    private turretbehav FindTurret(GameObject target)
+    {
+        if (target == null)
+            return null;
+
+        turretbehav turret = target.GetComponent<turretbehav>();
+
+        if (turret == null)
+            turret = target.GetComponentInParent<turretbehav>();
+
+        if (turret == null)
+            turret = target.GetComponentInChildren<turretbehav>();
+
+        return turret;
+    }
+
+    private HealthManager FindHealthManager(GameObject target)
+    {
+        if (target == null)
+            return null;
+
+        HealthManager health = target.GetComponent<HealthManager>();
+
+        if (health == null)
+            health = target.GetComponentInParent<HealthManager>();
+
+        if (health == null)
+            health = target.GetComponentInChildren<HealthManager>();
+
+        return health;
     }
 
     private bool TryHandleAbilityUI()
@@ -325,7 +486,6 @@ public class UIManager : MonoBehaviour
         if (gridManager == null)
             return false;
 
-        // BEAR TRAP: tile-targeted ability.
         if (ability is BearTrapAttack)
         {
             Vector2Int bearTrapTile =
@@ -348,7 +508,6 @@ public class UIManager : MonoBehaviour
             );
         }
 
-        // TARGETED UNIT.
         if (clickedTrigger != null)
         {
             GameObject targetObject = clickedTrigger.gameObject;
@@ -356,7 +515,8 @@ public class UIManager : MonoBehaviour
             if (targetObject == null)
                 return false;
 
-            AttackUnit targetUnit = targetObject.GetComponent<AttackUnit>();
+            AttackUnit targetUnit =
+                targetObject.GetComponent<AttackUnit>();
 
             if (targetUnit == null)
                 targetUnit = targetObject.GetComponentInParent<AttackUnit>();
@@ -371,8 +531,6 @@ public class UIManager : MonoBehaviour
                 return false;
             }
 
-            // Chain Lightning handles its own target exception,
-            // footprint range, and line-of-sight checks.
             if (ability is not ChainLightning)
             {
                 List<Vector2Int> rangeTiles =
@@ -393,11 +551,6 @@ public class UIManager : MonoBehaviour
                     selectedObject,
                     targetUnit.gameObject))
             {
-                Debug.LogWarning(
-                    $"[UIManager] {ability.GetAbilityName()} rejected " +
-                    $"target '{targetUnit.name}' (team: {targetUnit.GetTeam()})."
-                );
-
                 return false;
             }
 
@@ -409,7 +562,6 @@ public class UIManager : MonoBehaviour
             );
         }
 
-        // TARGET TILE.
         Vector2Int targetTileFromMouse =
             ScreenToGridPosition(mousePosition, gridManager);
 
@@ -546,18 +698,10 @@ public class UIManager : MonoBehaviour
             gridManager == null)
             return false;
 
-        // AttackUnit.Attack performs its own CanHit validation.
-        bool used = attackUnit.Attack(targetObject, ability);
+        bool used = attackUnit.PlayerAttack(targetObject, ability);
 
         if (!used)
-        {
-            Debug.LogWarning(
-                $"[UIManager] AttackUnit rejected {ability.GetAbilityName()} " +
-                $"on '{targetObject.name}'."
-            );
-
             return false;
-        }
 
         ClearSelectedAbility(false);
         return true;

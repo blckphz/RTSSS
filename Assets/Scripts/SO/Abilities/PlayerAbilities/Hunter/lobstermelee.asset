@@ -16,16 +16,19 @@ MonoBehaviour:
   abilityIcon: {fileID: 0}
   description: 
   launchSFX: {fileID: 0}
+  abilitySlot: 0
+  timeRestriction: 0
   NeedEnemy: 0
   damage: 10
   cooldown: 1
   canAttackWithThisAfterMove: 0
   usesPerTurn: 1
+  useDuration: 0.25
   targetType: 0
   range: 2
   minDistance: 0
   rangeShape: 1
-  hitEffectPrefab: {fileID: 0}
+  hitEffectPrefab: {fileID: 8258134237854485465, guid: 0aaf66061ad5a6a459ee155d35960db8, type: 3}
   hitEffectOffset: {x: 0, y: 0, z: 0}
   enableAttackDebug: 0
   logEveryHitboxTile: 0

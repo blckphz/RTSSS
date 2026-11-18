@@ -150,10 +150,6 @@ public class GridHighlightManager : MonoBehaviour
 
         playerHighlightsDisabled = disabled;
 
-        Debug.Log(
-            $"[GridHighlightManager] Player highlights disabled: {disabled}"
-        );
-
         if (disabled)
             ClearPlayerHighlights();
     }
@@ -485,16 +481,10 @@ public class GridHighlightManager : MonoBehaviour
 
         ClearMovementRange();
 
-        Debug.Log(
-            $"[GridHighlightManager] Movement range disabled. Remaining cells: {movementCells.Count}"
-        );
     }
 
     public void EnableMovementRangeHighlights(string reason)
     {
-        Debug.Log(
-            $"[GridHighlightManager] Re-enabling movement range. Reason: {reason}"
-        );
 
         suppressMovementHighlight = false;
 

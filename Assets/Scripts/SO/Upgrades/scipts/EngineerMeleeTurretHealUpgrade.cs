@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 [CreateAssetMenu(
@@ -7,30 +8,31 @@ using UnityEngine;
 public class EngineerMeleeTurretHealUpgrade : UpgradeSO
 {
     [Header("Turret Heal Bonus")]
-    [Tooltip(
-        "Extra healing added on top of the FrontAttack's base damage."
-    )]
     [SerializeField]
     private int bonusHealAmount = 5;
 
     public int GetBonusHealAmount()
     {
-        return Mathf.Max(
-            0,
-            bonusHealAmount
-        );
+        return Mathf.Max(0, bonusHealAmount);
     }
 
-    public void ApplyToUnit(
-        UnitData unit)
+    public override void ApplyToUnit(UnitData unit)
     {
         if (unit == null)
         {
+            Debug.LogWarning(
+                "[EngineerMeleeTurretHealUpgrade] UnitData is missing."
+            );
             return;
         }
 
-        unit.SetMeleeTurretHealAmount(
-            GetBonusHealAmount()
+        unit.SetMeleeTurretHealAmount(GetBonusHealAmount());
+
+        Debug.Log(
+            "[EngineerMeleeTurretHealUpgrade] Applied to " +
+            unit.gameObject.name +
+            ". Healing bonus: " +
+            unit.GetMeleeTurretHealAmount()
         );
     }
 }

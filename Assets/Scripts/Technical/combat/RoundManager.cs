@@ -470,7 +470,6 @@ public class RoundManager : MonoBehaviour
 
     private void EnablePlayerTurnInteraction()
     {
-        Debug.Log("[RoundManager] Enabling player interaction.");
 
         CombatUtility.SetPlayerInputLocked(false);
 
