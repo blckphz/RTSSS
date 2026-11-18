@@ -128,3 +128,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf51d492ed593554c875b3f3bddf0f44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  meleeVisual: {fileID: 7534068043164785992}
+  upRotation: 180
+  rightRotation: 90
+  downRotation: 0
+  leftRotation: -90

@@ -1,4 +1,4 @@
-using System;
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -42,26 +42,15 @@ public class UnitMoveBrainManager : MonoBehaviour
 
     private const int CardinalDirectionCount = 4;
 
-    private readonly List<Vector2Int> pathCache = new List<Vector2Int>(32);
-    private readonly List<Vector2Int> candidatesCache = new List<Vector2Int>(64);
+    private readonly List<Vector2Int> pathCache = new(32);
+    private readonly List<Vector2Int> candidatesCache = new(64);
 
-    private readonly Dictionary<Vector2Int, Vector2Int> cameFromCache =
-        new Dictionary<Vector2Int, Vector2Int>(256);
+    private readonly Dictionary<Vector2Int, Vector2Int> cameFromCache = new(256);
+    private readonly Dictionary<Vector2Int, int> distanceCache = new(256);
+    private readonly HashSet<Vector2Int> visitedCache = new(256);
+    private readonly Queue<Vector2Int> bfsQueueCache = new(256);
 
-    private readonly Dictionary<Vector2Int, int> distanceCache =
-        new Dictionary<Vector2Int, int>(256);
-
-    private readonly HashSet<Vector2Int> visitedCache =
-        new HashSet<Vector2Int>(256);
-
-    private readonly Queue<Vector2Int> bfsQueueCache =
-        new Queue<Vector2Int>(256);
-
-    private readonly List<AttackUnit> targetUnitBuffer =
-        new List<AttackUnit>(64);
-
-    private readonly Dictionary<Vector2Int, bool> movingUnitBlockedCache =
-        new Dictionary<Vector2Int, bool>(256);
+    private readonly Dictionary<Vector2Int, bool> movingUnitBlockedCache = new(256);
 
     private GameObject cachedMovingUnit;
 
@@ -75,16 +64,17 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         Instance = this;
         movingUnitCount = 0;
+
         EnsureGridManager();
     }
 
     private void OnDestroy()
     {
-        if (Instance == this)
-        {
-            Instance = null;
-            movingUnitCount = 0;
-        }
+        if (Instance != this)
+            return;
+
+        Instance = null;
+        movingUnitCount = 0;
     }
 
     public GridManager GetGridManager()
@@ -125,7 +115,7 @@ public class UnitMoveBrainManager : MonoBehaviour
     }
 
     // ============================================================
-    // BLOCKED-CELL CACHE
+    // BLOCKED CELL CACHE
     // ============================================================
 
     private void BeginBlockedCellCache(GameObject movingUnit)
@@ -139,18 +129,12 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (gridManager == null)
             return true;
 
-        // Manually registered obstacles always block movement.
         if (gridManager.IsWalkableObstacle(position))
             return true;
 
-        // Health-managed objects block movement too.
-        // The moving unit itself is ignored so it cannot block
-        // its own movement while its transform is being updated.
         if (gridManager.HasHealthManagerObstacle(position, movingUnit))
             return true;
 
-        // When no moving unit is supplied, use the grid's
-        // normal unit occupancy system.
         if (movingUnit == null)
             return gridManager.GetUnitAt(position) != null;
 
@@ -178,12 +162,12 @@ public class UnitMoveBrainManager : MonoBehaviour
         List<Vector2Int> results,
         GameObject movingUnit = null)
     {
-        EnsureGridManager();
-
         if (results == null)
             return;
 
         results.Clear();
+
+        EnsureGridManager();
 
         if (gridManager == null ||
             moveRange <= 0 ||
@@ -192,12 +176,7 @@ public class UnitMoveBrainManager : MonoBehaviour
             return;
         }
 
-        bfsQueueCache.Clear();
-        visitedCache.Clear();
-        distanceCache.Clear();
-        cameFromCache.Clear();
-
-        BeginBlockedCellCache(movingUnit);
+        PrepareBFS(movingUnit);
 
         bfsQueueCache.Enqueue(start);
         visitedCache.Add(start);
@@ -230,6 +209,7 @@ public class UnitMoveBrainManager : MonoBehaviour
                 visitedCache.Add(next);
                 distanceCache[next] = currentDistance + 1;
                 bfsQueueCache.Enqueue(next);
+
                 results.Add(next);
             }
         }
@@ -237,7 +217,6 @@ public class UnitMoveBrainManager : MonoBehaviour
 
     // ============================================================
     // REACHABLE DISTANCES
-    // Single BFS, limited to the movement budget.
     // ============================================================
 
     public void GetReachableCellDistances(
@@ -261,12 +240,7 @@ public class UnitMoveBrainManager : MonoBehaviour
             return;
         }
 
-        bfsQueueCache.Clear();
-        visitedCache.Clear();
-        distanceCache.Clear();
-        cameFromCache.Clear();
-
-        BeginBlockedCellCache(movingUnit);
+        PrepareBFS(movingUnit);
 
         bfsQueueCache.Enqueue(start);
         visitedCache.Add(start);
@@ -309,6 +283,15 @@ public class UnitMoveBrainManager : MonoBehaviour
         }
     }
 
+    private void PrepareBFS(GameObject movingUnit)
+    {
+        bfsQueueCache.Clear();
+        visitedCache.Clear();
+        distanceCache.Clear();
+
+        BeginBlockedCellCache(movingUnit);
+    }
+
     private bool CanEnterCell(
         Vector2Int current,
         Vector2Int next,
@@ -321,10 +304,10 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (IsDiagonalDirection(direction))
         {
             Vector2Int horizontal =
-                new Vector2Int(current.x + direction.x, current.y);
+                new(current.x + direction.x, current.y);
 
             Vector2Int vertical =
-                new Vector2Int(current.x, current.y + direction.y);
+                new(current.x, current.y + direction.y);
 
             if (IsBlocked(horizontal, movingUnit) ||
                 IsBlocked(vertical, movingUnit))
@@ -366,10 +349,10 @@ public class UnitMoveBrainManager : MonoBehaviour
             if (IsDiagonalDirection(direction))
             {
                 Vector2Int horizontal =
-                    new Vector2Int(position.x + direction.x, position.y);
+                    new(position.x + direction.x, position.y);
 
                 Vector2Int vertical =
-                    new Vector2Int(position.x, position.y + direction.y);
+                    new(position.x, position.y + direction.y);
 
                 if (IsBlocked(horizontal, null) ||
                     IsBlocked(vertical, null))
@@ -435,12 +418,9 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (gridManager == null || currentUnit == null)
             return null;
 
-        targetUnitBuffer.Clear();
-
-        targetUnitBuffer.AddRange(
-            FindObjectsByType<AttackUnit>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None));
+        AttackUnit[] targets = FindObjectsByType<AttackUnit>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None);
 
         AttackUnit bestTarget = null;
         float bestScore = float.MaxValue;
@@ -448,19 +428,21 @@ public class UnitMoveBrainManager : MonoBehaviour
         Vector2Int myPosition =
             gridManager.WorldToGridPosition(currentUnit.transform.position);
 
-        for (int i = 0; i < targetUnitBuffer.Count; i++)
+        Team myTeam = currentUnit.GetTeam();
+
+        for (int i = 0; i < targets.Length; i++)
         {
-            AttackUnit other = targetUnitBuffer[i];
+            AttackUnit other = targets[i];
 
             if (other == null ||
                 other == currentUnit ||
                 other.IsDead() ||
-                other.GetTeam() == currentUnit.GetTeam())
+                other.GetTeam() == myTeam)
             {
                 continue;
             }
 
-            if (currentUnit.GetTeam() != Team.Player &&
+            if (myTeam != Team.Player &&
                 other.GetTeam() == Team.Player &&
                 BushBehav.IsHidden(other.gameObject))
             {
@@ -508,7 +490,6 @@ public class UnitMoveBrainManager : MonoBehaviour
             }
         }
 
-        targetUnitBuffer.Clear();
         return bestTarget;
     }
 
@@ -537,7 +518,10 @@ public class UnitMoveBrainManager : MonoBehaviour
             canWalkDiagonally,
             candidatesCache);
 
-        CalculateReachableDistances(start, canWalkDiagonally, movingUnit);
+        CalculateReachableDistances(
+            start,
+            canWalkDiagonally,
+            movingUnit);
 
         Vector2Int bestPosition = start;
         float bestScore = float.MaxValue;
@@ -609,7 +593,7 @@ public class UnitMoveBrainManager : MonoBehaviour
     }
 
     // ============================================================
-    // SINGLE BFS FOR REACHABLE MOVEMENT COSTS
+    // FULL REACHABLE DISTANCE BFS
     // ============================================================
 
     private void CalculateReachableDistances(
@@ -617,12 +601,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         bool canWalkDiagonally,
         GameObject movingUnit)
     {
-        distanceCache.Clear();
-        cameFromCache.Clear();
-        visitedCache.Clear();
-        bfsQueueCache.Clear();
-
-        BeginBlockedCellCache(movingUnit);
+        PrepareBFS(movingUnit);
 
         if (!gridManager.IsInsideGrid(start))
             return;
@@ -710,7 +689,7 @@ public class UnitMoveBrainManager : MonoBehaviour
         {
             for (int y = minY; y <= maxY; y++)
             {
-                Vector2Int position = new Vector2Int(x, y);
+                Vector2Int position = new(x, y);
 
                 int dx = Mathf.Max(
                     0,
@@ -792,10 +771,10 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (IsDiagonalDirection(direction))
         {
             Vector2Int horizontal =
-                new Vector2Int(current.x + direction.x, current.y);
+                new(current.x + direction.x, current.y);
 
             Vector2Int vertical =
-                new Vector2Int(current.x, current.y + direction.y);
+                new(current.x, current.y + direction.y);
 
             if (IsBlocked(horizontal, movingUnit) ||
                 IsBlocked(vertical, movingUnit))
@@ -807,16 +786,12 @@ public class UnitMoveBrainManager : MonoBehaviour
         if (movingUnit != null)
             return !IsBlocked(next, movingUnit);
 
-        // A health-managed object that is not registered as a
-        // grid unit must block even when it is the destination.
         if (gridManager.IsWalkableObstacle(next) ||
             gridManager.HasHealthManagerObstacle(next))
         {
             return false;
         }
 
-        // Preserve the existing behaviour that allows a path
-        // to end on an occupied unit destination.
         GameObject occupant = gridManager.GetUnitAt(next);
 
         return occupant == null || next == destination;
@@ -849,20 +824,17 @@ public class UnitMoveBrainManager : MonoBehaviour
 
         foreach (KeyValuePair<Vector2Int, int> entry in distanceCache)
         {
-            Vector2Int position = entry.Key;
-            int movementCost = entry.Value;
-
             float score = CalculateReachableCellScore(
-                position,
+                entry.Key,
                 target,
-                movementCost,
+                entry.Value,
                 canWalkDiagonally,
                 preferMoreOpenPositions);
 
             if (score < bestScore)
             {
                 bestScore = score;
-                bestCell = position;
+                bestCell = entry.Key;
             }
         }
 

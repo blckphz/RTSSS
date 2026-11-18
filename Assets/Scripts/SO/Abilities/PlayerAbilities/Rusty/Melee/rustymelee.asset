@@ -33,8 +33,13 @@ MonoBehaviour:
   attackStartPrefab: {fileID: 8258134237854485465, guid: 0aaf66061ad5a6a459ee155d35960db8, type: 3}
   attackStartOffset: {x: 0, y: 0, z: 0}
   attackStartDuration: 2
+  abilitySpawnPointName: AbilitySpawnPoint
   meleeForwardOffset: 0
   rotationOffset: 90
+  upRotation: 180
+  rightRotation: 90
+  downRotation: 0
+  leftRotation: -90
   enableAttackDebug: 1
   debugHitbox: 1
   debugTargetValidation: 1

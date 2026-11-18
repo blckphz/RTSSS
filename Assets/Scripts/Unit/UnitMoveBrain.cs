@@ -22,7 +22,7 @@ public class UnitMoveBrain : MonoBehaviour
     [SerializeField] private AnimationController animationController;
 
     [Header("Movement")]
-    [SerializeField] private float moveDuration = 0.02f;
+    [SerializeField, Min(0f)] private float moveDuration = 0.02f;
 
     private int stepsRemaining;
 
@@ -50,12 +50,27 @@ public class UnitMoveBrain : MonoBehaviour
     private int movementSequence;
     private Coroutine movementCoroutine;
 
-    private readonly List<Vector2Int> reachableCells = new List<Vector2Int>(64);
-    private readonly List<Vector2Int> candidatePath = new List<Vector2Int>(32);
-    private readonly List<Vector2Int> bestPath = new List<Vector2Int>(32);
+    // Active grid movement tracking.
+    // This allows interrupted movement to release its grid reservation.
+    private bool hasActiveGridMove;
+    private Vector2Int activeMoveFrom;
+    private GridManager activeMoveGrid;
+
+    private readonly List<Vector2Int> reachableCells =
+        new List<Vector2Int>(64);
+
+    private readonly List<Vector2Int> candidatePath =
+        new List<Vector2Int>(32);
+
+    private readonly List<Vector2Int> bestPath =
+        new List<Vector2Int>(32);
 
     private readonly Dictionary<Vector2Int, int> reachableDistances =
         new Dictionary<Vector2Int, int>(128);
+
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
 
     private void Awake()
     {
@@ -75,11 +90,8 @@ public class UnitMoveBrain : MonoBehaviour
     {
         movementSequence++;
 
-        if (movementCoroutine != null)
-        {
-            StopCoroutine(movementCoroutine);
-            movementCoroutine = null;
-        }
+        StopActiveCoroutine();
+        CancelActiveGridMove();
 
         isBeingKnockedBack = false;
 
@@ -100,6 +112,10 @@ public class UnitMoveBrain : MonoBehaviour
         if (animationController == null)
             animationController = GetComponent<AnimationController>();
     }
+
+    // ============================================================
+    // FACING
+    // ============================================================
 
     private void NormalizeFacingDirection()
     {
@@ -147,6 +163,10 @@ public class UnitMoveBrain : MonoBehaviour
         }
     }
 
+    // ============================================================
+    // MOVEMENT STATE
+    // ============================================================
+
     private void SetMovingState(bool moving)
     {
         if (moving)
@@ -155,6 +175,7 @@ public class UnitMoveBrain : MonoBehaviour
                 return;
 
             isMoving = true;
+
             movingUnitCount++;
             IsAnyUnitMoving = movingUnitCount > 0;
 
@@ -166,6 +187,7 @@ public class UnitMoveBrain : MonoBehaviour
                 return;
 
             isMoving = false;
+
             movingUnitCount = Mathf.Max(0, movingUnitCount - 1);
             IsAnyUnitMoving = movingUnitCount > 0;
 
@@ -182,6 +204,15 @@ public class UnitMoveBrain : MonoBehaviour
     {
         return movingUnitCount;
     }
+
+    public bool IsMoving()
+    {
+        return isMoving;
+    }
+
+    // ============================================================
+    // MOVEMENT ACTIONS
+    // ============================================================
 
     public void AnimationEvent_Footstep()
     {
@@ -216,12 +247,14 @@ public class UnitMoveBrain : MonoBehaviour
             return;
 
         stepsRemaining = Mathf.Max(0, stepsRemaining - steps);
+
         OnMovementActionsChanged?.Invoke(this);
     }
 
     public void ResetMovement()
     {
         stepsRemaining = GetMoveRange();
+
         OnMovementActionsChanged?.Invoke(this);
     }
 
@@ -245,11 +278,6 @@ public class UnitMoveBrain : MonoBehaviour
         return GetMoveRange();
     }
 
-    public bool IsMoving()
-    {
-        return isMoving;
-    }
-
     public AttackUnit GetAttackUnit()
     {
         return attackUnit;
@@ -260,21 +288,81 @@ public class UnitMoveBrain : MonoBehaviour
         return attackUnit != null && !attackUnit.IsDead();
     }
 
+    // ============================================================
+    // COROUTINE AND GRID CLEANUP
+    // ============================================================
+
+    private void StopActiveCoroutine()
+    {
+        if (movementCoroutine == null)
+            return;
+
+        StopCoroutine(movementCoroutine);
+        movementCoroutine = null;
+    }
+
+    private void BeginGridMove(
+        GridManager gridManager,
+        Vector2Int fromTile)
+    {
+        hasActiveGridMove = true;
+        activeMoveGrid = gridManager;
+        activeMoveFrom = fromTile;
+    }
+
+    private void FinishGridMove(
+        GridManager gridManager,
+        Vector2Int destination)
+    {
+        gridManager.FinishMoveUnit(gameObject, destination);
+
+        hasActiveGridMove = false;
+        activeMoveGrid = null;
+    }
+
+    private void CancelActiveGridMove()
+    {
+        if (!hasActiveGridMove)
+            return;
+
+        GridManager gridManager = activeMoveGrid;
+
+        if (gridManager != null)
+        {
+            transform.position =
+                gridManager.GridToWorldPosition(activeMoveFrom);
+
+            gridManager.FinishMoveUnit(gameObject, activeMoveFrom);
+
+            if (tilePin != null)
+                tilePin.SetTile(activeMoveFrom);
+
+            if (attackUnit != null)
+                attackUnit.SetLogicalGridPosition(activeMoveFrom);
+        }
+
+        hasActiveGridMove = false;
+        activeMoveGrid = null;
+    }
+
     public void StopMovement()
     {
         movementSequence++;
 
-        if (movementCoroutine != null)
-        {
-            StopCoroutine(movementCoroutine);
-            movementCoroutine = null;
-        }
+        StopActiveCoroutine();
+        CancelActiveGridMove();
+
+        isBeingKnockedBack = false;
 
         StopWalkAnimation();
 
         if (isMoving)
             SetMovingState(false);
     }
+
+    // ============================================================
+    // REFERENCES
+    // ============================================================
 
     public GridManager GetGridManager()
     {
@@ -292,25 +380,27 @@ public class UnitMoveBrain : MonoBehaviour
 
     public CharacterSO GetCharacterData()
     {
-        if (attackUnit == null)
-            return null;
-
-        return attackUnit.GetCharacterData();
+        return attackUnit != null
+            ? attackUnit.GetCharacterData()
+            : null;
     }
 
     public bool CanWalkDiagonally()
     {
         CharacterSO characterData = GetCharacterData();
-        return characterData != null && characterData.canwalkdiagonally;
+
+        return characterData != null &&
+               characterData.canwalkdiagonally;
     }
 
     public bool CanAttackAfterMoving(AbilitySO ability)
     {
-        if (ability == null)
-            return false;
-
-        return GetMoveRange() > 0;
+        return ability != null && GetMoveRange() > 0;
     }
+
+    // ============================================================
+    // CURRENT TILE
+    // ============================================================
 
     public bool TryGetCurrentTile(out Vector2Int tile)
     {
@@ -324,18 +414,25 @@ public class UnitMoveBrain : MonoBehaviour
         if (tilePin != null && tilePin.HasTile())
         {
             tile = tilePin.GetTile();
+
             return gridManager.IsInsideGrid(tile);
         }
 
         tile = gridManager.WorldToGridPosition(transform.position);
+
         return gridManager.IsInsideGrid(tile);
     }
 
     public Vector2Int GetCurrentTile()
     {
         TryGetCurrentTile(out Vector2Int tile);
+
         return tile;
     }
+
+    // ============================================================
+    // AI MOVEMENT PREDICTION
+    // ============================================================
 
     public bool TryGetPredictedMoveTile(out Vector2Int predictedTile)
     {
@@ -369,6 +466,7 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
 
         Vector2Int currentPosition = GetCurrentTile();
+
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(target.transform.position);
 
@@ -399,32 +497,21 @@ public class UnitMoveBrain : MonoBehaviour
         );
 
         Vector2Int bestPosition = currentPosition;
+
         float bestScore = float.MaxValue;
 
         foreach (KeyValuePair<Vector2Int, int> entry in reachableDistances)
         {
             Vector2Int candidate = entry.Key;
+
             int stepsToCandidate = entry.Value;
 
-            int distanceToTarget = manager.GetMovementDistance(
+            float score = CalculateAIMovementScore(
+                manager,
                 candidate,
                 targetPosition,
-                CanWalkDiagonally()
+                stepsToCandidate
             );
-
-            float score;
-
-            if (distanceToTarget <= attackRange)
-            {
-                score = -100000f
-                    + (attackRange - distanceToTarget) * 100f
-                    - stepsToCandidate;
-            }
-            else
-            {
-                score = distanceToTarget * 1000f
-                    - stepsToCandidate;
-            }
 
             if (score < bestScore)
             {
@@ -437,8 +524,35 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
 
         predictedTile = bestPosition;
+
         return true;
     }
+
+    private float CalculateAIMovementScore(
+        UnitMoveBrainManager manager,
+        Vector2Int candidate,
+        Vector2Int targetPosition,
+        int stepsToCandidate)
+    {
+        int distanceToTarget = manager.GetMovementDistance(
+            candidate,
+            targetPosition,
+            CanWalkDiagonally()
+        );
+
+        if (distanceToTarget <= attackRange)
+        {
+            return -100000f
+                + (attackRange - distanceToTarget) * 100f
+                - stepsToCandidate;
+        }
+
+        return distanceToTarget * 1000f - stepsToCandidate;
+    }
+
+    // ============================================================
+    // MANUAL MOVEMENT
+    // ============================================================
 
     public bool TryMoveTo(Vector2Int destination)
     {
@@ -475,17 +589,27 @@ public class UnitMoveBrain : MonoBehaviour
         if (!foundPath || candidatePath.Count < 2)
             return false;
 
-        int steps = Mathf.Min(stepsRemaining, candidatePath.Count - 1);
+        int steps = Mathf.Min(
+            stepsRemaining,
+            candidatePath.Count - 1
+        );
 
         if (steps <= 0)
             return false;
 
+        List<Vector2Int> path =
+            new List<Vector2Int>(candidatePath);
+
         movementCoroutine = StartCoroutine(
-            ExecuteMoveRoutine(new List<Vector2Int>(candidatePath), steps)
+            ExecuteMoveRoutine(path, steps)
         );
 
         return true;
     }
+
+    // ============================================================
+    // AI MOVEMENT TOWARDS ENEMY
+    // ============================================================
 
     public void TryMoveTowardsEnemy()
     {
@@ -518,6 +642,7 @@ public class UnitMoveBrain : MonoBehaviour
             yield break;
 
         Vector2Int currentPosition = GetCurrentTile();
+
         Vector2Int targetPosition =
             gridManager.WorldToGridPosition(target.transform.position);
 
@@ -535,16 +660,6 @@ public class UnitMoveBrain : MonoBehaviour
         if (movementBudget <= 0)
             yield break;
 
-        reachableCells.Clear();
-
-        manager.GetReachableCells(
-            currentPosition,
-            movementBudget,
-            CanWalkDiagonally(),
-            reachableCells,
-            gameObject
-        );
-
         reachableDistances.Clear();
 
         manager.GetReachableCellDistances(
@@ -556,37 +671,22 @@ public class UnitMoveBrain : MonoBehaviour
         );
 
         Vector2Int bestPosition = currentPosition;
+
         float bestScore = float.MaxValue;
 
         foreach (KeyValuePair<Vector2Int, int> entry in reachableDistances)
         {
-            Vector2Int candidate = entry.Key;
-            int stepsToCandidate = entry.Value;
-
-            int distanceToTarget = manager.GetMovementDistance(
-                candidate,
+            float score = CalculateAIMovementScore(
+                manager,
+                entry.Key,
                 targetPosition,
-                CanWalkDiagonally()
+                entry.Value
             );
-
-            float score;
-
-            if (distanceToTarget <= attackRange)
-            {
-                score = -100000f
-                    + (attackRange - distanceToTarget) * 100f
-                    - stepsToCandidate;
-            }
-            else
-            {
-                score = distanceToTarget * 1000f
-                    - stepsToCandidate;
-            }
 
             if (score < bestScore)
             {
                 bestScore = score;
-                bestPosition = candidate;
+                bestPosition = entry.Key;
             }
         }
 
@@ -614,7 +714,8 @@ public class UnitMoveBrain : MonoBehaviour
         if (availableSteps <= 0)
             yield break;
 
-        List<Vector2Int> pathToExecute = new List<Vector2Int>(bestPath);
+        List<Vector2Int> pathToExecute =
+            new List<Vector2Int>(bestPath);
 
         movementCoroutine = StartCoroutine(
             ExecuteMoveRoutine(pathToExecute, availableSteps)
@@ -623,6 +724,10 @@ public class UnitMoveBrain : MonoBehaviour
         while (isMoving || movementCoroutine != null)
             yield return null;
     }
+
+    // ============================================================
+    // MOVEMENT EXECUTION
+    // ============================================================
 
     private IEnumerator ExecuteMoveRoutine(
         List<Vector2Int> path,
@@ -643,10 +748,17 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
         SetMovingState(true);
+
         movementSequence++;
 
         int currentMovementSequence = movementSequence;
-        int actualSteps = Mathf.Min(steps, path.Count - 1);
+
+        int actualSteps = Mathf.Min(
+            steps,
+            path.Count - 1
+        );
+
+        float duration = Mathf.Max(0f, moveDuration);
 
         for (int i = 1; i <= actualSteps; i++)
         {
@@ -655,6 +767,7 @@ public class UnitMoveBrain : MonoBehaviour
 
             Vector2Int fromTile = path[i - 1];
             Vector2Int toTile = path[i];
+
             Vector2Int direction = toTile - fromTile;
 
             SetFacingDirection(direction);
@@ -671,21 +784,26 @@ public class UnitMoveBrain : MonoBehaviour
             if (!started)
                 break;
 
-            Vector3 startPosition = gridManager.GridToWorldPosition(fromTile);
-            Vector3 endPosition = gridManager.GridToWorldPosition(toTile);
+            BeginGridMove(gridManager, fromTile);
+
+            Vector3 startPosition =
+                gridManager.GridToWorldPosition(fromTile);
+
+            Vector3 endPosition =
+                gridManager.GridToWorldPosition(toTile);
 
             float elapsed = 0f;
 
             while (
-                elapsed < moveDuration &&
+                elapsed < duration &&
                 currentMovementSequence == movementSequence
             )
             {
                 elapsed += Time.deltaTime;
 
-                float t = moveDuration <= 0f
+                float t = duration <= 0f
                     ? 1f
-                    : Mathf.Clamp01(elapsed / moveDuration);
+                    : Mathf.Clamp01(elapsed / duration);
 
                 transform.position = Vector3.Lerp(
                     startPosition,
@@ -700,7 +818,8 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
 
             transform.position = endPosition;
-            gridManager.FinishMoveUnit(gameObject, toTile);
+
+            FinishGridMove(gridManager, toTile);
 
             if (tilePin != null)
                 tilePin.SetTile(toTile);
@@ -716,7 +835,9 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
         StopWalkAnimation();
+
         SetMovingState(false);
+
         movementCoroutine = null;
     }
 
@@ -729,7 +850,6 @@ public class UnitMoveBrain : MonoBehaviour
         int distance = -1,
         float stepDuration = -1f)
     {
-        // Do not require AttackUnit on the player.
         if (attackUnit != null && attackUnit.IsDead())
             return;
 
@@ -755,10 +875,12 @@ public class UnitMoveBrain : MonoBehaviour
                 $"[UnitMoveBrain] No GridManager found for {name}.",
                 this
             );
+
             return;
         }
 
         Vector2Int currentTile = GetCurrentTile();
+
         Vector2Int direction = currentTile - explosionCenter;
 
         if (direction == Vector2Int.zero)
@@ -767,6 +889,7 @@ public class UnitMoveBrain : MonoBehaviour
                 $"[UnitMoveBrain] Cannot calculate knockback direction for {name}.",
                 this
             );
+
             return;
         }
 
@@ -834,6 +957,7 @@ public class UnitMoveBrain : MonoBehaviour
                 break;
 
             Vector2Int fromTile = GetCurrentTile();
+
             Vector2Int toTile = fromTile + direction;
 
             if (!gridManager.IsInsideGrid(toTile))
@@ -845,6 +969,8 @@ public class UnitMoveBrain : MonoBehaviour
             if (!gridManager.StartMoveUnit(gameObject, fromTile, toTile))
                 break;
 
+            BeginGridMove(gridManager, fromTile);
+
             Vector3 startPosition =
                 gridManager.GridToWorldPosition(fromTile);
 
@@ -852,11 +978,15 @@ public class UnitMoveBrain : MonoBehaviour
                 gridManager.GridToWorldPosition(toTile);
 
             float elapsed = 0f;
+            bool interruptedByDeath = false;
 
             while (elapsed < duration)
             {
                 if (attackUnit != null && attackUnit.IsDead())
+                {
+                    interruptedByDeath = true;
                     break;
+                }
 
                 elapsed += Time.deltaTime;
 
@@ -868,7 +998,6 @@ public class UnitMoveBrain : MonoBehaviour
                     t
                 );
 
-                // Add a smooth arc while moving between tiles.
                 position.y +=
                     4f * knockbackArcHeight * t * (1f - t);
 
@@ -877,16 +1006,18 @@ public class UnitMoveBrain : MonoBehaviour
                 yield return null;
             }
 
-            if (attackUnit != null && attackUnit.IsDead())
+            if (interruptedByDeath)
             {
                 transform.position = startPosition;
-                gridManager.FinishMoveUnit(gameObject, fromTile);
+
+                FinishGridMove(gridManager, fromTile);
+
                 break;
             }
 
             transform.position = endPosition;
 
-            gridManager.FinishMoveUnit(gameObject, toTile);
+            FinishGridMove(gridManager, toTile);
 
             if (tilePin != null)
                 tilePin.SetTile(toTile);
@@ -903,11 +1034,17 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
         StopWalkAnimation();
+
         SetMovingState(false);
 
         isBeingKnockedBack = false;
+
         movementCoroutine = null;
     }
+
+    // ============================================================
+    // ANIMATION
+    // ============================================================
 
     private void UpdateWalkAnimation(Vector2Int direction)
     {
@@ -921,6 +1058,10 @@ public class UnitMoveBrain : MonoBehaviour
             animationController.PlayIdle();
     }
 
+    // ============================================================
+    // PATH PREVIEW
+    // ============================================================
+
     public bool GetPreviewPath(
         Vector2Int destination,
         List<Vector2Int> result)
@@ -930,7 +1071,8 @@ public class UnitMoveBrain : MonoBehaviour
 
         result.Clear();
 
-        UnitMoveBrainManager manager = UnitMoveBrainManager.Instance;
+        UnitMoveBrainManager manager =
+            UnitMoveBrainManager.Instance;
 
         if (manager == null)
             return false;
@@ -946,6 +1088,10 @@ public class UnitMoveBrain : MonoBehaviour
         );
     }
 
+    // ============================================================
+    // REACHABLE CELLS
+    // ============================================================
+
     public void GetReachableCells(List<Vector2Int> result)
     {
         if (result == null)
@@ -953,7 +1099,8 @@ public class UnitMoveBrain : MonoBehaviour
 
         result.Clear();
 
-        UnitMoveBrainManager manager = UnitMoveBrainManager.Instance;
+        UnitMoveBrainManager manager =
+            UnitMoveBrainManager.Instance;
 
         if (manager == null || GetGridManager() == null)
             return;
@@ -966,6 +1113,10 @@ public class UnitMoveBrain : MonoBehaviour
             gameObject
         );
     }
+
+    // ============================================================
+    // AI VALIDATION
+    // ============================================================
 
     public bool CanUseAIMovement()
     {

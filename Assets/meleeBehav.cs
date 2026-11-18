@@ -76,6 +76,12 @@ public class meleeBehav : MonoBehaviour
         return currentDirection;
     }
 
+    // Animation Event - destroy melee.
+    public void DestroyMelee()
+    {
+        Destroy(gameObject);
+    }
+
     private void OnDestroy()
     {
         if (ownerController != null)
