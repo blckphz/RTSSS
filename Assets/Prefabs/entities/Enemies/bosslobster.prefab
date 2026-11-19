@@ -200,6 +200,7 @@ MonoBehaviour:
   dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 1
   attackAnimatorLayerName: attackLayer
+  playerLocked: 0
   dayNightType: 2
   dayDamageBonus: 0
   nightDamageBonus: 0
@@ -370,6 +371,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 0}
+  isWalkable: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 0
   unitId: 
@@ -470,7 +472,6 @@ MonoBehaviour:
   retreatArrivalDistance: 0
   waterDamageReductionPercent: 30
   waterHealingPercentPerRound: 5
-  enableBossDebug: 1
   isOnWater: 0
 --- !u!1 &4035946682169948788
 GameObject:
@@ -553,7 +554,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: d75f296eb2151964aa522fb9b0cd8619, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 1defd11f629272a458ad0ab6713b2380, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

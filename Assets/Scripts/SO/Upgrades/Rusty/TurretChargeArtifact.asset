@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 04de0c41f79f8564cb4bdf28c89ac34a, type: 3}
-  m_Name: ExplosionKnockbackUpgrade
-  m_EditorClassIdentifier: Assembly-CSharp::ExplosionKnockbackUpgrade
-  UpgradeName: Knockback
-  Description: Pushes Player and Enemy over obstacles alike
+  m_Script: {fileID: 11500000, guid: f3ea0378829874b44b2fcd072f9487ea, type: 3}
+  m_Name: TurretChargeArtifact
+  m_EditorClassIdentifier: Assembly-CSharp::TurretChargeUpgrade
+  UpgradeName: Tesla Coil
+  Description: Charges your turret
   rarity: 2

@@ -9,10 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a21a1819a06a16f42a92f9ed69b3d480, type: 3}
-  m_Name: EngineerMeleeTurretHeal
-  m_EditorClassIdentifier: Assembly-CSharp::EngineerMeleeTurretHealUpgrade
-  UpgradeName: enginer
-  Description: 
-  rarity: 2
-  bonusHealAmount: 10
+  m_Script: {fileID: 11500000, guid: be18dae1e14640f46adbb79f97e84ad8, type: 3}
+  m_Name: ChainBounceRing
+  m_EditorClassIdentifier: Assembly-CSharp::RingUpgrade
+  UpgradeName: ChainBunce
+  Description: +1 Chain Target
+  rarity: 1
+  target: 0
+  stat: 3
+  bonusAmount: 1

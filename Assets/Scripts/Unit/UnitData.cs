@@ -1,77 +1,32 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UnitData : MonoBehaviour
 {
-    // ============================================================
-    // CHARACTER
-    // ============================================================
+    [SerializeField] private CharacterSO character;
 
-    [SerializeField]
-    private CharacterSO character;
-
-
-    // ============================================================
-    // RUNTIME ABILITY DATA
-    // ============================================================
-
-    /*
-     * AttackUnit is the owner of the actual runtime AbilityData.
-     * Do NOT create a second AbilityData dictionary here.
-     */
-
-
-    // ============================================================
-    // RUNTIME UPGRADES
-    // ============================================================
-
+    // Runtime upgrades
     private Dictionary<AbilitySO, int> abilityBonusJumps =
         new Dictionary<AbilitySO, int>();
 
+    private Dictionary<AbilitySO, float> abilityBonusBounceRange =
+        new Dictionary<AbilitySO, float>();
 
-    // ============================================================
-    // ENGINEER TURRET HEAL UPGRADE
-    // ============================================================
-
+    // Engineer turret heal upgrade
     private int meleeTurretHealAmount;
 
-
-    // ============================================================
-    // EXPLOSION KNOCKBACK UPGRADE
-    // ============================================================
-
+    // Explosion knockback upgrade
     private bool explosionKnockbackUnlocked = false;
-
-
-    // ============================================================
-    // INITIALIZE
-    // ============================================================
 
     public void Initialize(CharacterSO characterData)
     {
         character = characterData;
-
-        /*
-         * AttackUnit.Initialize() creates runtime ability data.
-         * AttackUnit owns cooldown/charge state.
-         */
     }
-
-
-    // ============================================================
-    // CHARACTER
-    // ============================================================
 
     public CharacterSO GetCharacter()
     {
         return character;
     }
-
-
-    // ============================================================
-    // ATTACK UNIT
-    // ============================================================
 
     private AttackUnit GetAttackUnit()
     {
@@ -85,11 +40,6 @@ public class UnitData : MonoBehaviour
 
         return attackUnit;
     }
-
-
-    // ============================================================
-    // ABILITY DATA
-    // ============================================================
 
     public AbilityData GetAbilityData(AbilitySO ability)
     {
@@ -121,16 +71,10 @@ public class UnitData : MonoBehaviour
         return null;
     }
 
-
     public bool HasAbilityData(AbilitySO ability)
     {
         return GetAbilityData(ability) != null;
     }
-
-
-    // ============================================================
-    // COOLDOWN
-    // ============================================================
 
     public int GetAbilityCooldown(AbilitySO ability)
     {
@@ -142,7 +86,6 @@ public class UnitData : MonoBehaviour
         return data.GetCooldownRemaining();
     }
 
-
     public void SetAbilityCooldown(AbilitySO ability, int cooldown)
     {
         AbilityData data = GetAbilityData(ability);
@@ -152,7 +95,6 @@ public class UnitData : MonoBehaviour
 
         data.SetCooldown(cooldown);
     }
-
 
     public void ReduceAbilityCooldowns()
     {
@@ -178,11 +120,6 @@ public class UnitData : MonoBehaviour
         }
     }
 
-
-    // ============================================================
-    // USES
-    // ============================================================
-
     public int GetAbilityUsesRemaining(AbilitySO ability)
     {
         AbilityData data = GetAbilityData(ability);
@@ -196,7 +133,6 @@ public class UnitData : MonoBehaviour
         return data.GetUsesRemaining();
     }
 
-
     public bool CanUseAbility(AbilitySO ability)
     {
         AbilityData data = GetAbilityData(ability);
@@ -207,7 +143,6 @@ public class UnitData : MonoBehaviour
         return data.CanUse();
     }
 
-
     public bool ConsumeAbilityUse(AbilitySO ability)
     {
         AbilityData data = GetAbilityData(ability);
@@ -217,7 +152,6 @@ public class UnitData : MonoBehaviour
 
         return data.ConsumeUse();
     }
-
 
     public void ResetAbilityUses()
     {
@@ -243,11 +177,7 @@ public class UnitData : MonoBehaviour
         }
     }
 
-
-    // ============================================================
-    // RUNTIME ABILITY UPGRADES
-    // ============================================================
-
+    // Bonus chain jumps
     public void AddBonusJumps(AbilitySO ability, int amount)
     {
         if (ability == null || amount <= 0)
@@ -258,7 +188,6 @@ public class UnitData : MonoBehaviour
 
         abilityBonusJumps[ability] += amount;
     }
-
 
     public int GetBonusJumps(AbilitySO ability)
     {
@@ -271,33 +200,46 @@ public class UnitData : MonoBehaviour
         return 0;
     }
 
+    // Bonus bounce range
+    public void AddBonusBounceRange(AbilitySO ability, float amount)
+    {
+        if (ability == null || amount <= 0f)
+            return;
 
-    // ============================================================
-    // ENGINEER TURRET HEAL UPGRADE
-    // ============================================================
+        if (!abilityBonusBounceRange.ContainsKey(ability))
+            abilityBonusBounceRange[ability] = 0f;
 
+        abilityBonusBounceRange[ability] += amount;
+    }
+
+    public float GetBonusBounceRange(AbilitySO ability)
+    {
+        if (ability == null)
+            return 0f;
+
+        if (abilityBonusBounceRange.TryGetValue(ability, out float bonus))
+            return bonus;
+
+        return 0f;
+    }
+
+    // Engineer turret heal upgrade
     public void SetMeleeTurretHealAmount(int amount)
     {
         meleeTurretHealAmount = Mathf.Max(0, amount);
     }
-
 
     public int GetMeleeTurretHealAmount()
     {
         return meleeTurretHealAmount;
     }
 
-
     public bool HasMeleeTurretHealUpgrade()
     {
         return meleeTurretHealAmount > 0;
     }
 
-
-    // ============================================================
-    // EXPLOSION KNOCKBACK UPGRADE
-    // ============================================================
-
+    // Explosion knockback upgrade
     public void UnlockExplosionKnockback()
     {
         explosionKnockbackUnlocked = true;
@@ -307,17 +249,12 @@ public class UnitData : MonoBehaviour
         );
     }
 
-
     public bool HasExplosionKnockbackUpgrade()
     {
         return explosionKnockbackUnlocked;
     }
 
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
+    // Debug
     public void DebugBonusJumps(AbilitySO ability)
     {
         if (ability == null)
@@ -326,36 +263,26 @@ public class UnitData : MonoBehaviour
         int bonus = GetBonusJumps(ability);
     }
 
-
-    // ============================================================
-    // RESET RUNTIME UPGRADES
-    // ============================================================
-
+    // Reset runtime upgrades
     public void ResetRuntimeUpgrades()
     {
         abilityBonusJumps.Clear();
+        abilityBonusBounceRange.Clear();
 
         meleeTurretHealAmount = 0;
-
         explosionKnockbackUnlocked = false;
     }
 
-
-    // ============================================================
-    // RESET EVERYTHING
-    // ============================================================
-
+    // Reset everything
     public void ResetRuntimeData()
     {
-        /*
-         * AbilityData is owned by AttackUnit.
-         * Do not clear or recreate it here.
-         */
+        // AbilityData is owned by AttackUnit.
+        // Do not clear or recreate it here.
 
         abilityBonusJumps.Clear();
+        abilityBonusBounceRange.Clear();
 
         meleeTurretHealAmount = 0;
-
         explosionKnockbackUnlocked = false;
     }
 }

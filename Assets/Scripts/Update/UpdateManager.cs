@@ -1,5 +1,4 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class UpdateManager : MonoBehaviour
@@ -16,12 +15,10 @@ public class UpdateManager : MonoBehaviour
     private readonly List<UpgradeSO> purchasedUpgrades =
         new List<UpgradeSO>();
 
-    // Tracks upgrades already applied to the player UnitData.
     private readonly Dictionary<UnitData, HashSet<UpgradeSO>>
         appliedToUnits =
         new Dictionary<UnitData, HashSet<UpgradeSO>>();
 
-    // Tracks upgrades already applied to CharacterSO.
     private readonly HashSet<UpgradeSO> appliedToCharacters =
         new HashSet<UpgradeSO>();
 
@@ -36,9 +33,7 @@ public class UpdateManager : MonoBehaviour
         appliedChainBounce =
         new Dictionary<UnitData, HashSet<RingUpgrade>>();
 
-    // =====================================================
     // UNITY
-    // =====================================================
 
     private void Awake()
     {
@@ -57,9 +52,7 @@ public class UpdateManager : MonoBehaviour
             Instance = null;
     }
 
-    // =====================================================
     // REGISTER PLAYER
-    // =====================================================
 
     public void SetCurrentUnit(UnitData unit)
     {
@@ -78,17 +71,11 @@ public class UpdateManager : MonoBehaviour
         currentUnit = unit;
         currentCharacter = character;
 
-
-        // Apply upgrades purchased before the player spawned.
         ApplyStoredUnitUpgrades();
-
-        // Apply player ring upgrades.
         ApplyPlayerRingUpgrades();
     }
 
-    // =====================================================
     // REFRESH PLAYER AFTER INITIALIZATION
-    // =====================================================
 
     public void RefreshPlayerUpgradesAfterInitialization(
         UnitData unit)
@@ -119,16 +106,9 @@ public class UpdateManager : MonoBehaviour
         currentUnit = unit;
         currentCharacter = character;
 
-        // Apply upgrades that were purchased before spawning.
         ApplyStoredUnitUpgrades();
-
-        // Apply CharacterSO upgrades that were purchased
-        // before currentCharacter was registered.
         ApplyStoredCharacterUpgrades();
 
-        // HealthManager.Initialize() may reset health.
-        // Remove previously applied health rings so they
-        // can be applied again after initialization.
         if (appliedPlayerRings.TryGetValue(
             unit,
             out HashSet<RingUpgrade> applied))
@@ -145,7 +125,6 @@ public class UpdateManager : MonoBehaviour
         }
 
         ApplyPlayerRingUpgrades();
-
     }
 
     public CharacterSO GetCurrentCharacter()
@@ -153,20 +132,16 @@ public class UpdateManager : MonoBehaviour
         return currentCharacter;
     }
 
-    // =====================================================
     // AVAILABLE UPGRADES
-    // =====================================================
 
     public List<UpgradeSO> GetCurrentCharacterUpgrades()
     {
-        List<UpgradeSO> result =
-            new List<UpgradeSO>();
+        List<UpgradeSO> result = new List<UpgradeSO>();
 
         if (currentCharacter == null)
             return result;
 
-        UpgradeSO[] upgrades =
-            currentCharacter.upgrades;
+        UpgradeSO[] upgrades = currentCharacter.upgrades;
 
         if (upgrades == null)
             return result;
@@ -190,9 +165,7 @@ public class UpdateManager : MonoBehaviour
         return new List<UpgradeSO>(purchasedUpgrades);
     }
 
-    // =====================================================
     // PURCHASE UPGRADE
-    // =====================================================
 
     public void ApplyUpgrade(UpgradeSO upgrade)
     {
@@ -211,11 +184,6 @@ public class UpdateManager : MonoBehaviour
 
         purchasedUpgrades.Add(upgrade);
 
-    
-        // =============================================
-        // RING UPGRADE
-        // =============================================
-
         if (upgrade is RingUpgrade ring)
         {
             if (ring.GetTarget() == UpgradeTarget.Player)
@@ -230,19 +198,11 @@ public class UpdateManager : MonoBehaviour
             return;
         }
 
-        // =============================================
-        // TURRET CHARGE UPGRADE
-        // =============================================
-
         if (upgrade is TurretChargeUpgrade chargeUpgrade)
         {
             ApplyTurretChargeUpgrade(chargeUpgrade);
             return;
         }
-
-        // =============================================
-        // OTHER UNIT UPGRADES
-        // =============================================
 
         if (currentUnit != null)
         {
@@ -256,10 +216,6 @@ public class UpdateManager : MonoBehaviour
                 " will be applied when the player spawns."
             );
         }
-
-        // =============================================
-        // CHARACTER DATA UPGRADE
-        // =============================================
 
         if (currentCharacter != null)
         {
@@ -275,9 +231,7 @@ public class UpdateManager : MonoBehaviour
         }
     }
 
-    // =====================================================
     // APPLY UPGRADE TO UNITDATA
-    // =====================================================
 
     private void ApplyUnitUpgrade(
         UpgradeSO upgrade,
@@ -288,8 +242,7 @@ public class UpdateManager : MonoBehaviour
 
         if (!appliedToUnits.ContainsKey(unit))
         {
-            appliedToUnits[unit] =
-                new HashSet<UpgradeSO>();
+            appliedToUnits[unit] = new HashSet<UpgradeSO>();
         }
 
         if (appliedToUnits[unit].Contains(upgrade))
@@ -319,9 +272,7 @@ public class UpdateManager : MonoBehaviour
         );
     }
 
-    // =====================================================
     // APPLY STORED UNIT UPGRADES
-    // =====================================================
 
     private void ApplyStoredUnitUpgrades()
     {
@@ -333,11 +284,9 @@ public class UpdateManager : MonoBehaviour
             if (upgrade == null)
                 continue;
 
-            // Ring upgrades use their own application system.
             if (upgrade is RingUpgrade)
                 continue;
 
-            // Turret upgrades use their own application system.
             if (upgrade is TurretChargeUpgrade)
                 continue;
 
@@ -345,9 +294,7 @@ public class UpdateManager : MonoBehaviour
         }
     }
 
-    // =====================================================
     // APPLY UPGRADE TO CHARACTER
-    // =====================================================
 
     private void ApplyCharacterUpgrade(
         UpgradeSO upgrade,
@@ -371,9 +318,7 @@ public class UpdateManager : MonoBehaviour
         );
     }
 
-    // =====================================================
     // APPLY STORED CHARACTER UPGRADES
-    // =====================================================
 
     private void ApplyStoredCharacterUpgrades()
     {
@@ -391,16 +336,11 @@ public class UpdateManager : MonoBehaviour
             if (upgrade is TurretChargeUpgrade)
                 continue;
 
-            ApplyCharacterUpgrade(
-                upgrade,
-                currentCharacter
-            );
+            ApplyCharacterUpgrade(upgrade, currentCharacter);
         }
     }
 
-    // =====================================================
     // PLAYER RINGS
-    // =====================================================
 
     private void ApplyPlayerRingUpgrades()
     {
@@ -435,9 +375,7 @@ public class UpdateManager : MonoBehaviour
 
         switch (ring.GetStat())
         {
-            // =============================================
             // HEALTH
-            // =============================================
 
             case RingStat.Health:
                 {
@@ -474,14 +412,11 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
-            // =============================================
             // CHAIN BOUNCE
-            // =============================================
 
             case RingStat.ChainBounce:
                 {
-                    CharacterSO character =
-                        currentUnit.GetCharacter();
+                    CharacterSO character = currentUnit.GetCharacter();
 
                     if (character == null)
                         return;
@@ -525,9 +460,44 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
-            // =============================================
+            // BOUNCE RANGE
+
+            case RingStat.BounceRange:
+                {
+                    CharacterSO character = currentUnit.GetCharacter();
+
+                    if (character == null)
+                        return;
+
+                    ChainLightning chainLightning =
+                        character.GetAbility<ChainLightning>();
+
+                    if (chainLightning == null)
+                    {
+                        Debug.LogWarning(
+                            "[UpgradeManager] Bounce Range ring could not " +
+                            "be applied: ChainLightning ability not found."
+                        );
+
+                        return;
+                    }
+
+                    currentUnit.AddBonusBounceRange(
+                        chainLightning,
+                        amount
+                    );
+
+                    appliedPlayerRings[currentUnit].Add(ring);
+
+                    Debug.Log(
+                        "[UpgradeManager] Player Bounce Range applied. " +
+                        "Additional range: +" + amount
+                    );
+
+                    break;
+                }
+
             // EXPLOSION SIZE
-            // =============================================
 
             case RingStat.ExplosionSize:
                 {
@@ -541,9 +511,7 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
-            // =============================================
             // ABILITY DAMAGE RINGS
-            // =============================================
 
             case RingStat.Ability1Damage:
             case RingStat.Ability2Damage:
@@ -561,9 +529,7 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
-            // =============================================
             // GENERAL DAMAGE
-            // =============================================
 
             case RingStat.Damage:
                 {
@@ -575,9 +541,7 @@ public class UpdateManager : MonoBehaviour
                     break;
                 }
 
-            // =============================================
             // RANGE
-            // =============================================
 
             case RingStat.Range:
                 {
@@ -591,9 +555,7 @@ public class UpdateManager : MonoBehaviour
         }
     }
 
-    // =====================================================
     // GET PLAYER RING BONUS
-    // =====================================================
 
     public int GetPlayerRingBonus(
         GameObject user,
@@ -602,20 +564,13 @@ public class UpdateManager : MonoBehaviour
         if (user == null || currentUnit == null)
             return 0;
 
-        UnitData userUnit =
-            user.GetComponent<UnitData>();
+        UnitData userUnit = user.GetComponent<UnitData>();
 
         if (userUnit == null)
-        {
-            userUnit =
-                user.GetComponentInParent<UnitData>();
-        }
+            userUnit = user.GetComponentInParent<UnitData>();
 
         if (userUnit == null)
-        {
-            userUnit =
-                user.GetComponentInChildren<UnitData>(true);
-        }
+            userUnit = user.GetComponentInChildren<UnitData>(true);
 
         if (userUnit != currentUnit)
             return 0;
@@ -639,9 +594,7 @@ public class UpdateManager : MonoBehaviour
         return totalBonus;
     }
 
-    // =====================================================
     // TURRET REGISTRATION
-    // =====================================================
 
     public void RegisterRingUpgradeTarget(
         UpgradeableCombatUnit target)
@@ -658,9 +611,7 @@ public class UpdateManager : MonoBehaviour
         ApplyStoredTurretUpgrades();
     }
 
-    // =====================================================
     // APPLY STORED TURRET UPGRADES
-    // =====================================================
 
     private void ApplyStoredTurretUpgrades()
     {
@@ -681,9 +632,7 @@ public class UpdateManager : MonoBehaviour
         }
     }
 
-    // =====================================================
     // TURRET RING UPGRADES
-    // =====================================================
 
     private void ApplyTurretRingUpgrade(RingUpgrade ring)
     {
@@ -722,9 +671,7 @@ public class UpdateManager : MonoBehaviour
         );
     }
 
-    // =====================================================
     // TURRET CHAIN LIGHTNING UPGRADE
-    // =====================================================
 
     private void ApplyTurretChargeUpgrade(
         TurretChargeUpgrade chargeUpgrade)
@@ -795,9 +742,7 @@ public class UpdateManager : MonoBehaviour
         return turret;
     }
 
-    // =====================================================
     // RESET
-    // =====================================================
 
     public void ResetRuntimeUpgrades()
     {

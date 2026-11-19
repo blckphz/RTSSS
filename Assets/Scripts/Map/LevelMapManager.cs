@@ -79,6 +79,10 @@ public class LevelMapManager : MonoBehaviour
     [SerializeField] private float maxRandomOffset = 0.4f;
     [SerializeField] private float spawnHeightOffset = 0f;
 
+    [Header("Minimum Node Distance")]
+    [SerializeField] private float minNodeDistance = 1.5f;
+    [SerializeField] private int maxPositionAttempts = 30;
+
     [Header("2D World Spacing")]
     [SerializeField] private float horizontalSpacing = 2.5f;
     [SerializeField] private float verticalSpacing = 2.0f;
@@ -184,11 +188,19 @@ public class LevelMapManager : MonoBehaviour
         rows = Mathf.Max(2, rows);
         minNodesPerRow = Mathf.Max(1, minNodesPerRow);
         maxNodesPerRow = Mathf.Max(minNodesPerRow, maxNodesPerRow);
+
         lineWidth = Mathf.Max(0.001f, lineWidth);
         lineEndPadding = Mathf.Max(0f, lineEndPadding);
 
+        minNodeDistance = Mathf.Max(0f, minNodeDistance);
+        maxPositionAttempts = Mathf.Max(1, maxPositionAttempts);
+
         return valid;
     }
+
+    // ============================================================
+    // SPAWN NODES
+    // ============================================================
 
     private void SpawnNodes()
     {
@@ -215,28 +227,13 @@ public class LevelMapManager : MonoBehaviour
 
             for (int column = 0; column < countInRow; column++)
             {
-                float x =
-                    (column - (countInRow - 1) / 2f) *
-                    horizontalSpacing;
-
-                x += spawnWidthOffset;
-
-                float y = row * verticalSpacing;
-
-                if (row > 0 && row < rows - 1)
-                {
-                    x += Random.Range(
-                        -maxRandomOffset,
-                        maxRandomOffset
-                    );
-
-                    y += Random.Range(
-                        -maxRandomOffset / 2f,
-                        maxRandomOffset / 2f
-                    );
-                }
-
-                Vector2 position = baseOrigin + new Vector2(x, y);
+                Vector2 position = GetValidNodePosition(
+                    baseOrigin,
+                    row,
+                    column,
+                    countInRow,
+                    currentRow
+                );
 
                 EncounterDefinition encounter =
                     GetEncounterForNode(row, column);
@@ -276,6 +273,113 @@ public class LevelMapManager : MonoBehaviour
             mapNodes.Add(currentRow);
         }
     }
+
+    // ============================================================
+    // MINIMUM NODE DISTANCE
+    // ============================================================
+
+    private Vector2 GetValidNodePosition(
+        Vector2 baseOrigin,
+        int row,
+        int column,
+        int countInRow,
+        List<LevelNode> currentRow)
+    {
+        float x =
+            (column - (countInRow - 1) / 2f) *
+            horizontalSpacing;
+
+        x += spawnWidthOffset;
+
+        float y = row * verticalSpacing;
+
+        Vector2 position = baseOrigin + new Vector2(x, y);
+
+        // Start and boss nodes keep their fixed positions.
+        if (row == 0 || row == rows - 1)
+            return position;
+
+        // Try multiple random positions until minimum distance is met.
+        for (int attempt = 0; attempt < maxPositionAttempts; attempt++)
+        {
+            float randomX = Random.Range(
+                -maxRandomOffset,
+                maxRandomOffset
+            );
+
+            float randomY = Random.Range(
+                -maxRandomOffset / 2f,
+                maxRandomOffset / 2f
+            );
+
+            position = baseOrigin + new Vector2(
+                x + randomX,
+                y + randomY
+            );
+
+            bool validPosition = true;
+
+            // Check all previously spawned rows.
+            foreach (List<LevelNode> existingRow in mapNodes)
+            {
+                foreach (LevelNode existingNode in existingRow)
+                {
+                    if (existingNode == null)
+                        continue;
+
+                    float distance = Vector2.Distance(
+                        position,
+                        existingNode.Position
+                    );
+
+                    if (distance < minNodeDistance)
+                    {
+                        validPosition = false;
+                        break;
+                    }
+                }
+
+                if (!validPosition)
+                    break;
+            }
+
+            // Check nodes already spawned in the current row.
+            if (validPosition)
+            {
+                foreach (LevelNode existingNode in currentRow)
+                {
+                    if (existingNode == null)
+                        continue;
+
+                    float distance = Vector2.Distance(
+                        position,
+                        existingNode.Position
+                    );
+
+                    if (distance < minNodeDistance)
+                    {
+                        validPosition = false;
+                        break;
+                    }
+                }
+            }
+
+            if (validPosition)
+                return position;
+        }
+
+        Debug.LogWarning(
+            $"[LevelMapManager] Could not find a valid position for Row {row}, Column {column}. " +
+            "Consider increasing spacing or maxPositionAttempts.",
+            this
+        );
+
+        return position;
+    }
+
+    // ============================================================
+    // NODE ICON
+    // ============================================================
 
     private void SetNodeIconSprite(
         GameObject iconObject,
@@ -794,7 +898,6 @@ public class LevelMapManager : MonoBehaviour
             this
         );
 
-        // Determine reward type before clearing currentNode.
         bool isBoss =
             currentNode.Encounter == bossEncounter ||
             completedEncounter == bossEncounter;

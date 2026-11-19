@@ -13,6 +13,7 @@ public enum RingStat
     Damage,
     Range,
     ChainBounce,
+    BounceRange,
     ExplosionSize,
     Ability1Damage,
     Ability2Damage,

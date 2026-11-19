@@ -143,6 +143,7 @@ GameObject:
   - component: {fileID: 5314316195543410599}
   - component: {fileID: 899678385597234880}
   - component: {fileID: 4277256331865970164}
+  - component: {fileID: 3515816567910904618}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -288,6 +289,7 @@ MonoBehaviour:
   dayNightManager: {fileID: 0}
   useDirectionalEnemyAttackAnimation: 0
   attackAnimatorLayerName: attackLayer
+  playerLocked: 0
   dayNightType: 2
   dayDamageBonus: 0
   nightDamageBonus: 0
@@ -591,6 +593,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitTilePin
   gridManager: {fileID: 0}
+  isWalkable: 0
   fixedRotation: {x: 0, y: 0, z: 0}
   lockRotationEveryFrame: 1
   unitId: 
@@ -607,6 +610,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   character: {fileID: 11400000, guid: ad18bbb26e16b984498d916f39746623, type: 2}
+--- !u!114 &3515816567910904618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2305230657848179651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f9cb62a2b282a0489613cb60ede3e2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
 --- !u!1 &3487603628489236066
 GameObject:
   m_ObjectHideFlags: 0

@@ -112,14 +112,12 @@ MonoBehaviour:
   totalDamageFalloff: 29.1
   allowFriendlyFire: 1
   applyKnockback: 1
-  maxKnockbackDistance: 7
-  minKnockbackDistance: 1
   knockbackStepDuration: 0.08
   knockbackPlayerWithoutDamage: 1
   playerTag: Player
   explodeOnStart: 1
   destroyAfterExplosion: 1
-  destroyDelay: 0.1
+  destroyDelay: 0.33
   explosionDelay: 0
   animateTiles: 1
   flashExplosion: 1

@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -481,6 +480,9 @@ public class AttackUnit : MonoBehaviour
         {
             attackInProgress = true;
 
+            // Spawn the attack-start visual (melee woosh) before applying the attack.
+            PlayAbilityAttackStart(selectedAbility, target);
+
             bool success = selectedAbility.Use(gameObject, target);
 
             if (!success)
@@ -581,6 +583,9 @@ public class AttackUnit : MonoBehaviour
         if (team == Team.Player || team == Team.Ally)
         {
             attackInProgress = true;
+
+            // Spawn the attack-start visual (melee woosh) before applying the attack.
+            PlayAbilityAttackStart(selectedAbility, null);
 
             bool success = selectedAbility.UseAtTile(
                 gameObject,

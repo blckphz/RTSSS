@@ -8,78 +8,37 @@ public class BoardViewController : MonoBehaviour
 {
     public static BoardViewController Instance { get; private set; }
 
-    // ============================================================
-    // BOARD
-    // ============================================================
-
     [Header("Board")]
     [SerializeField] private Transform boardTransform;
 
-    // ============================================================
-    // GRID
-    // ============================================================
-
     [Header("Grid")]
     [SerializeField] private GridManager gridManager;
-
     [SerializeField] private int gridWidth = 11;
     [SerializeField] private int gridHeight = 11;
     [SerializeField] private float cellSize = 1f;
 
-    // ============================================================
-    // INPUT
-    // ============================================================
-
     [Header("Input")]
     [SerializeField] private InputActionReference rotateLeftAction;
     [SerializeField] private InputActionReference rotateRightAction;
-
-    // ============================================================
-    // ROTATION
-    // ============================================================
 
     [Header("Rotation")]
     [SerializeField] private float rotationDuration = 0.3f;
     [SerializeField] private bool blockInputDuringRotation = true;
     [SerializeField] private bool rotateUnits = true;
 
-    // ============================================================
-    // MOVEMENT / ROUND ROTATION LOCK
-    // ============================================================
-
     [Header("Movement / Round Rotation Lock")]
     [SerializeField] private bool preventRotationWhileUnitsMove = true;
     [SerializeField] private bool preventRotationDuringEnemyTurn = true;
     [SerializeField] private RoundManager roundManager;
 
-    // ============================================================
-    // START
-    // ============================================================
-
     [Header("Start")]
     [SerializeField] private int startingRotation = 0;
 
-    // ============================================================
-    // ROTATION SELECTION
-    // ============================================================
-
     [Header("Rotation Selection")]
-    [Tooltip(
-        "If enabled, highlight visuals are hidden while the board rotates. " +
-        "The selected unit/highlight state itself is NOT destroyed."
-    )]
     [SerializeField] private bool deselectUnitWhenRotating = true;
 
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [Header("Debug")]
-    [SerializeField] private bool debugLogs = true;
-
-    // ============================================================
-    // STATE
-    // ============================================================
+    [Header("Selection Debug")]
+    [SerializeField] private bool selectionDebugLogs = true;
 
     private int currentRotation;
     private bool isRotating;
@@ -90,10 +49,6 @@ public class BoardViewController : MonoBehaviour
 
     private readonly List<Transform> externalUnits =
         new List<Transform>();
-
-    // ============================================================
-    // SELECTED UNIT RESTORATION STATE
-    // ============================================================
 
     private GameObject selectedUnitBeforeRotation;
     private bool restoreUnitRangeAfterRotation;
@@ -167,7 +122,7 @@ public class BoardViewController : MonoBehaviour
     }
 
     // ============================================================
-    // GLOBAL ROTATION LOCK
+    // ROTATION LOCK
     // ============================================================
 
     private bool IsRotationBlocked()
@@ -193,22 +148,11 @@ public class BoardViewController : MonoBehaviour
         if (!context.performed)
             return;
 
-        if (debugLogs)
-            Debug.Log("[BoardViewController] Rotate LEFT requested.", this);
-
         if (blockInputDuringRotation && isRotating)
             return;
 
         if (IsRotationBlocked())
-        {
-            if (debugLogs)
-                Debug.Log(
-                    "[BoardViewController] LEFT rotation blocked.",
-                    this
-                );
-
             return;
-        }
 
         RotateLeft();
     }
@@ -218,22 +162,11 @@ public class BoardViewController : MonoBehaviour
         if (!context.performed)
             return;
 
-        if (debugLogs)
-            Debug.Log("[BoardViewController] Rotate RIGHT requested.", this);
-
         if (blockInputDuringRotation && isRotating)
             return;
 
         if (IsRotationBlocked())
-        {
-            if (debugLogs)
-                Debug.Log(
-                    "[BoardViewController] RIGHT rotation blocked.",
-                    this
-                );
-
             return;
-        }
 
         RotateRight();
     }
@@ -258,22 +191,7 @@ public class BoardViewController : MonoBehaviour
             return;
 
         if (IsRotationBlocked())
-        {
-            if (debugLogs)
-            {
-                Debug.Log(
-                    "[BoardViewController] Rotation request rejected.\n" +
-                    "Units Moving: " + UnitMoveBrain.IsAnyUnitMoving +
-                    "\nMoving Unit Count: " +
-                    UnitMoveBrain.GetMovingUnitCount() +
-                    "\nEnemy Turn: " +
-                    (roundManager != null && roundManager.IsEnemyTurn()),
-                    this
-                );
-            }
-
             return;
-        }
 
         if (blockInputDuringRotation && isRotating)
             return;
@@ -282,16 +200,6 @@ public class BoardViewController : MonoBehaviour
 
         if (targetRotation == currentRotation)
             return;
-
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] ROTATION START\n" +
-                "From: " + currentRotation +
-                "\nTo: " + targetRotation,
-                this
-            );
-        }
 
         CaptureSelectionStateBeforeRotation();
 
@@ -306,7 +214,7 @@ public class BoardViewController : MonoBehaviour
     }
 
     // ============================================================
-    // HOLOGRAM ROTATION NOTIFICATION
+    // HOLOGRAM ROTATION
     // ============================================================
 
     private void SetEnemyHologramRotationState(bool rotating)
@@ -324,7 +232,7 @@ public class BoardViewController : MonoBehaviour
     }
 
     // ============================================================
-    // CAPTURE SELECTION STATE
+    // CAPTURE SELECTION
     // ============================================================
 
     private void CaptureSelectionStateBeforeRotation()
@@ -333,22 +241,58 @@ public class BoardViewController : MonoBehaviour
         restoreUnitRangeAfterRotation = false;
         selectedUnitBeforeRotation = null;
 
-        if (UIManager.CurrentSelection != null)
+        HoverInfoTrigger selection = UIManager.CurrentSelection;
+
+        if (selection == null)
         {
-            selectedUnitBeforeRotation =
-                UIManager.CurrentSelection.gameObject;
-
-            restoreUnitRangeAfterRotation = true;
-
-            if (debugLogs)
+            if (selectionDebugLogs)
             {
                 Debug.Log(
-                    "[BoardViewController] Selected unit saved: " +
-                    selectedUnitBeforeRotation.name,
-                    this
+                    "[Selection Debug] No object selected before rotation."
                 );
             }
+
+            return;
         }
+
+        AttackUnit attackUnit = selection.GetAttackUnit();
+
+        bool isValidCharacter =
+            attackUnit != null &&
+            !attackUnit.IsDead() &&
+            selection.GetCharacterData() != null;
+
+        if (selectionDebugLogs)
+        {
+            Debug.Log(
+                "[Selection Debug] Selection before rotation: " +
+                selection.gameObject.name +
+                "\nHas AttackUnit: " + (attackUnit != null) +
+                "\nHas CharacterData: " +
+                (selection.GetCharacterData() != null) +
+                "\nIs Dead: " +
+                (attackUnit != null && attackUnit.IsDead()) +
+                "\nValid Character: " + isValidCharacter,
+                selection
+            );
+        }
+
+        if (!isValidCharacter)
+        {
+            if (selectionDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[Selection Debug] Selection is NOT a valid character. " +
+                    "Restoration will be skipped.",
+                    selection
+                );
+            }
+
+            return;
+        }
+
+        selectedUnitBeforeRotation = selection.gameObject;
+        restoreUnitRangeAfterRotation = true;
 
         CanvasInfoManager canvasInfoManager =
             FindFirstObjectByType<CanvasInfoManager>();
@@ -359,9 +303,6 @@ public class BoardViewController : MonoBehaviour
         if (!canvasInfoManager.HasSelectedAbility())
             return;
 
-        if (selectedUnitBeforeRotation == null)
-            return;
-
         AbilitySO ability =
             canvasInfoManager.GetSelectedAbility();
 
@@ -369,19 +310,10 @@ public class BoardViewController : MonoBehaviour
             return;
 
         restoreAbilityHighlightAfterRotation = true;
-
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] Ability restoration saved: " +
-                ability.name,
-                this
-            );
-        }
     }
 
     // ============================================================
-    // HIDE HIGHLIGHT VISUALS
+    // HIDE HIGHLIGHTS
     // ============================================================
 
     private void HideHighlightVisualsBeforeRotation()
@@ -390,26 +322,9 @@ public class BoardViewController : MonoBehaviour
             FindFirstObjectByType<GridHighlightManager>();
 
         if (highlightManager == null)
-        {
-            if (debugLogs)
-                Debug.LogWarning(
-                    "[BoardViewController] GridHighlightManager not found.",
-                    this
-                );
-
             return;
-        }
 
         highlightManager.ClearVisualsForBoardRotation();
-
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] Highlight visuals hidden. " +
-                "Cached state preserved.",
-                this
-            );
-        }
     }
 
     // ============================================================
@@ -420,7 +335,6 @@ public class BoardViewController : MonoBehaviour
     {
         isRotating = true;
 
-        // HIDE ENEMY HOLOGRAM AND PATH LINE.
         SetEnemyHologramRotationState(true);
 
         CalculateGridCenter();
@@ -470,8 +384,6 @@ public class BoardViewController : MonoBehaviour
             yield return null;
         }
 
-        // FINAL ROTATION CORRECTION
-
         float finalCorrection =
             Mathf.DeltaAngle(
                 boardTransform.eulerAngles.z,
@@ -500,23 +412,9 @@ public class BoardViewController : MonoBehaviour
 
         Physics.SyncTransforms();
 
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] ROTATION COMPLETE\n" +
-                "Rotation: " + currentRotation +
-                "\nCenter: " + rotationCenter,
-                this
-            );
-        }
-
-        // REFRESH GRID VISUAL CACHE
-
         yield return StartCoroutine(
             RefreshHighlightsAfterRotation()
         );
-
-        // RESTORE MOVEMENT RANGE
 
         if (restoreUnitRangeAfterRotation)
         {
@@ -524,8 +422,6 @@ public class BoardViewController : MonoBehaviour
                 RestoreSelectedUnitRangeAfterRotation()
             );
         }
-
-        // RESTORE ABILITY
 
         if (restoreAbilityHighlightAfterRotation)
         {
@@ -535,23 +431,11 @@ public class BoardViewController : MonoBehaviour
             RestoreAbilityHighlightAfterRotation();
         }
 
-        // CLEANUP
-
         restoreAbilityHighlightAfterRotation = false;
         restoreUnitRangeAfterRotation = false;
         selectedUnitBeforeRotation = null;
 
-        // RESTORE ENEMY HOLOGRAM AFTER EVERYTHING ELSE.
-
         SetEnemyHologramRotationState(false);
-
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] Rotation restoration completed.",
-                this
-            );
-        }
     }
 
     // ============================================================
@@ -564,21 +448,7 @@ public class BoardViewController : MonoBehaviour
             FindFirstObjectByType<GridHighlightManager>();
 
         if (highlightManager == null)
-        {
-            if (debugLogs)
-                Debug.LogWarning(
-                    "[BoardViewController] GridHighlightManager not found.",
-                    this
-                );
-
             yield break;
-        }
-
-        if (debugLogs)
-            Debug.Log(
-                "[BoardViewController] Refreshing highlights.",
-                this
-            );
 
         yield return StartCoroutine(
             highlightManager.RefreshAfterBoardRotation()
@@ -595,22 +465,64 @@ public class BoardViewController : MonoBehaviour
     private IEnumerator RestoreSelectedUnitRangeAfterRotation()
     {
         if (selectedUnitBeforeRotation == null)
+        {
+            if (selectionDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[Selection Debug] No saved character. " +
+                    "Movement range restoration skipped."
+                );
+            }
+
             yield break;
+        }
+
+        HoverInfoTrigger trigger =
+            selectedUnitBeforeRotation.GetComponent<HoverInfoTrigger>();
+
+        if (trigger == null ||
+            trigger.GetAttackUnit() == null ||
+            trigger.GetCharacterData() == null ||
+            trigger.GetAttackUnit().IsDead())
+        {
+            if (selectionDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[Selection Debug] Saved object is no longer a " +
+                    "valid character. Restoration cancelled."
+                );
+            }
+
+            yield break;
+        }
 
         if (UIManager.CurrentSelection == null)
-            yield break;
+        {
+            if (selectionDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[Selection Debug] Current selection is NULL after " +
+                    "rotation. Movement range restoration cancelled."
+                );
+            }
 
-        GameObject selectedUnit =
+            yield break;
+        }
+
+        GameObject currentSelectedObject =
             UIManager.CurrentSelection.gameObject;
 
-        if (selectedUnit != selectedUnitBeforeRotation)
+        if (currentSelectedObject != selectedUnitBeforeRotation)
         {
-            if (debugLogs)
+            if (selectionDebugLogs)
+            {
                 Debug.LogWarning(
-                    "[BoardViewController] Selected unit changed. " +
-                    "Range restoration cancelled.",
-                    this
+                    "[Selection Debug] Selection changed during rotation." +
+                    "\nSaved: " + selectedUnitBeforeRotation.name +
+                    "\nCurrent: " + currentSelectedObject.name +
+                    "\nMovement range restoration cancelled."
                 );
+            }
 
             yield break;
         }
@@ -622,14 +534,20 @@ public class BoardViewController : MonoBehaviour
         {
             highlightBrain.RefreshActiveHighlights();
 
-            if (debugLogs)
+            if (selectionDebugLogs)
             {
                 Debug.Log(
-                    "[BoardViewController] Movement range refreshed: " +
-                    selectedUnit.name,
-                    this
+                    "[Selection Debug] SUCCESS: Movement range restored " +
+                    "for " + currentSelectedObject.name + "."
                 );
             }
+        }
+        else if (selectionDebugLogs)
+        {
+            Debug.LogWarning(
+                "[Selection Debug] GridHighlightBrain not found. " +
+                "Movement range could not be restored."
+            );
         }
 
         yield return null;
@@ -695,16 +613,6 @@ public class BoardViewController : MonoBehaviour
             selectedUnit,
             false
         );
-
-        if (debugLogs)
-        {
-            Debug.Log(
-                "[BoardViewController] Ability highlight restored.\n" +
-                "Ability: " + ability.name +
-                "\nUnit: " + selectedUnit.name,
-                this
-            );
-        }
     }
 
     // ============================================================
@@ -891,42 +799,6 @@ public class BoardViewController : MonoBehaviour
     public bool IsRotationCurrentlyBlocked()
     {
         return IsRotationBlocked();
-    }
-
-    // ============================================================
-    // DEBUG
-    // ============================================================
-
-    [ContextMenu("Debug Board State")]
-    private void DebugBoardState()
-    {
-        CalculateGridCenter();
-
-        bool enemyTurn =
-            roundManager != null &&
-            roundManager.IsEnemyTurn();
-
-        Debug.Log(
-            "[BoardViewController] BOARD STATE\n" +
-            "Board: " +
-            (boardTransform != null ? boardTransform.name : "NULL") +
-            "\nRotation: " + currentRotation +
-            "\nIs Rotating: " + isRotating +
-            "\nUnits Moving: " + UnitMoveBrain.IsAnyUnitMoving +
-            "\nMoving Unit Count: " +
-            UnitMoveBrain.GetMovingUnitCount() +
-            "\nEnemy Turn: " + enemyTurn +
-            "\nRotation Blocked: " + IsRotationBlocked() +
-            "\nCenter: " + rotationCenter +
-            "\nExternal Units: " + externalUnits.Count +
-            "\nSelected Unit: " +
-            (selectedUnitBeforeRotation != null
-                ? selectedUnitBeforeRotation.name
-                : "NULL") +
-            "\nRestore Unit Range: " + restoreUnitRangeAfterRotation +
-            "\nRestore Ability: " + restoreAbilityHighlightAfterRotation,
-            this
-        );
     }
 
     // ============================================================

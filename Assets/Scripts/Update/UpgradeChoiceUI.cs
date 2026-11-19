@@ -101,7 +101,39 @@ public class UpgradeChoiceUI : MonoBehaviour
             "[UpgradeChoiceUI] Starting Artifact selection."
         );
 
-        ShowArtifactSelection(onSelected);
+        // First select an Artifact.
+        // After selection, automatically open Starting Ring.
+        ShowArtifactSelection(() =>
+        {
+            Debug.Log(
+                "[UpgradeChoiceUI] Artifact selected. " +
+                "Opening Starting Ring selection."
+            );
+
+            ShowStartingRingChoice(onSelected);
+        });
+    }
+
+    // =====================================================
+    // STARTING RING
+    // =====================================================
+
+    public void ShowStartingRingChoice(Action onSelected = null)
+    {
+        Debug.Log(
+            "[UpgradeChoiceUI] Starting Ring selection."
+        );
+
+        if (!GetUpdateManager())
+        {
+            onSelected?.Invoke();
+            return;
+        }
+
+        ShowChoices(
+            GetAvailableUpgrades(default, true),
+            onSelected
+        );
     }
 
     // =====================================================
@@ -114,6 +146,7 @@ public class UpgradeChoiceUI : MonoBehaviour
             "[UpgradeChoiceUI] Boss Artifact reward."
         );
 
+        // Boss rewards only give an Artifact.
         ShowArtifactSelection(onSelected);
     }
 

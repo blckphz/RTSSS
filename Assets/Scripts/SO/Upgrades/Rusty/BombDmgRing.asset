@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be18dae1e14640f46adbb79f97e84ad8, type: 3}
-  m_Name: ExplosionSize
+  m_Name: BombDmgRing
   m_EditorClassIdentifier: Assembly-CSharp::RingUpgrade
-  UpgradeName: ExplosionSize
-  Description: 
-  rarity: 1
+  UpgradeName: Bomb Damage
+  Description: Increases Bomb damage
+  rarity: 0
   target: 0
-  stat: 4
-  bonusAmount: 1
+  stat: 7
+  bonusAmount: 100

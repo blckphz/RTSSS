@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be18dae1e14640f46adbb79f97e84ad8, type: 3}
-  m_Name: TurretHP
+  m_Name: ThunderBounceRangeRing
   m_EditorClassIdentifier: Assembly-CSharp::RingUpgrade
   UpgradeName: 
   Description: 
-  Artifact: 
-  target: 1
-  stat: 0
-  bonusAmount: 100
+  rarity: 0
+  target: 0
+  stat: 4
+  bonusAmount: 1

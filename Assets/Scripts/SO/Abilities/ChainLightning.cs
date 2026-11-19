@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -38,11 +37,7 @@ public class ChainLightning : AbilitySO
     [SerializeField]
     private string abilitySpawnPointName = "AbilitySpawnPoint";
 
-    // ============================================================
     // EFFECTIVE MAX JUMPS
-    // ============================================================
-
-    // PUBLIC so CanvasInfoManager can display the Ring bonus.
 
     public int GetEffectiveMaxJumps(GameObject user)
     {
@@ -63,6 +58,33 @@ public class ChainLightning : AbilitySO
         }
 
         return Mathf.Max(1, maxJumps + bonusJumps);
+    }
+
+    // EFFECTIVE BOUNCE RANGE
+
+    public float GetEffectiveBounceRange(GameObject user)
+    {
+        float bonusRange = 0f;
+
+        if (user != null)
+        {
+            UnitData unitData = user.GetComponent<UnitData>();
+
+            if (unitData == null)
+                unitData = user.GetComponentInParent<UnitData>();
+
+            if (unitData == null)
+                unitData = user.GetComponentInChildren<UnitData>();
+
+            if (unitData != null)
+                bonusRange = unitData.GetBonusBounceRange(this);
+        }
+
+        // A base range of 0 keeps the original unlimited-range behavior.
+        if (maxJumpDistance <= 0f)
+            return 0f;
+
+        return maxJumpDistance + bonusRange;
     }
 
     private AttackUnit GetAttackUnit(GameObject obj)
@@ -131,9 +153,7 @@ public class ChainLightning : AbilitySO
         return unlocked && team == Team.Player;
     }
 
-    // ============================================================
     // CAN HIT
-    // ============================================================
 
     public override bool CanHit(
         GridManager gridManager,
@@ -319,9 +339,7 @@ public class ChainLightning : AbilitySO
         return false;
     }
 
-    // ============================================================
     // USE
-    // ============================================================
 
     public override bool Use(GameObject user, GameObject target)
     {
@@ -490,9 +508,7 @@ public class ChainLightning : AbilitySO
         return true;
     }
 
-    // ============================================================
     // TURRET CHARGES
-    // ============================================================
 
     private int GetTurretCharges(
         List<GameObject> chain,
@@ -519,9 +535,7 @@ public class ChainLightning : AbilitySO
         return 0;
     }
 
-    // ============================================================
     // SPAWN POINT
-    // ============================================================
 
     private Transform FindAbilitySpawnPoint(GameObject user)
     {
@@ -546,9 +560,7 @@ public class ChainLightning : AbilitySO
         return null;
     }
 
-    // ============================================================
     // CHAIN PREVIEW
-    // ============================================================
 
     public List<GameObject> GetChainPreview(
         GameObject user,
@@ -632,9 +644,7 @@ public class ChainLightning : AbilitySO
         return chain;
     }
 
-    // ============================================================
     // INITIAL TARGET VALIDATION
-    // ============================================================
 
     private bool IsValidInitialTarget(
         GameObject user,
@@ -690,9 +700,7 @@ public class ChainLightning : AbilitySO
         );
     }
 
-    // ============================================================
     // CHAIN TARGET VALIDATION
-    // ============================================================
 
     private bool IsValidChainTarget(
         GameObject user,
@@ -735,9 +743,7 @@ public class ChainLightning : AbilitySO
         );
     }
 
-    // ============================================================
     // FIND CLOSEST ENEMY
-    // ============================================================
 
     private GameObject FindClosestEnemy(
         GameObject user,
@@ -803,8 +809,10 @@ public class ChainLightning : AbilitySO
                 candidateTile
             );
 
-            if (maxJumpDistance > 0f &&
-                distance > maxJumpDistance)
+            float effectiveBounceRange = GetEffectiveBounceRange(user);
+
+            if (effectiveBounceRange > 0f &&
+                distance > effectiveBounceRange)
             {
                 continue;
             }
@@ -837,9 +845,7 @@ public class ChainLightning : AbilitySO
         return closestEnemy;
     }
 
-    // ============================================================
     // LINE OF SIGHT
-    // ============================================================
 
     private bool HasObjectOnLine(
         GridManager gridManager,
@@ -932,9 +938,7 @@ public class ChainLightning : AbilitySO
                occupiedUnit == ignoredUnit;
     }
 
-    // ============================================================
     // STUN GETTERS
-    // ============================================================
 
     public float GetStunPercentage()
     {

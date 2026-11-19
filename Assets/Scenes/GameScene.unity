@@ -121769,7 +121769,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1407}
+  m_AnchoredPosition: {x: -1242, y: 1179.1234}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -122095,6 +122095,7 @@ GameObject:
   - component: {fileID: 345656236}
   - component: {fileID: 345656237}
   - component: {fileID: 345656238}
+  - component: {fileID: 345656239}
   m_Layer: 0
   m_Name: UIManagers
   m_TagString: Untagged
@@ -122592,6 +122593,27 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &345656239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345656225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bef14136f7fdde24990ab71abbcfb8bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  upAction: {fileID: -7843330539565627493, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  downAction: {fileID: -202083203434063112, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  leftAction: {fileID: -3703529119916033616, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  rightAction: {fileID: 2274508320935027173, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  directionWeight: 1000
+  maximumNavigationAngle: 85
+  preventSelectionWhileMoving: 1
+  preventSelectionWhileRotating: 1
+  debugLogs: 1
 --- !u!1 &349765629
 GameObject:
   m_ObjectHideFlags: 0
@@ -127356,6 +127378,8 @@ MonoBehaviour:
   maxNodesPerRow: 3
   maxRandomOffset: 63.4
   spawnHeightOffset: 511.4
+  minNodeDistance: 1.5
+  maxPositionAttempts: 30
   horizontalSpacing: 150
   verticalSpacing: 230
   spawnWidthOffset: -320
@@ -127855,8 +127879,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.000025489506
-  m_Size: 0.5947666
+  m_Value: 0
+  m_Size: 0.5947746
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -195622,7 +195646,7 @@ MonoBehaviour:
   gridHeight: 11
   cellSize: 0
   rotateLeftAction: {fileID: 2402362769520074659, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  rotateRightAction: {fileID: 0}
+  rotateRightAction: {fileID: 3471699476353770767, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   rotationDuration: 0.35
   blockInputDuringRotation: 1
   rotateUnits: 1
@@ -195631,7 +195655,7 @@ MonoBehaviour:
   roundManager: {fileID: 0}
   startingRotation: 0
   deselectUnitWhenRotating: 1
-  debugLogs: 1
+  selectionDebugLogs: 1
 --- !u!1 &1482268827
 GameObject:
   m_ObjectHideFlags: 0
@@ -198262,7 +198286,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 20
   m_TargetDisplay: 0
 --- !u!1 &1726284293
 GameObject:
