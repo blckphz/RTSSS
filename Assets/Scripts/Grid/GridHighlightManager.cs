@@ -15,39 +15,38 @@ public class GridHighlightManager : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] private Color movementRangeColor = Color.cyan;
-
     [SerializeField, Range(0f, 1f)]
     private float movementRangeAlpha = 0.35f;
 
     [Header("Enemy Hover")]
     [SerializeField] private Color enemyHoverColor = Color.red;
     [SerializeField] private bool enableEnemyHoverShader = true;
-
-    [SerializeField]
-    private string enemyHoverObjectName = "HoverShaderSprite";
+    [SerializeField] private string enemyHoverObjectName = "HoverShaderSprite";
 
     [Header("Heal Hover")]
     [SerializeField] private Color healHoverColor = Color.green;
     [SerializeField] private bool enableHealHoverShader = true;
-
-    [SerializeField]
-    private string healHoverObjectName = "HoverShaderSprite";
+    [SerializeField] private string healHoverObjectName = "HoverShaderSprite";
 
     [Header("Target Pulse")]
     [SerializeField] private bool enableTargetPulse = true;
-
     [SerializeField, Range(0f, 0.25f)]
     private float targetPulseAmount = 0.06f;
-
     [SerializeField, Min(0.01f)]
     private float targetPulseSpeed = 5f;
-
     [SerializeField, Min(0.01f)]
     private float targetPulseSmoothSpeed = 12f;
 
     [Header("Explosion")]
     [SerializeField, Min(0.01f)]
     private float explosionPulseDuration = 0.12f;
+
+    [Header("Bomb Explosion Preview")]
+    [SerializeField]
+    private Color bombPreviewColor = new Color(0.45f, 0.015f, 0.015f, 1f);
+
+    [SerializeField, Range(0f, 1f)]
+    private float bombPreviewAlpha = 0.45f;
 
     private bool playerHighlightsDisabled;
     private bool suppressMovementHighlight;
@@ -62,6 +61,9 @@ public class GridHighlightManager : MonoBehaviour
         new HashSet<Vector2Int>();
 
     private readonly HashSet<Vector2Int> explosionCells =
+        new HashSet<Vector2Int>();
+
+    private readonly HashSet<Vector2Int> bombPreviewCells =
         new HashSet<Vector2Int>();
 
     private readonly HashSet<HoverInfoTrigger> activeAbilityOutlines =
@@ -92,11 +94,13 @@ public class GridHighlightManager : MonoBehaviour
     private AttackUnit currentRangeUserUnit;
 
     private AbilitySO currentAbility;
-
     private bool currentAbilityIsHeal;
 
     private Vector2Int lastShotgunDirection;
     private bool hasLastShotgunDirection;
+
+    private Vector2Int lastBombPreviewCenter;
+    private bool hasBombPreviewCenter;
 
     private void Awake()
     {
@@ -123,6 +127,7 @@ public class GridHighlightManager : MonoBehaviour
     private void Update()
     {
         RefreshAbilityPreview();
+        RefreshBombExplosionPreview();
         UpdateTargetPulse();
     }
 
@@ -152,6 +157,8 @@ public class GridHighlightManager : MonoBehaviour
 
         if (disabled)
             ClearPlayerHighlights();
+        else
+            RefreshAllVisibleCells();
     }
 
     public bool ArePlayerHighlightsDisabled()
@@ -181,7 +188,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private void ClearPlayerHighlights()
     {
-        Debug.Log("[GridHighlightManager] Clearing player highlights.");
+        ClearBombExplosionPreview();
 
         ClearMovementRange();
         ClearAbilityRange();
@@ -278,16 +285,17 @@ public class GridHighlightManager : MonoBehaviour
                 visual.Reset();
         }
 
-        if (!playerHighlightsDisabled)
-        {
-            RefreshCells(movementCells);
-            RefreshCells(abilityCells);
+        if (playerHighlightsDisabled)
+            return;
 
-            if (hasPlacementPosition)
-                RefreshTile(placementPosition);
+        RefreshCells(movementCells);
+        RefreshCells(abilityCells);
+        RefreshCells(bombPreviewCells);
 
-            RefreshAllTargetHovers();
-        }
+        if (hasPlacementPosition)
+            RefreshTile(placementPosition);
+
+        RefreshAllTargetHovers();
     }
 
     private void RefreshCells(HashSet<Vector2Int> cells)
@@ -306,6 +314,7 @@ public class GridHighlightManager : MonoBehaviour
         if (visual == null)
             return;
 
+        // Actual explosion always has the highest priority.
         if (explosionCells.Contains(position))
             return;
 
@@ -315,12 +324,16 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
+        // Placement highlight takes priority.
         if (hasPlacementPosition && placementPosition == position)
         {
             visual.ShowPlacement();
             return;
         }
 
+        // ABILITY RANGE HAS PRIORITY OVER BOMB PREVIEW.
+        // If a tile belongs to both sets, it will always show
+        // its ability-range appearance.
         if (abilityCells.Contains(position))
         {
             GameObject unit = gridManager.GetUnitAt(position);
@@ -337,6 +350,14 @@ public class GridHighlightManager : MonoBehaviour
                 visual.ShowAbility();
             }
 
+            return;
+        }
+
+        // Bomb preview is only displayed on tiles that are
+        // not already part of the ability range.
+        if (bombPreviewCells.Contains(position))
+        {
+            visual.ShowMovement(bombPreviewColor, bombPreviewAlpha);
             return;
         }
 
@@ -360,13 +381,9 @@ public class GridHighlightManager : MonoBehaviour
     {
         FindReferences();
 
-        if (brain == null)
-            return;
-
-        if (suppressMovementHighlight)
-            return;
-
-        if (playerHighlightsDisabled && IsPlayerUnit(user))
+        if (brain == null ||
+            suppressMovementHighlight ||
+            (playerHighlightsDisabled && IsPlayerUnit(user)))
             return;
 
         brain.ShowMovementRange(centerPosition, range, user);
@@ -377,12 +394,7 @@ public class GridHighlightManager : MonoBehaviour
         GameObject user = null)
     {
         if (suppressMovementHighlight)
-        {
-            Debug.Log(
-                "[GridHighlightManager] Ignored movement range update: suppressed."
-            );
             return;
-        }
 
         if (playerHighlightsDisabled && IsPlayerUnit(user))
         {
@@ -411,7 +423,6 @@ public class GridHighlightManager : MonoBehaviour
             }
         }
 
-        // Remove cells that are no longer reachable.
         for (int i = 0; i < tempCellList.Count; i++)
         {
             Vector2Int oldPosition = tempCellList[i];
@@ -423,14 +434,10 @@ public class GridHighlightManager : MonoBehaviour
             }
         }
 
-        // Add newly reachable cells.
         foreach (Vector2Int position in newMovementCells)
         {
-            if (!movementCells.Contains(position))
-            {
-                movementCells.Add(position);
+            if (movementCells.Add(position))
                 RefreshTile(position);
-            }
         }
 
         tempCellList.Clear();
@@ -441,10 +448,6 @@ public class GridHighlightManager : MonoBehaviour
     {
         if (movementCells.Count == 0)
             return;
-
-        Debug.Log(
-            $"[GridHighlightManager] Clearing {movementCells.Count} movement cells."
-        );
 
         tempCellList.Clear();
         tempCellList.AddRange(movementCells);
@@ -473,21 +476,13 @@ public class GridHighlightManager : MonoBehaviour
 
     public void DisableMovementRangeImmediately(string reason)
     {
-        Debug.Log(
-            $"[GridHighlightManager] Disabling movement range immediately. Reason: {reason}"
-        );
-
         suppressMovementHighlight = true;
-
         ClearMovementRange();
-
     }
 
     public void EnableMovementRangeHighlights(string reason)
     {
-
         suppressMovementHighlight = false;
-
         RefreshCells(movementCells);
     }
 
@@ -497,11 +492,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
 
         suppressMovementHighlight = suppressed;
-
-        Debug.Log(
-            $"[GridHighlightManager] Movement highlight suppression: {suppressed}"
-        );
-
         RefreshCells(movementCells);
     }
 
@@ -552,8 +542,11 @@ public class GridHighlightManager : MonoBehaviour
             {
                 Vector2Int position = positions[i];
 
-                if (gridManager != null && gridManager.IsInsideGrid(position))
+                if (gridManager != null &&
+                    gridManager.IsInsideGrid(position))
+                {
                     abilityCells.Add(position);
+                }
             }
         }
 
@@ -659,9 +652,7 @@ public class GridHighlightManager : MonoBehaviour
 
     private Vector2Int GetCurrentMouseDirection()
     {
-        GameObject user = currentRangeUser;
-
-        if (user == null ||
+        if (currentRangeUser == null ||
             Camera.main == null ||
             Mouse.current == null)
             return Vector2Int.up;
@@ -682,7 +673,7 @@ public class GridHighlightManager : MonoBehaviour
             gridManager.WorldToGridPosition(mouseWorldPosition);
 
         Vector2Int userTile =
-            gridManager.WorldToGridPosition(user.transform.position);
+            gridManager.WorldToGridPosition(currentRangeUser.transform.position);
 
         Vector2Int difference = mouseTile - userTile;
 
@@ -752,6 +743,8 @@ public class GridHighlightManager : MonoBehaviour
 
     public void ClearAbilityRange()
     {
+        ClearBombExplosionPreview();
+
         ClearAllTargetHovers();
         ClearAllTargetPulse();
 
@@ -784,6 +777,130 @@ public class GridHighlightManager : MonoBehaviour
     }
 
     // ============================================================
+    // BOMB EXPLOSION PREVIEW
+    // ============================================================
+
+    private void RefreshBombExplosionPreview()
+    {
+        if (currentAbility == null ||
+            currentRangeUser == null ||
+            gridManager == null)
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
+
+        if (!(currentAbility is BombAttack bombAttack))
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
+
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
+
+        if (Camera.main == null || Mouse.current == null)
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
+
+        Vector2 mousePosition = Mouse.current.position.ReadValue();
+
+        Camera cam = Camera.main;
+
+        Vector3 mouseWorldPosition = cam.ScreenToWorldPoint(
+            new Vector3(
+                mousePosition.x,
+                mousePosition.y,
+                Mathf.Abs(cam.transform.position.z)
+            )
+        );
+
+        Vector2Int mouseTile =
+            gridManager.WorldToGridPosition(mouseWorldPosition);
+
+        // Only preview when hovering over a valid ability-range tile.
+        if (!abilityCells.Contains(mouseTile))
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
+
+        // Avoid rebuilding the preview every frame.
+        if (hasBombPreviewCenter &&
+            lastBombPreviewCenter == mouseTile)
+            return;
+
+        ShowBombExplosionPreview(bombAttack, mouseTile);
+    }
+
+    private void ShowBombExplosionPreview(
+        BombAttack bombAttack,
+        Vector2Int centerPosition)
+    {
+        if (bombAttack == null ||
+            currentRangeUser == null ||
+            gridManager == null)
+            return;
+
+        ClearBombExplosionPreview();
+
+        // Includes the player's ExplosionSize ring bonus.
+        int radius = bombAttack.GetEffectiveExplosionRadius(
+            currentRangeUser
+        );
+
+        // Same Manhattan-distance calculation as BombAttack.
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -radius; y <= radius; y++)
+            {
+                int distance = Mathf.Abs(x) + Mathf.Abs(y);
+
+                if (distance > radius)
+                    continue;
+
+                Vector2Int position =
+                    centerPosition + new Vector2Int(x, y);
+
+                if (!gridManager.IsInsideGrid(position))
+                    continue;
+
+                // Keep overlapping cells in the preview set.
+                // RefreshTile will render ability range over these cells.
+                bombPreviewCells.Add(position);
+            }
+        }
+
+        lastBombPreviewCenter = centerPosition;
+        hasBombPreviewCenter = true;
+
+        RefreshCells(bombPreviewCells);
+    }
+
+    private void ClearBombExplosionPreview()
+    {
+        hasBombPreviewCenter = false;
+
+        if (bombPreviewCells.Count == 0)
+            return;
+
+        tempCellList.Clear();
+        tempCellList.AddRange(bombPreviewCells);
+
+        bombPreviewCells.Clear();
+
+        for (int i = 0; i < tempCellList.Count; i++)
+            RefreshTile(tempCellList[i]);
+
+        tempCellList.Clear();
+    }
+
+    // ============================================================
     // CURRENT ABILITY
     // ============================================================
 
@@ -791,6 +908,8 @@ public class GridHighlightManager : MonoBehaviour
     {
         if (currentAbility == ability)
             return;
+
+        ClearBombExplosionPreview();
 
         currentAbility = ability;
 
@@ -842,75 +961,32 @@ public class GridHighlightManager : MonoBehaviour
 
     public bool TryActivateAbilityOnUnit(GameObject target)
     {
-        Debug.Log(
-            $"[Targeting] Click target: " +
-            $"{(target != null ? target.name : "NULL")}"
-        );
-
         if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
-        {
-            Debug.Log("[Targeting] BLOCKED: player highlights disabled");
             return false;
-        }
 
         if (target == null ||
             currentAbility == null ||
             currentRangeUserUnit == null)
-        {
-            Debug.Log(
-                $"[Targeting] BLOCKED: missing reference. " +
-                $"Ability={currentAbility}, User={currentRangeUserUnit}"
-            );
-
             return false;
-        }
 
         if (gridManager == null)
             FindReferences();
 
         if (gridManager == null)
-        {
-            Debug.Log("[Targeting] BLOCKED: GridManager missing");
             return false;
-        }
-
-        Vector2Int targetPosition =
-            gridManager.GetUnitGridPosition(target);
 
         bool footprintInCells = IsTargetFootprintInAbilityCells(target);
         bool validTarget = IsValidAbilityTarget(target);
 
-        Debug.Log(
-            $"[Targeting] Target={target.name}, " +
-            $"Anchor={targetPosition}, " +
-            $"FootprintInCells={footprintInCells}, " +
-            $"ValidTarget={validTarget}, " +
-            $"Ability={currentAbility.name}"
-        );
-
         if (!footprintInCells || !validTarget)
-        {
-            Debug.Log(
-                "[Targeting] BLOCKED: footprint/range " +
-                "or target validation"
-            );
-
             return false;
-        }
 
         AttackUnit userUnit = currentRangeUserUnit;
 
         if (!userUnit.IsAbilityReady(currentAbility))
-        {
-            Debug.Log("[Targeting] BLOCKED: ability not ready");
             return false;
-        }
-
-        Debug.Log("[Targeting] Calling PlayerAttack...");
 
         bool started = userUnit.PlayerAttack(target, currentAbility);
-
-        Debug.Log($"[Targeting] PlayerAttack returned: {started}");
 
         if (!started)
             return false;
@@ -937,6 +1013,9 @@ public class GridHighlightManager : MonoBehaviour
 
     private void SetCurrentRangeUser(GameObject user)
     {
+        if (currentRangeUser != user)
+            ClearBombExplosionPreview();
+
         currentRangeUser = user;
         currentRangeUserUnit = GetCachedAttackUnit(user);
     }
@@ -999,6 +1078,9 @@ public class GridHighlightManager : MonoBehaviour
 
                 case AbilitySO.TargetType.Player:
                     return targetTeam == Team.Player;
+
+                case AbilitySO.TargetType.Neutral:
+                    return targetTeam == Team.Neutral;
 
                 case AbilitySO.TargetType.Any:
                     return true;
@@ -1111,9 +1193,6 @@ public class GridHighlightManager : MonoBehaviour
 
     private void ClearAllTargetHovers()
     {
-        if (activeAbilityOutlines.Count == 0)
-            return;
-
         foreach (HoverInfoTrigger hoverInfo in activeAbilityOutlines)
         {
             if (hoverInfo != null)
@@ -1306,6 +1385,8 @@ public class GridHighlightManager : MonoBehaviour
 
     public void ClearAllHighlights()
     {
+        ClearBombExplosionPreview();
+
         ClearPlacementTile();
         ClearMovementRange();
         ClearAbilityRange();
@@ -1358,6 +1439,8 @@ public class GridHighlightManager : MonoBehaviour
 
     public void ClearVisualsForBoardRotation()
     {
+        ClearBombExplosionPreview();
+
         ClearAllTargetHovers();
         ClearAllTargetPulse();
 
