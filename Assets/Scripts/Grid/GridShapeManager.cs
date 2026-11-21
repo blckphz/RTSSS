@@ -38,8 +38,7 @@ public class GridShapeManager : MonoBehaviour
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[GridShapeManager] GridManager not found!", this);
+            Debug.LogError("[GridShapeManager] GridManager not found!", this);
             return;
         }
 
@@ -55,7 +54,6 @@ public class GridShapeManager : MonoBehaviour
         gridManager.SetGridDimensions(newWidth, newHeight);
 
         RefreshGrid();
-
     }
 
     public void SetGridDimensionsDirect(int width, int height)
@@ -64,8 +62,7 @@ public class GridShapeManager : MonoBehaviour
 
         if (gridManager == null)
         {
-            Debug.LogError(
-                "[GridShapeManager] GridManager not found!", this);
+            Debug.LogError("[GridShapeManager] GridManager not found!", this);
             return;
         }
 

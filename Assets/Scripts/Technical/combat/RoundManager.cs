@@ -387,8 +387,7 @@ public class RoundManager : MonoBehaviour
                 yield return StartCoroutine(
                     CombatUtility.ExecuteEnemyTurn(
                         enemy,
-                        !combatManager.EnemiesMoveAfterRound,
-                        combatManager.EnemiesAttackAfterMoving
+                        !combatManager.EnemiesMoveAfterRound
                     )
                 );
             }

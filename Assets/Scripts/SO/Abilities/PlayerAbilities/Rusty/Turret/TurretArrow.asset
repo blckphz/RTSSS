@@ -22,12 +22,12 @@ MonoBehaviour:
   damage: 10
   cooldown: 1
   canAttackWithThisAfterMove: 1
-  usesPerTurn: 2
+  usesPerTurn: 3
   useDuration: 0.25
-  targetType: 3
+  targetType: 0
   range: 5
   minDistance: 0
-  rangeShape: 2
+  rangeShape: 4
   arrowPrefab: {fileID: 5105035218923594911, guid: 4319cfdfbd1f7994a96ff26b93c7d066, type: 3}
   arrowSpeed: 17
   maxTargets: 2

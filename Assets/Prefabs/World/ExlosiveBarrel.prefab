@@ -478,11 +478,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 958c6e53865aa8040930da3ffd13a872, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
-  team: 3
+  team: 2
   isPlayerCharacter: 0
   maxHealth: 1
   health: 0
   healthBarFill: {fileID: 212918967430958488}
+  overhealBarFill: {fileID: 0}
   healthText: {fileID: 7441150990499981436}
   healthTextPopScale: 1.25
   healthTextPopDuration: 0.12
@@ -532,6 +533,7 @@ MonoBehaviour:
   dayMoveRangeBonus: -1
   nightMoveRangeBonus: 1
   logicalGridPosition: {x: 0, y: 0}
+  countsTowardVictory: 0
 --- !u!114 &4652993350327833841
 MonoBehaviour:
   m_ObjectHideFlags: 0

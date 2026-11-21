@@ -12,6 +12,7 @@ public enum GridShapeType
     Donut
 }
 
+
 public static class GridShapeEvaluator
 {
     public static bool IsCellInShape(
@@ -24,12 +25,15 @@ public static class GridShapeEvaluator
     {
         int minX = -(width / 2);
         int maxX = minX + width - 1;
+
         int minY = -(height / 2);
         int maxY = minY + height - 1;
 
         if (position.x < minX || position.x > maxX ||
             position.y < minY || position.y > maxY)
+        {
             return false;
+        }
 
         switch (shapeType)
         {
@@ -37,45 +41,81 @@ public static class GridShapeEvaluator
                 return true;
 
             case GridShapeType.Circle:
-                float circleRadius = Mathf.Min(width, height) / 2f;
+                {
+                    float circleRadius = Mathf.Min(width, height) / 2f;
 
-                int circleDistSq =
-                    position.x * position.x +
-                    position.y * position.y;
+                    int distanceSq =
+                        position.x * position.x +
+                        position.y * position.y;
 
-                return circleDistSq <= circleRadius * circleRadius;
+                    return distanceSq <= circleRadius * circleRadius;
+                }
 
             case GridShapeType.Manhattan:
-                int radius = Mathf.Min(width, height) / 2;
+                {
+                    int radius = Mathf.Min(width, height) / 2;
 
-                return Mathf.Abs(position.x) +
-                       Mathf.Abs(position.y) <= radius;
+                    return Mathf.Abs(position.x) +
+                           Mathf.Abs(position.y) <= radius;
+                }
 
             case GridShapeType.Pyramid:
-                int rowOffset = position.y - minY;
-                int currentHalfWidth = (width / 2) - rowOffset;
+                {
+                    int pyramidRows = Mathf.Min(width, height) / 2;
 
-                if (currentHalfWidth < 0)
-                    return false;
+                    if (pyramidRows < 1)
+                        return false;
 
-                return position.x >= -currentHalfWidth &&
-                       position.x <= currentHalfWidth;
+                    // For an 11x11 grid:
+                    // pyramidRows = 5
+                    // topY = 2
+                    // bottomY = -2
+
+                    int topY = pyramidRows / 2;
+                    int bottomY = topY - pyramidRows + 1;
+
+                    // Exclude rows above and below the Pyramid.
+                    if (position.y > topY || position.y < bottomY)
+                        return false;
+
+                    // The Pyramid widens by one cell on each side
+                    // for every row moving downward.
+                    int rowFromTop = topY - position.y;
+
+                    int halfWidth = rowFromTop;
+
+                    // Do not exceed the available grid width.
+                    int maximumHalfWidth = (width - 1) / 2;
+
+                    halfWidth = Mathf.Min(
+                        halfWidth,
+                        maximumHalfWidth
+                    );
+
+                    return position.x >= -halfWidth &&
+                           position.x <= halfWidth;
+                }
 
             case GridShapeType.Donut:
-                int distSq =
-                    position.x * position.x +
-                    position.y * position.y;
+                {
+                    int distanceSq =
+                        position.x * position.x +
+                        position.y * position.y;
 
-                int minSq = minRadius * minRadius;
-                int maxSq = maxRadius * maxRadius;
+                    int minSq = minRadius * minRadius;
+                    int maxSq = maxRadius * maxRadius;
 
-                return distSq >= minSq && distSq <= maxSq;
+                    return distanceSq >= minSq &&
+                           distanceSq <= maxSq;
+                }
 
             default:
                 return false;
         }
     }
 }
+
+
 
 public class GridManager : MonoBehaviour
 {
@@ -152,9 +192,6 @@ public class GridManager : MonoBehaviour
     // =========================================================
     // WALKABLE OBSTACLES
     // =========================================================
-
-    // These cells cannot be used for spawning,
-    // but units are allowed to walk through them.
 
     private readonly HashSet<Vector2Int> walkableObstacleCells =
         new HashSet<Vector2Int>();
@@ -292,7 +329,6 @@ public class GridManager : MonoBehaviour
                 continue;
             }
 
-            // Walkable objects do not block movement.
             UnitTilePin obstaclePin =
                 obstacle.GetComponent<UnitTilePin>();
 
@@ -435,16 +471,12 @@ public class GridManager : MonoBehaviour
         if (!IsInsideGrid(position))
             return false;
 
-        // Already reserved by another obstacle.
         if (walkableObstacleCells.Contains(position))
             return false;
 
-        // Never reserve a cell occupied by a unit.
         if (IsCellOccupied(position))
             return false;
 
-        // Never reserve a cell occupied by another
-        // blocking health-managed obstacle.
         if (HasHealthManagerObstacle(position, ignoreObject))
             return false;
 
@@ -1360,9 +1392,6 @@ public class GridManager : MonoBehaviour
                 Vector2Int cell =
                     position + minOffset + new Vector2Int(x, y);
 
-                // Walkable obstacle cells are deliberately
-                // allowed during movement.
-
                 if (HasHealthManagerObstacle(cell, unit))
                     return false;
 
@@ -1399,9 +1428,6 @@ public class GridManager : MonoBehaviour
         Vector2Int footprintOffset =
             GetFootprintMinOffset(footprintSize);
 
-        // Validate every cell in the unit footprint
-        // before registering the unit.
-
         for (int fx = 0; fx < footprintSize; fx++)
         {
             for (int fy = 0; fy < footprintSize; fy++)
@@ -1411,7 +1437,6 @@ public class GridManager : MonoBehaviour
                     footprintOffset +
                     new Vector2Int(fx, fy);
 
-                // Walkable obstacles prevent spawning.
                 if (IsWalkableObstacle(cell))
                     return false;
 
@@ -1767,15 +1792,12 @@ public class GridManager : MonoBehaviour
                 if (!IsInsideGrid(cell))
                     continue;
 
-                // Walkable obstacles reserve spawn cells.
                 if (IsWalkableObstacle(cell))
                     continue;
 
-                // Enemies and blocking obstacles.
                 if (IsCellOccupied(cell))
                     continue;
 
-                // Health-managed obstacles.
                 if (HasHealthManagerObstacle(cell))
                     continue;
 
@@ -1929,11 +1951,8 @@ public class GridManager : MonoBehaviour
         {
             for (int y = minY; y <= maxY; y++)
             {
-                if (!IsInsideGrid(
-                    new Vector2Int(x, y)))
-                {
+                if (!IsInsideGrid(new Vector2Int(x, y)))
                     continue;
-                }
 
                 Vector3 bl = GetLogicalGridCorner(x, y);
                 Vector3 br = GetLogicalGridCorner(x + 1, y);
@@ -1985,3 +2004,4 @@ public class GridManager : MonoBehaviour
         );
     }
 }
+

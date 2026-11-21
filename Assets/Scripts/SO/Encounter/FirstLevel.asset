@@ -20,7 +20,7 @@ MonoBehaviour:
   music: {fileID: 8300000, guid: f3996a234c01ce34e9530e7e17ca0a16, type: 3}
   width: 11
   height: 11
-  shape: 0
+  shape: 3
   minRadius: 2
   maxRadius: 5
   useTide: 0

@@ -443,8 +443,7 @@ public static class CombatUtility
 
     public static IEnumerator ExecuteEnemyTurn(
         AttackUnit enemy,
-        bool moveFirst,
-        bool attackAfterMoving
+        bool moveFirst
     )
     {
         if (
@@ -495,7 +494,6 @@ public static class CombatUtility
                 attackBrain.HasAbilityUsableAfterMovement();
 
             bool shouldAttackAfterMoving =
-                attackAfterMoving ||
                 hasPostMoveAbility;
 
             if (shouldAttackAfterMoving)

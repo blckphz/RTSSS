@@ -173,7 +173,6 @@ public class EncounterManager : MonoBehaviour
 
         SetupGrid();
 
-        // Initialize tide only for encounters that use it.
         InitializeTideGridForEncounter();
 
         if (gridSpawnDelay > 0f)
@@ -202,11 +201,9 @@ public class EncounterManager : MonoBehaviour
             dayNightManager.SetDayNight(currentEncounter.dayNight);
 
         if (biomesManager != null &&
-            !string.IsNullOrWhiteSpace(
-                currentEncounter.biomeGameObjectName))
+            !string.IsNullOrWhiteSpace(currentEncounter.biomeGameObjectName))
         {
-            biomesManager.SetBiome(
-                currentEncounter.biomeGameObjectName);
+            biomesManager.SetBiome(currentEncounter.biomeGameObjectName);
         }
 
         if (musicManager != null &&
@@ -224,14 +221,12 @@ public class EncounterManager : MonoBehaviour
     {
         tideGridInitialized = false;
 
-        // Always reset tide direction and counter for a new encounter.
         if (waterManager == null)
             waterManager = FindFirstObjectByType<WaterManager>();
 
         if (waterManager != null)
             waterManager.ResetTide();
 
-        // This encounter does not use tides.
         if (currentEncounter == null ||
             !currentEncounter.useTide)
         {
@@ -243,16 +238,10 @@ public class EncounterManager : MonoBehaviour
 
     private void InitializeTideGridSize()
     {
-        if (tideGridInitialized)
-            return;
-
-        if (gridManager == null)
-            return;
-
-        if (currentEncounter == null)
-            return;
-
-        if (!currentEncounter.useTide)
+        if (tideGridInitialized ||
+            gridManager == null ||
+            currentEncounter == null ||
+            !currentEncounter.useTide)
             return;
 
         originalGridWidth = gridManager.GetWidth();
@@ -269,15 +258,8 @@ public class EncounterManager : MonoBehaviour
         int currentWidth = gridManager.GetWidth();
         int currentHeight = gridManager.GetHeight();
 
-        int newWidth = Mathf.Max(
-            1,
-            currentWidth - tideGridStep
-        );
-
-        int newHeight = Mathf.Max(
-            1,
-            currentHeight - tideGridStep
-        );
+        int newWidth = Mathf.Max(1, currentWidth - tideGridStep);
+        int newHeight = Mathf.Max(1, currentHeight - tideGridStep);
 
         if (newWidth == currentWidth &&
             newHeight == currentHeight)
@@ -294,15 +276,8 @@ public class EncounterManager : MonoBehaviour
         int currentWidth = gridManager.GetWidth();
         int currentHeight = gridManager.GetHeight();
 
-        int newWidth = Mathf.Min(
-            originalGridWidth,
-            currentWidth + tideGridStep
-        );
-
-        int newHeight = Mathf.Min(
-            originalGridHeight,
-            currentHeight + tideGridStep
-        );
+        int newWidth = Mathf.Min(originalGridWidth, currentWidth + tideGridStep);
+        int newHeight = Mathf.Min(originalGridHeight, currentHeight + tideGridStep);
 
         if (newWidth == currentWidth &&
             newHeight == currentHeight)
@@ -313,18 +288,10 @@ public class EncounterManager : MonoBehaviour
 
     private bool CanUpdateTideGrid()
     {
-        if (gridManager == null)
-            return false;
-
-        if (currentEncounter == null)
-            return false;
-
-        // Critical restriction:
-        // Only encounters with Use Tide enabled can resize the grid.
-        if (!currentEncounter.useTide)
-            return false;
-
-        if (tideGridStep < 1)
+        if (gridManager == null ||
+            currentEncounter == null ||
+            !currentEncounter.useTide ||
+            tideGridStep < 1)
             return false;
 
         InitializeTideGridSize();
@@ -354,8 +321,7 @@ public class EncounterManager : MonoBehaviour
     private void RefreshGridHighlights()
     {
         if (gridShapeManager == null)
-            gridShapeManager =
-                FindFirstObjectByType<GridShapeManager>();
+            gridShapeManager = FindFirstObjectByType<GridShapeManager>();
 
         if (gridShapeManager != null)
             gridShapeManager.RefreshGrid();
@@ -374,10 +340,7 @@ public class EncounterManager : MonoBehaviour
         if (!tideGridInitialized)
             return;
 
-        ApplyTideGridSize(
-            originalGridWidth,
-            originalGridHeight
-        );
+        ApplyTideGridSize(originalGridWidth, originalGridHeight);
     }
 
     public bool IsGridShrunkByTide()
@@ -650,7 +613,8 @@ public class EncounterManager : MonoBehaviour
         foreach (AttackUnit unit in units)
         {
             if (unit == null ||
-                unit.GetTeam() != Team.Enemy)
+                unit.GetTeam() != Team.Enemy ||
+                !unit.CountsTowardVictory())
                 continue;
 
             if (unit.TryGetComponent(out HealthManager health) &&
@@ -782,17 +746,14 @@ public class EncounterManager : MonoBehaviour
         switch (currentEncounter.victoryCondition)
         {
             case VictoryCondition.SurviveRounds:
-
                 return currentEncounter.roundsToSurvive > 0;
 
             case VictoryCondition.DefeatSpecificEnemy:
-
                 return !string.IsNullOrWhiteSpace(
                     currentEncounter.targetEnemyId
                 );
 
             default:
-
                 return true;
         }
     }
@@ -878,8 +839,6 @@ public class EncounterManager : MonoBehaviour
             return;
 
         currentEncounter = encounter;
-
-        // Invalidate previous tide-grid data.
         tideGridInitialized = false;
     }
 

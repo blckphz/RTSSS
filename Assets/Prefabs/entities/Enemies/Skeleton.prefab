@@ -753,9 +753,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
   team: 2
   isPlayerCharacter: 0
-  maxHealth: 60
+  maxHealth: 3
   health: 0
   healthBarFill: {fileID: 6132181389253083579}
+  overhealBarFill: {fileID: 0}
   healthText: {fileID: 6252303622901577857}
   healthTextPopScale: 1.25
   healthTextPopDuration: 0.12

@@ -121379,6 +121379,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 190425951}
   m_CullTransparentMesh: 1
+--- !u!1 &190736082
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 190736083}
+  m_Layer: 0
+  m_Name: GameObject (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &190736083
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 190736082}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -929.5729, y: -496.45178, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1656699714}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &198690468
 GameObject:
   m_ObjectHideFlags: 0
@@ -121769,7 +121800,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1233}
+  m_AnchoredPosition: {x: -1242, y: 1179.1235}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -122056,13 +122087,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   gridManager: {fileID: 804482595}
-  enemyPrefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
-  enemyCharacter: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
-  minEnemiesToSpawn: 1
-  maxEnemiesToSpawn: 3
   enemiesMoveAfterRound: 1
-  enemiesAttackAfterMoving: 1
-  spawnEnemiesAutomatically: 1
 --- !u!114 &341319206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -122096,6 +122121,7 @@ GameObject:
   - component: {fileID: 345656237}
   - component: {fileID: 345656238}
   - component: {fileID: 345656239}
+  - component: {fileID: 345656240}
   m_Layer: 0
   m_Name: UIManagers
   m_TagString: Untagged
@@ -122156,7 +122182,7 @@ MonoBehaviour:
   ability1Action: {fileID: -2262610305529611961, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   ability2Action: {fileID: 1235585125515899202, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   ability3Action: {fileID: 1395951501027207423, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  ability4Action: {fileID: 0}
+  ability4Action: {fileID: -2310532493685001693, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   ability5Action: {fileID: 0}
   ability6Action: {fileID: 0}
   ability7Action: {fileID: 0}
@@ -122414,12 +122440,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 345656225}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9aeda585445986144939f6b3d36195da, type: 3}
+  m_Script: {fileID: 11500000, guid: 85af381574e9d8a4d98c6d94e80e9aaf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
   hologramPrefab: {fileID: 2258544670875039633, guid: 33eb88bbf6d647144ba2404b7a02bee3, type: 3}
   hologramOffset: {x: 0, y: 0.05, z: 0}
-  poolSize: 3
+  poolSize: 1
   lineRendererManagerObject: {fileID: 1539745032}
   lineOffset: {x: 0, y: 0, z: 0}
   showHologram: 1
@@ -122614,6 +122640,35 @@ MonoBehaviour:
   preventSelectionWhileMoving: 1
   preventSelectionWhileRotating: 1
   debugLogs: 1
+--- !u!114 &345656240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345656225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0c2398a77d2184cb1d8044d990f96a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  charsprite: {fileID: 0}
+  gridManager: {fileID: 804482595}
+  highlightManager: {fileID: 804482593}
+  lineWalkPreview: {fileID: 1061273680}
+  canvasInfoManager: {fileID: 345656228}
+  previewPrefab: {fileID: 2258544670875039633, guid: 33eb88bbf6d647144ba2404b7a02bee3, type: 3}
+  previewZOffset: -0.1
+  previewParent: {fileID: 345656226}
+  playerUnitsOnly: 1
+  hideWhenAbilitySelected: 1
+  hideWhenMovementIsUsed: 1
+  pulsePreview: 1
+  pulseSpeed: 1
+  pulseAmount: 0.08
+  transparencySpeed: 3
+  maxAlpha: 0.7
+  minAlpha: 0.5
 --- !u!1 &349765629
 GameObject:
   m_ObjectHideFlags: 0
@@ -126807,7 +126862,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 14.72
+    OrthographicSize: 17
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -127881,8 +127936,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: 0
-  m_Size: 0.59477407
+  m_Value: -0.00000035900712
+  m_Size: 0.5947784
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -128755,7 +128810,7 @@ GameObject:
   m_Component:
   - component: {fileID: 994161945}
   m_Layer: 0
-  m_Name: Cams
+  m_Name: CamFam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -198073,6 +198128,7 @@ Transform:
   m_Children:
   - {fileID: 1878894688}
   - {fileID: 1063506514}
+  - {fileID: 190736083}
   - {fileID: 994161945}
   - {fileID: 2126825248}
   m_Father: {fileID: 0}

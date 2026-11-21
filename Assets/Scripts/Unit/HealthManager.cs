@@ -23,6 +23,7 @@ public class HealthManager : MonoBehaviour
 
     [Header("Health Bar")]
     [SerializeField] private Image healthBarFill;
+    [SerializeField] private Image overhealBarFill;
     [SerializeField] private TMP_Text healthText;
 
     [Header("Health UI Feedback")]
@@ -75,7 +76,6 @@ public class HealthManager : MonoBehaviour
 
     private AudioFXManager audioFXManager;
     private PlayerDataManager playerDataManager;
-
     private GridManager gridManager;
 
     private RectTransform healthTextRect;
@@ -87,8 +87,7 @@ public class HealthManager : MonoBehaviour
     private static int combinedDamageBatchDepth;
 
     private static readonly HashSet<HealthManager>
-        combinedDamageManagers =
-        new HashSet<HealthManager>();
+        combinedDamageManagers = new HashSet<HealthManager>();
 
     private int combinedDamage;
 
@@ -108,7 +107,6 @@ public class HealthManager : MonoBehaviour
 
         SetupHealthUI();
         UpdateHealthUI();
-
     }
 
     private void OnEnable()
@@ -157,15 +155,30 @@ public class HealthManager : MonoBehaviour
 
     private void UpdateHealthUI()
     {
-        if (healthBarFill != null)
-        {
-            float fillAmount = maxHealth <= 0
-                ? 0f
-                : (float)health / maxHealth;
+        float normalHealth = Mathf.Min(health, maxHealth);
 
-            healthBarFill.fillAmount = Mathf.Clamp01(fillAmount);
+        float mainFill = maxHealth > 0
+            ? normalHealth / maxHealth
+            : 0f;
+
+        float overheal = Mathf.Max(0, health - maxHealth);
+
+        // Main health bar: always capped at 100%.
+        if (healthBarFill != null)
+            healthBarFill.fillAmount = Mathf.Clamp01(mainFill);
+
+        // Overheal bar: 100% overheal = 100% of max health.
+        if (overhealBarFill != null)
+        {
+            float overhealFill = maxHealth > 0
+                ? (float)overheal / maxHealth
+                : 0f;
+
+            overhealBarFill.fillAmount =
+                Mathf.Clamp01(overhealFill);
         }
 
+        // Display actual health, including overheal.
         if (healthText != null)
             healthText.text = health + " / " + maxHealth;
     }
@@ -222,7 +235,9 @@ public class HealthManager : MonoBehaviour
             health = maxHealth;
         }
 
-        health = Mathf.Clamp(health, 0, maxHealth);
+        // Allow health above maximum.
+        health = Mathf.Max(0, health);
+
         combinedDamage = 0;
 
         SetupHealthUI();
@@ -230,7 +245,6 @@ public class HealthManager : MonoBehaviour
         UpdateHealthUI();
 
         NotifyHealthChanged();
-
     }
 
     // =========================================================
@@ -239,7 +253,8 @@ public class HealthManager : MonoBehaviour
 
     public void SetHealth(int newHealth)
     {
-        health = Mathf.Clamp(newHealth, 0, maxHealth);
+        health = Mathf.Max(0, newHealth);
+
         SavePlayerHealth();
         NotifyHealthChanged();
     }
@@ -266,7 +281,11 @@ public class HealthManager : MonoBehaviour
 
         if (IsCombinedDamageBatchActive())
         {
-            combinedDamage += damage;
+            combinedDamage = (int)Mathf.Min(
+                (long)combinedDamage + damage,
+                int.MaxValue
+            );
+
             combinedDamageManagers.Add(this);
         }
         else
@@ -683,7 +702,10 @@ public class HealthManager : MonoBehaviour
 
         int oldHealth = health;
 
-        health = Mathf.Min(health + amount, maxHealth);
+        health = (int)Math.Min(
+            (long)health + amount,
+            int.MaxValue
+        );
 
         int actualHealing = health - oldHealth;
 
@@ -821,9 +843,10 @@ public class HealthManager : MonoBehaviour
     public void SetMaxHealth(int newMaxHealth)
     {
         maxHealth = Mathf.Max(1, newMaxHealth);
-        health = Mathf.Clamp(health, 0, maxHealth);
 
+        // Preserve overheal when maximum health changes.
         SavePlayerHealth();
+
         StopDamageFlash();
         NotifyHealthChanged();
     }
@@ -837,28 +860,22 @@ public class HealthManager : MonoBehaviour
         if (amount <= 0)
             return;
 
-        Debug.Log(
-            "[HealthManager] AddMaxHealth on " + gameObject.name +
-            " | Before: " + health + " / " + maxHealth
+        int actualIncrease = (int)Math.Min(
+            (long)amount,
+            int.MaxValue - (long)maxHealth
         );
 
-        maxHealth += amount;
-        health += amount;
+        if (actualIncrease <= 0)
+            return;
 
-        health = Mathf.Clamp(health, 0, maxHealth);
+        maxHealth += actualIncrease;
+
+        health = (int)Math.Min(
+            (long)health + actualIncrease,
+            int.MaxValue
+        );
 
         SavePlayerHealth();
-
-        // Explicitly refresh the assigned UI.
-        UpdateHealthUI();
-
         NotifyHealthChanged();
-
-        Debug.Log(
-            "[HealthManager] After upgrade: " +
-            health + " / " + maxHealth +
-            " | Fill assigned: " + (healthBarFill != null) +
-            " | Text assigned: " + (healthText != null)
-        );
     }
 }

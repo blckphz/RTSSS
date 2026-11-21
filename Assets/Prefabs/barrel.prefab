@@ -777,6 +777,7 @@ MonoBehaviour:
   maxHealth: 1
   health: 1
   healthBarFill: {fileID: 0}
+  overhealBarFill: {fileID: 0}
   healthText: {fileID: 0}
   healthTextPopScale: 1.25
   healthTextPopDuration: 0.12
@@ -826,6 +827,7 @@ MonoBehaviour:
   dayMoveRangeBonus: -1
   nightMoveRangeBonus: 1
   logicalGridPosition: {x: 0, y: 0}
+  countsTowardVictory: 0
 --- !u!61 &8604742991555366199
 BoxCollider2D:
   m_ObjectHideFlags: 0

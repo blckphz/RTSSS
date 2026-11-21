@@ -7,18 +7,8 @@ public class CombatManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private GridManager gridManager;
 
-    [Header("Optional Test Enemy")]
-    [SerializeField] private GameObject enemyPrefab;
-    [SerializeField] private CharacterSO enemyCharacter;
-
-    [Header("Enemy Spawning")]
-    [SerializeField] private int minEnemiesToSpawn = 1;
-    [SerializeField] private int maxEnemiesToSpawn = 3;
-
     [Header("Enemy Turn")]
     [SerializeField] private bool enemiesMoveAfterRound = true;
-    [SerializeField] private bool enemiesAttackAfterMoving = true;
-    [SerializeField] private bool spawnEnemiesAutomatically = false;
 
     private readonly HashSet<AttackUnit> lockedEnemies =
         new HashSet<AttackUnit>();
@@ -32,12 +22,6 @@ public class CombatManager : MonoBehaviour
     private void Awake()
     {
         FindReferences();
-    }
-
-    private void Start()
-    {
-        if (spawnEnemiesAutomatically)
-            return;
     }
 
     private void FindReferences()
@@ -81,8 +65,7 @@ public class CombatManager : MonoBehaviour
             yield return StartCoroutine(
                 CombatUtility.ExecuteEnemyTurn(
                     enemy,
-                    !enemiesMoveAfterRound,
-                    enemiesAttackAfterMoving
+                    !enemiesMoveAfterRound
                 )
             );
 
@@ -169,10 +152,6 @@ public class CombatManager : MonoBehaviour
         get => enemiesMoveAfterRound;
     }
 
-    public bool EnemiesAttackAfterMoving
-    {
-        get => enemiesAttackAfterMoving;
-    }
 
     // =========================================================
     // ENEMY CHECK
@@ -183,7 +162,6 @@ public class CombatManager : MonoBehaviour
         if (GetEnemyCount() > 0)
             return;
 
-        SpawnTestEnemies();
     }
 
     public int GetEnemyCount()
@@ -201,125 +179,7 @@ public class CombatManager : MonoBehaviour
         return CombatUtility.GetObjectsByTeam(Team.Ally);
     }
 
-    public void SpawnTestEnemiesNow()
-    {
-        SpawnTestEnemies();
-    }
 
-    // =========================================================
-    // TEST ENEMY SPAWNING
-    // =========================================================
-
-    private void SpawnTestEnemies()
-    {
-        if (gridManager == null)
-            FindReferences();
-
-        if (
-            gridManager == null ||
-            enemyPrefab == null ||
-            enemyCharacter == null
-        )
-        {
-            return;
-        }
-
-        int min =
-            Mathf.Max(0, minEnemiesToSpawn);
-
-        int max =
-            Mathf.Max(min, maxEnemiesToSpawn);
-
-        int amount =
-            Random.Range(min, max + 1);
-
-        if (amount <= 0)
-            return;
-
-        List<Vector2Int> availableCells =
-            GetAvailableCells();
-
-        int cellCount = availableCells.Count;
-
-        if (cellCount == 0)
-            return;
-
-        amount = Mathf.Min(amount, cellCount);
-
-        for (int i = 0; i < amount; i++)
-        {
-            int randomIndex =
-                Random.Range(0, availableCells.Count);
-
-            Vector2Int position =
-                availableCells[randomIndex];
-
-            int lastIndex =
-                availableCells.Count - 1;
-
-            // Swap-remove instead of List.RemoveAt().
-            availableCells[randomIndex] =
-                availableCells[lastIndex];
-
-            availableCells.RemoveAt(lastIndex);
-
-            SpawnEnemy(position);
-        }
-    }
-
-    private bool SpawnEnemy(
-        Vector2Int gridPosition
-    )
-    {
-        if (
-            gridManager == null ||
-            !gridManager.IsInsideGrid(gridPosition) ||
-            gridManager.IsCellOccupied(gridPosition)
-        )
-        {
-            return false;
-        }
-
-        GameObject enemy =
-            Instantiate(enemyPrefab);
-
-        if (enemy == null)
-            return false;
-
-        enemy.name =
-            $"{enemyCharacter.name}_Enemy";
-
-        if (
-            !enemy.TryGetComponent(
-                out HealthManager health
-            ) ||
-            !enemy.TryGetComponent(
-                out AttackUnit attackUnit
-            )
-        )
-        {
-            Destroy(enemy);
-            return false;
-        }
-
-        if (
-            !gridManager.PlaceUnit(
-                enemy,
-                gridPosition
-            )
-        )
-        {
-            Destroy(enemy);
-            return false;
-        }
-
-        health.Initialize(enemyCharacter);
-        attackUnit.Initialize(enemyCharacter);
-
-        LockEnemyForCurrentRound(attackUnit);
-
-        return true;
-    }
 
     // =========================================================
     // AVAILABLE CELLS

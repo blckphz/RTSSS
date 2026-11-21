@@ -57,6 +57,17 @@ public class AttackUnit : MonoBehaviour
     private bool attackInProgress;
     private bool waitingForEggLanding;
 
+
+    [Header("Encounter Settings")]
+    [SerializeField] private bool countsTowardVictory = true;
+
+    public bool CountsTowardVictory()
+    {
+        return countsTowardVictory;
+    }
+
+
+
     public enum DayNightType
     {
         DayType,

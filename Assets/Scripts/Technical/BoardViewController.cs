@@ -219,8 +219,8 @@ public class BoardViewController : MonoBehaviour
 
     private void SetEnemyHologramRotationState(bool rotating)
     {
-        EnemyHologramManager hologramManager =
-            FindFirstObjectByType<EnemyHologramManager>();
+        HologramManager hologramManager =
+            FindFirstObjectByType<HologramManager>();
 
         if (hologramManager == null)
             return;
