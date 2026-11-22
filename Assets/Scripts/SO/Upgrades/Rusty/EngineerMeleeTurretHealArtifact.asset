@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a21a1819a06a16f42a92f9ed69b3d480, type: 3}
   m_Name: EngineerMeleeTurretHealArtifact
   m_EditorClassIdentifier: Assembly-CSharp::EngineerMeleeTurretHealUpgrade
-  UpgradeName: enginer
-  Description: 'Heals turret '
+  UpgradeName: Engineer
+  Description: 'Heals (or overheals) turret when hit with Staff Melee Potenciy determined By melee damage and Health Max Health '
   Icon: {fileID: 21300000, guid: 03805dbdaf4adda43945ec196090c020, type: 3}
   rarity: 2
   bonusHealAmount: 10
