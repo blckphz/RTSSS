@@ -29,10 +29,7 @@ MonoBehaviour:
   roundsToSurvive: 5
   obstacles: []
   bushes: []
-  enemies:
-  - prefab: {fileID: 5869547761387176993, guid: 266c59e96afb90049a7c61e16add1449, type: 3}
-    character: {fileID: 11400000, guid: 881839767ceea2245b698f4f867dba66, type: 2}
-    enemyId: 
+  enemies: []
   bosses:
   - prefab: {fileID: 4030345030637247355, guid: 53e32e8f07cc7c841aaeb6de4d94e88d, type: 3}
     character: {fileID: 11400000, guid: d3de529cd20e92445bbc8bc6e64590b7, type: 2}

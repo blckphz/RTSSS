@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,6 +19,10 @@ public class UnitData : MonoBehaviour
     // Explosion knockback upgrade
     private bool explosionKnockbackUnlocked = false;
 
+    // Boss settings
+    [Header("Boss Settings")]
+    [SerializeField] private bool isBoss = false;
+
     public void Initialize(CharacterSO characterData)
     {
         character = characterData;
@@ -27,6 +32,24 @@ public class UnitData : MonoBehaviour
     {
         return character;
     }
+
+    // ============================================================
+    // BOSS SETTINGS
+    // ============================================================
+
+    public bool IsBoss()
+    {
+        return isBoss;
+    }
+
+    public void SetIsBoss(bool value)
+    {
+        isBoss = value;
+    }
+
+    // ============================================================
+    // REFERENCES
+    // ============================================================
 
     private AttackUnit GetAttackUnit()
     {
@@ -40,6 +63,10 @@ public class UnitData : MonoBehaviour
 
         return attackUnit;
     }
+
+    // ============================================================
+    // ABILITY DATA
+    // ============================================================
 
     public AbilityData GetAbilityData(AbilitySO ability)
     {
@@ -177,7 +204,10 @@ public class UnitData : MonoBehaviour
         }
     }
 
-    // Bonus chain jumps
+    // ============================================================
+    // BONUS CHAIN JUMPS
+    // ============================================================
+
     public void AddBonusJumps(AbilitySO ability, int amount)
     {
         if (ability == null || amount <= 0)
@@ -200,7 +230,10 @@ public class UnitData : MonoBehaviour
         return 0;
     }
 
-    // Bonus bounce range
+    // ============================================================
+    // BONUS BOUNCE RANGE
+    // ============================================================
+
     public void AddBonusBounceRange(AbilitySO ability, float amount)
     {
         if (ability == null || amount <= 0f)
@@ -223,7 +256,10 @@ public class UnitData : MonoBehaviour
         return 0f;
     }
 
-    // Engineer turret heal upgrade
+    // ============================================================
+    // ENGINEER TURRET HEAL UPGRADE
+    // ============================================================
+
     public void SetMeleeTurretHealAmount(int amount)
     {
         meleeTurretHealAmount = Mathf.Max(0, amount);
@@ -239,7 +275,10 @@ public class UnitData : MonoBehaviour
         return meleeTurretHealAmount > 0;
     }
 
-    // Explosion knockback upgrade
+    // ============================================================
+    // EXPLOSION KNOCKBACK UPGRADE
+    // ============================================================
+
     public void UnlockExplosionKnockback()
     {
         explosionKnockbackUnlocked = true;
@@ -254,7 +293,10 @@ public class UnitData : MonoBehaviour
         return explosionKnockbackUnlocked;
     }
 
-    // Debug
+    // ============================================================
+    // DEBUG
+    // ============================================================
+
     public void DebugBonusJumps(AbilitySO ability)
     {
         if (ability == null)
@@ -263,7 +305,10 @@ public class UnitData : MonoBehaviour
         int bonus = GetBonusJumps(ability);
     }
 
-    // Reset runtime upgrades
+    // ============================================================
+    // RESET RUNTIME UPGRADES
+    // ============================================================
+
     public void ResetRuntimeUpgrades()
     {
         abilityBonusJumps.Clear();
@@ -273,7 +318,10 @@ public class UnitData : MonoBehaviour
         explosionKnockbackUnlocked = false;
     }
 
-    // Reset everything
+    // ============================================================
+    // RESET EVERYTHING
+    // ============================================================
+
     public void ResetRuntimeData()
     {
         // AbilityData is owned by AttackUnit.

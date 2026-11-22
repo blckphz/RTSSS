@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: TurretChargeArtifact
   m_EditorClassIdentifier: Assembly-CSharp::TurretChargeUpgrade
   UpgradeName: Tesla Coil
-  Description: Charges your turret
+  Description: 'Charges your turret. Gains +1 Overcharge duration for every unused Chain Lightning bounce. '
   Icon: {fileID: 21300000, guid: 03805dbdaf4adda43945ec196090c020, type: 3}
   rarity: 2

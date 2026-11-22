@@ -155,9 +155,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
   team: 2
   isPlayerCharacter: 0
-  maxHealth: 60
+  maxHealth: 200
   health: 0
   healthBarFill: {fileID: 6132233441645330014}
+  overhealBarFill: {fileID: 0}
   healthText: {fileID: 9179040982578136995}
   healthTextPopScale: 1.25
   healthTextPopDuration: 0.12
@@ -207,6 +208,7 @@ MonoBehaviour:
   dayMoveRangeBonus: 0
   nightMoveRangeBonus: 0
   logicalGridPosition: {x: 0, y: 0}
+  countsTowardVictory: 1
 --- !u!114 &333921039009739865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -343,7 +345,7 @@ MonoBehaviour:
   preferCloserEnemies: 1
   preferCloserAttackPosition: 1
   preferMoreOpenPositions: 0
-  preferSidePositions: 1
+  preferSidePositions: 0
 --- !u!114 &5779928852081471286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -388,6 +390,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   character: {fileID: 11400000, guid: d3de529cd20e92445bbc8bc6e64590b7, type: 2}
+  isBoss: 1
 --- !u!95 &7114984761666167545
 Animator:
   serializedVersion: 7
@@ -398,7 +401,7 @@ Animator:
   m_GameObject: {fileID: 4030345030637247355}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: e0969d32fed89c84dba48fcd9189a93f, type: 2}
+  m_Controller: {fileID: 9100000, guid: 6e50fa744bdc3f14aa7d93d8d9ad0593, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

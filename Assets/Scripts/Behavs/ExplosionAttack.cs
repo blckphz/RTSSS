@@ -1,4 +1,5 @@
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ExplosionAttack : MonoBehaviour
@@ -124,6 +125,26 @@ public class ExplosionAttack : MonoBehaviour
     }
 
     // ============================================================
+    // BOSS CHECK
+    // ============================================================
+
+    private bool IsBoss(GameObject target)
+    {
+        if (target == null)
+            return false;
+
+        UnitData unitData = target.GetComponent<UnitData>();
+
+        if (unitData == null)
+            unitData = target.GetComponentInParent<UnitData>();
+
+        if (unitData == null)
+            unitData = target.GetComponentInChildren<UnitData>();
+
+        return unitData != null && unitData.IsBoss();
+    }
+
+    // ============================================================
     // UPGRADE CHECK
     // ============================================================
 
@@ -237,6 +258,11 @@ public class ExplosionAttack : MonoBehaviour
         if (knockbackUnlocked)
             KnockbackPlayer(center);
 
+        // Track enemies already hit by this explosion.
+        // Prevents large enemies from receiving damage multiple times.
+        HashSet<GameObject> damagedEnemies =
+            new HashSet<GameObject>();
+
         for (int x = -radius; x <= radius; x++)
         {
             for (int y = -radius; y <= radius; y++)
@@ -260,7 +286,8 @@ public class ExplosionAttack : MonoBehaviour
                     ownerTeam,
                     tileDamage,
                     center,
-                    knockbackUnlocked
+                    knockbackUnlocked,
+                    damagedEnemies
                 );
 
                 if (animateTiles && highlightManager != null)
@@ -324,7 +351,7 @@ public class ExplosionAttack : MonoBehaviour
                 continue;
 
             int knockbackDistance =
-                CalculateKnockbackDistance(tileDistance);
+                CalculateKnockbackDistance(tileDistance, player);
 
             if (knockbackDistance <= 0)
                 continue;
@@ -400,8 +427,15 @@ public class ExplosionAttack : MonoBehaviour
     // DYNAMIC KNOCKBACK DISTANCE
     // ============================================================
 
-    private int CalculateKnockbackDistance(int distanceFromCenter)
+    private int CalculateKnockbackDistance(
+        int distanceFromCenter,
+        GameObject target = null)
     {
+        // Bosses always receive exactly 1 tile.
+        if (IsBoss(target))
+            return 1;
+
+        // Normal units retain distance-based knockback.
         if (radius <= 0)
             return 1;
 
@@ -434,7 +468,8 @@ public class ExplosionAttack : MonoBehaviour
         Team ownerTeam,
         int tileDamage,
         Vector2Int explosionCenter,
-        bool knockbackUnlocked)
+        bool knockbackUnlocked,
+        HashSet<GameObject> damagedEnemies)
     {
         GameObject target = gridManager.GetUnitAt(position);
 
@@ -467,12 +502,19 @@ public class ExplosionAttack : MonoBehaviour
             return;
         }
 
+        // Prevent hitting the same enemy more than once.
+        if (damagedEnemies.Contains(target))
+            return;
+
+        // Register this enemy before applying damage or knockback.
+        damagedEnemies.Add(target);
+
         int distanceFromCenter =
             Mathf.Abs(position.x - explosionCenter.x) +
             Mathf.Abs(position.y - explosionCenter.y);
 
         int knockbackDistance =
-            CalculateKnockbackDistance(distanceFromCenter);
+            CalculateKnockbackDistance(distanceFromCenter, target);
 
         // Enemy knockback requires the upgrade.
         if (knockbackUnlocked &&

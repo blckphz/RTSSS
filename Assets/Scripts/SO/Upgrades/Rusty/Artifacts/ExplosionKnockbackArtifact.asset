@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04de0c41f79f8564cb4bdf28c89ac34a, type: 3}
   m_Name: ExplosionKnockbackArtifact
   m_EditorClassIdentifier: Assembly-CSharp::ExplosionKnockbackUpgrade
-  UpgradeName: Knockback
-  Description: Pushes Player and Enemy over obstacles alike
+  UpgradeName: Knockback Blast
+  Description: 'Pushes Player and Enemy depending on blast radius.  '
   Icon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
   rarity: 2
