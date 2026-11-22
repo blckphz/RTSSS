@@ -219,6 +219,14 @@ public class CanvasInfoManager : MonoBehaviour
         CheckStealthDisplay();
         CheckWaterDisplay();
 
+        // Automatically deselect an ability if the day/night
+        // transition makes it unavailable.
+        if (selectedAbility != null &&
+            !selectedAbility.CanUseDuringCurrentTime())
+        {
+            ClearSelectedAbility();
+        }
+
         if (CombatUtility.IsPlayerInputLocked() &&
             selectedAbility != null)
         {
@@ -830,10 +838,26 @@ public class CanvasInfoManager : MonoBehaviour
 
         List<AbilitySO> abilities = character.GetAbilities();
 
+        // Clear selection if the selected ability is unavailable
+        // during the current day/night cycle.
+        if (selectedAbility != null &&
+            !selectedAbility.CanUseDuringCurrentTime())
+        {
+            selectedAbilityIndex = -1;
+            selectedAbility = null;
+
+            lastHoveredAbilityIndex = -1;
+            lastLinkIndex = -1;
+
+            ClearAbilityHighlights();
+            HideStatusTooltip();
+            UpdateCharacterIcon();
+        }
+
+        bool hasAvailableAbilities = false;
+
         if (abilities != null && abilities.Count > 0)
         {
-            textBuilder.AppendLine("<b>Abilities</b>\n");
-
             bool canSelectAbilities =
                 !CombatUtility.IsPlayerInputLocked() &&
                 activeUnit != null &&
@@ -846,6 +870,19 @@ public class CanvasInfoManager : MonoBehaviour
 
                 if (ability == null)
                     continue;
+
+                // DAY/NIGHT FILTER:
+                // Skip abilities unavailable at the current time.
+                if (!ability.CanUseDuringCurrentTime())
+                    continue;
+
+                // Only show the Abilities heading if at least one
+                // ability is available.
+                if (!hasAvailableAbilities)
+                {
+                    textBuilder.AppendLine("<b>Abilities</b>\n");
+                    hasAvailableAbilities = true;
+                }
 
                 string selectedText = string.Empty;
 
@@ -1001,9 +1038,10 @@ public class CanvasInfoManager : MonoBehaviour
                 );
             }
         }
-        else
+
+        if (!hasAvailableAbilities)
         {
-            textBuilder.Append("<b>No Abilities</b>\n");
+            textBuilder.Append("<b>No Available Abilities</b>\n");
         }
 
         AppendConditions(activeUnit);
@@ -1442,6 +1480,9 @@ public class CanvasInfoManager : MonoBehaviour
             return false;
         }
 
+        if (!ability.CanUseDuringCurrentTime())
+            return false;
+
         AttackUnit attackUnit =
             UIManager.CurrentSelection.GetAttackUnit();
 
@@ -1562,7 +1603,9 @@ public class CanvasInfoManager : MonoBehaviour
         GameObject selectedObject =
             UIManager.CurrentSelection.gameObject;
 
-        if (ability == null || selectedObject == null)
+        if (ability == null ||
+            selectedObject == null ||
+            !ability.CanUseDuringCurrentTime())
         {
             ClearAbilityHighlights();
             return;

@@ -8,7 +8,9 @@ public abstract class UpgradeSO : ScriptableObject
 
     [TextArea]
     public string Description;
+
     public Sprite Icon;
+
     public enum Rarity
     {
         Normal,

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingUpgrade
   UpgradeName: Bomb Damage
   Description: Increases Bomb damage
+  Icon: {fileID: 21300000, guid: b546d674f6de3e1489fbbd03249ac627, type: 3}
   rarity: 0
   target: 0
   stat: 7

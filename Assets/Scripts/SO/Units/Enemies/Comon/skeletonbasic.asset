@@ -22,7 +22,7 @@ MonoBehaviour:
   canwalkdiagonally: 0
   enemyFootprintSize: 1
   abilities:
-  - {fileID: 11400000, guid: f650461bc1e71ed43ae7b343f3067477, type: 2}
   - {fileID: 11400000, guid: c42698cf0e813784883b12434a83c04b, type: 2}
+  - {fileID: 11400000, guid: f650461bc1e71ed43ae7b343f3067477, type: 2}
   RangedAttacker: 0
   upgrades: []

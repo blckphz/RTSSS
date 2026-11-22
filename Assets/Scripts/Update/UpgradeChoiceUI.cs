@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -12,13 +13,45 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private GameObject upgradeCanvas;
+
+    [Tooltip("Assign the ROOT parent GameObject of each entire upgrade card.")]
+    [SerializeField] private Transform[] upgradeCardParents;
+
     [SerializeField] private Button[] upgradeButtons;
     [SerializeField] private TMP_Text[] upgradeTexts;
+    [SerializeField] private Image[] upgradeIcons;
+    [SerializeField] private TMP_Text[] upgradeDescriptions;
+    [SerializeField] private TMP_Text[] upgradeRarities;
+    [SerializeField] private Image[] Backgrounds;
 
-    private UpgradeSO[] currentChoices = new UpgradeSO[3];
-    private Action onUpgradeSelected;
+    [Header("Rarity Colors")]
+    [SerializeField]
+    private Color normalColor =
+        new Color(0.85f, 0.85f, 0.85f);
+
+    [SerializeField]
+    private Color epicColor =
+        new Color(0.65f, 0.25f, 1f);
+
+    [SerializeField]
+    private Color artifactColor =
+        new Color(1f, 0.72f, 0.1f);
+
+    [Header("Card Animation")]
+    [SerializeField] private float animationDuration = 0.45f;
+    [SerializeField] private float startScale = 0.75f;
+    [SerializeField] private float overshootScale = 1.08f;
 
     private const int CHOICE_COUNT = 3;
+
+    private UpgradeSO[] currentChoices =
+        new UpgradeSO[CHOICE_COUNT];
+
+    private Vector3[] originalScales =
+        new Vector3[CHOICE_COUNT];
+
+    private Action onUpgradeSelected;
+    private Coroutine animationCoroutine;
 
     private bool selectionInProgress;
 
@@ -33,21 +66,16 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (upgradeCanvas != null)
             upgradeCanvas.SetActive(false);
-        else
-            Debug.LogError(
-                "[UpgradeChoiceUI] Upgrade Canvas missing!",
-                this
-            );
 
-        if (!ValidateButtonsAndTexts())
+        if (!ValidateReferences())
             return;
 
         for (int i = 0; i < CHOICE_COUNT; i++)
         {
             int index = i;
 
-            if (upgradeButtons[i] == null)
-                continue;
+            originalScales[i] =
+                upgradeCardParents[i].localScale;
 
             upgradeButtons[i].onClick.RemoveAllListeners();
 
@@ -57,37 +85,82 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
     }
 
-    private bool ValidateButtonsAndTexts()
+    // =====================================================
+    // VALIDATION
+    // =====================================================
+
+    private bool ValidateReferences()
     {
         bool valid = true;
+
+        if (upgradeCardParents == null ||
+            upgradeCardParents.Length != CHOICE_COUNT)
+        {
+            Debug.LogError("Assign exactly 3 card parent transforms.");
+            valid = false;
+        }
 
         if (upgradeButtons == null ||
             upgradeButtons.Length != CHOICE_COUNT)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Assign exactly 3 buttons.",
-                this
-            );
-
+            Debug.LogError("Assign exactly 3 buttons.");
             valid = false;
         }
 
         if (upgradeTexts == null ||
             upgradeTexts.Length != CHOICE_COUNT)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Assign exactly 3 texts.",
-                this
-            );
-
+            Debug.LogError("Assign exactly 3 name texts.");
             valid = false;
+        }
+
+        if (upgradeIcons == null ||
+            upgradeIcons.Length != CHOICE_COUNT)
+        {
+            Debug.LogError("Assign exactly 3 icons.");
+            valid = false;
+        }
+
+        if (upgradeDescriptions == null ||
+            upgradeDescriptions.Length != CHOICE_COUNT)
+        {
+            Debug.LogError("Assign exactly 3 description texts.");
+            valid = false;
+        }
+
+        if (upgradeRarities == null ||
+            upgradeRarities.Length != CHOICE_COUNT)
+        {
+            Debug.LogError("Assign exactly 3 rarity texts.");
+            valid = false;
+        }
+
+        if (!valid)
+            return false;
+
+        for (int i = 0; i < CHOICE_COUNT; i++)
+        {
+            if (upgradeCardParents[i] == null ||
+                upgradeButtons[i] == null ||
+                upgradeTexts[i] == null ||
+                upgradeIcons[i] == null ||
+                upgradeDescriptions[i] == null ||
+                upgradeRarities[i] == null)
+            {
+                Debug.LogError(
+                    "One or more upgrade card references are missing. " +
+                    "Check card " + (i + 1)
+                );
+
+                valid = false;
+            }
         }
 
         return valid;
     }
 
     // =====================================================
-    // STARTING ARTIFACT
+    // STARTING UPGRADE
     // =====================================================
 
     public void ShowStartingUpgradeChoice(Action onSelected = null)
@@ -97,19 +170,8 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     public void ShowStartingArtifactChoice(Action onSelected = null)
     {
-        Debug.Log(
-            "[UpgradeChoiceUI] Starting Artifact selection."
-        );
-
-        // First select an Artifact.
-        // After selection, automatically open Starting Ring.
         ShowArtifactSelection(() =>
         {
-            Debug.Log(
-                "[UpgradeChoiceUI] Artifact selected. " +
-                "Opening Starting Ring selection."
-            );
-
             ShowStartingRingChoice(onSelected);
         });
     }
@@ -120,10 +182,6 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     public void ShowStartingRingChoice(Action onSelected = null)
     {
-        Debug.Log(
-            "[UpgradeChoiceUI] Starting Ring selection."
-        );
-
         if (!GetUpdateManager())
         {
             onSelected?.Invoke();
@@ -142,11 +200,6 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     public void ShowArtifactChoices(Action onSelected = null)
     {
-        Debug.Log(
-            "[UpgradeChoiceUI] Boss Artifact reward."
-        );
-
-        // Boss rewards only give an Artifact.
         ShowArtifactSelection(onSelected);
     }
 
@@ -173,10 +226,6 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     public void ShowRingChoices(Action onSelected = null)
     {
-        Debug.Log(
-            "[UpgradeChoiceUI] Ring reward."
-        );
-
         if (!GetUpdateManager())
         {
             onSelected?.Invoke();
@@ -200,11 +249,7 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         if (updateManager == null)
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] UpdateManager missing!",
-                this
-            );
-
+            Debug.LogError("UpdateManager missing!");
             return false;
         }
 
@@ -253,7 +298,7 @@ public class UpgradeChoiceUI : MonoBehaviour
     }
 
     // =====================================================
-    // DISPLAY CHOICES
+    // SHOW CHOICES
     // =====================================================
 
     private void ShowChoices(
@@ -261,33 +306,23 @@ public class UpgradeChoiceUI : MonoBehaviour
         Action onSelected)
     {
         if (selectionInProgress)
-        {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] A reward selection is already open.",
-                this
-            );
-
             return;
-        }
 
-        if (!ValidateButtonsAndTexts())
+        if (!ValidateReferences())
         {
             onSelected?.Invoke();
             return;
         }
 
-        onUpgradeSelected = onSelected;
         selectionInProgress = true;
+        onUpgradeSelected = onSelected;
 
         ClearCurrentChoices();
 
         if (availableUpgrades == null ||
             availableUpgrades.Count == 0)
         {
-            Debug.LogWarning(
-                "[UpgradeChoiceUI] No available rewards."
-            );
-
+            Debug.LogWarning("No available upgrades.");
             CompleteSelection();
             return;
         }
@@ -295,14 +330,12 @@ public class UpgradeChoiceUI : MonoBehaviour
         List<UpgradeSO> shuffled =
             new List<UpgradeSO>(availableUpgrades);
 
-        // Shuffle available upgrades.
         for (int i = shuffled.Count - 1; i > 0; i--)
         {
             int randomIndex =
                 UnityEngine.Random.Range(0, i + 1);
 
             UpgradeSO temp = shuffled[i];
-
             shuffled[i] = shuffled[randomIndex];
             shuffled[randomIndex] = temp;
         }
@@ -313,33 +346,30 @@ public class UpgradeChoiceUI : MonoBehaviour
         );
 
         for (int i = 0; i < count; i++)
-        {
             currentChoices[i] = shuffled[i];
-        }
 
         SetupButtons();
 
         if (upgradeCanvas != null)
         {
             upgradeCanvas.SetActive(true);
+            PlayChoiceAnimation();
         }
         else
         {
-            Debug.LogError(
-                "[UpgradeChoiceUI] Canvas missing!",
-                this
-            );
-
+            Debug.LogError("Upgrade Canvas is missing!");
             CompleteSelection();
         }
     }
 
+    // =====================================================
+    // CLEAR CHOICES
+    // =====================================================
+
     private void ClearCurrentChoices()
     {
-        for (int i = 0; i < currentChoices.Length; i++)
-        {
+        for (int i = 0; i < CHOICE_COUNT; i++)
             currentChoices[i] = null;
-        }
     }
 
     // =====================================================
@@ -348,35 +378,143 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     private void SetupButtons()
     {
-        if (upgradeButtons == null ||
-            upgradeButtons.Length != CHOICE_COUNT)
-            return;
-
         for (int i = 0; i < CHOICE_COUNT; i++)
         {
-            Button button = upgradeButtons[i];
-
-            if (button == null)
-                continue;
-
             UpgradeSO upgrade = currentChoices[i];
 
             if (upgrade == null)
             {
-                button.gameObject.SetActive(false);
+                upgradeCardParents[i].gameObject.SetActive(false);
                 continue;
             }
 
-            button.gameObject.SetActive(true);
-            button.interactable = true;
+            upgradeCardParents[i].gameObject.SetActive(true);
 
-            if (upgradeTexts != null &&
-                i < upgradeTexts.Length &&
-                upgradeTexts[i] != null)
+            upgradeButtons[i].interactable = true;
+
+            upgradeTexts[i].text = upgrade.UpgradeName;
+
+            upgradeIcons[i].sprite = upgrade.Icon;
+            upgradeIcons[i].enabled = upgrade.Icon != null;
+
+            upgradeDescriptions[i].text =
+                upgrade.Description;
+
+            UpgradeSO.Rarity rarity = upgrade.GetRarity();
+
+            upgradeRarities[i].text = rarity.ToString();
+            upgradeRarities[i].color = GetRarityColor(rarity);
+        }
+    }
+
+    // =====================================================
+    // RARITY COLORS
+    // =====================================================
+
+    private Color GetRarityColor(UpgradeSO.Rarity rarity)
+    {
+        switch (rarity)
+        {
+            case UpgradeSO.Rarity.Normal:
+                return normalColor;
+
+            case UpgradeSO.Rarity.Epic:
+                return epicColor;
+
+            case UpgradeSO.Rarity.Artifact:
+                return artifactColor;
+
+            default:
+                return Color.white;
+        }
+    }
+
+    // =====================================================
+    // CARD ANIMATION
+    // =====================================================
+
+    private void PlayChoiceAnimation()
+    {
+        if (animationCoroutine != null)
+            StopCoroutine(animationCoroutine);
+
+        animationCoroutine = StartCoroutine(AnimateChoices());
+    }
+
+    private IEnumerator AnimateChoices()
+    {
+        // Start all cards small.
+        for (int i = 0; i < CHOICE_COUNT; i++)
+        {
+            if (currentChoices[i] == null)
+                continue;
+
+            upgradeCardParents[i].localScale =
+                originalScales[i] * startScale;
+        }
+
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, animationDuration);
+
+        // Smoothly animate all cards together.
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            // Smooth ease-out with a gentle overshoot.
+            float scale = CalculateOvershootScale(t);
+
+            for (int i = 0; i < CHOICE_COUNT; i++)
             {
-                upgradeTexts[i].text =
-                    upgrade.UpgradeName;
+                if (currentChoices[i] == null)
+                    continue;
+
+                upgradeCardParents[i].localScale =
+                    originalScales[i] * scale;
             }
+
+            yield return null;
+        }
+
+        // Ensure exact final scale.
+        ResetChoiceScales();
+
+        animationCoroutine = null;
+    }
+
+    private float CalculateOvershootScale(float t)
+    {
+        // First 75%: grow from starting scale to overshoot.
+        // Final 25%: gently settle back to normal scale.
+
+        if (t < 0.75f)
+        {
+            float growT = t / 0.75f;
+
+            // Smooth ease-out.
+            float eased = 1f - Mathf.Pow(1f - growT, 3f);
+
+            return Mathf.Lerp(
+                startScale,
+                overshootScale,
+                eased
+            );
+        }
+        else
+        {
+            float settleT = (t - 0.75f) / 0.25f;
+
+            // Smooth settle.
+            float eased = settleT * settleT *
+                          (3f - 2f * settleT);
+
+            return Mathf.Lerp(
+                overshootScale,
+                1f,
+                eased
+            );
         }
     }
 
@@ -389,8 +527,7 @@ public class UpgradeChoiceUI : MonoBehaviour
         if (!selectionInProgress)
             return;
 
-        if (index < 0 ||
-            index >= currentChoices.Length)
+        if (index < 0 || index >= CHOICE_COUNT)
             return;
 
         UpgradeSO selectedUpgrade = currentChoices[index];
@@ -401,21 +538,16 @@ public class UpgradeChoiceUI : MonoBehaviour
         if (!GetUpdateManager())
             return;
 
-        // Prevent multiple selections.
-        if (upgradeButtons != null)
+        foreach (Button button in upgradeButtons)
         {
-            foreach (Button button in upgradeButtons)
-            {
-                if (button != null)
-                    button.interactable = false;
-            }
+            if (button != null)
+                button.interactable = false;
         }
 
         updateManager.ApplyUpgrade(selectedUpgrade);
 
         Debug.Log(
-            "[UpgradeChoiceUI] Selected: " +
-            selectedUpgrade.UpgradeName
+            "Selected upgrade: " + selectedUpgrade.UpgradeName
         );
 
         CompleteSelection();
@@ -427,13 +559,20 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     private void CompleteSelection()
     {
+        if (animationCoroutine != null)
+        {
+            StopCoroutine(animationCoroutine);
+            animationCoroutine = null;
+        }
+
+        ResetChoiceScales();
+
         if (upgradeCanvas != null)
             upgradeCanvas.SetActive(false);
 
         selectionInProgress = false;
 
         Action callback = onUpgradeSelected;
-
         onUpgradeSelected = null;
 
         ClearCurrentChoices();
@@ -442,11 +581,39 @@ public class UpgradeChoiceUI : MonoBehaviour
     }
 
     // =====================================================
+    // RESET SCALES
+    // =====================================================
+
+    private void ResetChoiceScales()
+    {
+        if (upgradeCardParents == null)
+            return;
+
+        for (int i = 0; i < upgradeCardParents.Length &&
+                        i < CHOICE_COUNT; i++)
+        {
+            if (upgradeCardParents[i] != null)
+            {
+                upgradeCardParents[i].localScale =
+                    originalScales[i];
+            }
+        }
+    }
+
+    // =====================================================
     // HIDE
     // =====================================================
 
     public void HideUpgradeChoices()
     {
+        if (animationCoroutine != null)
+        {
+            StopCoroutine(animationCoroutine);
+            animationCoroutine = null;
+        }
+
+        ResetChoiceScales();
+
         selectionInProgress = false;
         onUpgradeSelected = null;
 
