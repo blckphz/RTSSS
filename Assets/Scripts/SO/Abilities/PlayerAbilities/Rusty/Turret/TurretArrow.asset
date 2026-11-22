@@ -29,7 +29,7 @@ MonoBehaviour:
   minDistance: 0
   rangeShape: 4
   arrowPrefab: {fileID: 5105035218923594911, guid: 4319cfdfbd1f7994a96ff26b93c7d066, type: 3}
-  arrowSpeed: 17
-  maxTargets: 2
+  arrowSpeed: 30
+  maxTargets: 1
   abilitySpawnPointName: AbilitySpawnPoint
   targetPointName: VisualTargetPoint

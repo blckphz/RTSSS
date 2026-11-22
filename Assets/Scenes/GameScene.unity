@@ -120775,9 +120775,9 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1806741253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 878, y: 367}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 1838, y: -173}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &122887360
@@ -120787,7 +120787,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 122887358}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
   m_Name: 
@@ -120797,10 +120797,10 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 0
+  m_ChildAlignment: 4
   m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
@@ -121800,7 +121800,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.1235}
+  m_AnchoredPosition: {x: -1242, y: 1179.1277}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &332611788
@@ -122866,7 +122866,6 @@ GameObject:
   - component: {fileID: 375252218}
   - component: {fileID: 375252221}
   - component: {fileID: 375252220}
-  - component: {fileID: 375252219}
   m_Layer: 5
   m_Name: Image (2)
   m_TagString: Untagged
@@ -122893,50 +122892,6 @@ RectTransform:
   m_AnchoredPosition: {x: -349.846, y: 40}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &375252219
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375252217}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 1
-  m_TargetGraphic: {fileID: 375252220}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &375252220
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -126350,9 +126305,10 @@ MonoBehaviour:
   tooltipText: {fileID: 1654851311}
   tooltipObject: {fileID: 761463027}
   tooltipBackground: {fileID: 75261766}
+  tooltipBackground2: {fileID: 814805546}
   canvasGroup: {fileID: 733581653}
   backgroundPaddingX: -200
-  backgroundPaddingY: -83
+  backgroundPaddingY: -80
   mouseOffset: {x: 100, y: -161.5}
   fadeSpeed: 19
   popInScale: 1
@@ -127063,7 +127019,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridHighlightBrain
   gridManager: {fileID: 804482595}
   highlightManager: {fileID: 804482593}
-  enableDebugLogs: 0
   refreshAfterBoardRotation: 1
   boardRotationThreshold: 0.1
   currentState: 0
@@ -127192,6 +127147,12 @@ MonoBehaviour:
   mainCamera: {fileID: 0}
   testCharacter: {fileID: 11400000, guid: 64f350c3fa2acfe42b8b70824533b3fa, type: 2}
   spawnCardAction: {fileID: -2262610305529611961, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  rippleDistance: 25
+  rippleDuration: 0.2
+  rippleDelay: 0.24
+  rippleCooldown: 4
+  rippleStartDelay: 2
+  continuousRipple: 1
 --- !u!1 &814805545
 GameObject:
   m_ObjectHideFlags: 0
@@ -127936,8 +127897,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.00000035900712
-  m_Size: 0.5947784
+  m_Value: -0.000006462128
+  m_Size: 0.5947751
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -130590,7 +130551,6 @@ GameObject:
   - component: {fileID: 1222313372}
   - component: {fileID: 1222313375}
   - component: {fileID: 1222313374}
-  - component: {fileID: 1222313373}
   m_Layer: 5
   m_Name: Image (1)
   m_TagString: Untagged
@@ -130617,50 +130577,6 @@ RectTransform:
   m_AnchoredPosition: {x: -349.09003, y: 40}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1222313373
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1222313371}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 1
-  m_TargetGraphic: {fileID: 1222313374}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1222313374
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195468,7 +195384,6 @@ GameObject:
   - component: {fileID: 1451184576}
   - component: {fileID: 1451184579}
   - component: {fileID: 1451184578}
-  - component: {fileID: 1451184577}
   m_Layer: 5
   m_Name: Image (3)
   m_TagString: Untagged
@@ -195495,50 +195410,6 @@ RectTransform:
   m_AnchoredPosition: {x: -343, y: 40}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1451184577
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1451184575}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 1
-  m_TargetGraphic: {fileID: 1451184578}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1451184578
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196480,18 +196351,18 @@ MonoBehaviour:
   canvasGroup: {fileID: 467808214}
   fadeSpeed: 10
   activationStartScale: 0.7
-  activationOvershoot: 1.15
+  activationOvershoot: 1.12
   activationSettleScale: 0.95
-  activationDuration: 0.4
-  activationRotation: 8
-  hoverStartScale: 0.85
+  activationDuration: 0.24
+  activationRotation: 4
+  hoverStartScale: 1.15
   hoverGrowDuration: 0.25
   idlePulseScale: 1.015
   idlePulseSpeed: 1.8
   hoverPulseScale: 1.04
   hoverPulseSpeed: 2.5
-  entryPunchScale: 1.08
-  punchDuration: 0.15
+  entryPunchScale: 1.3
+  punchDuration: 0.11
   leftSprite: {fileID: 2067287563}
   rightSprite: {fileID: 1193298081}
   moveX: 20
@@ -196501,7 +196372,7 @@ MonoBehaviour:
   secondSpriteDelay: 0.15
   idleLiftAmount: 4
   idleLiftDuration: 0.25
-  idleLiftInterval: 0.5
+  idleLiftInterval: 3.04
   idleSideAmount: 3
   idleSecondSpriteDelay: 0.1
   hoverAudioSource: {fileID: 0}
@@ -197994,7 +197865,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 108.900024, y: -33.900024}
+  m_AnchoredPosition: {x: 108.900024, y: -57}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1654851311
@@ -198052,7 +197923,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
+  m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
@@ -198083,7 +197954,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: -6.532837, z: -31.39746, w: -188.53647}
+  m_margin: {x: 7.566719, y: 12.164917, z: -29.884125, w: -164.32309}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0

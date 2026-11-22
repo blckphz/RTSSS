@@ -28,7 +28,7 @@ MonoBehaviour:
   range: 1
   minDistance: 0
   rangeShape: 5
-  hitEffectPrefab: {fileID: 0}
+  hitEffectPrefab: {fileID: 6532449447772551385, guid: 04fd5a6d8bdbd5d47b48e515d7199275, type: 3}
   hitEffectOffset: {x: 0, y: 0, z: 0}
   attackStartPrefab: {fileID: 8258134237854485465, guid: 0aaf66061ad5a6a459ee155d35960db8, type: 3}
   attackStartOffset: {x: 0, y: 0, z: 0}

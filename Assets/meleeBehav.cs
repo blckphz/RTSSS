@@ -6,8 +6,8 @@ public class meleeBehav : MonoBehaviour
     [Header("Melee Visual")]
     [SerializeField] private Transform meleeVisual;
 
-    [Header("Spawn Point")]
-    [SerializeField] private string spawnPointName = "AbilitySpawnPoint";
+    [Header("Target Point")]
+    [SerializeField] private string visualTargetPointName = "VisualTargetPoint";
 
     [Header("Directional Rotation")]
     [SerializeField] private float upRotation = 0f;
@@ -38,45 +38,44 @@ public class meleeBehav : MonoBehaviour
         }
 
         ownerController.RegisterMelee(this);
-
-        MoveToAbilitySpawnPoint();
     }
 
-    private void MoveToAbilitySpawnPoint()
+    public void SetTarget(GameObject target)
     {
-        if (ownerController == null)
+        if (target == null)
             return;
 
         Transform[] children =
-            ownerController.GetComponentsInChildren<Transform>(true);
+            target.GetComponentsInChildren<Transform>(true);
 
-        Transform spawnPoint = null;
+        Transform visualTargetPoint = null;
 
         foreach (Transform child in children)
         {
-            if (child.name == spawnPointName)
+            if (child.name == visualTargetPointName)
             {
-                spawnPoint = child;
+                visualTargetPoint = child;
                 break;
             }
         }
 
-        if (spawnPoint == null)
+        if (visualTargetPoint == null)
         {
             Debug.LogWarning(
-                $"[meleeBehav] Could not find {spawnPointName} on " +
-                $"{ownerController.name}. Woosh will stay at its current position.",
-                this
+                $"[meleeBehav] Could not find {visualTargetPointName} " +
+                $"on {target.name}. Using target position.",
+                target
             );
+
+            transform.position = target.transform.position;
             return;
         }
 
-        // Move the entire woosh object to the spawn point.
-        transform.position = spawnPoint.position;
+        transform.position = visualTargetPoint.position;
 
         Debug.Log(
-            $"[meleeBehav] Woosh moved to {spawnPoint.name} at " +
-            $"{spawnPoint.position}",
+            $"[meleeBehav] Woosh moved to {target.name}/" +
+            $"{visualTargetPointName} at {visualTargetPoint.position}",
             this
         );
     }

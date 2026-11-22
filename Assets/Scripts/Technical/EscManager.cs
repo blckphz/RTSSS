@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -10,55 +11,38 @@ public class EscManager : MonoBehaviour
     // ============================================================
 
     [Header("Pause UI")]
-
-    [SerializeField]
-    private GameObject pauseMenu;
-
+    [SerializeField] private GameObject pauseMenu;
 
     // ============================================================
     // MAIN MENU
     // ============================================================
 
     [Header("Main Menu")]
-
-    [SerializeField]
-    private string mainMenuSceneName = "MainMenu";
-
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
 
     // ============================================================
     // INPUT
     // ============================================================
 
     [Header("Input")]
-
-    [SerializeField]
-    private InputActionReference pauseAction;
-
+    [SerializeField] private InputActionReference pauseAction;
 
     // ============================================================
     // GAME SPEED
     // ============================================================
 
     [Header("Game Speed")]
-
-    [SerializeField]
-    private Image speedButtonImage;
-
-    [SerializeField]
-    private Sprite normalSpeedSprite;
-
-    [SerializeField]
-    private Sprite fastSpeedSprite;
-
+    [SerializeField] private Image speedButtonImage;
+    [SerializeField] private Sprite normalSpeedSprite;
+    [SerializeField] private Sprite fastSpeedSprite;
 
     // ============================================================
     // INTERNAL
     // ============================================================
 
-    private bool isPaused;
+    public static bool isPaused = false;
 
     private bool isFastSpeed;
-
 
     // ============================================================
     // UNITY
@@ -66,19 +50,10 @@ public class EscManager : MonoBehaviour
 
     private void Awake()
     {
-        // --------------------------------------------------------
-        // START GAME
-        // --------------------------------------------------------
-
         Time.timeScale = 1f;
 
         isPaused = false;
         isFastSpeed = false;
-
-
-        // --------------------------------------------------------
-        // HIDE PAUSE MENU
-        // --------------------------------------------------------
 
         if (pauseMenu != null)
         {
@@ -87,15 +62,8 @@ public class EscManager : MonoBehaviour
         else
         {
             Debug.LogWarning(
-                "[EscManager] Pause Menu is not assigned.",
-                this
-            );
+                "[EscManager] Pause Menu is not assigned.", this);
         }
-
-
-        // --------------------------------------------------------
-        // SET INITIAL SPEED SPRITE
-        // --------------------------------------------------------
 
         if (speedButtonImage != null)
         {
@@ -104,46 +72,36 @@ public class EscManager : MonoBehaviour
         else
         {
             Debug.LogWarning(
-                "[EscManager] Speed Button Image is not assigned.",
-                this
-            );
+                "[EscManager] Speed Button Image is not assigned.", this);
         }
     }
-
 
     private void OnEnable()
     {
         if (pauseAction != null)
         {
             pauseAction.action.Enable();
-
             pauseAction.action.performed += OnPausePressed;
         }
     }
-
 
     private void OnDisable()
     {
         if (pauseAction != null)
         {
             pauseAction.action.performed -= OnPausePressed;
-
             pauseAction.action.Disable();
         }
     }
-
 
     // ============================================================
     // PAUSE INPUT
     // ============================================================
 
-    private void OnPausePressed(
-        InputAction.CallbackContext context
-    )
+    private void OnPausePressed(InputAction.CallbackContext context)
     {
         TogglePause();
     }
-
 
     // ============================================================
     // TOGGLE PAUSE
@@ -161,7 +119,6 @@ public class EscManager : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // PAUSE
     // ============================================================
@@ -169,32 +126,17 @@ public class EscManager : MonoBehaviour
     public void PauseGame()
     {
         if (isPaused)
-        {
             return;
-        }
-
-
-        // --------------------------------------------------------
-        // PAUSE
-        // --------------------------------------------------------
 
         isPaused = true;
 
         Time.timeScale = 0f;
 
-
-        // --------------------------------------------------------
-        // SHOW UI
-        // --------------------------------------------------------
-
         if (pauseMenu != null)
         {
             pauseMenu.SetActive(true);
         }
-
-
     }
-
 
     // ============================================================
     // RESUME
@@ -203,19 +145,10 @@ public class EscManager : MonoBehaviour
     public void ResumeGame()
     {
         if (!isPaused)
-        {
             return;
-        }
-
-
-        // --------------------------------------------------------
-        // RESUME
-        // --------------------------------------------------------
 
         isPaused = false;
 
-
-        // Restore the selected game speed
         if (isFastSpeed)
         {
             Time.timeScale = 1.5f;
@@ -225,19 +158,11 @@ public class EscManager : MonoBehaviour
             Time.timeScale = 1f;
         }
 
-
-        // --------------------------------------------------------
-        // HIDE UI
-        // --------------------------------------------------------
-
         if (pauseMenu != null)
         {
             pauseMenu.SetActive(false);
         }
-
-
     }
-
 
     // ============================================================
     // GAME SPEED
@@ -245,47 +170,29 @@ public class EscManager : MonoBehaviour
 
     public void ToggleGameSpeed()
     {
-        // Switch between normal and fast speed
-
         isFastSpeed = !isFastSpeed;
-
 
         if (isFastSpeed)
         {
-            // ----------------------------------------------------
-            // FAST SPEED
-            // ----------------------------------------------------
-
-            Time.timeScale = 1.5f;
-
+            if (!isPaused)
+                Time.timeScale = 1.5f;
 
             if (speedButtonImage != null)
-            {
                 speedButtonImage.sprite = fastSpeedSprite;
-            }
-
 
             Debug.Log("[EscManager] Game Speed: 1.5x");
         }
         else
         {
-            // ----------------------------------------------------
-            // NORMAL SPEED
-            // ----------------------------------------------------
-
-            Time.timeScale = 1f;
-
+            if (!isPaused)
+                Time.timeScale = 1f;
 
             if (speedButtonImage != null)
-            {
                 speedButtonImage.sprite = normalSpeedSprite;
-            }
-
 
             Debug.Log("[EscManager] Game Speed: 1x");
         }
     }
-
 
     // ============================================================
     // MAIN MENU
@@ -293,19 +200,9 @@ public class EscManager : MonoBehaviour
 
     public void GoToMainMenu()
     {
-        // --------------------------------------------------------
-        // RESTORE TIME
-        // --------------------------------------------------------
-
         Time.timeScale = 1f;
+        isPaused = false;
 
-
-        // --------------------------------------------------------
-        // LOAD MAIN MENU
-        // --------------------------------------------------------
-
-        SceneManager.LoadScene(
-            mainMenuSceneName
-        );
+        SceneManager.LoadScene(mainMenuSceneName);
     }
 }

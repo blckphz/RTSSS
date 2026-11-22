@@ -15,6 +15,9 @@ public class ArrowProjectile : MonoBehaviour
     [Header("Piercing")]
     [SerializeField] private float collisionRadius = 0.15f;
 
+    [Header("Target Hitbox")]
+    [SerializeField] private string attackHitboxName = "AttackHitbox";
+
     private GameObject owner;
     private AbilitySO ability;
 
@@ -55,11 +58,10 @@ public class ArrowProjectile : MonoBehaviour
     {
         this.owner = owner;
 
-        this.direction =
-            new Vector2(
-                direction.x,
-                direction.y
-            ).normalized;
+        this.direction = new Vector2(
+            direction.x,
+            direction.y
+        ).normalized;
 
         this.speed = Mathf.Max(0.01f, speed);
         this.damage = damage;
@@ -74,6 +76,10 @@ public class ArrowProjectile : MonoBehaviour
         RefreshRotation();
     }
 
+    // ============================================================
+    // MOVEMENT
+    // ============================================================
+
     private void Move()
     {
         Vector3 movement =
@@ -81,6 +87,10 @@ public class ArrowProjectile : MonoBehaviour
 
         transform.position += movement;
     }
+
+    // ============================================================
+    // ROTATION
+    // ============================================================
 
     private void RotateWhileFlying()
     {
@@ -96,6 +106,32 @@ public class ArrowProjectile : MonoBehaviour
         );
     }
 
+    private void RefreshRotation()
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+            return;
+
+        float angle =
+            Mathf.Atan2(
+                direction.y,
+                direction.x
+            ) * Mathf.Rad2Deg;
+
+        float finalAngle = angle + rotationOffset;
+
+        Quaternion rotation =
+            Quaternion.Euler(0f, 0f, finalAngle);
+
+        if (spriteTransform != null)
+            spriteTransform.rotation = rotation;
+        else
+            transform.rotation = rotation;
+    }
+
+    // ============================================================
+    // CHECK TARGET COLLISIONS
+    // ============================================================
+
     private void CheckForTargets()
     {
         Collider2D[] hits =
@@ -109,41 +145,56 @@ public class ArrowProjectile : MonoBehaviour
             if (hit == null)
                 continue;
 
-            GameObject target = hit.gameObject;
-
-            if (target == null)
+            if (!hit.gameObject.activeInHierarchy)
                 continue;
 
-            if (target == owner)
-                continue;
-
-            if (!target.activeInHierarchy)
-                continue;
-
-            if (hitTargets.Contains(target))
-                continue;
-
+            // Find the unit associated with this collider.
             AttackUnit targetUnit =
-                target.GetComponent<AttackUnit>();
+                hit.GetComponentInParent<AttackUnit>();
 
             if (targetUnit == null)
                 continue;
 
+            GameObject targetObject = targetUnit.gameObject;
+
+            // Ignore the owner.
+            if (targetObject == owner)
+                continue;
+
+            // Prevent hitting the same unit more than once.
+            if (hitTargets.Contains(targetObject))
+                continue;
+
+            // Find the dedicated AttackHitbox collider.
+            Collider2D attackHitbox =
+                GetAttackHitbox(targetObject);
+
+            if (attackHitbox == null)
+                continue;
+
+            // Ignore every collider except AttackHitbox.
+            if (hit != attackHitbox)
+                continue;
+
+            // Check whether the target is alive.
             HealthManager health =
-                target.GetComponent<HealthManager>();
+                targetObject.GetComponent<HealthManager>();
 
             if (health == null || health.IsDead())
                 continue;
 
-            if (!CanDamage(target))
+            // Check team and ability targeting restrictions.
+            if (!CanDamage(targetObject))
                 continue;
 
-            hitTargets.Add(target);
+            // Register the hit.
+            hitTargets.Add(targetObject);
 
-            DealDamage(target);
+            DealDamage(targetObject);
 
             targetsHit++;
 
+            // Destroy projectile after reaching maximum targets.
             if (targetsHit >= maxTargets)
             {
                 Destroy(gameObject);
@@ -151,6 +202,38 @@ public class ArrowProjectile : MonoBehaviour
             }
         }
     }
+
+    // ============================================================
+    // FIND ATTACK HITBOX
+    // ============================================================
+
+    private Collider2D GetAttackHitbox(GameObject target)
+    {
+        if (target == null)
+            return null;
+
+        Transform hitboxTransform = null;
+
+        // Search the complete hierarchy.
+        foreach (Transform child in
+                 target.GetComponentsInChildren<Transform>(true))
+        {
+            if (child.name == attackHitboxName)
+            {
+                hitboxTransform = child;
+                break;
+            }
+        }
+
+        if (hitboxTransform == null)
+            return null;
+
+        return hitboxTransform.GetComponent<Collider2D>();
+    }
+
+    // ============================================================
+    // DAMAGE VALIDATION
+    // ============================================================
 
     private bool CanDamage(GameObject target)
     {
@@ -177,6 +260,10 @@ public class ArrowProjectile : MonoBehaviour
         return ownerUnit.GetTeam() != targetUnit.GetTeam();
     }
 
+    // ============================================================
+    // DEAL DAMAGE
+    // ============================================================
+
     private void DealDamage(GameObject target)
     {
         if (target == null)
@@ -191,27 +278,9 @@ public class ArrowProjectile : MonoBehaviour
         health.TakeDamage(damage);
     }
 
-    private void RefreshRotation()
-    {
-        if (direction.sqrMagnitude <= 0.0001f)
-            return;
-
-        float angle =
-            Mathf.Atan2(
-                direction.y,
-                direction.x
-            ) * Mathf.Rad2Deg;
-
-        float finalAngle = angle + rotationOffset;
-
-        Quaternion rotation =
-            Quaternion.Euler(0f, 0f, finalAngle);
-
-        if (spriteTransform != null)
-            spriteTransform.rotation = rotation;
-        else
-            transform.rotation = rotation;
-    }
+    // ============================================================
+    // DEBUG
+    // ============================================================
 
     private void OnDrawGizmosSelected()
     {

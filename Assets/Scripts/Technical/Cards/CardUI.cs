@@ -33,7 +33,10 @@ public class CardUI :
     private Canvas canvas;
 
     private GameObject ghostObject;
+
+    // Latest saved hand position.
     private Vector2 originalAnchoredPosition;
+
     private Transform originalParent;
     private Vector3 originalScale;
     private Vector2Int currentGridPosition;
@@ -41,6 +44,11 @@ public class CardUI :
     private bool dragging;
     private bool hovering;
     private bool validPlacement;
+
+
+    // =====================================================
+    // UNITY
+    // =====================================================
 
     private void Awake()
     {
@@ -52,28 +60,25 @@ public class CardUI :
 
         if (cardImage == null)
         {
-            Debug.LogError(
-                "[CardUI] No Image component found.",
-                this
-            );
+            Debug.LogError("[CardUI] No Image component found.", this);
         }
 
         originalScale = transform.localScale;
     }
 
-    public void Setup(
-        CardManager manager,
-        CharacterSO characterData)
+
+    // =====================================================
+    // SETUP
+    // =====================================================
+
+    public void Setup(CardManager manager, CharacterSO characterData)
     {
         cardManager = manager;
         character = characterData;
 
         if (character == null)
         {
-            Debug.LogError(
-                "[CardUI] Character data is null.",
-                this
-            );
+            Debug.LogError("[CardUI] Character data is null.", this);
             return;
         }
 
@@ -96,8 +101,7 @@ public class CardUI :
             else
             {
                 Debug.LogWarning(
-                    "[CardUI] Character has no icon: " +
-                    character.characterName,
+                    "[CardUI] Character has no icon: " + character.characterName,
                     this
                 );
             }
@@ -109,30 +113,44 @@ public class CardUI :
             mainCamera = cardManager.GetCamera();
         }
 
-        encounterManager =
-            FindFirstObjectByType<EncounterManager>();
+        encounterManager = FindFirstObjectByType<EncounterManager>();
 
         if (gridManager != null)
             highlightManager = gridManager.GetHighlightManager();
 
         if (highlightManager == null)
-        {
-            highlightManager =
-                FindFirstObjectByType<GridHighlightManager>();
-        }
+            highlightManager = FindFirstObjectByType<GridHighlightManager>();
 
         canvas = GetComponentInParent<Canvas>();
 
         originalParent = transform.parent;
 
-        RectTransform rect =
-            GetComponent<RectTransform>();
+        RectTransform rect = GetComponent<RectTransform>();
 
         if (rect != null)
             originalAnchoredPosition = rect.anchoredPosition;
 
         originalScale = transform.localScale;
     }
+
+
+    // =====================================================
+    // HAND POSITION
+    // =====================================================
+
+    public void UpdateHandPosition()
+    {
+        RectTransform rect = GetComponent<RectTransform>();
+
+        if (rect != null)
+            originalAnchoredPosition = rect.anchoredPosition;
+    }
+
+    public Vector2 GetHandPosition()
+    {
+        return originalAnchoredPosition;
+    }
+
 
     // =====================================================
     // POINTER HOVER
@@ -158,6 +176,7 @@ public class CardUI :
         transform.localScale = originalScale;
     }
 
+
     // =====================================================
     // BEGIN DRAG
     // =====================================================
@@ -170,6 +189,9 @@ public class CardUI :
         dragging = true;
         validPlacement = false;
 
+        if (cardManager != null)
+            cardManager.OnCardDragStarted();
+
         SaveCardPosition();
 
         transform.localScale = originalScale * draggedScale;
@@ -178,8 +200,10 @@ public class CardUI :
             cardImage.enabled = false;
 
         CreateGhost();
+
         UpdateGhost(eventData.position);
     }
+
 
     // =====================================================
     // DRAG
@@ -191,8 +215,10 @@ public class CardUI :
             return;
 
         FollowMouse(eventData.position);
+
         UpdateGhost(eventData.position);
     }
+
 
     // =====================================================
     // END DRAG
@@ -208,16 +234,25 @@ public class CardUI :
         if (highlightManager != null)
             highlightManager.ClearPlacementTile();
 
+        bool successfullyPlaced = false;
+
         if (validPlacement)
-            PlaceCard();
+        {
+            successfullyPlaced = PlaceCard();
+        }
         else
         {
             DestroyGhost();
+
             ReturnCardToHand();
         }
 
+        if (cardManager != null)
+            cardManager.OnCardDragEnded(!successfullyPlaced);
+
         validPlacement = false;
     }
+
 
     // =====================================================
     // CAN START DRAG
@@ -247,20 +282,21 @@ public class CardUI :
         return true;
     }
 
+
     // =====================================================
     // SAVE CARD POSITION
     // =====================================================
 
     private void SaveCardPosition()
     {
-        RectTransform rect =
-            GetComponent<RectTransform>();
+        RectTransform rect = GetComponent<RectTransform>();
 
         if (rect != null)
             originalAnchoredPosition = rect.anchoredPosition;
 
         originalParent = transform.parent;
     }
+
 
     // =====================================================
     // FOLLOW MOUSE
@@ -271,14 +307,12 @@ public class CardUI :
         if (canvas == null)
             return;
 
-        RectTransform rect =
-            GetComponent<RectTransform>();
+        RectTransform rect = GetComponent<RectTransform>();
 
         if (rect == null)
             return;
 
-        RectTransform canvasRect =
-            canvas.GetComponent<RectTransform>();
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
 
         if (canvasRect == null)
             return;
@@ -298,6 +332,7 @@ public class CardUI :
         }
     }
 
+
     // =====================================================
     // CREATE GHOST
     // =====================================================
@@ -305,29 +340,25 @@ public class CardUI :
     private void CreateGhost()
     {
         GameObject prefabToUse =
-            ghostPrefab != null
-                ? ghostPrefab
-                : character.prefabToSpawn;
+            ghostPrefab != null ? ghostPrefab : character.prefabToSpawn;
 
         if (prefabToUse == null)
         {
-            Debug.LogError(
-                "[CardUI] No ghost prefab assigned.",
-                this
-            );
+            Debug.LogError("[CardUI] No ghost prefab assigned.", this);
             return;
         }
 
         ghostObject = Instantiate(prefabToUse);
 
-        ghostObject.name =
-            character.characterName + "_Ghost";
+        ghostObject.name = character.characterName + "_Ghost";
 
         ApplyCharacterIconToGhost();
+
         DisableGhostBehaviour();
 
         ghostObject.SetActive(true);
     }
+
 
     // =====================================================
     // APPLY CHARACTER ICON TO GHOST
@@ -353,6 +384,7 @@ public class CardUI :
                 "[CardUI] Ghost prefab has no SpriteRenderer.",
                 ghostObject
             );
+
             return;
         }
 
@@ -360,8 +392,10 @@ public class CardUI :
             return;
 
         spriteRenderer.sprite = character.icon;
+
         spriteRenderer.color = Color.white;
     }
+
 
     // =====================================================
     // DISABLE GHOST BEHAVIOUR
@@ -372,8 +406,7 @@ public class CardUI :
         if (ghostObject == null)
             return;
 
-        AttackUnit attackUnit =
-            ghostObject.GetComponent<AttackUnit>();
+        AttackUnit attackUnit = ghostObject.GetComponent<AttackUnit>();
 
         if (attackUnit != null)
             attackUnit.enabled = false;
@@ -403,6 +436,7 @@ public class CardUI :
         }
     }
 
+
     // =====================================================
     // UPDATE GHOST
     // =====================================================
@@ -418,16 +452,17 @@ public class CardUI :
 
         Ray ray = mainCamera.ScreenPointToRay(screenPosition);
 
-        Plane gameplayPlane =
-            new Plane(Vector3.forward, Vector3.zero);
+        Plane gameplayPlane = new Plane(Vector3.forward, Vector3.zero);
 
         if (!gameplayPlane.Raycast(ray, out float distance))
         {
             SetInvalidPlacement();
+
             return;
         }
 
         Vector3 worldPosition = ray.GetPoint(distance);
+
         worldPosition.z = 0f;
 
         currentGridPosition =
@@ -438,17 +473,14 @@ public class CardUI :
             SetInvalidPlacement();
 
             ghostObject.transform.position = worldPosition;
+
             ghostObject.transform.rotation = Quaternion.identity;
 
             return;
         }
 
         if (highlightManager != null)
-        {
-            highlightManager.SetPlacementTile(
-                currentGridPosition
-            );
-        }
+            highlightManager.SetPlacementTile(currentGridPosition);
 
         ghostObject.transform.position =
             gridManager.GridToWorldPosition(currentGridPosition);
@@ -458,6 +490,7 @@ public class CardUI :
         validPlacement =
             !gridManager.IsCellOccupied(currentGridPosition);
     }
+
 
     // =====================================================
     // INVALID PLACEMENT
@@ -471,11 +504,12 @@ public class CardUI :
             highlightManager.ClearPlacementTile();
     }
 
+
     // =====================================================
     // PLACE CARD
     // =====================================================
 
-    private void PlaceCard()
+    private bool PlaceCard()
     {
         if (!validPlacement ||
             gridManager == null ||
@@ -483,16 +517,20 @@ public class CardUI :
             character.prefabToSpawn == null)
         {
             DestroyGhost();
+
             ReturnCardToHand();
-            return;
+
+            return false;
         }
 
         if (encounterManager != null &&
             !encounterManager.IsPreparing())
         {
             DestroyGhost();
+
             ReturnCardToHand();
-            return;
+
+            return false;
         }
 
         Vector3 spawnPosition =
@@ -509,14 +547,14 @@ public class CardUI :
         if (placedObject == null)
         {
             ReturnCardToHand();
-            return;
+
+            return false;
         }
 
         placedObject.name = character.characterName;
 
-        // =================================================
+
         // CHARACTER SPRITE
-        // =================================================
 
         SpriteRenderer placedSprite =
             placedObject.GetComponent<SpriteRenderer>();
@@ -535,21 +573,18 @@ public class CardUI :
             placedSprite.color = Color.white;
         }
 
-        // =================================================
-        // UNIT DATA
-        // =================================================
 
-        UnitData unitData =
-            placedObject.GetComponent<UnitData>();
+        // UNIT DATA
+
+        UnitData unitData = placedObject.GetComponent<UnitData>();
 
         if (unitData == null)
             unitData = placedObject.AddComponent<UnitData>();
 
         unitData.Initialize(character);
 
-        // =================================================
+
         // HEALTH
-        // =================================================
 
         HealthManager healthManager =
             placedObject.GetComponent<HealthManager>();
@@ -557,19 +592,19 @@ public class CardUI :
         if (healthManager == null)
         {
             Debug.LogError(
-                "[CardUI] Missing HealthManager on " +
-                character.characterName,
+                "[CardUI] Missing HealthManager on " + character.characterName,
                 placedObject
             );
 
             Destroy(placedObject);
+
             ReturnCardToHand();
-            return;
+
+            return false;
         }
 
-        // =================================================
+
         // ATTACK
-        // =================================================
 
         AttackUnit attackUnit =
             placedObject.GetComponent<AttackUnit>();
@@ -577,36 +612,34 @@ public class CardUI :
         if (attackUnit == null)
         {
             Debug.LogError(
-                "[CardUI] Missing AttackUnit on " +
-                character.characterName,
+                "[CardUI] Missing AttackUnit on " + character.characterName,
                 placedObject
             );
 
             Destroy(placedObject);
+
             ReturnCardToHand();
-            return;
+
+            return false;
         }
 
-        // =================================================
+
         // INITIALIZE COMPONENTS
-        // =================================================
 
         healthManager.Initialize(character);
+
         attackUnit.Initialize(character);
 
-        // =================================================
-        // REGISTER PLAYER AND APPLY PURCHASED UPGRADES
-        // =================================================
 
-        if (character.isPlayerCharacter ||
-            character.team == Team.Player)
+        // REGISTER PLAYER AND APPLY PURCHASED UPGRADES
+
+        if (character.isPlayerCharacter || character.team == Team.Player)
         {
             if (UpdateManager.Instance != null)
             {
-                UpdateManager.Instance
-                    .RefreshPlayerUpgradesAfterInitialization(
-                        unitData
-                    );
+                UpdateManager.Instance.RefreshPlayerUpgradesAfterInitialization(
+                    unitData
+                );
             }
             else
             {
@@ -617,9 +650,8 @@ public class CardUI :
             }
         }
 
-        // =================================================
+
         // GRID PLACEMENT
-        // =================================================
 
         bool placed = gridManager.PlaceUnit(
             placedObject,
@@ -629,58 +661,50 @@ public class CardUI :
         if (!placed)
         {
             Debug.LogWarning(
-                "[CardUI] Failed to place unit: " +
-                character.characterName,
+                "[CardUI] Failed to place unit: " + character.characterName,
                 this
             );
 
             Destroy(placedObject);
+
             ReturnCardToHand();
-            return;
+
+            return false;
         }
 
         attackUnit.SetLogicalGridPosition(currentGridPosition);
 
-        // =================================================
+
         // RING UPGRADE TARGET REGISTRATION
-        // =================================================
 
         UpgradeableCombatUnit upgradeableCombatUnit =
             placedObject.GetComponent<UpgradeableCombatUnit>();
 
         if (upgradeableCombatUnit != null)
-        {
             upgradeableCombatUnit.RegisterAsRingUpgradeTarget();
-        }
 
-        // =================================================
+
         // ENABLE NEXT ROUND BUTTON
-        // ONLY AFTER SUCCESSFUL PLACEMENT
-        // =================================================
 
         NextRoundButtonManager nextRoundButton =
             FindFirstObjectByType<NextRoundButtonManager>();
 
         if (nextRoundButton != null)
-        {
             nextRoundButton.EnableNextRoundButton();
-        }
         else
-        {
-            Debug.LogWarning(
-                "[CardUI] NextRoundButtonManager not found."
-            );
-        }
+            Debug.LogWarning("[CardUI] NextRoundButtonManager not found.");
 
-        // =================================================
-        // REMOVE CARD
-        // =================================================
+
+        // REMOVE CARD FROM HAND
 
         if (cardManager != null)
             cardManager.RemoveCard(this);
 
         Destroy(gameObject);
+
+        return true;
     }
+
 
     // =====================================================
     // RETURN CARD TO HAND
@@ -688,6 +712,8 @@ public class CardUI :
 
     private void ReturnCardToHand()
     {
+        DestroyGhost();
+
         if (cardImage != null)
         {
             cardImage.color = Color.white;
@@ -698,19 +724,23 @@ public class CardUI :
             cardImage.enabled = true;
         }
 
-        transform.SetParent(originalParent, false);
-
-        RectTransform rect =
-            GetComponent<RectTransform>();
-
-        if (rect != null)
-            rect.anchoredPosition = originalAnchoredPosition;
-
         transform.localScale = originalScale;
 
         if (cardManager != null)
-            cardManager.ArrangeHand();
+        {
+            cardManager.ReturnCardToHand(this);
+        }
+        else
+        {
+            transform.SetParent(originalParent, false);
+
+            RectTransform rect = GetComponent<RectTransform>();
+
+            if (rect != null)
+                rect.anchoredPosition = originalAnchoredPosition;
+        }
     }
+
 
     // =====================================================
     // DESTROY GHOST
@@ -722,8 +752,10 @@ public class CardUI :
             return;
 
         Destroy(ghostObject);
+
         ghostObject = null;
     }
+
 
     // =====================================================
     // GETTERS
@@ -736,9 +768,7 @@ public class CardUI :
 
     public Team GetCharacterTeam()
     {
-        return character == null
-            ? Team.Ally
-            : character.team;
+        return character == null ? Team.Ally : character.team;
     }
 
     public bool IsDragging()

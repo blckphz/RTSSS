@@ -310,12 +310,6 @@ public class UpdateManager : MonoBehaviour
 
         appliedToCharacters.Add(upgrade);
 
-        Debug.Log(
-            "[UpgradeManager] Applied " +
-            upgrade.UpgradeName +
-            " to CharacterSO: " +
-            character.name
-        );
     }
 
     // APPLY STORED CHARACTER UPGRADES

@@ -562,7 +562,7 @@ GameObject:
   - component: {fileID: 2540252466661652666}
   - component: {fileID: 2108814983006196199}
   m_Layer: 0
-  m_Name: HitboxObject
+  m_Name: AttackHitbox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -652,7 +652,7 @@ GameObject:
   - component: {fileID: 1265849680894574295}
   - component: {fileID: 8379538594534882917}
   m_Layer: 0
-  m_Name: Skeleton
+  m_Name: SkeletonEnemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -753,7 +753,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthManager
   team: 2
   isPlayerCharacter: 0
-  maxHealth: 3
+  maxHealth: 50
   health: 0
   healthBarFill: {fileID: 6132181389253083579}
   overhealBarFill: {fileID: 0}
@@ -806,6 +806,7 @@ MonoBehaviour:
   dayMoveRangeBonus: -1
   nightMoveRangeBonus: 1
   logicalGridPosition: {x: 0, y: 0}
+  countsTowardVictory: 1
 --- !u!114 &2374263692071149587
 MonoBehaviour:
   m_ObjectHideFlags: 0

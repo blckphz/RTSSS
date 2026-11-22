@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,6 +10,7 @@ public class tooltipManager : MonoBehaviour
     [SerializeField] private TMP_Text tooltipText;
     [SerializeField] private GameObject tooltipObject;
     [SerializeField] private RectTransform tooltipBackground;
+    [SerializeField] private RectTransform tooltipBackground2;
     [SerializeField] private CanvasGroup canvasGroup;
 
     [Header("Tooltip Background Padding")]
@@ -189,12 +191,12 @@ public class tooltipManager : MonoBehaviour
     }
 
     // =========================================================
-    // TOOLTIP SIZE
+    // TOOLTIP SIZE - BOTH BACKGROUNDS
     // =========================================================
 
     private void UpdateTooltipSize()
     {
-        if (tooltipText == null || tooltipBackground == null)
+        if (tooltipText == null)
             return;
 
         tooltipText.ForceMeshUpdate();
@@ -204,7 +206,15 @@ public class tooltipManager : MonoBehaviour
         float width = preferredSize.x + backgroundPaddingX;
         float height = preferredSize.y + backgroundPaddingY;
 
-        tooltipBackground.sizeDelta = new Vector2(width, height);
+        Vector2 newSize = new Vector2(width, height);
+
+        // Resize first background
+        if (tooltipBackground != null)
+            tooltipBackground.sizeDelta = newSize;
+
+        // Resize second background
+        if (tooltipBackground2 != null)
+            tooltipBackground2.sizeDelta = newSize;
     }
 
     // =========================================================

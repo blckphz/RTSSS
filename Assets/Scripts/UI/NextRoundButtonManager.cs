@@ -71,6 +71,10 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
     [SerializeField] private float hoverScale = 1.1f;
     [SerializeField] private float hoverDuration = 0.15f;
 
+    // =========================================================
+    // INTERNAL
+    // =========================================================
+
     private Vector3 originalScale;
     private Quaternion originalRotation;
 
@@ -83,8 +87,11 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
     private float secondHoverProgress;
 
     private bool isHovering;
+
     private bool leftSpriteGoesFirst = true;
     private bool idleLeftSpriteGoesFirst = true;
+
+    private bool reverseSpriteDirection;
 
     private float punchTimer;
     private float hoverSizeTimer;
@@ -97,6 +104,12 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
     private Coroutine activationCoroutine;
     private bool activationAnimationPlaying;
+
+    private float activationRotationDirection = 1f;
+
+    // =========================================================
+    // UNITY
+    // =========================================================
 
     private void Awake()
     {
@@ -126,6 +139,17 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
     private void Update()
     {
+        if (EscManager.isPaused)
+        {
+            if (isHovering)
+                SetHoverExit();
+
+            if (hoverObject != null)
+                hoverObject.SetActive(false);
+
+            return;
+        }
+
         UpdateHoverProgress();
         UpdateButtonPulse();
         UpdateSpriteMovement();
@@ -142,6 +166,21 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
         {
             hoverObject.SetActive(false);
         }
+    }
+
+    // =========================================================
+    // PAUSE INTERACTION
+    // =========================================================
+
+    private void LateUpdate()
+    {
+        if (canvasGroup == null)
+            return;
+
+        bool canInteract = !EscManager.isPaused;
+
+        canvasGroup.interactable = canInteract;
+        canvasGroup.blocksRaycasts = canInteract;
     }
 
     // =========================================================
@@ -172,6 +211,11 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
         idleTimer = 0f;
         idleAnimationRunning = false;
 
+        reverseSpriteDirection = false;
+
+        leftSpriteGoesFirst = true;
+        idleLeftSpriteGoesFirst = true;
+
         if (buttonTransform != null)
         {
             buttonTransform.gameObject.SetActive(false);
@@ -189,7 +233,11 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             hoverObject.SetActive(false);
 
         if (canvasGroup != null)
+        {
             canvasGroup.alpha = originalAlpha;
+            canvasGroup.interactable = !EscManager.isPaused;
+            canvasGroup.blocksRaycasts = !EscManager.isPaused;
+        }
     }
 
     // =========================================================
@@ -202,6 +250,27 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             return;
 
         isActive = true;
+
+        // RANDOMIZE DIRECTION: 50/50
+        reverseSpriteDirection = Random.value < 0.5f;
+
+        // RANDOMIZE WHICH SPRITE MOVES FIRST
+        leftSpriteGoesFirst = Random.value < 0.5f;
+        idleLeftSpriteGoesFirst = Random.value < 0.5f;
+
+        // RANDOMIZE ROTATION DIRECTION
+        activationRotationDirection =
+            Random.value < 0.5f ? 1f : -1f;
+
+        // RESET SPRITE POSITIONS
+        if (leftSprite != null)
+            leftSprite.anchoredPosition = leftOriginalPosition;
+
+        if (rightSprite != null)
+            rightSprite.anchoredPosition = rightOriginalPosition;
+
+        hoverProgress = 0f;
+        secondHoverProgress = 0f;
 
         buttonTransform.gameObject.SetActive(true);
 
@@ -228,7 +297,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
         float halfDuration = activationDuration * 0.45f;
         float elapsed = 0f;
 
-        // PHASE 1: Shoot past normal size
+        // PHASE 1
 
         while (elapsed < halfDuration)
         {
@@ -247,8 +316,8 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             );
 
             float rotation = Mathf.Lerp(
-                activationRotation,
-                -activationRotation * 0.5f,
+                activationRotation * activationRotationDirection,
+                -activationRotation * activationRotationDirection * 0.5f,
                 easedT
             );
 
@@ -261,7 +330,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             yield return null;
         }
 
-        // PHASE 2: Squash back slightly
+        // PHASE 2
 
         elapsed = 0f;
 
@@ -282,7 +351,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             );
 
             float rotation = Mathf.Lerp(
-                -activationRotation * 0.5f,
+                -activationRotation * activationRotationDirection * 0.5f,
                 0f,
                 easedT
             );
@@ -296,7 +365,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             yield return null;
         }
 
-        // PHASE 3: Final bounce to normal size
+        // PHASE 3
 
         elapsed = 0f;
 
@@ -432,13 +501,10 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
             hoverProgress
         );
 
-        float pulse = (Mathf.Sin(Time.time * targetPulseSpeed) + 1f) * 0.5f;
+        float pulse =
+            (Mathf.Sin(Time.time * targetPulseSpeed) + 1f) * 0.5f;
 
-        float scale = Mathf.Lerp(
-            1f,
-            targetPulseScale,
-            pulse
-        );
+        float scale = Mathf.Lerp(1f, targetPulseScale, pulse);
 
         Vector3 targetScale = originalScale * scale;
 
@@ -483,15 +549,29 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
                 ? rightOriginalPosition
                 : leftOriginalPosition;
 
-        Vector2 firstMoveDir =
-            leftSpriteGoesFirst
+        Vector2 firstMoveDir;
+        Vector2 secondMoveDir;
+
+        if (!reverseSpriteDirection)
+        {
+            firstMoveDir = leftSpriteGoesFirst
                 ? new Vector2(-moveX, moveY)
                 : new Vector2(moveX, moveY);
 
-        Vector2 secondMoveDir =
-            leftSpriteGoesFirst
+            secondMoveDir = leftSpriteGoesFirst
                 ? new Vector2(moveX, moveY)
                 : new Vector2(-moveX, moveY);
+        }
+        else
+        {
+            firstMoveDir = leftSpriteGoesFirst
+                ? new Vector2(moveX, moveY)
+                : new Vector2(-moveX, moveY);
+
+            secondMoveDir = leftSpriteGoesFirst
+                ? new Vector2(-moveX, moveY)
+                : new Vector2(moveX, moveY);
+        }
 
         float firstProgress = isHovering
             ? CalculateOvershoot(hoverProgress)
@@ -624,7 +704,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (!isActive)
+        if (!isActive || EscManager.isPaused)
             return;
 
         isHovering = true;
@@ -632,6 +712,8 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
         if (hoverAudioSource != null)
             hoverAudioSource.Play();
 
+        // Randomize sprite order for this hover.
+        // Keep the activation direction.
         leftSpriteGoesFirst = Random.value > 0.5f;
         idleLeftSpriteGoesFirst = Random.value > 0.5f;
 
@@ -677,7 +759,7 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
     public void OnButtonHover()
     {
-        if (!isActive || buttonTransform == null)
+        if (!isActive || EscManager.isPaused || buttonTransform == null)
             return;
 
         if (!isHovering)
@@ -721,6 +803,9 @@ public class NextRoundButtonManager : MonoBehaviour, IPointerEnterHandler, IPoin
 
     public void OnButtonPressed()
     {
+        if (EscManager.isPaused)
+            return;
+
         if (pressAudioSource != null)
             pressAudioSource.Play();
     }

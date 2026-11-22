@@ -39,7 +39,6 @@ public class ArrowAttack : AbilitySO
 
         if (barrel != null)
         {
-            // Only allow barrels when this ability targets Neutral.
             if (GetTargetType() != TargetType.Neutral &&
                 GetTargetType() != TargetType.Any)
             {
@@ -84,7 +83,6 @@ public class ArrowAttack : AbilitySO
         if (barrel == null)
             barrel = target.GetComponentInParent<ExplosiveBarrel>();
 
-        // Reject targets that are neither units nor barrels.
         if (targetUnit == null && barrel == null)
         {
             Debug.LogWarning(
@@ -94,7 +92,6 @@ public class ArrowAttack : AbilitySO
             return false;
         }
 
-        // Reject dead units.
         if (targetUnit != null && targetUnit.IsDead())
             return false;
 
@@ -138,12 +135,16 @@ public class ArrowAttack : AbilitySO
 
         direction.Normalize();
 
+        // Turret bonuses.
         turretbehav turret = FindTurretBehaviour(user);
 
         int effectiveDamage = GetEffectiveDamage(user);
 
         if (turret != null)
-            effectiveDamage += turret.GetChainLightningDamageBonus();
+        {
+            effectiveDamage +=
+                turret.GetChainLightningDamageBonus();
+        }
 
         int effectiveMaxTargets = maxTargets;
 
@@ -153,6 +154,7 @@ public class ArrowAttack : AbilitySO
                 turret.GetChainLightningMaxTargetsBonus();
         }
 
+        // Spawn projectile.
         GameObject projectile = Instantiate(
             arrowPrefab,
             spawnPosition,
@@ -190,6 +192,7 @@ public class ArrowAttack : AbilitySO
 
     // ============================================================
     // CALCULATE DIRECTION USING TARGET FOOTPRINT
+    // SUPPORTS ALL 8 DIRECTIONS INCLUDING DIAGONALS
     // ============================================================
 
     private Vector2 GetFootprintAttackDirection(
@@ -197,26 +200,31 @@ public class ArrowAttack : AbilitySO
         AttackUnit targetUnit,
         Vector3 spawnPosition)
     {
+        if (user == null || targetUnit == null)
+            return Vector2.zero;
+
         GridManager gridManager =
             FindFirstObjectByType<GridManager>();
 
         AttackUnit userUnit = FindAttackUnit(user);
 
-        if (gridManager == null ||
-            userUnit == null ||
-            targetUnit == null)
+        if (gridManager == null || userUnit == null)
         {
             return GetFallbackDirection(
                 user,
-                targetUnit != null ? targetUnit.gameObject : null,
+                targetUnit.gameObject,
                 spawnPosition
             );
         }
 
-        Vector2Int userGrid = userUnit.GetLogicalGridPosition();
-        Vector2Int targetGrid = targetUnit.GetLogicalGridPosition();
+        Vector2Int userGrid =
+            userUnit.GetLogicalGridPosition();
 
-        CharacterSO character = targetUnit.GetCharacterData();
+        Vector2Int targetGrid =
+            targetUnit.GetLogicalGridPosition();
+
+        CharacterSO character =
+            targetUnit.GetCharacterData();
 
         int footprintSize = character != null
             ? Mathf.Max(1, character.GetFootprintSize())
@@ -229,81 +237,59 @@ public class ArrowAttack : AbilitySO
 
         int minX = targetGrid.x + minOffset;
         int minY = targetGrid.y + minOffset;
+
         int maxX = minX + footprintSize - 1;
         int maxY = minY + footprintSize - 1;
 
-        bool userWithinX =
-            userGrid.x >= minX && userGrid.x <= maxX;
+        // Find the closest occupied tile of the target.
+        int closestX = Mathf.Clamp(
+            userGrid.x,
+            minX,
+            maxX
+        );
 
-        bool userWithinY =
-            userGrid.y >= minY && userGrid.y <= maxY;
+        int closestY = Mathf.Clamp(
+            userGrid.y,
+            minY,
+            maxY
+        );
 
-        Vector2Int gridDirection;
+        Vector2Int closestTargetTile =
+            new Vector2Int(closestX, closestY);
 
-        if (userWithinX && !userWithinY)
+        // Calculate grid direction.
+        Vector2Int gridDifference =
+            closestTargetTile - userGrid;
+
+        // If the user is inside the footprint,
+        // use the target's anchor position instead.
+        if (gridDifference == Vector2Int.zero)
         {
-            gridDirection = userGrid.y > maxY
-                ? Vector2Int.down
-                : Vector2Int.up;
-        }
-        else if (userWithinY && !userWithinX)
-        {
-            gridDirection = userGrid.x > maxX
-                ? Vector2Int.left
-                : Vector2Int.right;
-        }
-        else
-        {
-            int gapX = userGrid.x < minX
-                ? minX - userGrid.x
-                : userGrid.x > maxX
-                    ? userGrid.x - maxX
-                    : 0;
-
-            int gapY = userGrid.y < minY
-                ? minY - userGrid.y
-                : userGrid.y > maxY
-                    ? userGrid.y - maxY
-                    : 0;
-
-            if (gapX > gapY)
-            {
-                gridDirection = userGrid.x > maxX
-                    ? Vector2Int.left
-                    : Vector2Int.right;
-            }
-            else if (gapY > gapX)
-            {
-                gridDirection = userGrid.y > maxY
-                    ? Vector2Int.down
-                    : Vector2Int.up;
-            }
-            else
-            {
-                Vector2Int difference = targetGrid - userGrid;
-
-                if (Mathf.Abs(difference.x) > Mathf.Abs(difference.y))
-                {
-                    gridDirection = difference.x > 0
-                        ? Vector2Int.right
-                        : Vector2Int.left;
-                }
-                else
-                {
-                    gridDirection = difference.y > 0
-                        ? Vector2Int.up
-                        : Vector2Int.down;
-                }
-            }
+            gridDifference = targetGrid - userGrid;
         }
 
+        if (gridDifference == Vector2Int.zero)
+        {
+            return GetFallbackDirection(
+                user,
+                targetUnit.gameObject,
+                spawnPosition
+            );
+        }
+
+        // Convert grid direction into world direction.
+        // This preserves diagonal directions.
         Vector3 worldStart =
             gridManager.GridToWorldPosition(userGrid);
 
-        Vector3 worldNext =
-            gridManager.GridToWorldPosition(userGrid + gridDirection);
+        Vector3 worldTarget =
+            gridManager.GridToWorldPosition(
+                userGrid + gridDifference
+            );
 
-        Vector3 worldDirection = worldNext - worldStart;
+        Vector3 worldDirection =
+            worldTarget - worldStart;
+
         worldDirection.z = 0f;
 
         if (worldDirection.sqrMagnitude <= 0.0001f)
@@ -336,7 +322,9 @@ public class ArrowAttack : AbilitySO
             ? targetPoint.position
             : target.transform.position;
 
-        Vector3 direction = targetPosition - spawnPosition;
+        Vector3 direction =
+            targetPosition - spawnPosition;
+
         direction.z = 0f;
 
         if (direction.sqrMagnitude <= 0.0001f)
@@ -354,7 +342,8 @@ public class ArrowAttack : AbilitySO
         if (target == null)
             return null;
 
-        AttackUnit unit = target.GetComponent<AttackUnit>();
+        AttackUnit unit =
+            target.GetComponent<AttackUnit>();
 
         if (unit != null)
             return unit;
@@ -376,7 +365,8 @@ public class ArrowAttack : AbilitySO
         if (user == null)
             return null;
 
-        turretbehav turret = user.GetComponent<turretbehav>();
+        turretbehav turret =
+            user.GetComponent<turretbehav>();
 
         if (turret != null)
             return turret;
@@ -436,6 +426,10 @@ public class ArrowAttack : AbilitySO
 
         return null;
     }
+
+    // ============================================================
+    // GET MAX TARGETS
+    // ============================================================
 
     public int GetMaxTargets()
     {
