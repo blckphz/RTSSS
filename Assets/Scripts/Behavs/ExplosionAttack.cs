@@ -580,6 +580,171 @@ public class ExplosionAttack : MonoBehaviour
             Destroy(gameObject, destroyDelay);
     }
 
+
+    public bool TryGetPlayerKnockbackLandingTile(
+        GameObject explosionOwner,
+        GameObject player,
+        Vector2Int explosionCenter,
+        int effectiveRadius,
+        out Vector2Int landingTile)
+    {
+        landingTile = Vector2Int.zero;
+
+        if (!applyKnockback ||
+            explosionOwner == null ||
+            player == null)
+        {
+            return false;
+        }
+
+        if (gridManager == null)
+            gridManager = FindFirstObjectByType<GridManager>();
+
+        if (gridManager == null)
+            return false;
+
+        // Check the bomb owner's upgrade.
+        UnitData ownerData =
+            explosionOwner.GetComponent<UnitData>();
+
+        if (ownerData == null)
+            ownerData = explosionOwner.GetComponentInParent<UnitData>();
+
+        if (ownerData == null)
+            ownerData = explosionOwner.GetComponentInChildren<UnitData>();
+
+        if (ownerData == null ||
+            !ownerData.HasExplosionKnockbackUpgrade())
+        {
+            return false;
+        }
+
+        HealthManager health =
+            player.GetComponent<HealthManager>();
+
+        if (health == null ||
+            !health.IsPlayerCharacter() ||
+            health.IsDead())
+        {
+            return false;
+        }
+
+        Vector2Int playerTile =
+            gridManager.WorldToGridPosition(player.transform.position);
+
+        if (!gridManager.IsInsideGrid(playerTile))
+            return false;
+
+        int dx = playerTile.x - explosionCenter.x;
+        int dy = playerTile.y - explosionCenter.y;
+
+        int tileDistance = Mathf.Abs(dx) + Mathf.Abs(dy);
+
+        if (!IsInsideExplosionShapeForPreview(
+            dx,
+            dy,
+            tileDistance,
+            effectiveRadius))
+        {
+            return false;
+        }
+
+        int knockbackDistance =
+            CalculateKnockbackDistanceForPreview(
+                tileDistance,
+                effectiveRadius,
+                player
+            );
+
+        if (knockbackDistance <= 0)
+            return false;
+
+        UnitMoveBrain moveBrain =
+            player.GetComponent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+            moveBrain = player.GetComponentInParent<UnitMoveBrain>();
+
+        if (moveBrain == null)
+            moveBrain = player.GetComponentInChildren<UnitMoveBrain>();
+
+        if (moveBrain == null)
+            return false;
+
+        return moveBrain.TryGetKnockbackLandingTile(
+            explosionCenter,
+            knockbackDistance,
+            out landingTile
+        );
+    }
+
+    private bool IsInsideExplosionShapeForPreview(
+        int x,
+        int y,
+        int distance,
+        int effectiveRadius)
+    {
+        switch (explosionShape)
+        {
+            case AbilitySO.RangeShape.Diamond:
+            case AbilitySO.RangeShape.Shotgun:
+                return distance <= effectiveRadius;
+
+            case AbilitySO.RangeShape.Box:
+                return Mathf.Abs(x) <= effectiveRadius &&
+                       Mathf.Abs(y) <= effectiveRadius;
+
+            case AbilitySO.RangeShape.FourDirections:
+                return (x == 0 || y == 0) &&
+                       distance <= effectiveRadius;
+
+            case AbilitySO.RangeShape.Diagonal:
+                return Mathf.Abs(x) == Mathf.Abs(y) &&
+                       distance <= effectiveRadius;
+
+            case AbilitySO.RangeShape.FourdirectionsAndDiragonal:
+                return (x == 0 || y == 0 ||
+                        Mathf.Abs(x) == Mathf.Abs(y)) &&
+                       distance <= effectiveRadius;
+
+            default:
+                return distance <= effectiveRadius;
+        }
+    }
+
+    private int CalculateKnockbackDistanceForPreview(
+        int distanceFromCenter,
+        int effectiveRadius,
+        GameObject target)
+    {
+        if (IsBoss(target))
+            return 1;
+
+        if (effectiveRadius <= 0)
+            return 1;
+
+        if (distanceFromCenter > effectiveRadius)
+            return 0;
+
+        float normalizedDistance =
+            Mathf.Clamp01(
+                (float)distanceFromCenter / effectiveRadius
+            );
+
+        return Mathf.Max(
+            1,
+            Mathf.RoundToInt(
+                Mathf.Lerp(
+                    effectiveRadius,
+                    1f,
+                    normalizedDistance
+                )
+            )
+        );
+    }
+
+
+
     // ============================================================
     // GETTERS
     // ============================================================

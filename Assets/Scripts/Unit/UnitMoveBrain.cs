@@ -34,6 +34,9 @@ public class UnitMoveBrain : MonoBehaviour
     [SerializeField, Min(0f)] private float knockbackStepDuration = 0.08f;
     [SerializeField, Min(0f)] private float knockbackArcHeight = 0.5f;
 
+    [SerializeField, Range(1, 64)]
+    private int knockbackDirectionCount = 16;
+
     private bool isBeingKnockedBack;
 
     [Header("AI Targeting")]
@@ -50,8 +53,6 @@ public class UnitMoveBrain : MonoBehaviour
     private int movementSequence;
     private Coroutine movementCoroutine;
 
-    // Active grid movement tracking.
-    // This allows interrupted movement to release its grid reservation.
     private bool hasActiveGridMove;
     private Vector2Int activeMoveFrom;
     private GridManager activeMoveGrid;
@@ -67,6 +68,9 @@ public class UnitMoveBrain : MonoBehaviour
 
     private readonly Dictionary<Vector2Int, int> reachableDistances =
         new Dictionary<Vector2Int, int>(128);
+
+    private readonly List<Vector2Int> knockbackPath =
+        new List<Vector2Int>(64);
 
     // ============================================================
     // INITIALIZATION
@@ -497,26 +501,21 @@ public class UnitMoveBrain : MonoBehaviour
         );
 
         Vector2Int bestPosition = currentPosition;
-
         float bestScore = float.MaxValue;
 
         foreach (KeyValuePair<Vector2Int, int> entry in reachableDistances)
         {
-            Vector2Int candidate = entry.Key;
-
-            int stepsToCandidate = entry.Value;
-
             float score = CalculateAIMovementScore(
                 manager,
-                candidate,
+                entry.Key,
                 targetPosition,
-                stepsToCandidate
+                entry.Value
             );
 
             if (score < bestScore)
             {
                 bestScore = score;
-                bestPosition = candidate;
+                bestPosition = entry.Key;
             }
         }
 
@@ -524,7 +523,6 @@ public class UnitMoveBrain : MonoBehaviour
             return false;
 
         predictedTile = bestPosition;
-
         return true;
     }
 
@@ -671,7 +669,6 @@ public class UnitMoveBrain : MonoBehaviour
         );
 
         Vector2Int bestPosition = currentPosition;
-
         float bestScore = float.MaxValue;
 
         foreach (KeyValuePair<Vector2Int, int> entry in reachableDistances)
@@ -835,10 +832,110 @@ public class UnitMoveBrain : MonoBehaviour
         }
 
         StopWalkAnimation();
-
         SetMovingState(false);
-
         movementCoroutine = null;
+    }
+
+    // ============================================================
+    // KNOCKBACK DIRECTION
+    // ============================================================
+
+    private Vector2 GetQuantizedKnockbackDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude < 0.0001f)
+            return Vector2.zero;
+
+        float angle = Mathf.Atan2(
+            direction.y,
+            direction.x
+        ) * Mathf.Rad2Deg;
+
+        int directionCount = Mathf.Max(1, knockbackDirectionCount);
+
+        float angleStep = 360f / directionCount;
+
+        float snappedAngle =
+            Mathf.Round(angle / angleStep) * angleStep;
+
+        float radians = snappedAngle * Mathf.Deg2Rad;
+
+        return new Vector2(
+            Mathf.Cos(radians),
+            Mathf.Sin(radians)
+        ).normalized;
+    }
+
+    // ============================================================
+    // KNOCKBACK PATH GENERATION
+    // ============================================================
+
+    private void BuildKnockbackPath(
+        Vector2Int startTile,
+        Vector2 direction,
+        int distance,
+        List<Vector2Int> result)
+    {
+        result.Clear();
+
+        if (distance <= 0 || direction.sqrMagnitude < 0.0001f)
+            return;
+
+        direction.Normalize();
+
+        // The destination is calculated using actual geometric
+        // distance. A diagonal direction cannot gain extra range.
+        Vector2 exactDestination =
+            (Vector2)startTile + direction * distance;
+
+        Vector2Int destination = new Vector2Int(
+            Mathf.RoundToInt(exactDestination.x),
+            Mathf.RoundToInt(exactDestination.y)
+        );
+
+        int x = startTile.x;
+        int y = startTile.y;
+
+        int dx = Mathf.Abs(destination.x - startTile.x);
+        int dy = Mathf.Abs(destination.y - startTile.y);
+
+        int sx = startTile.x < destination.x ? 1 : -1;
+        int sy = startTile.y < destination.y ? 1 : -1;
+
+        int error = dx - dy;
+
+        while (x != destination.x || y != destination.y)
+        {
+            int doubledError = 2 * error;
+
+            int nextX = x;
+            int nextY = y;
+
+            if (doubledError > -dy)
+            {
+                error -= dy;
+                nextX += sx;
+            }
+
+            if (doubledError < dx)
+            {
+                error += dx;
+                nextY += sy;
+            }
+
+            // Check the actual distance from the starting tile.
+            Vector2 offset = new Vector2(
+                nextX - startTile.x,
+                nextY - startTile.y
+            );
+
+            if (offset.magnitude > distance + 0.0001f)
+                break;
+
+            x = nextX;
+            y = nextY;
+
+            result.Add(new Vector2Int(x, y));
+        }
     }
 
     // ============================================================
@@ -881,9 +978,12 @@ public class UnitMoveBrain : MonoBehaviour
 
         Vector2Int currentTile = GetCurrentTile();
 
-        Vector2Int direction = currentTile - explosionCenter;
+        Vector2 rawDirection = new Vector2(
+            currentTile.x - explosionCenter.x,
+            currentTile.y - explosionCenter.y
+        );
 
-        if (direction == Vector2Int.zero)
+        if (rawDirection.sqrMagnitude < 0.0001f)
         {
             Debug.LogWarning(
                 $"[UnitMoveBrain] Cannot calculate knockback direction for {name}.",
@@ -893,49 +993,42 @@ public class UnitMoveBrain : MonoBehaviour
             return;
         }
 
-        if (!CanWalkDiagonally())
-        {
-            if (Mathf.Abs(direction.x) >= Mathf.Abs(direction.y))
-            {
-                direction = new Vector2Int(
-                    direction.x > 0 ? 1 : -1,
-                    0
-                );
-            }
-            else
-            {
-                direction = new Vector2Int(
-                    0,
-                    direction.y > 0 ? 1 : -1
-                );
-            }
-        }
-        else
-        {
-            direction = new Vector2Int(
-                direction.x == 0 ? 0 : (direction.x > 0 ? 1 : -1),
-                direction.y == 0 ? 0 : (direction.y > 0 ? 1 : -1)
-            );
-        }
+        Vector2 direction =
+            GetQuantizedKnockbackDirection(rawDirection);
+
+        knockbackPath.Clear();
+
+        BuildKnockbackPath(
+            currentTile,
+            direction,
+            distance,
+            knockbackPath
+        );
+
+        if (knockbackPath.Count == 0)
+            return;
 
         StopMovement();
 
         isBeingKnockedBack = true;
 
+        List<Vector2Int> path =
+            new List<Vector2Int>(knockbackPath);
+
         movementCoroutine = StartCoroutine(
-            KnockbackRoutine(direction, distance, stepDuration)
+            KnockbackRoutine(path, stepDuration)
         );
 
         Debug.Log(
             $"[UnitMoveBrain] Knockback started: {name}, " +
-            $"direction {direction}, distance {distance}.",
+            $"direction {direction}, distance {distance}, " +
+            $"tiles {path.Count}.",
             this
         );
     }
 
     private IEnumerator KnockbackRoutine(
-        Vector2Int direction,
-        int distance,
+        List<Vector2Int> path,
         float stepDuration)
     {
         GridManager gridManager = GetGridManager();
@@ -951,14 +1044,13 @@ public class UnitMoveBrain : MonoBehaviour
 
         float duration = Mathf.Max(0.01f, stepDuration);
 
-        for (int i = 0; i < distance; i++)
+        for (int i = 0; i < path.Count; i++)
         {
             if (attackUnit != null && attackUnit.IsDead())
                 break;
 
             Vector2Int fromTile = GetCurrentTile();
-
-            Vector2Int toTile = fromTile + direction;
+            Vector2Int toTile = path[i];
 
             if (!gridManager.IsInsideGrid(toTile))
                 break;
@@ -976,6 +1068,8 @@ public class UnitMoveBrain : MonoBehaviour
 
             Vector3 endPosition =
                 gridManager.GridToWorldPosition(toTile);
+
+            Vector2Int tileDirection = toTile - fromTile;
 
             float elapsed = 0f;
             bool interruptedByDeath = false;
@@ -1025,10 +1119,10 @@ public class UnitMoveBrain : MonoBehaviour
             if (attackUnit != null)
                 attackUnit.SetLogicalGridPosition(toTile);
 
-            SetFacingDirection(direction);
+            SetFacingDirection(tileDirection);
 
             if (animationController != null)
-                animationController.SetMovementDirection(direction);
+                animationController.SetMovementDirection(tileDirection);
 
             yield return null;
         }
@@ -1123,5 +1217,63 @@ public class UnitMoveBrain : MonoBehaviour
         return attackUnit != null
             && !attackUnit.IsDead()
             && attackUnit.GetTeam() != Team.Player;
+    }
+
+    // ============================================================
+    // KNOCKBACK LANDING TILE PREDICTION
+    // ============================================================
+
+    public bool TryGetKnockbackLandingTile(
+        Vector2Int explosionCenter,
+        int distance,
+        out Vector2Int landingTile)
+    {
+        landingTile = GetCurrentTile();
+
+        if (distance <= 0)
+            return false;
+
+        GridManager gridManager = GetGridManager();
+
+        if (gridManager == null)
+            return false;
+
+        Vector2Int currentTile = GetCurrentTile();
+
+        Vector2 rawDirection = new Vector2(
+            currentTile.x - explosionCenter.x,
+            currentTile.y - explosionCenter.y
+        );
+
+        if (rawDirection.sqrMagnitude < 0.0001f)
+            return false;
+
+        Vector2 direction =
+            GetQuantizedKnockbackDirection(rawDirection);
+
+        List<Vector2Int> predictionPath =
+            new List<Vector2Int>(64);
+
+        BuildKnockbackPath(
+            currentTile,
+            direction,
+            distance,
+            predictionPath
+        );
+
+        for (int i = 0; i < predictionPath.Count; i++)
+        {
+            Vector2Int nextTile = predictionPath[i];
+
+            if (!gridManager.IsInsideGrid(nextTile))
+                break;
+
+            if (!gridManager.CanMoveToCell(gameObject, nextTile))
+                break;
+
+            landingTile = nextTile;
+        }
+
+        return landingTile != currentTile;
     }
 }

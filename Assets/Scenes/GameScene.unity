@@ -122022,7 +122022,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -1242, y: 1179.126}
+  m_AnchoredPosition: {x: -1242, y: 1179.1234}
   m_SizeDelta: {x: 1232.0488, y: 1678.2026}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &327810532
@@ -122464,6 +122464,7 @@ GameObject:
   - component: {fileID: 345656238}
   - component: {fileID: 345656239}
   - component: {fileID: 345656240}
+  - component: {fileID: 345656241}
   m_Layer: 0
   m_Name: UIManagers
   m_TagString: Untagged
@@ -123011,6 +123012,27 @@ MonoBehaviour:
   transparencySpeed: 3
   maxAlpha: 0.7
   minAlpha: 0.5
+--- !u!114 &345656241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345656225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a406e3d3c823a6a4db990e59f98bdcbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  highlightManager: {fileID: 804482593}
+  gridManager: {fileID: 804482595}
+  hologramPrefab: {fileID: 2258544670875039633, guid: 33eb88bbf6d647144ba2404b7a02bee3, type: 3}
+  hologramOffset: {x: 0, y: 0.05, z: 0}
+  copyPlayerSprite: 1
+  hologramAlpha: 0.65
+  pulseHologram: 1
+  pulseSpeed: 2
+  pulseAmount: 0.08
 --- !u!1 &349765629
 GameObject:
   m_ObjectHideFlags: 0
@@ -128081,8 +128103,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2086167815}
   m_HandleRect: {fileID: 2086167814}
   m_Direction: 3
-  m_Value: -0.0000039490783
-  m_Size: 0.5947751
+  m_Value: 0
+  m_Size: 0.5947784
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

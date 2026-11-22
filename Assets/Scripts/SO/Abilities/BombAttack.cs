@@ -72,14 +72,6 @@ public class BombAttack : AbilitySO
 
         int effectiveRadius = explosionRadius + bonus;
 
-        Debug.Log(
-            $"[BombAttack] Explosion Radius | " +
-            $"Base={explosionRadius} | " +
-            $"RingBonus={bonus} | " +
-            $"Effective={effectiveRadius}",
-            user
-        );
-
         return Mathf.Max(0, effectiveRadius);
     }
 
@@ -270,4 +262,7 @@ public class BombAttack : AbilitySO
             targetTile
         );
     }
+
+
+
 }

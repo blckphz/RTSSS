@@ -13,10 +13,7 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private GameObject upgradeCanvas;
-
-    [Tooltip("Assign the ROOT parent GameObject of each entire upgrade card.")]
     [SerializeField] private Transform[] upgradeCardParents;
-
     [SerializeField] private Button[] upgradeButtons;
     [SerializeField] private TMP_Text[] upgradeTexts;
     [SerializeField] private Image[] upgradeIcons;
@@ -25,36 +22,33 @@ public class UpgradeChoiceUI : MonoBehaviour
     [SerializeField] private Image[] Backgrounds;
 
     [Header("Dynamic Description Position")]
-    [Tooltip("Extra spacing added when the upgrade name wraps onto multiple lines.")]
     [SerializeField] private float descriptionExtraSpacing = 5f;
-
     [SerializeField] private bool enableNameDebugLogs = true;
 
     [Header("Rarity Colors")]
-    [SerializeField]
-    private Color normalColor = new Color(0.85f, 0.85f, 0.85f);
-
-    [SerializeField]
-    private Color epicColor = new Color(0.65f, 0.25f, 1f);
-
-    [SerializeField]
-    private Color artifactColor = new Color(1f, 0.72f, 0.1f);
+    [SerializeField] private Color normalColor = new Color(0.85f, 0.85f, 0.85f);
+    [SerializeField] private Color epicColor = new Color(0.65f, 0.25f, 1f);
+    [SerializeField] private Color artifactColor = new Color(1f, 0.72f, 0.1f);
 
     [Header("Card Animation")]
     [SerializeField] private float animationDuration = 0.45f;
     [SerializeField] private float startScale = 0.75f;
     [SerializeField] private float overshootScale = 1.08f;
 
+    [Header("Hover Animation")]
+    [SerializeField] private float hoverScale = 1.08f;
+    [SerializeField] private float hoverSpeed = 12f;
+
     private const int CHOICE_COUNT = 3;
 
-    private UpgradeSO[] currentChoices =
-        new UpgradeSO[CHOICE_COUNT];
+    private UpgradeSO[] currentChoices = new UpgradeSO[CHOICE_COUNT];
 
-    private Vector3[] originalScales =
-        new Vector3[CHOICE_COUNT];
+    private Vector3[] originalScales = new Vector3[CHOICE_COUNT];
 
     private Vector2[] originalDescriptionPositions =
         new Vector2[CHOICE_COUNT];
+
+    private bool[] isHovering = new bool[CHOICE_COUNT];
 
     private Action onUpgradeSelected;
 
@@ -62,6 +56,7 @@ public class UpgradeChoiceUI : MonoBehaviour
     private Coroutine descriptionCoroutine;
 
     private bool selectionInProgress;
+    private bool entranceAnimationFinished;
 
     // =====================================================
     // UNITY
@@ -82,8 +77,7 @@ public class UpgradeChoiceUI : MonoBehaviour
         {
             int index = i;
 
-            originalScales[i] =
-                upgradeCardParents[i].localScale;
+            originalScales[i] = upgradeCardParents[i].localScale;
 
             originalDescriptionPositions[i] =
                 upgradeDescriptions[i].rectTransform.anchoredPosition;
@@ -98,6 +92,61 @@ public class UpgradeChoiceUI : MonoBehaviour
         Debug.Log("[UpgradeChoiceUI] Initialized successfully.");
     }
 
+    private void Update()
+    {
+        if (!selectionInProgress || !entranceAnimationFinished)
+            return;
+
+        for (int i = 0; i < CHOICE_COUNT; i++)
+        {
+            if (upgradeCardParents[i] == null ||
+                currentChoices[i] == null)
+                continue;
+
+            float targetScale = isHovering[i] ? hoverScale : 1f;
+
+            Vector3 target = originalScales[i] * targetScale;
+
+            upgradeCardParents[i].localScale = Vector3.Lerp(
+                upgradeCardParents[i].localScale,
+                target,
+                Time.unscaledDeltaTime * hoverSpeed
+            );
+        }
+    }
+
+    // =====================================================
+    // HOVER
+    // =====================================================
+
+    public void OnCardHoverEnter(int index)
+    {
+        if (!selectionInProgress || !entranceAnimationFinished)
+            return;
+
+        if (index < 0 || index >= CHOICE_COUNT)
+            return;
+
+        if (currentChoices[index] == null)
+            return;
+
+        isHovering[index] = true;
+    }
+
+    public void OnCardHoverExit(int index)
+    {
+        if (index < 0 || index >= CHOICE_COUNT)
+            return;
+
+        isHovering[index] = false;
+    }
+
+    private void ResetHoverStates()
+    {
+        for (int i = 0; i < CHOICE_COUNT; i++)
+            isHovering[i] = false;
+    }
+
     // =====================================================
     // VALIDATION
     // =====================================================
@@ -106,43 +155,37 @@ public class UpgradeChoiceUI : MonoBehaviour
     {
         bool valid = true;
 
-        if (upgradeCardParents == null ||
-            upgradeCardParents.Length != CHOICE_COUNT)
+        if (upgradeCardParents == null || upgradeCardParents.Length != CHOICE_COUNT)
         {
             Debug.LogError("[UpgradeChoiceUI] Assign exactly 3 card parent transforms.");
             valid = false;
         }
 
-        if (upgradeButtons == null ||
-            upgradeButtons.Length != CHOICE_COUNT)
+        if (upgradeButtons == null || upgradeButtons.Length != CHOICE_COUNT)
         {
             Debug.LogError("[UpgradeChoiceUI] Assign exactly 3 buttons.");
             valid = false;
         }
 
-        if (upgradeTexts == null ||
-            upgradeTexts.Length != CHOICE_COUNT)
+        if (upgradeTexts == null || upgradeTexts.Length != CHOICE_COUNT)
         {
             Debug.LogError("[UpgradeChoiceUI] Assign exactly 3 name texts.");
             valid = false;
         }
 
-        if (upgradeIcons == null ||
-            upgradeIcons.Length != CHOICE_COUNT)
+        if (upgradeIcons == null || upgradeIcons.Length != CHOICE_COUNT)
         {
             Debug.LogError("[UpgradeChoiceUI] Assign exactly 3 icons.");
             valid = false;
         }
 
-        if (upgradeDescriptions == null ||
-            upgradeDescriptions.Length != CHOICE_COUNT)
+        if (upgradeDescriptions == null || upgradeDescriptions.Length != CHOICE_COUNT)
         {
             Debug.LogError("[UpgradeChoiceUI] Assign exactly 3 description texts.");
             valid = false;
         }
 
-        if (upgradeRarities == null ||
-            upgradeRarities.Length != CHOICE_COUNT)
+        if (upgradeRarities == null || upgradeRarities.Length != CHOICE_COUNT)
         {
             Debug.LogError("[UpgradeChoiceUI] Assign exactly 3 rarity texts.");
             valid = false;
@@ -200,10 +243,7 @@ public class UpgradeChoiceUI : MonoBehaviour
             return;
         }
 
-        ShowChoices(
-            GetAvailableUpgrades(default, true),
-            onSelected
-        );
+        ShowChoices(GetAvailableUpgrades(default, true), onSelected);
     }
 
     // =====================================================
@@ -224,10 +264,7 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
 
         ShowChoices(
-            GetAvailableUpgrades(
-                UpgradeSO.Rarity.Artifact,
-                false
-            ),
+            GetAvailableUpgrades(UpgradeSO.Rarity.Artifact, false),
             onSelected
         );
     }
@@ -244,10 +281,7 @@ public class UpgradeChoiceUI : MonoBehaviour
             return;
         }
 
-        ShowChoices(
-            GetAvailableUpgrades(default, true),
-            onSelected
-        );
+        ShowChoices(GetAvailableUpgrades(default, true), onSelected);
     }
 
     // =====================================================
@@ -338,35 +372,31 @@ public class UpgradeChoiceUI : MonoBehaviour
         }
 
         selectionInProgress = true;
+        entranceAnimationFinished = false;
         onUpgradeSelected = onSelected;
 
+        ResetHoverStates();
         ClearCurrentChoices();
 
-        if (availableUpgrades == null ||
-            availableUpgrades.Count == 0)
+        if (availableUpgrades == null || availableUpgrades.Count == 0)
         {
             Debug.LogWarning("[UpgradeChoiceUI] No available upgrades.");
             CompleteSelection();
             return;
         }
 
-        List<UpgradeSO> shuffled =
-            new List<UpgradeSO>(availableUpgrades);
+        List<UpgradeSO> shuffled = new List<UpgradeSO>(availableUpgrades);
 
         for (int i = shuffled.Count - 1; i > 0; i--)
         {
-            int randomIndex =
-                UnityEngine.Random.Range(0, i + 1);
+            int randomIndex = UnityEngine.Random.Range(0, i + 1);
 
             UpgradeSO temp = shuffled[i];
             shuffled[i] = shuffled[randomIndex];
             shuffled[randomIndex] = temp;
         }
 
-        int count = Mathf.Min(
-            CHOICE_COUNT,
-            shuffled.Count
-        );
+        int count = Mathf.Min(CHOICE_COUNT, shuffled.Count);
 
         for (int i = 0; i < count; i++)
             currentChoices[i] = shuffled[i];
@@ -377,7 +407,6 @@ public class UpgradeChoiceUI : MonoBehaviour
         {
             upgradeCanvas.SetActive(true);
 
-            // Wait for Unity layout before measuring TMP text.
             if (descriptionCoroutine != null)
                 StopCoroutine(descriptionCoroutine);
 
@@ -413,6 +442,8 @@ public class UpgradeChoiceUI : MonoBehaviour
         {
             UpgradeSO upgrade = currentChoices[i];
 
+            isHovering[i] = false;
+
             if (upgrade == null)
             {
                 upgradeCardParents[i].gameObject.SetActive(false);
@@ -432,15 +463,13 @@ public class UpgradeChoiceUI : MonoBehaviour
             upgradeIcons[i].sprite = upgrade.Icon;
             upgradeIcons[i].enabled = upgrade.Icon != null;
 
-            upgradeDescriptions[i].text =
-                upgrade.Description;
+            upgradeDescriptions[i].text = upgrade.Description;
 
             UpgradeSO.Rarity rarity = upgrade.GetRarity();
 
             upgradeRarities[i].text = rarity.ToString();
             upgradeRarities[i].color = GetRarityColor(rarity);
 
-            // Restore original description position before each display.
             upgradeDescriptions[i].rectTransform.anchoredPosition =
                 originalDescriptionPositions[i];
 
@@ -460,10 +489,7 @@ public class UpgradeChoiceUI : MonoBehaviour
 
     private IEnumerator AdjustDescriptionsAfterLayout()
     {
-        // Wait for Canvas activation.
         yield return null;
-
-        // Wait another frame for layout groups and content sizing.
         yield return new WaitForEndOfFrame();
 
         Canvas.ForceUpdateCanvases();
@@ -494,14 +520,11 @@ public class UpgradeChoiceUI : MonoBehaviour
         RectTransform nameRect = nameText.rectTransform;
         RectTransform descriptionRect = descriptionText.rectTransform;
 
-        // Restore original position.
         descriptionRect.anchoredPosition =
             originalDescriptionPositions[index];
 
-        // Make sure the name has its final width.
         Canvas.ForceUpdateCanvases();
 
-        // Force TMP to calculate its text.
         nameText.ForceMeshUpdate(true, true);
 
         float availableWidth = nameRect.rect.width;
@@ -509,77 +532,60 @@ public class UpgradeChoiceUI : MonoBehaviour
         if (availableWidth <= 0f)
         {
             Debug.LogWarning(
-                $"[UpgradeChoiceUI] Card {index + 1}: Name width is zero. " +
-                "Check its RectTransform and layout."
+                $"[UpgradeChoiceUI] Card {index + 1}: Name width is zero."
             );
-
             return;
         }
 
-        // Get preferred text dimensions using actual available width.
         Vector2 preferredSize = nameText.GetPreferredValues(
             nameText.text,
             availableWidth,
             0f
         );
 
-        // Get actual TMP rendered line count.
         int lineCount = nameText.textInfo.lineCount;
 
-        // Calculate rendered height from TMP line information.
         float renderedHeight = 0f;
 
         if (lineCount > 0)
         {
-            TMP_LineInfo firstLine =
-                nameText.textInfo.lineInfo[0];
-
-            TMP_LineInfo lastLine =
-                nameText.textInfo.lineInfo[lineCount - 1];
+            TMP_LineInfo firstLine = nameText.textInfo.lineInfo[0];
+            TMP_LineInfo lastLine = nameText.textInfo.lineInfo[lineCount - 1];
 
             renderedHeight = Mathf.Abs(
                 firstLine.ascender - lastLine.descender
             );
         }
 
-        // If TMP has not generated lines, use preferred dimensions.
         if (lineCount <= 0)
         {
-            float estimatedLineHeight =
-                Mathf.Max(1f, nameText.fontSize);
+            float estimatedLineHeight = Mathf.Max(1f, nameText.fontSize);
 
             lineCount = Mathf.Max(
                 1,
-                Mathf.CeilToInt(
-                    preferredSize.y / estimatedLineHeight
-                )
+                Mathf.CeilToInt(preferredSize.y / estimatedLineHeight)
             );
 
             renderedHeight = preferredSize.y;
         }
 
-        // Calculate the actual height of one line.
         float singleLineHeight = nameText.fontSize;
 
         if (nameText.textInfo.lineCount > 0)
         {
-            TMP_LineInfo firstLine =
-                nameText.textInfo.lineInfo[0];
+            TMP_LineInfo firstLine = nameText.textInfo.lineInfo[0];
 
             singleLineHeight = Mathf.Abs(
                 firstLine.ascender - firstLine.descender
             );
         }
 
-        // Calculate how much additional height the name occupies.
         float extraHeight = Mathf.Max(
             0f,
             renderedHeight - singleLineHeight
         );
 
-        // Move description downward.
-        Vector2 newPosition =
-            originalDescriptionPositions[index];
+        Vector2 newPosition = originalDescriptionPositions[index];
 
         newPosition.y -= extraHeight;
 
@@ -676,6 +682,7 @@ public class UpgradeChoiceUI : MonoBehaviour
 
         ResetChoiceScales();
 
+        entranceAnimationFinished = true;
         animationCoroutine = null;
     }
 
@@ -687,24 +694,15 @@ public class UpgradeChoiceUI : MonoBehaviour
 
             float eased = 1f - Mathf.Pow(1f - growT, 3f);
 
-            return Mathf.Lerp(
-                startScale,
-                overshootScale,
-                eased
-            );
+            return Mathf.Lerp(startScale, overshootScale, eased);
         }
         else
         {
             float settleT = (t - 0.75f) / 0.25f;
 
-            float eased = settleT * settleT *
-                          (3f - 2f * settleT);
+            float eased = settleT * settleT * (3f - 2f * settleT);
 
-            return Mathf.Lerp(
-                overshootScale,
-                1f,
-                eased
-            );
+            return Mathf.Lerp(overshootScale, 1f, eased);
         }
     }
 
@@ -733,6 +731,8 @@ public class UpgradeChoiceUI : MonoBehaviour
             if (button != null)
                 button.interactable = false;
         }
+
+        ResetHoverStates();
 
         Debug.Log(
             $"[UpgradeChoiceUI] APPLYING UPGRADE | " +
@@ -764,6 +764,9 @@ public class UpgradeChoiceUI : MonoBehaviour
             descriptionCoroutine = null;
         }
 
+        entranceAnimationFinished = false;
+
+        ResetHoverStates();
         ResetChoiceScales();
 
         if (upgradeCanvas != null)
@@ -794,10 +797,7 @@ public class UpgradeChoiceUI : MonoBehaviour
                         i < CHOICE_COUNT; i++)
         {
             if (upgradeCardParents[i] != null)
-            {
-                upgradeCardParents[i].localScale =
-                    originalScales[i];
-            }
+                upgradeCardParents[i].localScale = originalScales[i];
         }
     }
 
@@ -819,6 +819,9 @@ public class UpgradeChoiceUI : MonoBehaviour
             descriptionCoroutine = null;
         }
 
+        entranceAnimationFinished = false;
+
+        ResetHoverStates();
         ResetChoiceScales();
 
         selectionInProgress = false;

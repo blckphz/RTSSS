@@ -168,15 +168,6 @@ public class cameraMoveScript : MonoBehaviour
         {
             nextMovementLogTime =
                 Time.time + Mathf.Max(0.05f, movementLogInterval);
-
-            Debug.Log(
-                $"[CameraDebug] EDGE SCROLL\n" +
-                $"From: {oldPosition}\n" +
-                $"To: {newPosition}\n" +
-                $"Mouse: {mousePosition}\n" +
-                $"Frame: {Time.frameCount}",
-                cameraTarget
-            );
         }
     }
 
