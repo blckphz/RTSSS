@@ -48,8 +48,13 @@ public class ExplosionAttack : MonoBehaviour
 
     private GridManager gridManager;
     private GridHighlightManager highlightManager;
+
     private Animator cachedAnimator;
     private ParticleSystem cachedParticleSystem;
+
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
 
     private void Awake()
     {
@@ -68,6 +73,7 @@ public class ExplosionAttack : MonoBehaviour
     public void Initialize(GameObject explosionOwner)
     {
         owner = explosionOwner;
+
         FindManagers();
 
         if (explodeOnStart && !exploded && !explosionScheduled)
@@ -122,6 +128,84 @@ public class ExplosionAttack : MonoBehaviour
     public void SetKnockbackPlayerWithoutDamage(bool enabled)
     {
         knockbackPlayerWithoutDamage = enabled;
+    }
+
+    // ============================================================
+    // SHARED EXPLOSION SHAPE CALCULATIONS
+    // ============================================================
+
+    public static int GetExplosionDistance(
+        int x,
+        int y,
+        AbilitySO.RangeShape shape)
+    {
+        if (shape == AbilitySO.RangeShape.Circle)
+        {
+            return Mathf.RoundToInt(
+                Mathf.Sqrt(x * x + y * y)
+            );
+        }
+
+        return Mathf.Abs(x) + Mathf.Abs(y);
+    }
+
+    public static bool IsInsideExplosionShape(
+        int x,
+        int y,
+        int effectiveRadius,
+        AbilitySO.RangeShape shape)
+    {
+        effectiveRadius = Mathf.Max(0, effectiveRadius);
+
+        int distance = GetExplosionDistance(x, y, shape);
+
+        switch (shape)
+        {
+            case AbilitySO.RangeShape.Diamond:
+                return Mathf.Abs(x) + Mathf.Abs(y) <= effectiveRadius;
+
+            case AbilitySO.RangeShape.Circle:
+                return (x * x + y * y) <=
+                       effectiveRadius * effectiveRadius;
+
+            case AbilitySO.RangeShape.Box:
+                return Mathf.Abs(x) <= effectiveRadius &&
+                       Mathf.Abs(y) <= effectiveRadius;
+
+            case AbilitySO.RangeShape.FourDirections:
+                return (x == 0 || y == 0) &&
+                       distance <= effectiveRadius;
+
+            case AbilitySO.RangeShape.Diagonal:
+                return Mathf.Abs(x) == Mathf.Abs(y) &&
+                       distance <= effectiveRadius;
+
+            case AbilitySO.RangeShape.FourdirectionsAndDiragonal:
+                return (x == 0 || y == 0 ||
+                        Mathf.Abs(x) == Mathf.Abs(y)) &&
+                       distance <= effectiveRadius;
+
+            case AbilitySO.RangeShape.Shotgun:
+                return Mathf.Abs(x) + Mathf.Abs(y) <= effectiveRadius;
+
+            default:
+                return distance <= effectiveRadius;
+        }
+    }
+
+    private int GetExplosionDistance(int x, int y)
+    {
+        return GetExplosionDistance(x, y, explosionShape);
+    }
+
+    private bool IsInsideExplosionShape(int x, int y, int distance)
+    {
+        return IsInsideExplosionShape(
+            x,
+            y,
+            radius,
+            explosionShape
+        );
     }
 
     // ============================================================
@@ -248,18 +332,14 @@ public class ExplosionAttack : MonoBehaviour
             ? ownerHealth.GetTeam()
             : (Team)(-1);
 
-        // Knockback requires the owner's upgrade.
         bool knockbackUnlocked = IsKnockbackUnlocked();
 
         if (flashExplosion)
             PlayExplosionFlash();
 
-        // Player knockback is handled separately.
         if (knockbackUnlocked)
             KnockbackPlayer(center);
 
-        // Track enemies already hit by this explosion.
-        // Prevents large enemies from receiving damage multiple times.
         HashSet<GameObject> damagedEnemies =
             new HashSet<GameObject>();
 
@@ -267,7 +347,7 @@ public class ExplosionAttack : MonoBehaviour
         {
             for (int y = -radius; y <= radius; y++)
             {
-                int distance = Mathf.Abs(x) + Mathf.Abs(y);
+                int distance = GetExplosionDistance(x, y);
 
                 if (!IsInsideExplosionShape(x, y, distance))
                     continue;
@@ -330,7 +410,7 @@ public class ExplosionAttack : MonoBehaviour
             int dx = playerTile.x - explosionCenter.x;
             int dy = playerTile.y - explosionCenter.y;
 
-            int tileDistance = Mathf.Abs(dx) + Mathf.Abs(dy);
+            int tileDistance = GetExplosionDistance(dx, dy);
 
             if (!IsInsideExplosionShape(dx, dy, tileDistance))
                 continue;
@@ -365,45 +445,6 @@ public class ExplosionAttack : MonoBehaviour
     }
 
     // ============================================================
-    // EXPLOSION SHAPE
-    // ============================================================
-
-    private bool IsInsideExplosionShape(
-        int x,
-        int y,
-        int distance)
-    {
-        switch (explosionShape)
-        {
-            case AbilitySO.RangeShape.Diamond:
-                return distance <= radius;
-
-            case AbilitySO.RangeShape.Box:
-                return Mathf.Abs(x) <= radius &&
-                       Mathf.Abs(y) <= radius;
-
-            case AbilitySO.RangeShape.FourDirections:
-                return (x == 0 || y == 0) &&
-                       distance <= radius;
-
-            case AbilitySO.RangeShape.Diagonal:
-                return Mathf.Abs(x) == Mathf.Abs(y) &&
-                       distance <= radius;
-
-            case AbilitySO.RangeShape.FourdirectionsAndDiragonal:
-                return (x == 0 || y == 0 ||
-                        Mathf.Abs(x) == Mathf.Abs(y)) &&
-                       distance <= radius;
-
-            case AbilitySO.RangeShape.Shotgun:
-                return distance <= radius;
-
-            default:
-                return distance <= radius;
-        }
-    }
-
-    // ============================================================
     // DAMAGE FALLOFF
     // ============================================================
 
@@ -431,11 +472,9 @@ public class ExplosionAttack : MonoBehaviour
         int distanceFromCenter,
         GameObject target = null)
     {
-        // Bosses always receive exactly 1 tile.
         if (IsBoss(target))
             return 1;
 
-        // Normal units retain distance-based knockback.
         if (radius <= 0)
             return 1;
 
@@ -445,8 +484,6 @@ public class ExplosionAttack : MonoBehaviour
         float normalizedDistance =
             Mathf.Clamp01((float)distanceFromCenter / radius);
 
-        // Center = full explosion radius.
-        // Edge = 1 tile.
         int knockbackDistance = Mathf.RoundToInt(
             Mathf.Lerp(
                 radius,
@@ -502,21 +539,20 @@ public class ExplosionAttack : MonoBehaviour
             return;
         }
 
-        // Prevent hitting the same enemy more than once.
         if (damagedEnemies.Contains(target))
             return;
 
-        // Register this enemy before applying damage or knockback.
         damagedEnemies.Add(target);
 
         int distanceFromCenter =
-            Mathf.Abs(position.x - explosionCenter.x) +
-            Mathf.Abs(position.y - explosionCenter.y);
+            GetExplosionDistance(
+                position.x - explosionCenter.x,
+                position.y - explosionCenter.y
+            );
 
         int knockbackDistance =
             CalculateKnockbackDistance(distanceFromCenter, target);
 
-        // Enemy knockback requires the upgrade.
         if (knockbackUnlocked &&
             !isPlayer &&
             knockbackDistance > 0)
@@ -580,6 +616,9 @@ public class ExplosionAttack : MonoBehaviour
             Destroy(gameObject, destroyDelay);
     }
 
+    // ============================================================
+    // PLAYER KNOCKBACK PREVIEW
+    // ============================================================
 
     public bool TryGetPlayerKnockbackLandingTile(
         GameObject explosionOwner,
@@ -603,7 +642,6 @@ public class ExplosionAttack : MonoBehaviour
         if (gridManager == null)
             return false;
 
-        // Check the bomb owner's upgrade.
         UnitData ownerData =
             explosionOwner.GetComponent<UnitData>();
 
@@ -638,13 +676,14 @@ public class ExplosionAttack : MonoBehaviour
         int dx = playerTile.x - explosionCenter.x;
         int dy = playerTile.y - explosionCenter.y;
 
-        int tileDistance = Mathf.Abs(dx) + Mathf.Abs(dy);
+        int tileDistance =
+            GetExplosionDistance(dx, dy);
 
-        if (!IsInsideExplosionShapeForPreview(
+        if (!IsInsideExplosionShape(
             dx,
             dy,
-            tileDistance,
-            effectiveRadius))
+            effectiveRadius,
+            explosionShape))
         {
             return false;
         }
@@ -678,40 +717,6 @@ public class ExplosionAttack : MonoBehaviour
         );
     }
 
-    private bool IsInsideExplosionShapeForPreview(
-        int x,
-        int y,
-        int distance,
-        int effectiveRadius)
-    {
-        switch (explosionShape)
-        {
-            case AbilitySO.RangeShape.Diamond:
-            case AbilitySO.RangeShape.Shotgun:
-                return distance <= effectiveRadius;
-
-            case AbilitySO.RangeShape.Box:
-                return Mathf.Abs(x) <= effectiveRadius &&
-                       Mathf.Abs(y) <= effectiveRadius;
-
-            case AbilitySO.RangeShape.FourDirections:
-                return (x == 0 || y == 0) &&
-                       distance <= effectiveRadius;
-
-            case AbilitySO.RangeShape.Diagonal:
-                return Mathf.Abs(x) == Mathf.Abs(y) &&
-                       distance <= effectiveRadius;
-
-            case AbilitySO.RangeShape.FourdirectionsAndDiragonal:
-                return (x == 0 || y == 0 ||
-                        Mathf.Abs(x) == Mathf.Abs(y)) &&
-                       distance <= effectiveRadius;
-
-            default:
-                return distance <= effectiveRadius;
-        }
-    }
-
     private int CalculateKnockbackDistanceForPreview(
         int distanceFromCenter,
         int effectiveRadius,
@@ -743,17 +748,24 @@ public class ExplosionAttack : MonoBehaviour
         );
     }
 
-
-
     // ============================================================
     // GETTERS
     // ============================================================
 
     public int GetRadius() => radius;
+
     public int GetDamage() => damage;
-    public AbilitySO.RangeShape GetExplosionShape() => explosionShape;
-    public float GetTotalDamageFalloff() => totalDamageFalloff;
+
+    public AbilitySO.RangeShape GetExplosionShape()
+        => explosionShape;
+
+    public float GetTotalDamageFalloff()
+        => totalDamageFalloff;
+
     public GameObject GetOwner() => owner;
-    public bool GetAllowFriendlyFire() => allowFriendlyFire;
+
+    public bool GetAllowFriendlyFire()
+        => allowFriendlyFire;
+
     public bool HasExploded() => exploded;
 }

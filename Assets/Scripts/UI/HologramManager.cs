@@ -9,15 +9,12 @@ public class HologramManager : MonoBehaviour
     [Header("Hologram")]
     [SerializeField] private GameObject hologramPrefab;
     [SerializeField]
-    private Vector3 hologramOffset =
-        new Vector3(0f, 0.05f, 0f);
+    private Vector3 hologramOffset = new Vector3(0f, 0.05f, 0f);
 
     [Header("Hologram Pool")]
     [SerializeField, Min(1)] private int poolSize = 1;
 
-    private readonly List<GameObject> hologramPool =
-        new List<GameObject>();
-
+    private readonly List<GameObject> hologramPool = new List<GameObject>();
     private readonly List<SpriteRenderer> hologramSpriteRenderers =
         new List<SpriteRenderer>();
 
@@ -65,6 +62,11 @@ public class HologramManager : MonoBehaviour
     private bool wasRetreating;
     private bool isBoardRotating;
 
+    // Prevents RefreshHologram from showing the hologram after a bomb
+    // has spawned. This is released when a new unit is selected or
+    // ShowAfterBomb() is called.
+    private bool hiddenForBomb;
+
     // ============================================================
     // UNITY
     // ============================================================
@@ -91,7 +93,7 @@ public class HologramManager : MonoBehaviour
 
     private void Update()
     {
-        if (isBoardRotating || !showHologram)
+        if (isBoardRotating || !showHologram || hiddenForBomb)
             return;
 
         if (selectedEnemy == null || selectedMoveBrain == null)
@@ -161,7 +163,7 @@ public class HologramManager : MonoBehaviour
     {
         isBoardRotating = false;
 
-        if (!showHologram)
+        if (!showHologram || hiddenForBomb)
             return;
 
         if (selectedEnemy == null || selectedMoveBrain == null)
@@ -266,10 +268,7 @@ public class HologramManager : MonoBehaviour
             hologramSpriteRenderer = hologramSpriteRenderers[0];
 
             if (hologramInstance != null)
-            {
-                hologramBaseScale =
-                    hologramInstance.transform.localScale;
-            }
+                hologramBaseScale = hologramInstance.transform.localScale;
         }
     }
 
@@ -299,8 +298,7 @@ public class HologramManager : MonoBehaviour
             if (!hologram.activeSelf)
             {
                 hologramInstance = hologram;
-                hologramSpriteRenderer =
-                    hologramSpriteRenderers[i];
+                hologramSpriteRenderer = hologramSpriteRenderers[i];
 
                 hologramBaseScale =
                     hologramInstance.transform.localScale;
@@ -345,6 +343,9 @@ public class HologramManager : MonoBehaviour
             ClearSelection();
             return;
         }
+
+        // A new selection allows the hologram to appear again.
+        hiddenForBomb = false;
 
         // No team restrictions.
         selectedEnemy = unit;
@@ -394,6 +395,14 @@ public class HologramManager : MonoBehaviour
 
     public void RefreshHologram()
     {
+        // Important: do not allow another refresh to show the hologram
+        // while it is suppressed by a bomb.
+        if (hiddenForBomb)
+        {
+            HideHologram();
+            return;
+        }
+
         if (isBoardRotating || !showHologram)
         {
             HideHologram();
@@ -489,8 +498,7 @@ public class HologramManager : MonoBehaviour
             return true;
         }
 
-        int movementRange =
-            selectedMoveBrain.GetMoveRange();
+        int movementRange = selectedMoveBrain.GetMoveRange();
 
         if (movementRange <= 0)
             return false;
@@ -507,7 +515,6 @@ public class HologramManager : MonoBehaviour
         if (!pathFound || retreatPath.Count < 2)
             return false;
 
-        // Move along the path up to the unit's movement range.
         int destinationIndex = Mathf.Min(
             movementRange,
             retreatPath.Count - 1
@@ -556,7 +563,7 @@ public class HologramManager : MonoBehaviour
         GridManager gridManager,
         Vector2Int tile)
     {
-        if (isBoardRotating || gridManager == null)
+        if (hiddenForBomb || isBoardRotating || gridManager == null)
             return;
 
         EnsureHologramInstance();
@@ -588,7 +595,7 @@ public class HologramManager : MonoBehaviour
 
     private void UpdatePathLine(Vector3 destination)
     {
-        if (isBoardRotating)
+        if (isBoardRotating || hiddenForBomb)
         {
             if (pathLineRenderer != null)
                 pathLineRenderer.enabled = false;
@@ -628,7 +635,7 @@ public class HologramManager : MonoBehaviour
     {
         StopEffectsCoroutine();
 
-        if (isBoardRotating)
+        if (isBoardRotating || hiddenForBomb)
             return;
 
         if (!pulseHologram && transparencySpeed <= 0f)
@@ -655,6 +662,7 @@ public class HologramManager : MonoBehaviour
         while (
             isShowing &&
             !isBoardRotating &&
+            !hiddenForBomb &&
             hologramInstance != null
         )
         {
@@ -761,6 +769,35 @@ public class HologramManager : MonoBehaviour
         ClearSelection();
     }
 
+    // Call this when a bomb spawns.
+    public void HideForBomb()
+    {
+        hiddenForBomb = true;
+        HideHologram();
+    }
+
+    // Call this when you want to allow the hologram to show again.
+    public void ShowAfterBomb()
+    {
+        hiddenForBomb = false;
+
+        if (isBoardRotating || !showHologram)
+            return;
+
+        if (selectedEnemy == null || selectedMoveBrain == null)
+            return;
+
+        RefreshHologram();
+
+        if (isShowing)
+            StartEffectsCoroutine();
+    }
+
+    public bool IsHiddenForBomb()
+    {
+        return hiddenForBomb;
+    }
+
     public AttackUnit GetSelectedEnemy()
     {
         return selectedEnemy;
@@ -780,7 +817,7 @@ public class HologramManager : MonoBehaviour
     {
         showHologram = visible;
 
-        if (isBoardRotating || !visible)
+        if (isBoardRotating || !visible || hiddenForBomb)
         {
             HideHologram();
             return;
@@ -797,7 +834,7 @@ public class HologramManager : MonoBehaviour
 
     public void Refresh()
     {
-        if (isBoardRotating)
+        if (isBoardRotating || hiddenForBomb)
             return;
 
         RefreshHologram();

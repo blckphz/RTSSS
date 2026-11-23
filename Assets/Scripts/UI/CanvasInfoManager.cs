@@ -951,7 +951,9 @@ public class CanvasInfoManager : MonoBehaviour
                 else if (ability is BombAttack bombAttack)
                 {
                     int effectiveRadius =
-                        bombAttack.GetExplosionRadius();
+      bombAttack.GetEffectiveExplosionRadius(
+          activeUnit != null ? activeUnit.gameObject : null
+      );
 
                     if (activeUnit != null &&
                         UpdateManager.Instance != null)

@@ -12,7 +12,8 @@ public abstract class AbilitySO : ScriptableObject
         FourDirections,
         Diagonal,
         FourdirectionsAndDiragonal,
-        Shotgun
+        Shotgun,
+        Circle
     }
 
     public enum TargetType
@@ -390,6 +391,37 @@ public abstract class AbilitySO : ScriptableObject
                 }
                 break;
 
+            // ====================================================
+            // CIRCLE
+            // ====================================================
+
+            case RangeShape.Circle:
+                for (int x = -abilityRange; x <= abilityRange; x++)
+                {
+                    for (int y = -abilityRange; y <= abilityRange; y++)
+                    {
+                        if (x == 0 && y == 0)
+                            continue;
+
+                        // Euclidean distance squared.
+                        int distanceSquared = x * x + y * y;
+
+                        // Compare squared distances to avoid square root.
+                        if (distanceSquared > abilityRange * abilityRange)
+                            continue;
+
+                        if (distanceSquared < minimumDistance * minimumDistance)
+                            continue;
+
+                        AddValidTile(
+                            gridManager,
+                            tiles,
+                            origin + new Vector2Int(x, y)
+                        );
+                    }
+                }
+                break;
+
             case RangeShape.Box:
                 for (int x = -abilityRange; x <= abilityRange; x++)
                 {
@@ -587,7 +619,6 @@ public abstract class AbilitySO : ScriptableObject
         {
             case TargetType.Enemy:
                 return IsEnemyTeam(userTeam, targetTeam);
-
 
             case TargetType.Player:
                 return targetTeam == Team.Player;

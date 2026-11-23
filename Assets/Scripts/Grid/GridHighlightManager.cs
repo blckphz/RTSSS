@@ -43,7 +43,8 @@ public class GridHighlightManager : MonoBehaviour
 
     [Header("Bomb Explosion Preview")]
     [SerializeField]
-    private Color bombPreviewColor = new Color(0.45f, 0.015f, 0.015f, 1f);
+    private Color bombPreviewColor =
+        new Color(0.45f, 0.015f, 0.015f, 1f);
 
     [SerializeField, Range(0f, 1f)]
     private float bombPreviewAlpha = 0.45f;
@@ -314,7 +315,6 @@ public class GridHighlightManager : MonoBehaviour
         if (visual == null)
             return;
 
-        // Actual explosion always has the highest priority.
         if (explosionCells.Contains(position))
             return;
 
@@ -324,16 +324,12 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        // Placement highlight takes priority.
         if (hasPlacementPosition && placementPosition == position)
         {
             visual.ShowPlacement();
             return;
         }
 
-        // ABILITY RANGE HAS PRIORITY OVER BOMB PREVIEW.
-        // If a tile belongs to both sets, it will always show
-        // its ability-range appearance.
         if (abilityCells.Contains(position))
         {
             GameObject unit = gridManager.GetUnitAt(position);
@@ -353,8 +349,6 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
-        // Bomb preview is only displayed on tiles that are
-        // not already part of the ability range.
         if (bombPreviewCells.Contains(position))
         {
             visual.ShowMovement(bombPreviewColor, bombPreviewAlpha);
@@ -498,6 +492,12 @@ public class GridHighlightManager : MonoBehaviour
     public bool IsMovementHighlightSuppressed()
     {
         return suppressMovementHighlight;
+    }
+
+    // Called by BombAttack when the bomb successfully spawns.
+    public void DisableMovementVisualsForBomb()
+    {
+        DisableMovementRangeImmediately("Bomb spawned");
     }
 
     // ============================================================
@@ -780,107 +780,99 @@ public class GridHighlightManager : MonoBehaviour
     // BOMB EXPLOSION PREVIEW
     // ============================================================
 
-    private void RefreshBombExplosionPreview()
+  
+private void RefreshBombExplosionPreview()
+{
+    if (currentAbility == null ||
+        currentRangeUser == null ||
+        gridManager == null)
     {
-        if (currentAbility == null ||
-            currentRangeUser == null ||
-            gridManager == null)
-        {
-            ClearBombExplosionPreview();
-            return;
-        }
-
-        if (!(currentAbility is BombAttack bombAttack))
-        {
-            ClearBombExplosionPreview();
-            return;
-        }
-
-        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
-        {
-            ClearBombExplosionPreview();
-            return;
-        }
-
-        if (Camera.main == null || Mouse.current == null)
-        {
-            ClearBombExplosionPreview();
-            return;
-        }
-
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-
-        Camera cam = Camera.main;
-
-        Vector3 mouseWorldPosition = cam.ScreenToWorldPoint(
-            new Vector3(
-                mousePosition.x,
-                mousePosition.y,
-                Mathf.Abs(cam.transform.position.z)
-            )
-        );
-
-        Vector2Int mouseTile =
-            gridManager.WorldToGridPosition(mouseWorldPosition);
-
-        // Only preview when hovering over a valid ability-range tile.
-        if (!abilityCells.Contains(mouseTile))
-        {
-            ClearBombExplosionPreview();
-            return;
-        }
-
-        // Avoid rebuilding the preview every frame.
-        if (hasBombPreviewCenter &&
-            lastBombPreviewCenter == mouseTile)
-            return;
-
-        ShowBombExplosionPreview(bombAttack, mouseTile);
-    }
-
-    private void ShowBombExplosionPreview(
-        BombAttack bombAttack,
-        Vector2Int centerPosition)
-    {
-        if (bombAttack == null ||
-            currentRangeUser == null ||
-            gridManager == null)
-            return;
-
         ClearBombExplosionPreview();
+        return;
+    }
 
-        // Includes the player's ExplosionSize ring bonus.
-        int radius = bombAttack.GetEffectiveExplosionRadius(
-            currentRangeUser
+    if (!(currentAbility is BombAttack bombAttack))
+    {
+        ClearBombExplosionPreview();
+        return;
+    }
+
+    if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
+    {
+        ClearBombExplosionPreview();
+        return;
+    }
+
+    if (Camera.main == null || Mouse.current == null)
+    {
+        ClearBombExplosionPreview();
+        return;
+    }
+
+    Vector2 mousePosition = Mouse.current.position.ReadValue();
+
+    Camera cam = Camera.main;
+
+    Vector3 mouseWorldPosition = cam.ScreenToWorldPoint(
+        new Vector3(
+            mousePosition.x,
+            mousePosition.y,
+            Mathf.Abs(cam.transform.position.z)
+        )
+    );
+
+    Vector2Int mouseTile =
+        gridManager.WorldToGridPosition(mouseWorldPosition);
+
+    if (!abilityCells.Contains(mouseTile))
+    {
+        ClearBombExplosionPreview();
+        return;
+    }
+
+    if (hasBombPreviewCenter &&
+        lastBombPreviewCenter == mouseTile)
+    {
+        return;
+    }
+
+    ShowBombExplosionPreview(bombAttack, mouseTile);
+}
+
+private void ShowBombExplosionPreview(
+    BombAttack bombAttack,
+    Vector2Int centerPosition)
+{
+    if (bombAttack == null ||
+        currentRangeUser == null ||
+        gridManager == null)
+    {
+        return;
+    }
+
+    ClearBombExplosionPreview();
+
+    int radius =
+        bombAttack.GetEffectiveExplosionRadius(currentRangeUser);
+
+    List<Vector2Int> tiles =
+        bombAttack.GetExplosionTiles(
+            gridManager,
+            centerPosition,
+            radius
         );
 
-        // Same Manhattan-distance calculation as BombAttack.
-        for (int x = -radius; x <= radius; x++)
-        {
-            for (int y = -radius; y <= radius; y++)
-            {
-                int distance = Mathf.Abs(x) + Mathf.Abs(y);
-
-                if (distance > radius)
-                    continue;
-
-                Vector2Int position =
-                    centerPosition + new Vector2Int(x, y);
-
-                if (!gridManager.IsInsideGrid(position))
-                    continue;
-
-                // Keep overlapping cells in the preview set.
-                // RefreshTile will render ability range over these cells.
-                bombPreviewCells.Add(position);
-            }
-        }
-
-        lastBombPreviewCenter = centerPosition;
-        hasBombPreviewCenter = true;
-
-        RefreshCells(bombPreviewCells);
+    for (int i = 0; i < tiles.Count; i++)
+    {
+        bombPreviewCells.Add(tiles[i]);
     }
+
+    lastBombPreviewCenter = centerPosition;
+    hasBombPreviewCenter = true;
+
+    RefreshCells(bombPreviewCells);
+}
+
 
     private void ClearBombExplosionPreview()
     {

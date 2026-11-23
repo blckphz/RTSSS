@@ -15,6 +15,9 @@ public class BombProjectile : MonoBehaviour
     private float speed;
     private int explosionDamage;
 
+    private AbilitySO.RangeShape explosionShape =
+        AbilitySO.RangeShape.Diamond;
+
     private float flightTime;
     private float elapsedTime;
     private float arcHeight = 2f;
@@ -23,6 +26,7 @@ public class BombProjectile : MonoBehaviour
     private bool initialized;
     private bool hasExploded;
 
+    // Backwards-compatible overload.
     public void Initialize(
         GameObject user,
         Vector3 targetPosition,
@@ -33,34 +37,78 @@ public class BombProjectile : MonoBehaviour
         float speed,
         int explosionDamage)
     {
+        AbilitySO.RangeShape shape =
+            AbilitySO.RangeShape.Diamond;
+
+        if (explosionPrefab != null)
+        {
+            ExplosionAttack attack =
+                explosionPrefab.GetComponent<ExplosionAttack>();
+
+            if (attack == null)
+            {
+                attack =
+                    explosionPrefab.GetComponentInChildren<ExplosionAttack>(true);
+            }
+
+            if (attack != null)
+                shape = attack.GetExplosionShape();
+        }
+
+        Initialize(
+            user,
+            targetPosition,
+            gridManager,
+            explosionPrefab,
+            explosionRadius,
+            explosionDelay,
+            speed,
+            explosionDamage,
+            shape);
+    }
+
+    // New overload: receives the exact shape from BombAttack.
+    public void Initialize(
+        GameObject user,
+        Vector3 targetPosition,
+        GridManager gridManager,
+        GameObject explosionPrefab,
+        int explosionRadius,
+        float explosionDelay,
+        float speed,
+        int explosionDamage,
+        AbilitySO.RangeShape explosionShape)
+    {
         this.user = user;
         this.targetPosition = targetPosition;
         this.gridManager = gridManager;
         this.explosionPrefab = explosionPrefab;
+
         this.explosionRadius = Mathf.Max(0, explosionRadius);
         this.explosionDelay = Mathf.Max(0f, explosionDelay);
         this.speed = Mathf.Max(0.01f, speed);
         this.explosionDamage = Mathf.Max(0, explosionDamage);
+        this.explosionShape = explosionShape;
 
         startPosition = transform.position;
         originalRotation = transform.rotation;
 
         float distance = Vector3.Distance(
             startPosition,
-            targetPosition
-        );
+            targetPosition);
 
         flightTime = Mathf.Max(0.05f, distance / this.speed);
+
         elapsedTime = 0f;
         hasExploded = false;
         initialized = true;
 
         Debug.Log(
-            $"[BombProjectile] Initialized | User={user?.name} | " +
-            $"ExplosionDamage={this.explosionDamage} | " +
-            $"Radius={this.explosionRadius}",
-            this
-        );
+            $"[BombProjectile] Initialized | " +
+            $"Radius={this.explosionRadius} | " +
+            $"Damage={this.explosionDamage} | " +
+            $"Shape={this.explosionShape}",
+            this);
     }
 
     private void Update()
@@ -75,8 +123,7 @@ public class BombProjectile : MonoBehaviour
         Vector3 position = Vector3.Lerp(
             startPosition,
             targetPosition,
-            t
-        );
+            t);
 
         position.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
 
@@ -99,53 +146,60 @@ public class BombProjectile : MonoBehaviour
         {
             Debug.LogError(
                 "[BombProjectile] Explosion prefab is not assigned.",
-                this
-            );
+                this);
+
             Destroy(gameObject);
             return;
         }
 
-        GameObject explosion = Instantiate(
+        GameObject explosionObject = Instantiate(
             explosionPrefab,
             targetPosition,
-            Quaternion.identity
-        );
+            Quaternion.identity);
 
-        if (explosion == null)
+        if (explosionObject == null)
         {
             Debug.LogError(
                 "[BombProjectile] Failed to instantiate explosion.",
-                this
-            );
+                this);
+
             Destroy(gameObject);
             return;
         }
 
         ExplosionAttack explosionAttack =
-            explosion.GetComponent<ExplosionAttack>();
+            explosionObject.GetComponent<ExplosionAttack>();
+
+        if (explosionAttack == null)
+        {
+            explosionAttack =
+                explosionObject.GetComponentInChildren<ExplosionAttack>(true);
+        }
 
         if (explosionAttack == null)
         {
             Debug.LogError(
                 "[BombProjectile] Explosion prefab has no " +
                 "ExplosionAttack component.",
-                explosion
-            );
+                explosionObject);
+
+            Destroy(explosionObject);
             Destroy(gameObject);
             return;
         }
 
-        // Configure all values before Initialize.
+        // Set every value before initializing the explosion.
         explosionAttack.SetExplosionRadius(explosionRadius);
         explosionAttack.SetExplosionDamage(explosionDamage);
         explosionAttack.SetExplosionDelay(explosionDelay);
+        explosionAttack.SetExplosionShape(explosionShape);
 
         Debug.Log(
-            $"[BombProjectile] Initializing explosion | " +
-            $"Damage={explosionDamage} | Radius={explosionRadius} | " +
-            $"Position={targetPosition}",
-            explosion
-        );
+            $"[BombProjectile] Explosion configured | " +
+            $"Radius={explosionRadius} | " +
+            $"Damage={explosionDamage} | " +
+            $"Shape={explosionShape}",
+            explosionObject);
 
         explosionAttack.Initialize(user);
 
