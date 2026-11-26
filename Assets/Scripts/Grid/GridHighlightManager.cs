@@ -47,7 +47,16 @@ public class GridHighlightManager : MonoBehaviour
         new Color(0.45f, 0.015f, 0.015f, 1f);
 
     [SerializeField, Range(0f, 1f)]
-    private float bombPreviewAlpha = 0.45f;
+    private float bombPreviewMinAlpha = 0.02f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float bombPreviewMaxAlpha = 1f;
+
+    [SerializeField, Min(0.01f)]
+    private float bombPreviewRippleSpeed = 3f;
+
+    [SerializeField, Min(0.01f)]
+    private float bombPreviewRippleFrequency = 2.5f;
 
     private bool playerHighlightsDisabled;
     private bool suppressMovementHighlight;
@@ -330,6 +339,42 @@ public class GridHighlightManager : MonoBehaviour
             return;
         }
 
+        // BOMB PREVIEW MUST BE CHECKED BEFORE ABILITY CELLS.
+        // This ensures explosion tiles show the ripple even when
+        // they overlap the ability range.
+
+        if (bombPreviewCells.Contains(position))
+        {
+            BombAttack bombAttack = currentAbility as BombAttack;
+
+            float radius = bombAttack != null
+                ? Mathf.Max(
+                    1f,
+                    bombAttack.GetEffectiveExplosionRadius(currentRangeUser)
+                )
+                : 1f;
+
+            float distance = Vector2Int.Distance(
+                position,
+                lastBombPreviewCenter
+            );
+
+            float normalizedDistance = Mathf.Clamp01(
+                distance / radius
+            );
+
+            visual.ShowBombPreview(
+                bombPreviewColor,
+                bombPreviewMinAlpha,
+                bombPreviewMaxAlpha,
+                normalizedDistance,
+                bombPreviewRippleSpeed,
+                bombPreviewRippleFrequency
+            );
+
+            return;
+        }
+
         if (abilityCells.Contains(position))
         {
             GameObject unit = gridManager.GetUnitAt(position);
@@ -346,12 +391,6 @@ public class GridHighlightManager : MonoBehaviour
                 visual.ShowAbility();
             }
 
-            return;
-        }
-
-        if (bombPreviewCells.Contains(position))
-        {
-            visual.ShowMovement(bombPreviewColor, bombPreviewAlpha);
             return;
         }
 
@@ -494,7 +533,6 @@ public class GridHighlightManager : MonoBehaviour
         return suppressMovementHighlight;
     }
 
-    // Called by BombAttack when the bomb successfully spawns.
     public void DisableMovementVisualsForBomb()
     {
         DisableMovementRangeImmediately("Bomb spawned");
@@ -780,99 +818,98 @@ public class GridHighlightManager : MonoBehaviour
     // BOMB EXPLOSION PREVIEW
     // ============================================================
 
-  
-private void RefreshBombExplosionPreview()
-{
-    if (currentAbility == null ||
-        currentRangeUser == null ||
-        gridManager == null)
+    private void RefreshBombExplosionPreview()
     {
-        ClearBombExplosionPreview();
-        return;
-    }
+        if (currentAbility == null ||
+            currentRangeUser == null ||
+            gridManager == null)
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
 
-    if (!(currentAbility is BombAttack bombAttack))
-    {
-        ClearBombExplosionPreview();
-        return;
-    }
+        if (!(currentAbility is BombAttack bombAttack))
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
 
-    if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
-    {
-        ClearBombExplosionPreview();
-        return;
-    }
+        if (playerHighlightsDisabled && IsCurrentUserPlayerUnit())
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
 
-    if (Camera.main == null || Mouse.current == null)
-    {
-        ClearBombExplosionPreview();
-        return;
-    }
+        if (Camera.main == null || Mouse.current == null)
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
 
-    Vector2 mousePosition = Mouse.current.position.ReadValue();
+        Vector2 mousePosition = Mouse.current.position.ReadValue();
 
-    Camera cam = Camera.main;
+        Camera cam = Camera.main;
 
-    Vector3 mouseWorldPosition = cam.ScreenToWorldPoint(
-        new Vector3(
-            mousePosition.x,
-            mousePosition.y,
-            Mathf.Abs(cam.transform.position.z)
-        )
-    );
-
-    Vector2Int mouseTile =
-        gridManager.WorldToGridPosition(mouseWorldPosition);
-
-    if (!abilityCells.Contains(mouseTile))
-    {
-        ClearBombExplosionPreview();
-        return;
-    }
-
-    if (hasBombPreviewCenter &&
-        lastBombPreviewCenter == mouseTile)
-    {
-        return;
-    }
-
-    ShowBombExplosionPreview(bombAttack, mouseTile);
-}
-
-private void ShowBombExplosionPreview(
-    BombAttack bombAttack,
-    Vector2Int centerPosition)
-{
-    if (bombAttack == null ||
-        currentRangeUser == null ||
-        gridManager == null)
-    {
-        return;
-    }
-
-    ClearBombExplosionPreview();
-
-    int radius =
-        bombAttack.GetEffectiveExplosionRadius(currentRangeUser);
-
-    List<Vector2Int> tiles =
-        bombAttack.GetExplosionTiles(
-            gridManager,
-            centerPosition,
-            radius
+        Vector3 mouseWorldPosition = cam.ScreenToWorldPoint(
+            new Vector3(
+                mousePosition.x,
+                mousePosition.y,
+                Mathf.Abs(cam.transform.position.z)
+            )
         );
 
-    for (int i = 0; i < tiles.Count; i++)
-    {
-        bombPreviewCells.Add(tiles[i]);
+        Vector2Int mouseTile =
+            gridManager.WorldToGridPosition(mouseWorldPosition);
+
+        if (!abilityCells.Contains(mouseTile))
+        {
+            ClearBombExplosionPreview();
+            return;
+        }
+
+        if (hasBombPreviewCenter &&
+            lastBombPreviewCenter == mouseTile)
+        {
+            return;
+        }
+
+        ShowBombExplosionPreview(bombAttack, mouseTile);
     }
 
-    lastBombPreviewCenter = centerPosition;
-    hasBombPreviewCenter = true;
+    private void ShowBombExplosionPreview(
+        BombAttack bombAttack,
+        Vector2Int centerPosition)
+    {
+        if (bombAttack == null ||
+            currentRangeUser == null ||
+            gridManager == null)
+        {
+            return;
+        }
 
-    RefreshCells(bombPreviewCells);
-}
+        ClearBombExplosionPreview();
 
+        int radius =
+            bombAttack.GetEffectiveExplosionRadius(currentRangeUser);
+
+        List<Vector2Int> tiles =
+            bombAttack.GetExplosionTiles(
+                gridManager,
+                centerPosition,
+                radius
+            );
+
+        if (tiles != null)
+        {
+            for (int i = 0; i < tiles.Count; i++)
+                bombPreviewCells.Add(tiles[i]);
+        }
+
+        lastBombPreviewCenter = centerPosition;
+        hasBombPreviewCenter = true;
+
+        RefreshCells(bombPreviewCells);
+    }
 
     private void ClearBombExplosionPreview()
     {

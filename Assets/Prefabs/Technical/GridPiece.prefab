@@ -35,6 +35,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5926921351338923184
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -80,6 +81,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -1
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 2c079f3ff3d61784ba7c05fa27927f0f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 0.4392157}
   m_FlipX: 0
@@ -89,8 +91,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!114 &8558840810073551832
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105,6 +107,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridHighlightVisuals
   placementColor: {r: 0, g: 1, b: 0, a: 1}
   placementAlpha: 0.5
+  pulsePlacement: 1
+  placementBaseScale: 1.15
+  placementPulseAmount: 0.07
+  placementPulseSpeed: 5
+  movementColor: {r: 0, g: 1, b: 1, a: 1}
+  movementAlpha: 0.35
   abilityRangeColor: {r: 0, g: 0, b: 0, a: 1}
   abilityRangeAlpha: 0.569
   enemyTileColor: {r: 1, g: 0, b: 0, a: 1}
@@ -113,10 +121,12 @@ MonoBehaviour:
   healTileAlpha: 0.85
   pulseAbility: 1
   pulseSpeed: 5
-  pulseAmount: 0.2
+  pulseAmount: 0
   animateTileScale: 1
   scaleAmount: 0.06
   scaleSpeed: 5
+  bombRippleHighlightColor: {r: 1, g: 0.08, b: 0.03, a: 1}
+  bombRippleScaleAmount: 0.025
   explosionColor: {r: 1, g: 0, b: 0, a: 1}
   explosionPulseAmount: 0.12
   explosionPulseDuration: 0.12
